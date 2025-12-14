@@ -11,7 +11,7 @@ function App() {
   console.log(data);
 
   return (
-    <div class="size-full flex flex-col">
+    <div className="size-full flex flex-col">
       Hello
       {data ? (
         <Button onClick={() => signOut()}>Sign Out</Button>

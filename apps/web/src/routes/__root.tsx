@@ -44,19 +44,21 @@ export const Route = createRootRoute({
   }),
 
   errorComponent: ({ error }) => (
-    <div class="min-h-screen flex items-center justify-center px-6">
-      <Card class="max-w-2xl w-full text-center">
+    <div className="min-h-screen flex items-center justify-center px-6">
+      <Card className="max-w-2xl w-full text-center">
         <CardHeader>
-          <CardTitle class="text-4xl font-bold text-destructive">Something went wrong!</CardTitle>
+          <CardTitle className="text-4xl font-bold text-destructive">
+            Something went wrong!
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div class="bg-destructive/10 border border-destructive  p-4 mb-6">
-            <p class="text-destructive font-mono text-sm break-all">{error.message}</p>
+          <div className="bg-destructive/10 border border-destructive  p-4 mb-6">
+            <p className="text-destructive font-mono text-sm break-all">{error.message}</p>
           </div>
           <button
             type="button"
             onClick={() => window.location.reload()}
-            class="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold  transition-colors"
+            className="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold  transition-colors"
           >
             Reload Page
           </button>
@@ -66,17 +68,17 @@ export const Route = createRootRoute({
   ),
 
   notFoundComponent: () => (
-    <div class="min-h-screen flex items-center justify-center px-6">
-      <Card class="max-w-2xl w-full text-center">
+    <div className="min-h-screen flex items-center justify-center px-6">
+      <Card className="max-w-2xl w-full text-center">
         <CardHeader>
-          <CardTitle class="text-4xl font-bold text-destructive">404</CardTitle>
+          <CardTitle className="text-4xl font-bold text-destructive">404</CardTitle>
         </CardHeader>
         <CardContent>
-          <p class="text-foreground text-lg mb-6">The page you're looking for doesn't exist.</p>
+          <p className="text-foreground text-lg mb-6">The page you're looking for doesn't exist.</p>
           <button
             type="button"
             onClick={() => window.history.back()}
-            class="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold  transition-colors"
+            className="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold  transition-colors"
           >
             Go Back
           </button>
@@ -106,7 +108,7 @@ function RootDocument() {
       <head>
         <HeadContent />
       </head>
-      <body class="dark">
+      <body className="dark">
         <QueryClientProvider client={queryClient}>
           <Outlet />
           <TanStackDevtools

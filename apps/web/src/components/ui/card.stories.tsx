@@ -51,7 +51,7 @@ export const WithAction: Story = {
       <CardContent>
         <p>Card content area with some text.</p>
       </CardContent>
-      <CardFooter class="flex justify-between">
+      <CardFooter className="flex justify-between">
         <Button variant="outline">Cancel</Button>
         <Button>Confirm</Button>
       </CardFooter>

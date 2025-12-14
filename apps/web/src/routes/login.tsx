@@ -61,14 +61,14 @@ function Login() {
   };
 
   return (
-    <div class="min-h-screen flex items-center justify-center p-4">
-      <Card class="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Sign In</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} class="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
                 name="email"
@@ -90,18 +90,18 @@ function Login() {
               />
 
               {error && (
-                <div class="p-3 bg-destructive/10 border border-destructive/20">
-                  <p class="text-sm text-destructive">{error}</p>
+                <div className="p-3 bg-destructive/10 border border-destructive/20">
+                  <p className="text-sm text-destructive">{error}</p>
                 </div>
               )}
 
-              <Button type="submit" class="w-full" disabled={isPending}>
+              <Button type="submit" className="w-full" disabled={isPending}>
                 {isPending ? "Signing in..." : "Sign In"}
               </Button>
 
-              <div class="text-center text-sm text-muted-foreground mt-4">
+              <div className="text-center text-sm text-muted-foreground mt-4">
                 Don't have an account?{" "}
-                <Link to="/signup" class="text-primary hover:text-primary/80 underline">
+                <Link to="/signup" className="text-primary hover:text-primary/80 underline">
                   Sign up
                 </Link>
               </div>

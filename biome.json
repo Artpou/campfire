@@ -18,7 +18,7 @@
   "linter": {
     "enabled": true,
     "domains": {
-      "solid": "recommended"
+      "react": "recommended"
     },
     "rules": {
       "recommended": true,

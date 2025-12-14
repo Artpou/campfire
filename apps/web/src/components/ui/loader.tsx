@@ -10,7 +10,7 @@ interface LoaderProps extends React.ComponentProps<typeof LoaderCircleIcon> {
 function Loader({ className, ...props }: LoaderProps) {
   return (
     <LoaderCircleIcon
-      class={cn("animate-spin", className)}
+      className={cn("animate-spin", className)}
       aria-label="Loading"
       aria-busy="true"
       {...props}

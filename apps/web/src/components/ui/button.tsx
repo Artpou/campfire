@@ -55,7 +55,7 @@ function Button({
         data-slot="button"
         data-variant={variant}
         data-size={size}
-        class={cn(buttonVariants({ variant, size, className }))}
+        className={cn(buttonVariants({ variant, size, className }))}
         {...props}
       >
         <Link to={to}>{children}</Link>
@@ -68,7 +68,7 @@ function Button({
       data-slot="button"
       data-variant={variant}
       data-size={size}
-      class={cn(buttonVariants({ variant, size, className }))}
+      className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     >
       {children}
