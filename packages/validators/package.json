@@ -1,0 +1,19 @@
+{
+  "name": "@basement/validators",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    "./user.validators": "./src/user.validators.ts",
+    "./auth.validators": "./src/auth.validators.ts"
+  },
+  "scripts": {
+    "lint": "biome check .",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

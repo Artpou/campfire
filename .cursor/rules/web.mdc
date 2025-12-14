@@ -1,0 +1,44 @@
+---
+description: Frontend rules for the web app - shadcn components and UI patterns
+globs: ["apps/web/src/**/*.tsx", "apps/web/src/**/*.ts"]
+alwaysApply: true
+---
+
+# Frontend Rules for Web App
+
+## Custom Components
+
+Custom application components (like `Header.tsx`) should be placed directly in `src/components/`:
+
+```typescript
+import Header from "@/components/Header";
+```
+
+## shadcn/ui Components
+
+Use shadcn/ui components from [https://ui.shadcn.com/docs/components](https://ui.shadcn.com/docs/components) for UI primitives.
+
+### Adding Components
+
+To add a new shadcn component, run this command from the `apps/web` folder:
+
+```bash
+cd apps/web
+bunx --bun shadcn@latest add {{component}}
+```
+
+Replace `{{component}}` with the component name (e.g., `button`, `card`, `dialog`, `input`, etc.).
+
+### Component Location
+
+All shadcn components are stored in `src/components/ui/`:
+
+### Import Pattern
+
+Import shadcn components using the `@/components/ui/` path alias:
+
+```typescript
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Dialog, DialogTrigger, DialogContent } from "@/components/ui/dialog";
+```

@@ -1,0 +1,29 @@
+version: "3.8"
+
+# Note: DB_NAME, DB_USER, and DB_PASSWORD placeholders are replaced by scripts/init.sh
+# If running docker-compose directly, replace these with actual values or run ./scripts/init.sh first
+services:
+  postgres:
+    container_name: db
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=DB_NAME
+      - POSTGRES_USER=DB_USER
+      - POSTGRES_PASSWORD=DB_PASSWORD
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    container_name: cache
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis:/data
+
+volumes:
+  postgres_data:
+  redis:
+    driver: local

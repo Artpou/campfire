@@ -1,0 +1,31 @@
+---
+alwaysApply: true
+---
+
+# Common Rules
+
+## Monorepo Structure
+
+- use turbo for building and running the project
+- Apps go in `apps/*` (e.g., `apps/api`, `apps/web`)
+- Shared packages go in `packages/*` (e.g., `packages/db`, `packages/services`)
+- Use package exports in `package.json` instead of `index.ts` files
+- Import from workspace packages using `@basement/*` namespace
+
+## Linting
+
+After making changes to the code, run `biome lint --write` to lint the code. If any warnings or errors are found, fix them.
+
+## Code Style
+
+- Use 2 spaces for indentation
+- Maximum line width: 100 characters
+- Use Biome for formatting and linting (configured in `biome.json`)
+- Use async/await over promises when possible
+
+## TypeScript
+
+- Use TypeScript strict mode
+- Prefer type inference where possible
+- Export types alongside their schemas/definitions
+- Use `workspace:*` for internal package dependencies
