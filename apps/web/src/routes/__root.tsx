@@ -109,12 +109,17 @@ function RootDocument() {
       <head>
         <HeadContent />
       </head>
-      <body className="dark">
+      <body className="dark h-screen overflow-hidden">
+        {/* Modern gradient background */}
+        <div className="fixed inset-0 -z-10 bg-linear-to-br from-primary/12 via-background to-accent/5" />
+
         <QueryClientProvider client={queryClient}>
-          <AppTopbar />
-          <main className="min-h-screen">
-            <Outlet />
-          </main>
+          <div className="h-screen flex flex-col">
+            <AppTopbar />
+            <main className="flex-1 overflow-y-auto">
+              <Outlet />
+            </main>
+          </div>
           <TanStackDevtools
             config={{
               position: "bottom-right",

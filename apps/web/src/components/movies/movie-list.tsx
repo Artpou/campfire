@@ -1,12 +1,40 @@
-import type { MovieWithMediaType } from "@basement/api/types";
 import { Link } from "@tanstack/react-router";
+import { Clapperboard } from "lucide-react";
+import { useState } from "react";
+import type { MultiSearchResult } from "tmdb-ts";
 import { Badge } from "@/components/ui/badge";
 import { CircularProgress } from "@/components/ui/circular-progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { getPosterUrl } from "@/helpers/movie.helper";
 
 interface MovieListProps {
-  movies: MovieWithMediaType[];
+  movies: Extract<MultiSearchResult, { media_type: "movie" }>[];
   onItemClick?: () => void;
+}
+
+function MoviePoster({ posterPath, title }: { posterPath?: string | null; title: string }) {
+  const [hasError, setHasError] = useState(false);
+
+  const imageUrl = getPosterUrl(posterPath, "w92");
+
+  if (!imageUrl || hasError) {
+    return (
+      <div className="w-15 h-[90px] rounded-md shrink-0 bg-card border border-border shadow-md flex items-center justify-center">
+        <Clapperboard className="size-7 text-muted-foreground/30" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-15 h-[90px] rounded-md overflow-hidden shrink-0 border border-white/5 shadow-md">
+      <img
+        src={imageUrl}
+        alt={title}
+        className="size-full object-cover"
+        onError={() => setHasError(true)}
+      />
+    </div>
+  );
 }
 
 export function MovieList({ movies, onItemClick }: MovieListProps) {
@@ -27,17 +55,7 @@ export function MovieList({ movies, onItemClick }: MovieListProps) {
             onClick={onItemClick}
             className="flex items-center gap-4 p-3 rounded-xl hover:bg-accent transition-all group"
           >
-            <div className="size-16 rounded-md overflow-hidden shrink-0 border border-white/5 shadow-md">
-              <img
-                src={
-                  movie.poster_path?.includes("https")
-                    ? movie.poster_path
-                    : `https://image.tmdb.org/t/p/w342${movie.poster_path}`
-                }
-                alt={movie.title}
-                className="size-full object-cover"
-              />
-            </div>
+            <MoviePoster posterPath={movie.poster_path} title={movie.title} />
             <div className="flex-1 min-w-0 py-1">
               <h4 className="text-lg font-bold truncate group-hover:text-primary transition-colors tracking-tight">
                 {movie.title}

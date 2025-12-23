@@ -45,7 +45,6 @@
     "@types/ms": "catalog:",
     "@types/node": "catalog:",
     "drizzle-kit": "^0.30.0",
-    "tmdb-ts": "^2.0.3",
     "tsx": "catalog:",
     "typescript": "catalog:"
   }

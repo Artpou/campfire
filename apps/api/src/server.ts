@@ -5,7 +5,6 @@ import { helmet } from "elysia-helmet";
 import logixlysia from "logixlysia";
 import { auth } from "./auth/auth.config";
 import { freeboxRoutes } from "./modules/freebox/freebox.route";
-import { movieRoutes } from "./modules/movie/movie.route";
 import { torrentRoutes } from "./modules/torrent/torrent.route";
 import { userRoutes } from "./modules/user/user.route";
 
@@ -40,7 +39,6 @@ export const app = new Elysia()
   .mount(auth.handler)
   .use(userRoutes)
   .use(freeboxRoutes)
-  .use(movieRoutes)
   .use(torrentRoutes)
   .get("/", () => ({ status: "healthy", timestamp: new Date().toISOString() }));
 

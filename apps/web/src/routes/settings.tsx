@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Key } from "lucide-react";
+import { Download, Key } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTmdb } from "@/hooks/use-tmdb";
+import { useTorrentIndexer } from "@/hooks/use-torrent-indexer";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
@@ -11,6 +13,14 @@ export const Route = createFileRoute("/settings")({
 
 function SettingsPage() {
   const { apiKey, updateApiKey } = useTmdb();
+  const {
+    indexerType,
+    setIndexerType,
+    jackettApiKey,
+    updateJackettApiKey,
+    prowlarrApiKey,
+    updateProwlarrApiKey,
+  } = useTorrentIndexer();
 
   return (
     <div className="container mx-auto p-8 max-w-2xl">
@@ -25,7 +35,58 @@ function SettingsPage() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Key className="size-5 text-primary" />
+              <Download className="size-5" />
+              <CardTitle>Torrent Indexer</CardTitle>
+            </div>
+            <CardDescription>
+              Configure your torrent indexer to search and download torrents.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Tabs
+              value={indexerType}
+              onValueChange={(v) => setIndexerType(v as "jackett" | "prowlarr")}
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="jackett">Jackett</TabsTrigger>
+                <TabsTrigger value="prowlarr">Prowlarr</TabsTrigger>
+              </TabsList>
+              <TabsContent value="jackett" className="space-y-4">
+                <div className="space-y-2">
+                  <Input
+                    id="jackett-api-key"
+                    placeholder="Enter your Jackett API key..."
+                    label="Jackett API Key"
+                    value={jackettApiKey || ""}
+                    onChange={(e) => updateJackettApiKey(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Your Jackett API key is stored locally and used to search torrents.
+                  </p>
+                </div>
+              </TabsContent>
+              <TabsContent value="prowlarr" className="space-y-4">
+                <div className="space-y-2">
+                  <Input
+                    id="prowlarr-api-key"
+                    placeholder="Enter your Prowlarr API key..."
+                    label="Prowlarr API Key"
+                    value={prowlarrApiKey || ""}
+                    onChange={(e) => updateProwlarrApiKey(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Your Prowlarr API key is stored locally and used to search torrents.
+                  </p>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Key className="size-5" />
               <CardTitle>TMDB API</CardTitle>
             </div>
             <CardDescription>
@@ -34,10 +95,10 @@ function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="tmdb-api-key">API Key</Label>
               <Input
                 id="tmdb-api-key"
                 placeholder="Enter your TMDB API key..."
+                label="API Key"
                 value={apiKey || ""}
                 onChange={(e) => updateApiKey(e.target.value)}
               />

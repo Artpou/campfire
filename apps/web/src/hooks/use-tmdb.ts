@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { TMDB } from "tmdb-ts";
 
 const TMDB_API_KEY_STORAGE_KEY = "tmdb_api_key";
 
@@ -9,6 +10,17 @@ export function useTmdb() {
     }
     return null;
   });
+
+  const [tmdb, setTmdb] = useState<TMDB | null>(null);
+
+  useEffect(() => {
+    if (apiKey) {
+      const instance = new TMDB(apiKey);
+      setTmdb(instance);
+    } else {
+      setTmdb(null);
+    }
+  }, [apiKey]);
 
   const updateApiKey = (key: string | null) => {
     if (key) {
@@ -25,5 +37,6 @@ export function useTmdb() {
     apiKey,
     isLogged,
     updateApiKey,
+    tmdb,
   };
 }
