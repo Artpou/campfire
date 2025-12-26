@@ -1,49 +1,68 @@
-import { Torrent } from "@/types";
-import { IndexerAdapter } from "./adapters/base.adapter";
+import { indexerService } from "@/modules/indexer/indexer.service";
+import type { IndexerAdapter, Torrent, TorrentIndexer } from "./adapters/base.adapter";
 import { JackettAdapter } from "./adapters/jackett.adapter";
 import { ProwlarrAdapter } from "./adapters/prowlarr.adapter";
-import { Indexer } from "./torrent.d";
+
+type IndexerType = "jackett" | "prowlarr";
 
 export class TorrentService {
-  private adapters: Record<"jackett" | "prowlarr", IndexerAdapter> = {
+  private readonly adapters: Record<IndexerType, IndexerAdapter> = {
     jackett: new JackettAdapter(),
     prowlarr: new ProwlarrAdapter(),
   };
 
-  private getAdapter(indexer: "jackett" | "prowlarr"): IndexerAdapter {
+  private getAdapter(indexer: IndexerType): IndexerAdapter {
     return this.adapters[indexer];
   }
 
-  async getIndexers(indexer: "jackett" | "prowlarr", apiKey: string): Promise<Indexer[]> {
-    return this.getAdapter(indexer).getIndexers(apiKey);
+  async getIndexers(userId: string, indexer: IndexerType): Promise<TorrentIndexer[]> {
+    const indexerConfig = await indexerService.getByName(indexer, userId);
+
+    if (!indexerConfig) {
+      throw new Error(`${indexer} is not configured for this user`);
+    }
+
+    return await this.getAdapter(indexer).getIndexers(indexerConfig.apiKey);
   }
 
   async searchTorrents(query: {
+    userId: string;
     q: string;
     t: string;
     year?: string;
-    indexer: "jackett" | "prowlarr";
-    apiKey: string;
+    indexer: IndexerType;
     indexerId?: string;
   }): Promise<{ recommended: Torrent[]; others: Torrent[] }> {
-    // Sanitize query
-    const sanitizedQuery = query.q
+    const indexerConfig = await indexerService.getByName(query.indexer, query.userId);
+
+    if (!indexerConfig) {
+      throw new Error(`${query.indexer} is not configured for this user`);
+    }
+
+    const sanitizedQuery = this.sanitizeQuery(query.q);
+
+    const torrents = await this.getAdapter(query.indexer).search(
+      { q: sanitizedQuery, t: query.t, indexerId: query.indexerId },
+      indexerConfig.apiKey,
+    );
+
+    return this.sortAndFilterTorrents(torrents, query.year);
+  }
+
+  private sanitizeQuery(query: string): string {
+    return query
       .replace(/[:;|<>"/\\*?]/g, " ")
       .replace(/\s+/g, " ")
       .trim();
+  }
 
-    // Search using appropriate adapter
-    const torrents = await this.getAdapter(query.indexer).search(
-      { q: sanitizedQuery, t: query.t, indexerId: query.indexerId },
-      query.apiKey,
-    );
-
-    // Sort by seeders
+  private sortAndFilterTorrents(
+    torrents: Torrent[],
+    year?: string,
+  ): { recommended: Torrent[]; others: Torrent[] } {
     torrents.sort((a, b) => b.seeders - a.seeders);
 
-    // Filter by year if provided
-    if (query.year) {
-      const year = query.year;
+    if (year) {
       const recommended = torrents.filter((t) => t.title.includes(year));
       const others = torrents.filter((t) => !t.title.includes(year));
       return { recommended, others };

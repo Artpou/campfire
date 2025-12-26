@@ -5,14 +5,16 @@ import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-r
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import ms from "ms";
 import { useState } from "react";
-import { AppTopbar } from "@/components/app-topbar";
 import { LinguiClientProvider } from "@/components/lingui-client-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getI18nInstance } from "@/i18n";
-
+import { detectLocale } from "@/lib/local.server";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
+  loader: async () => {
+    return { locale: await detectLocale() };
+  },
   head: () => ({
     meta: [
       {
@@ -23,7 +25,7 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       {
-        title: import.meta.env.VITE_SITE_NAME || "Basement",
+        title: "Basement",
       },
     ],
     links: [
@@ -94,6 +96,13 @@ export const Route = createRootRoute({
   shellComponent: RootDocument,
 });
 
+function ProtectedContent() {
+  // Authentication is now handled by layout routes
+  // _app routes are protected by _app.tsx layout
+  // _auth routes are public
+  return <Outlet />;
+}
+
 function RootDocument() {
   const [queryClient] = useState(
     () =>
@@ -107,11 +116,10 @@ function RootDocument() {
       }),
   );
 
-  // Always use "en" for SSR and initial client render to avoid hydration mismatch
-  // The actual locale detection happens in LinguiClientProvider after hydration
-  const locale = "en";
+  // Get locale from loader (reads from cookie in SSR)
+  const { locale } = Route.useLoaderData();
 
-  // Create i18n instance for English
+  // Create i18n instance with user's preferred locale
   const i18n = getI18nInstance(locale);
 
   // Make i18n available for server-side rendering
@@ -129,10 +137,7 @@ function RootDocument() {
         <LinguiClientProvider initialLocale={locale} initialMessages={i18n.messages}>
           <QueryClientProvider client={queryClient}>
             <div className="h-screen flex flex-col">
-              <AppTopbar />
-              <main className="flex-1 overflow-y-auto">
-                <Outlet />
-              </main>
+              <ProtectedContent />
             </div>
             <TanStackDevtools
               config={{

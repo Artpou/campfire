@@ -1,6 +1,16 @@
 import type { App } from "@basement/api";
-import { edenTreaty } from "@elysiajs/eden";
+import { treaty } from "@elysiajs/eden";
 
-export const api = edenTreaty<App>(
-  import.meta.env.VITE_API_URL || import.meta.env.NEXT_PUBLIC_API_URL || "http://localhost:3002",
-);
+export const getBaseUrl = () => {
+  if (typeof window !== "undefined") {
+    return import.meta.env.VITE_API_URL || "http://localhost:3002";
+  }
+  return process.env.INTERNAL_API_URL || "http://localhost:3002";
+};
+
+// Client-side API with credentials
+export const api = treaty<App>(getBaseUrl(), {
+  fetch: {
+    credentials: "include",
+  },
+});

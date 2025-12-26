@@ -7,12 +7,7 @@ import viteTsConfigPaths from "vite-tsconfig-paths";
 import { lingui } from "@lingui/vite-plugin";
 
 const config = defineConfig({
-  // Load .env from monorepo root (2 levels up)
   envDir: "../../",
-  // Note: Deprecation warning about optimizeDeps.rollupOptions comes from
-  // TanStack plugins (nitro-v2-vite-plugin or react-start) which haven't
-  // been updated to use rolldownOptions yet. This is harmless and will be
-  // fixed when the plugins are updated.
   plugins: [
     nitroV2Plugin(),
     viteTsConfigPaths({

@@ -1,21 +1,14 @@
+import { usernameClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 
-const apiUrl = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL;
 
-if (!import.meta.env.VITE_API_URL) {
+if (!API_URL) {
   throw new Error("VITE_API_URL is not set");
 }
 
-const _authClient: ReturnType<typeof createAuthClient> = createAuthClient({
-  baseURL: apiUrl,
-  fetchOptions: {
-    credentials: "include",
-  },
+// Create better-auth React client with username plugin
+export const authClient = createAuthClient({
+  baseURL: API_URL,
+  plugins: [usernameClient()],
 });
-
-export const authClient: ReturnType<typeof createAuthClient> = _authClient;
-
-export const signIn: typeof _authClient.signIn = _authClient.signIn;
-export const signUp: typeof _authClient.signUp = _authClient.signUp;
-export const signOut: typeof _authClient.signOut = _authClient.signOut;
-export const useSession: typeof _authClient.useSession = _authClient.useSession;

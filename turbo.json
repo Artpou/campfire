@@ -26,13 +26,6 @@
       "outputs": ["coverage/**"],
       "dependsOn": ["^build"]
     },
-    "storybook": {
-      "cache": false,
-      "persistent": true
-    },
-    "build:storybook": {
-      "outputs": ["storybook-static/**"]
-    },
     "db:migrate": {
       "cache": false
     },

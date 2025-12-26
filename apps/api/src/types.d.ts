@@ -1,1 +1,6 @@
-export * from "./modules/torrent/torrent.d";
+export type {
+  Torrent,
+  TorrentIndexer,
+  TorrentQuality,
+} from "./modules/torrent/adapters/base.adapter";
+export type { Indexer } from "./db/schema";

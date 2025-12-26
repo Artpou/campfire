@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { WatchLocale } from "tmdb-ts";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useLocale } from "@/hooks/use-locale";
 
 // Language to country mapping (one country per language)
 const LANGUAGE_TO_COUNTRY = {
@@ -39,27 +40,14 @@ const LANGUAGE_TO_COUNTRY = {
   th: "TH",
   tr: "TR",
   en: "US",
-} as const satisfies Record<string, keyof WatchLocale>;
+} as const;
 
 const TMDB_COUNTRIES = Object.values(LANGUAGE_TO_COUNTRY);
 const UI_LOCALES = ["en", "fr"] as const;
 
 export function LanguageSelector() {
-  const { i18n } = useLingui();
-  const [currentCountry, setCurrentCountry] = useState<keyof WatchLocale>("US");
-
-  // Sync with localStorage on mount
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const stored = localStorage.getItem("locale");
-    if (!stored) return;
-
-    const language = stored.split("-")[0];
-    const country = LANGUAGE_TO_COUNTRY[language as keyof typeof LANGUAGE_TO_COUNTRY] || "US";
-
-    setCurrentCountry(country);
-  }, []);
+  const { locale: initialLocale } = useLocale();
+  const [currentCountry, setCurrentCountry] = useState(initialLocale);
 
   const locales = useMemo(() => {
     const all = TMDB_COUNTRIES.map((country) => {
@@ -67,7 +55,7 @@ export function LanguageSelector() {
       const language = intlLocale.language;
       const fullLocale = `${language}-${country}`;
 
-      let displayName: string = country;
+      let displayName = country;
       try {
         const dn = new Intl.DisplayNames([fullLocale], { type: "language" });
         const name = dn.of(language) || country;
@@ -106,16 +94,11 @@ export function LanguageSelector() {
     const language = intlLocale.language;
     const fullLocale = `${language}-${selectedCountry}`;
 
-    // Save to localStorage
-    if (typeof window !== "undefined") {
-      localStorage.setItem("locale", fullLocale);
-    }
+    localStorage.setItem("locale", fullLocale);
+    document.cookie = `locale=${language}; path=/; max-age=31536000; SameSite=Lax`;
 
-    // Update Lingui instantly (I18nProvider handles reactivity)
-    if (UI_LOCALES.includes(language as (typeof UI_LOCALES)[number])) {
-      i18n.activate(language);
-    }
-    // No reload needed! I18nProvider updates all <Trans> automatically
+    // Reload page to apply new locale
+    window.location.reload();
   };
 
   return (

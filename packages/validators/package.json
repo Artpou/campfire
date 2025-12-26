@@ -4,14 +4,15 @@
   "type": "module",
   "exports": {
     "./user.validators": "./src/user.validators.ts",
-    "./auth.validators": "./src/auth.validators.ts"
+    "./auth.validators": "./src/auth.validators.ts",
+    "./indexer.validators": "./src/indexer.validators.ts"
   },
   "scripts": {
     "lint": "biome check .",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "zod": "catalog:"
+    "@sinclair/typebox": "^0.34.0"
   },
   "devDependencies": {
     "typescript": "catalog:"

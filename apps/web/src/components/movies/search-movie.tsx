@@ -11,13 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Kbd } from "@/components/ui/kbd";
-import { useTmdb } from "@/hooks/use-tmdb";
 import { parseJustWatchResponse } from "@/lib/movie.parser";
+import { useTmdbStore } from "@/stores/tmdb-store";
 
 const UNLOGGED_URL = "https://imdb.iamidiotareyoutoo.com";
 
 export function SearchMovie() {
-  const { apiKey, tmdb } = useTmdb();
+  const { apiKey, tmdb } = useTmdbStore();
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const debouncedSearch = useDebounce(search, 300);

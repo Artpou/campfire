@@ -2,36 +2,24 @@ import { cors } from "@elysiajs/cors";
 import { swagger } from "@elysiajs/swagger";
 import { Elysia } from "elysia";
 import { helmet } from "elysia-helmet";
-import logixlysia from "logixlysia";
 import { auth } from "./auth/auth.config";
 import { freeboxRoutes } from "./modules/freebox/freebox.route";
+import { indexerRoutes } from "./modules/indexer/indexer.route";
 import { torrentRoutes } from "./modules/torrent/torrent.route";
 import { userRoutes } from "./modules/user/user.route";
 
 const startTime = Date.now();
 
 export const app = new Elysia()
-  .use(
-    logixlysia({
-      config: {
-        showStartupMessage: false,
-        pino: {
-          enabled: false,
-        },
-        startupMessageFormat: "simple",
-        timestamp: {
-          translateTime: "yyyy-mm-dd HH:MM:ss",
-        },
-        ip: process.env.NODE_ENV === "production",
-      },
-    }),
-  )
+  .onAfterResponse(({ request, set }) => {
+    console.log(`${request.method} ${request.url} ${set.status}`);
+  })
   .use(
     cors({
       origin: "http://localhost:3000",
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       credentials: true,
-      allowedHeaders: ["Content-Type", "Authorization"],
+      allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
     }),
   )
   .use(helmet())
@@ -39,6 +27,7 @@ export const app = new Elysia()
   .mount(auth.handler)
   .use(userRoutes)
   .use(freeboxRoutes)
+  .use(indexerRoutes)
   .use(torrentRoutes)
   .get("/", () => ({ status: "healthy", timestamp: new Date().toISOString() }));
 

@@ -3,7 +3,7 @@ import { Trans } from "@lingui/react/macro";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, Download, ListFilter, Plus } from "lucide-react";
 import ms from "ms";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { TorrentIndexersTable } from "@/components/torrent/torrent-indexers-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useTorrentIndexer } from "@/hooks/use-torrent-indexer";
 import { api } from "@/lib/api";
+
+export type IndexerType = "jackett" | "prowlarr";
 
 interface TorrentTableProps {
   search: string;
@@ -25,19 +26,44 @@ interface TorrentTableProps {
 }
 
 export function TorrentTable({ search, year }: TorrentTableProps) {
-  const { indexerType, apiKey } = useTorrentIndexer();
-
+  const [selectedIndexerType, setSelectedIndexerType] = useState<IndexerType | null>(null);
   const [visibleIndexers, setVisibleIndexers] = useState<Set<string>>(new Set());
 
-  const { data: indexersResponse, error: indexersError } = useQuery({
-    queryKey: ["indexers", indexerType, apiKey],
+  const { data: userIndexers = [] } = useQuery({
+    queryKey: ["indexers"],
     queryFn: async () => {
-      if (!apiKey) return { data: [] };
-      return api.torrents.indexers.get({
-        $query: { indexer: indexerType, apiKey },
+      const response = await api.indexers.get();
+      return response.data || [];
+    },
+  });
+
+  // Default to first available indexer if none selected
+  useEffect(() => {
+    if (!selectedIndexerType && userIndexers.length > 0) {
+      setSelectedIndexerType(userIndexers[0].name as IndexerType);
+    }
+  }, [userIndexers, selectedIndexerType]);
+
+  const currentIndexer = userIndexers.find((i) => i.name === selectedIndexerType);
+
+  const { data: indexersResponse, error: indexersError } = useQuery({
+    queryKey: ["indexers", selectedIndexerType],
+    queryFn: async () => {
+      if (!selectedIndexerType) return { data: [] };
+      const apiWithTorrents = (
+        api as unknown as {
+          torrents: {
+            indexers: {
+              get: (params: { $query: { indexer: IndexerType } }) => Promise<{ data: unknown }>;
+            };
+          };
+        }
+      ).torrents;
+      return apiWithTorrents.indexers.get({
+        $query: { indexer: selectedIndexerType },
       });
     },
-    enabled: !!apiKey,
+    enabled: !!selectedIndexerType && !!currentIndexer,
     staleTime: ms("1h"),
     retry: 1,
   });
@@ -45,22 +71,40 @@ export function TorrentTable({ search, year }: TorrentTableProps) {
   const indexers = Array.isArray(indexersResponse?.data) ? indexersResponse.data : [];
 
   const { recommended, others, queries } = useQueries({
-    queries: indexers.map((indexer) => ({
-      queryKey: ["torrents", indexerType, apiKey, search, year, indexer.id],
+    queries: indexers.map((indexer: { id: string }) => ({
+      queryKey: ["torrents", selectedIndexerType, search, year, indexer.id],
       queryFn: () => {
-        if (!apiKey) throw new Error("API key is required");
-        return api.torrents.search.get({
+        if (!selectedIndexerType) throw new Error("No indexer selected");
+        const apiWithTorrents = (
+          api as unknown as {
+            torrents: {
+              search: {
+                get: (params: {
+                  $query: {
+                    q: string;
+                    t: string;
+                    year?: string;
+                    indexer: IndexerType;
+                    indexerId?: string;
+                  };
+                }) => Promise<{
+                  data: { recommended: unknown[]; others: unknown[] };
+                }>;
+              };
+            };
+          }
+        ).torrents;
+        return apiWithTorrents.search.get({
           $query: {
             q: search,
             t: "movie",
             year,
-            indexer: indexerType,
-            apiKey,
+            indexer: selectedIndexerType,
             indexerId: indexer.id,
           },
         });
       },
-      enabled: !!search && !!apiKey,
+      enabled: !!search && !!selectedIndexerType && !!currentIndexer,
       staleTime: ms("5m"),
       retry: 1,
     })),
@@ -79,8 +123,12 @@ export function TorrentTable({ search, year }: TorrentTableProps) {
           "recommended" in query.data.data &&
           "others" in query.data.data
         ) {
-          recommended.push(...query.data.data.recommended);
-          others.push(...query.data.data.others);
+          const data = query.data.data as {
+            recommended: Torrent[];
+            others: Torrent[];
+          };
+          recommended.push(...data.recommended);
+          others.push(...data.others);
         }
       });
 
@@ -201,7 +249,7 @@ export function TorrentTable({ search, year }: TorrentTableProps) {
             )}
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
-            <Trans>Please check your API key and make sure {indexerType} is running.</Trans>
+            <Trans>Please check your API key and make sure {selectedIndexerType} is running.</Trans>
           </p>
         </div>
       </div>

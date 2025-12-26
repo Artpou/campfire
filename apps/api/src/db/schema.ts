@@ -1,12 +1,14 @@
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 
-// User table - Better Auth
+// User table - Better Auth with username plugin
 export const user = sqliteTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: integer("emailVerified", { mode: "boolean" }).notNull(),
   image: text("image"),
+  username: text("username").unique(),
+  displayUsername: text("displayUsername"),
   createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
   updatedAt: integer("updatedAt", { mode: "timestamp" }).notNull(),
 });
@@ -54,6 +56,27 @@ export const verification = sqliteTable("verification", {
   updatedAt: integer("updatedAt", { mode: "timestamp" }),
 });
 
-// Export types for user table (better-auth)
+// Indexer table - Store user-specific indexer configurations
+export const indexer = sqliteTable(
+  "indexer",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(), // "prowlarr" | "jackett"
+    apiKey: text("apiKey").notNull(),
+    baseUrl: text("baseUrl"), // optional, for custom installations
+  },
+  (table) => ({
+    userIdName: unique().on(table.userId, table.name),
+  }),
+);
+
+// Export types
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
+export type Indexer = typeof indexer.$inferSelect;
+export type NewIndexer = typeof indexer.$inferInsert;

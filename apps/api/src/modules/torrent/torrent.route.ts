@@ -1,55 +1,31 @@
 import { Elysia, t } from "elysia";
+import { authGuard } from "@/modules/auth/auth.guard";
 import { torrentService } from "./torrent.service";
 
 export const torrentRoutes = new Elysia({ prefix: "/torrents" })
-  .get(
-    "/indexers",
-    async ({ query, set }) => {
-      try {
-        return await torrentService.getIndexers(
-          query.indexer as "jackett" | "prowlarr",
-          query.apiKey,
-        );
-      } catch (error) {
-        set.status = 500;
-        return {
-          error: error instanceof Error ? error.message : "Unknown error",
-        };
-      }
-    },
-    {
-      query: t.Object({
-        indexer: t.Required(t.Union([t.Literal("jackett"), t.Literal("prowlarr")])),
-        apiKey: t.Required(t.String()),
-      }),
-    },
-  )
+  .use(authGuard())
+  .get("/indexers", async ({ user, query }) => torrentService.getIndexers(user.id, query.indexer), {
+    query: t.Object({
+      indexer: t.Union([t.Literal("jackett"), t.Literal("prowlarr")]),
+    }),
+  })
   .get(
     "/search",
-    async ({ query, set }) => {
-      try {
-        return await torrentService.searchTorrents({
-          q: query.q,
-          t: query.t,
-          year: query.year,
-          indexer: query.indexer as "jackett" | "prowlarr",
-          apiKey: query.apiKey,
-          indexerId: query.indexerId,
-        });
-      } catch (error) {
-        set.status = 500;
-        return {
-          error: error instanceof Error ? error.message : "Unknown error",
-        };
-      }
-    },
+    async ({ user, query }) =>
+      torrentService.searchTorrents({
+        userId: user.id,
+        q: query.q,
+        t: query.t,
+        year: query.year,
+        indexer: query.indexer,
+        indexerId: query.indexerId,
+      }),
     {
       query: t.Object({
-        q: t.Required(t.String()),
-        t: t.Required(t.String()),
+        q: t.String(),
+        t: t.String(),
         year: t.Optional(t.String()),
-        indexer: t.Required(t.Union([t.Literal("jackett"), t.Literal("prowlarr")])),
-        apiKey: t.Required(t.String()),
+        indexer: t.Union([t.Literal("jackett"), t.Literal("prowlarr")]),
         indexerId: t.Optional(t.String()),
       }),
     },

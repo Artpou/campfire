@@ -35,8 +35,6 @@ coverage/
 .cache/
 .temp/
 
-# Storybook
-storybook-static/
 
 # Database
 *.db

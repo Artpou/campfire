@@ -1,14 +1,26 @@
 import { getTorrentQuality } from "@/helpers/video";
-import { Torrent } from "@/types";
-import { Indexer, ProwlarrSearchItem } from "../torrent.d";
-import { IndexerAdapter } from "./base.adapter";
+import { IndexerAdapter, Torrent, TorrentIndexer, TorrentQuality } from "./base.adapter";
+
+interface ProwlarrSearchItem {
+  quality: TorrentQuality;
+  guid: string;
+  size: number;
+  indexer: string;
+  title: string;
+  publishDate: string;
+  downloadUrl: string;
+  infoUrl: string;
+  seeders: number | null;
+  leechers: number | null;
+}
 
 export class ProwlarrAdapter implements IndexerAdapter {
   private baseUrl = "http://localhost:9696/api/v1";
 
-  async getIndexers(apiKey: string): Promise<Indexer[]> {
+  async getIndexers(apiKey: string): Promise<TorrentIndexer[]> {
     const url = `${this.baseUrl}/indexer`;
 
+    console.log(`[Prowlarr] GET ${url}`);
     const response = await fetch(url, {
       headers: { "X-Api-Key": apiKey },
     });

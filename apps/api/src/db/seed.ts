@@ -12,15 +12,17 @@ async function seed() {
       .insert(user)
       .values({
         id: "seed_user_1",
-        email: "john.doe@acme.com",
-        name: "John Doe",
+        email: "[email protected]",
         emailVerified: false,
+        username: "johndoe",
+        displayUsername: "johndoe",
+        name: "johndoe",
         createdAt: new Date(),
         updatedAt: new Date(),
       })
       .returning();
 
-    console.log(`✅ Created user: ${user1.email} (${user1.id})`);
+    console.log(`✅ Created user: ${user1.username} (${user1.id})`);
 
     console.log("✨ Seed completed successfully!");
   } catch (error) {

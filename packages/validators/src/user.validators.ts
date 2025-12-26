@@ -1,36 +1,34 @@
-import { z } from "zod";
+import { type Static, Type } from "@sinclair/typebox";
 
 // User ID schema (for queries)
-export const userIdSchema = z.string();
+export const userIdSchema = Type.String();
 
 // User output schema (for responses)
-export const userOutputSchema = z.object({
-  id: z.string(),
-  email: z.string().email(),
-  emailVerified: z.boolean(),
-  name: z.string().nullable(),
-  image: z.string().nullable(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+export const userOutputSchema = Type.Object({
+  id: Type.String(),
+  email: Type.String({ format: "email" }),
+  emailVerified: Type.Boolean(),
+  name: Type.Union([Type.String(), Type.Null()]),
+  image: Type.Union([Type.String(), Type.Null()]),
+  createdAt: Type.Any(), // Date type
+  updatedAt: Type.Any(), // Date type
 });
 
 // User input schema (for create mutations - if needed later)
-export const userInputSchema = z
-  .object({
-    email: z.string().email(),
-    password: z.string().min(8, {
-      message: "Password must be at least 8 characters.",
-    }),
-    confirmPassword: z.string().min(8, {
-      message: "Password confirmation must be at least 8 characters.",
-    }),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match.",
-    path: ["confirmPassword"],
-  });
+// Note: Password matching validation moved to UI layer
+export const userInputSchema = Type.Object({
+  email: Type.String({ format: "email" }),
+  password: Type.String({
+    minLength: 8,
+    description: "Password must be at least 8 characters.",
+  }),
+  confirmPassword: Type.String({
+    minLength: 8,
+    description: "Password confirmation must be at least 8 characters.",
+  }),
+});
 
 // Export types
-export type UserId = z.infer<typeof userIdSchema>;
-export type UserOutput = z.infer<typeof userOutputSchema>;
-export type UserInput = z.infer<typeof userInputSchema>;
+export type UserId = Static<typeof userIdSchema>;
+export type UserOutput = Static<typeof userOutputSchema>;
+export type UserInput = Static<typeof userInputSchema>;

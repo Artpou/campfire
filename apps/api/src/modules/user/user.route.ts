@@ -1,56 +1,34 @@
-import { Elysia, t } from "elysia";
-import { auth } from "@/auth";
+import { Elysia, status, t } from "elysia";
+import { authGuard } from "@/modules/auth/auth.guard";
 import { userService } from "./user.service";
 
-// Helper to get user from session
-const getUser = async (request: Request) => {
-  const session = await auth.api.getSession({ headers: request.headers });
-  return session?.user;
-};
-
 export const userRoutes = new Elysia({ prefix: "/user" })
+  .get("/", () => userService.getAll())
   .get(
     "/:id",
-    async ({ params: { id }, set }) => {
-      const user = await userService.getById(id);
-      if (!user) {
-        set.status = 404;
-        return "User not found";
-      }
+    async ({ params }) => {
+      const user = await userService.getById(params.id);
+      if (!user) return status(404, "User not found");
       return user;
     },
-    {
-      params: t.Object({ id: t.String() }),
-    },
+    { params: t.Object({ id: t.String() }) },
   )
   .get(
     "/email/:email",
-    async ({ params: { email }, set }) => {
-      const user = await userService.getByEmail(email);
-      if (!user) {
-        set.status = 404;
-        return "User not found";
-      }
+    async ({ params }) => {
+      const user = await userService.getByEmail(params.email);
+      if (!user) return status(404, "User not found");
       return user;
     },
-    {
-      params: t.Object({ email: t.String({ format: "email" }) }),
-    },
+    { params: t.Object({ email: t.String({ format: "email" }) }) },
   )
-  .get("/", () => userService.getAll())
+  .use(authGuard())
   .patch(
     "/:id",
-    async ({ params: { id }, body, request, set }) => {
-      const user = await getUser(request);
-      if (!user || user.id !== id) {
-        set.status = 403;
-        return "You can only update your own profile";
-      }
-      const updatedUser = await userService.update(id, body);
-      if (!updatedUser) {
-        set.status = 404;
-        return "User not found";
-      }
+    async ({ params, body, user }) => {
+      if (user.id !== params.id) return status(403, "You can only update your own profile");
+      const updatedUser = await userService.update(params.id, body);
+      if (!updatedUser) return status(404, "User not found");
       return updatedUser;
     },
     {
@@ -66,16 +44,9 @@ export const userRoutes = new Elysia({ prefix: "/user" })
   )
   .delete(
     "/:id",
-    async ({ params: { id }, request, set }) => {
-      const user = await getUser(request);
-      if (!user || user.id !== id) {
-        set.status = 403;
-        return "You can only delete your own account";
-      }
-      await userService.delete(id);
-      return { success: true };
+    async ({ params, user }) => {
+      if (user.id !== params.id) return status(403, "You can only delete your own account");
+      await userService.delete(params.id);
     },
-    {
-      params: t.Object({ id: t.String() }),
-    },
+    { params: t.Object({ id: t.String() }) },
   );

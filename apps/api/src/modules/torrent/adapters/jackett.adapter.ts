@@ -1,12 +1,26 @@
 import { getTorrentQuality } from "@/helpers/video";
-import { JackettSearchResponse, Torrent } from "@/types";
-import { Indexer } from "../torrent.d";
-import { IndexerAdapter } from "./base.adapter";
+import { IndexerAdapter, Torrent, TorrentIndexer } from "./base.adapter";
+
+interface JackettSearchItem {
+  Title: string;
+  Tracker: string;
+  Size: number;
+  PublishDate: string;
+  Seeders: number;
+  Peers: number;
+  Link: string;
+  Guid: string;
+  Details: string;
+}
+
+interface JackettSearchResponse {
+  Results: JackettSearchItem[];
+}
 
 export class JackettAdapter implements IndexerAdapter {
   private baseUrl = "http://localhost:9117/api/v2.0";
 
-  async getIndexers(apiKey: string): Promise<Indexer[]> {
+  async getIndexers(apiKey: string): Promise<TorrentIndexer[]> {
     const url = new URL(`${this.baseUrl}/indexers`);
     url.searchParams.set("apikey", apiKey);
     url.searchParams.set("configured", "true");

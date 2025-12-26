@@ -7,7 +7,6 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
     "resolvePackageJsonExports": true,
     "composite": true,
     "incremental": true,
@@ -20,7 +19,6 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": false,
     "declaration": true,
     "emitDeclarationOnly": true,
     "outDir": "./dist"

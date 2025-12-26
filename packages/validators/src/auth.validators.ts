@@ -1,72 +1,77 @@
-import { z } from "zod";
+import { type Static, Type } from "@sinclair/typebox";
 
 // Sign in schema
-export const signInSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1, {
-    message: "Password is required.",
+export const signInSchema = Type.Object({
+  username: Type.String({
+    minLength: 3,
+    maxLength: 20,
+    pattern: "^[a-zA-Z0-9_]+$",
+    description: "Username can only contain letters, numbers, and underscores.",
+  }),
+  password: Type.String({
+    minLength: 1,
+    description: "Password is required.",
   }),
 });
 
-// Sign up schema
-export const signUpSchema = z
-  .object({
-    email: z.string().email(),
-    password: z.string().min(8, {
-      message: "Password must be at least 8 characters.",
-    }),
-    confirmPassword: z.string().min(8, {
-      message: "Password confirmation must be at least 8 characters.",
-    }),
-    name: z.string().optional(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match.",
-    path: ["confirmPassword"],
-  });
+// Sign up schema (without password matching - will be handled in UI)
+export const signUpSchema = Type.Object({
+  username: Type.String({
+    minLength: 3,
+    maxLength: 20,
+    pattern: "^[a-zA-Z0-9_]+$",
+    description: "Username can only contain letters, numbers, and underscores.",
+  }),
+  password: Type.String({
+    minLength: 8,
+    description: "Password must be at least 8 characters.",
+  }),
+  confirmPassword: Type.String({
+    minLength: 8,
+    description: "Password confirmation must be at least 8 characters.",
+  }),
+});
 
 // Sign out schema (session token)
-export const signOutSchema = z.object({
-  sessionToken: z.string(),
+export const signOutSchema = Type.Object({
+  sessionToken: Type.String(),
 });
 
 // Session output schema
-export const sessionOutputSchema = z.object({
-  session: z.object({
-    id: z.string(),
-    userId: z.string(),
-    expiresAt: z.date(),
-    token: z.string(),
-    ipAddress: z.string().nullable(),
-    userAgent: z.string().nullable(),
-    createdAt: z.date(),
-    updatedAt: z.date(),
+export const sessionOutputSchema = Type.Object({
+  session: Type.Object({
+    id: Type.String(),
+    userId: Type.String(),
+    expiresAt: Type.Any(), // TypeBox doesn't have native Date, use Any or custom format
+    token: Type.String(),
+    ipAddress: Type.Union([Type.String(), Type.Null()]),
+    userAgent: Type.Union([Type.String(), Type.Null()]),
+    createdAt: Type.Any(),
+    updatedAt: Type.Any(),
   }),
-  user: z.object({
-    id: z.string(),
-    email: z.string().email(),
-    emailVerified: z.boolean(),
-    name: z.string().nullable(),
-    image: z.string().nullable(),
-    createdAt: z.date(),
-    updatedAt: z.date(),
+  user: Type.Object({
+    id: Type.String(),
+    email: Type.String({ format: "email" }),
+    emailVerified: Type.Boolean(),
+    name: Type.Union([Type.String(), Type.Null()]),
+    image: Type.Union([Type.String(), Type.Null()]),
+    createdAt: Type.Any(),
+    updatedAt: Type.Any(),
   }),
 });
 
 // User output schema (from session)
-export const authUserOutputSchema = z.object({
-  id: z.string(),
-  email: z.string().email(),
-  emailVerified: z.boolean(),
-  name: z.string().nullable(),
-  image: z.string().nullable(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
+export const authUserOutputSchema = Type.Object({
+  id: Type.String(),
+  username: Type.String(),
+  image: Type.Union([Type.String(), Type.Null()]),
+  createdAt: Type.Any(),
+  updatedAt: Type.Any(),
 });
 
 // Export types
-export type SignIn = z.infer<typeof signInSchema>;
-export type SignUp = z.infer<typeof signUpSchema>;
-export type SignOut = z.infer<typeof signOutSchema>;
-export type SessionOutput = z.infer<typeof sessionOutputSchema>;
-export type AuthUserOutput = z.infer<typeof authUserOutputSchema>;
+export type SignIn = Static<typeof signInSchema>;
+export type SignUp = Static<typeof signUpSchema>;
+export type SignOut = Static<typeof signOutSchema>;
+export type SessionOutput = Static<typeof sessionOutputSchema>;
+export type AuthUserOutput = Static<typeof authUserOutputSchema>;

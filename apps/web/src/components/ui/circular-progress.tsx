@@ -29,7 +29,7 @@ const CircularProgress = React.forwardRef<HTMLDivElement, CircularProgressProps>
         {...props}
       >
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
-          <title>Progress: {value}%</title>
+          <title>Progress</title>
           {/* Background circle fill */}
           <circle cx={size / 2} cy={size / 2} r={size / 2} className="fill-black/40" />
           {/* Background circle track */}

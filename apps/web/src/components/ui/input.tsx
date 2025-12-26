@@ -7,7 +7,7 @@ function Input({
   type,
   label,
   ...props
-}: React.ComponentProps<"input"> & { label?: string }) {
+}: React.ComponentProps<"input"> & { label?: React.ReactNode }) {
   const input = (
     <input
       type={type}
