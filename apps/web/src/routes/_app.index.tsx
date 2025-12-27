@@ -2,10 +2,12 @@ import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import ms from "ms";
 import { TMDB } from "tmdb-ts";
 import { MediaCarousel } from "@/components/media/media-carousel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { countryToTmdbLocale } from "@/i18n";
+import { api } from "@/lib/api";
 
 type TabType = "movie" | "tv";
 
@@ -28,10 +30,33 @@ export const Route = createFileRoute("/_app/")({
 function App() {
   const navigate = useNavigate();
   const { tab } = Route.useSearch();
-
-  // Get current locale from Lingui (country code) and convert to TMDB locale
   const { i18n } = useLingui();
+
   const tmdbLocale = countryToTmdbLocale(i18n.locale);
+
+  const { data: recentlyViewedMovies = [] } = useQuery({
+    queryKey: ["recently-viewed", "movie"],
+    queryFn: async () => {
+      const response = await api.media["recently-viewed"].get({
+        query: { type: "movie", limit: 20 },
+      });
+      return response.data || [];
+    },
+    refetchOnMount: "always",
+    enabled: tab === "movie",
+  });
+
+  const { data: recentlyViewedTV = [] } = useQuery({
+    queryKey: ["recently-viewed", "tv"],
+    queryFn: async () => {
+      const response = await api.media["recently-viewed"].get({
+        query: { type: "tv", limit: 20 },
+      });
+      return response.data || [];
+    },
+    refetchOnMount: "always",
+    enabled: tab === "tv",
+  });
 
   // Fetch TMDB data based on selected tab
   const { data, isLoading } = useQuery({
@@ -61,7 +86,7 @@ function App() {
       }
 
       // Default: fetch movies
-      const [popularMovies, latestMovies, topRatedMovies] = await Promise.all([
+      const [popularMovies, topRatedMovies] = await Promise.all([
         tmdb.movies.popular({ language: tmdbLocale }),
         tmdb.movies.nowPlaying({ language: tmdbLocale }),
         tmdb.movies.topRated({ language: tmdbLocale }),
@@ -70,13 +95,10 @@ function App() {
       return {
         tab: "movie" as const,
         popularMovies,
-        latestMovies,
         topRatedMovies,
       };
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    gcTime: 1000 * 60 * 30, // 30 minutes
-    refetchOnWindowFocus: false,
+    staleTime: ms("5m"),
   });
 
   if (isLoading) {
@@ -129,13 +151,12 @@ function App() {
         <TabsContent value="movie" className="space-y-12">
           {data.tab === "movie" && (
             <>
+              {recentlyViewedMovies.length > 0 && (
+                <MediaCarousel title={<Trans>Recently Viewed</Trans>} data={recentlyViewedMovies} />
+              )}
               <MediaCarousel
                 title={<Trans>Popular Movies</Trans>}
                 data={data.popularMovies.results || []}
-              />
-              <MediaCarousel
-                title={<Trans>Now Playing</Trans>}
-                data={data.latestMovies.results || []}
               />
               <MediaCarousel
                 title={<Trans>Top Rated</Trans>}
@@ -148,6 +169,9 @@ function App() {
         <TabsContent value="tv" className="space-y-12">
           {data.tab === "tv" && (
             <>
+              {recentlyViewedTV.length > 0 && (
+                <MediaCarousel title={<Trans>Recently Viewed</Trans>} data={recentlyViewedTV} />
+              )}
               <MediaCarousel
                 title={<Trans>Popular TV Shows</Trans>}
                 data={data.popularTV.results || []}

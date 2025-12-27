@@ -55,6 +55,12 @@ function MovieDetailsPage() {
         tmdb.movies.similar(Number(movieId), { language: tmdbLocale }),
       ]);
 
+      api.media.track.post({
+        ...movie,
+        type: "movie",
+        title: movie.title || movie.original_title,
+      });
+
       return { movie, providers, similarMovies };
     },
     staleTime: ms("5m"),

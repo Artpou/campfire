@@ -6,6 +6,7 @@ import { colors, logRequest } from "./helpers/logger.helper";
 import { authRoutes } from "./modules/auth/auth.route";
 import { freeboxRoutes } from "./modules/freebox/freebox.route";
 import { indexerManagerRoutes } from "./modules/indexer-manager/indexer-manager.route";
+import { mediaRoutes } from "./modules/media/media.route";
 import { torrentRoutes } from "./modules/torrent/torrent.route";
 import { userRoutes } from "./modules/user/user.route";
 
@@ -52,6 +53,7 @@ export const app = new Elysia()
   .use(userRoutes)
   .use(freeboxRoutes)
   .use(indexerManagerRoutes)
+  .use(mediaRoutes)
   .use(torrentRoutes)
   .get("/", () => ({ status: "healthy", timestamp: new Date().toISOString() }));
 

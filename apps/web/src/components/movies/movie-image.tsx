@@ -1,6 +1,7 @@
 import { Film } from "lucide-react";
 import { forwardRef, ImgHTMLAttributes, useState } from "react";
 import { cn } from "@/lib/utils";
+import { getPosterUrl } from "../../helpers/movie.helper";
 
 export interface MovieImageProps extends ImgHTMLAttributes<HTMLImageElement> {
   fallbackClassName?: string;
@@ -11,6 +12,8 @@ const MovieImage = forwardRef<HTMLImageElement, MovieImageProps>(
   ({ className, fallbackClassName, iconSize = 64, src, alt, onError, ...props }, ref) => {
     const [imageError, setImageError] = useState(false);
     const hasValidSrc = src && !imageError;
+
+    const posterUrl = getPosterUrl(src, "w500");
 
     const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
       setImageError(true);
@@ -41,7 +44,7 @@ const MovieImage = forwardRef<HTMLImageElement, MovieImageProps>(
     return (
       <img
         ref={ref}
-        src={src}
+        src={posterUrl}
         alt={alt}
         className={cn("size-full object-cover", className)}
         onError={handleError}

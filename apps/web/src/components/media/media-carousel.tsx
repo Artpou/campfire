@@ -1,3 +1,4 @@
+import type { MediaItem } from "@basement/api/types";
 import { ReactNode } from "react";
 import { MovieCard } from "@/components/movies/movie-card";
 import {
@@ -7,16 +8,6 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-
-interface MediaItem {
-  id: number;
-  title?: string;
-  name?: string;
-  poster_path?: string | null;
-  vote_average?: number;
-  release_date?: string;
-  first_air_date?: string;
-}
 
 interface MediaCarouselProps {
   title: ReactNode;
