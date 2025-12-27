@@ -5,22 +5,20 @@
 
 body {
   @apply m-0;
-  font-family: "Roboto Mono", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
-    "Helvetica Neue", monospace;
+  font-family:
+    "Roboto Mono", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
+    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
 @theme inline {
   --radius-md: calc(var(--radius) - 2px);
-  --font-sans: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+  --font-sans: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

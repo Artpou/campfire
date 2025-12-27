@@ -1,14 +1,17 @@
+import { CreateIndexerManager } from "@basement/validators/indexerManager.validators";
 import { Trans } from "@lingui/react/macro";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Download, LogOut } from "lucide-react";
-import { useState } from "react";
+import ms from "ms";
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
-import { authClient } from "@/lib/auth";
+import { useAuthStore } from "@/stores/auth-store";
+import { IndexerType } from "../../../api/src/db/schema";
 
 export const Route = createFileRoute("/_app/settings")({
   component: SettingsPage,
@@ -16,30 +19,54 @@ export const Route = createFileRoute("/_app/settings")({
 
 function SettingsPage() {
   const queryClient = useQueryClient();
-  const [selectedTab, setSelectedTab] = useState<"jackett" | "prowlarr">("jackett");
+  const navigate = useNavigate();
+  const logout = useAuthStore((state) => state.logout);
 
   // Fetch indexers using React Query
-  const { data: indexers = [], isLoading } = useQuery({
-    queryKey: ["indexers"],
+  const { data: indexerManagers = [] } = useQuery({
+    queryKey: ["indexerManagers"],
     queryFn: async () => {
-      const response = await api.indexers.get();
+      const response = await api.indexerManagers.get();
       return response.data || [];
     },
+    initialData: [],
+    staleTime: ms("5m"),
   });
 
-  const { mutate: upsertIndexer } = useMutation({
-    mutationFn: async (data: { name: "jackett" | "prowlarr"; apiKey: string }) =>
-      api.indexers.post(data),
+  const handleLogout = async () => {
+    await api.auth.logout.post();
+    logout();
+    navigate({ to: "/login" });
+  };
+
+  const { mutate: upsertIndexerManager } = useMutation({
+    mutationFn: async (data: CreateIndexerManager) => api.indexerManagers.post(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["indexers"] });
+      queryClient.invalidateQueries({ queryKey: ["indexerManagers"] });
     },
     onError: (error) => {
       console.error(error);
     },
   });
 
-  const jackettIndexer = indexers.find((i: { name: string }) => i.name === "jackett");
-  const prowlarrIndexer = indexers.find((i: { name: string }) => i.name === "prowlarr");
+  const selectedIndexerManager = useMemo(() => {
+    return indexerManagers.find((i) => i.selected)?.name || "jackett";
+  }, [indexerManagers]);
+
+  const indexerConfigs = [
+    {
+      name: "jackett" as IndexerType,
+      label: "Jackett",
+      placeholder: "Enter your Jackett API key...",
+      description: "Your Jackett API key is stored in the database and used to search torrents.",
+    },
+    {
+      name: "prowlarr" as IndexerType,
+      label: "Prowlarr",
+      placeholder: "Enter your Prowlarr API key...",
+      description: "Your Prowlarr API key is stored in the database and used to search torrents.",
+    },
+  ];
 
   return (
     <div className="container mx-auto p-8 max-w-2xl">
@@ -67,60 +94,44 @@ function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <Tabs
-              value={selectedTab}
-              onValueChange={(v) => setSelectedTab(v as "jackett" | "prowlarr")}
+              value={selectedIndexerManager}
+              onValueChange={(v) =>
+                upsertIndexerManager({ name: v as IndexerType, selected: true })
+              }
             >
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="jackett">
-                  <Trans>Jackett</Trans>
-                </TabsTrigger>
-                <TabsTrigger value="prowlarr">
-                  <Trans>Prowlarr</Trans>
-                </TabsTrigger>
+                {indexerConfigs.map((config) => (
+                  <TabsTrigger key={config.name} value={config.name}>
+                    <Trans>{config.label}</Trans>
+                  </TabsTrigger>
+                ))}
               </TabsList>
-              <TabsContent value="jackett" className="space-y-4">
-                <div className="space-y-2">
-                  <Input
-                    id="jackett-api-key"
-                    placeholder="Enter your Jackett API key..."
-                    label={<Trans>Jackett API Key</Trans>}
-                    defaultValue={jackettIndexer?.apiKey || ""}
-                    onBlur={(e) => {
-                      console.log(e.target.value);
-                      upsertIndexer({
-                        name: "jackett",
-                        apiKey: e.target.value,
-                      });
-                    }}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    <Trans>
-                      Your Jackett API key is stored in the database and used to search torrents.
-                    </Trans>
-                  </p>
-                </div>
-              </TabsContent>
-              <TabsContent value="prowlarr" className="space-y-4">
-                <div className="space-y-2">
-                  <Input
-                    id="prowlarr-api-key"
-                    placeholder="Enter your Prowlarr API key..."
-                    label={<Trans>Prowlarr API Key</Trans>}
-                    defaultValue={prowlarrIndexer?.apiKey || ""}
-                    onBlur={(e) => {
-                      upsertIndexer({
-                        name: "prowlarr",
-                        apiKey: e.target.value,
-                      });
-                    }}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    <Trans>
-                      Your Prowlarr API key is stored in the database and used to search torrents.
-                    </Trans>
-                  </p>
-                </div>
-              </TabsContent>
+              {indexerConfigs.map((config) => {
+                const indexer = indexerManagers.find(
+                  (i: { name: IndexerType }) => i.name === config.name,
+                );
+                return (
+                  <TabsContent key={config.name} value={config.name} className="space-y-4">
+                    <div className="space-y-2">
+                      <Input
+                        id={`${config.name}-api-key`}
+                        placeholder={config.placeholder}
+                        label={<Trans>{config.label} API Key</Trans>}
+                        defaultValue={indexer?.apiKey || ""}
+                        onBlur={(e) => {
+                          upsertIndexerManager({
+                            name: config.name,
+                            apiKey: e.target.value,
+                          });
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        <Trans>{config.description}</Trans>
+                      </p>
+                    </div>
+                  </TabsContent>
+                );
+              })}
             </Tabs>
           </CardContent>
         </Card>
@@ -138,7 +149,7 @@ function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button variant="destructive" onClick={() => authClient.signOut()} className="w-full">
+            <Button variant="destructive" onClick={handleLogout} className="w-full">
               <LogOut className="mr-2 size-4" />
               <Trans>Sign Out</Trans>
             </Button>

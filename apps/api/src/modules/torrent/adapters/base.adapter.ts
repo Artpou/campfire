@@ -1,8 +1,10 @@
+import { IndexerType } from "../../../db/schema";
+
 export type TorrentQuality = "SD" | "HD" | "2K" | "4K" | undefined;
 
 export interface TorrentIndexer {
   id: string;
-  name: string;
+  name: IndexerType;
   privacy: "private" | "semi-private" | "public";
 }
 
@@ -17,7 +19,7 @@ export interface Torrent {
   guid: string;
   quality: TorrentQuality;
   detailsUrl?: string;
-  indexerType: "jackett" | "prowlarr";
+  indexerType: IndexerType;
 }
 
 export interface IndexerAdapter {

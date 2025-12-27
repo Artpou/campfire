@@ -1,11 +1,13 @@
-import { indexerService } from "@/modules/indexer/indexer.service";
+import { IndexerManagerService } from "@/modules/indexer-manager/indexer-manager.service";
+import { AuthenticatedService } from "../../classes/authenticated-service";
+import { IndexerManager } from "../../db/schema";
 import type { IndexerAdapter, Torrent, TorrentIndexer } from "./adapters/base.adapter";
 import { JackettAdapter } from "./adapters/jackett.adapter";
 import { ProwlarrAdapter } from "./adapters/prowlarr.adapter";
 
 type IndexerType = "jackett" | "prowlarr";
 
-export class TorrentService {
+export class TorrentService extends AuthenticatedService {
   private readonly adapters: Record<IndexerType, IndexerAdapter> = {
     jackett: new JackettAdapter(),
     prowlarr: new ProwlarrAdapter(),
@@ -15,29 +17,21 @@ export class TorrentService {
     return this.adapters[indexer];
   }
 
-  async getIndexers(userId: string, indexer: IndexerType): Promise<TorrentIndexer[]> {
-    const indexerConfig = await indexerService.getByName(indexer, userId);
-
-    if (!indexerConfig) {
-      throw new Error(`${indexer} is not configured for this user`);
-    }
-
-    return await this.getAdapter(indexer).getIndexers(indexerConfig.apiKey);
+  async listIndexers(indexerManager: IndexerManager): Promise<TorrentIndexer[]> {
+    return await this.getAdapter(indexerManager.name).getIndexers(indexerManager.apiKey || "");
   }
 
   async searchTorrents(query: {
-    userId: string;
     q: string;
     t: string;
     year?: string;
     indexer: IndexerType;
     indexerId?: string;
   }): Promise<{ recommended: Torrent[]; others: Torrent[] }> {
-    const indexerConfig = await indexerService.getByName(query.indexer, query.userId);
+    const indexerConfig = await new IndexerManagerService(this.user).getByName(query.indexer);
 
-    if (!indexerConfig) {
-      throw new Error(`${query.indexer} is not configured for this user`);
-    }
+    if (!indexerConfig) throw new Error(`${query.indexer} is not configured for this user`);
+    if (!indexerConfig.apiKey) throw new Error(`No API key is configured for this indexer`);
 
     const sanitizedQuery = this.sanitizeQuery(query.q);
 
@@ -71,5 +65,3 @@ export class TorrentService {
     return { recommended: torrents, others: [] };
   }
 }
-
-export const torrentService = new TorrentService();

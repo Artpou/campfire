@@ -1,36 +1,38 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db/db";
-import { type NewUser, type User, user } from "@/db/schema";
+import { type NewUser, user } from "@/db/schema";
 
 export class UserService {
-  private query = db.select().from(user);
+  private query = db
+    .select({ id: user.id, username: user.username, createdAt: user.createdAt })
+    .from(user);
 
-  async getById(id: string): Promise<User | null> {
-    const result = await this.query.where(eq(user.id, id)).limit(1);
-    return result[0] ?? null;
+  async getById(id: string) {
+    const [result] = await this.query.where(eq(user.id, id)).limit(1);
+    return result ?? null;
   }
 
-  async getByEmail(email: string): Promise<User | null> {
-    const result = await this.query.where(eq(user.email, email)).limit(1);
-    return result[0] ?? null;
+  async getByUsername(username: string) {
+    const [result] = await this.query.where(eq(user.username, username)).limit(1);
+    return result ?? null;
   }
 
-  async getAll(): Promise<User[]> {
-    return await this.query;
+  async getFullUser(username: string) {
+    const [result] = await db.select().from(user).where(eq(user.username, username)).limit(1);
+    return result ?? null;
   }
 
-  async update(id: string, data: Partial<Omit<NewUser, "id" | "createdAt">>): Promise<User | null> {
-    await db
-      .update(user)
-      .set({
-        ...data,
-        updatedAt: new Date(),
-      })
-      .where(eq(user.id, id));
-    return await this.getById(id);
+  async create(data: Omit<NewUser, "id" | "createdAt">) {
+    await db.insert(user).values(data);
+    return this.getByUsername(data.username);
   }
 
-  async delete(id: string): Promise<void> {
+  async update(id: string, data: Partial<Omit<NewUser, "id" | "createdAt">>) {
+    await db.update(user).set(data).where(eq(user.id, id));
+    return this.getById(id);
+  }
+
+  async delete(id: string) {
     await db.delete(user).where(eq(user.id, id));
   }
 }

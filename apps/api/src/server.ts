@@ -2,10 +2,10 @@ import { cors } from "@elysiajs/cors";
 import { swagger } from "@elysiajs/swagger";
 import { Elysia } from "elysia";
 import { helmet } from "elysia-helmet";
-import { auth } from "./auth/auth.config";
 import { colors, logRequest } from "./helpers/logger.helper";
+import { authRoutes } from "./modules/auth/auth.route";
 import { freeboxRoutes } from "./modules/freebox/freebox.route";
-import { indexerRoutes } from "./modules/indexer/indexer.route";
+import { indexerManagerRoutes } from "./modules/indexer-manager/indexer-manager.route";
 import { torrentRoutes } from "./modules/torrent/torrent.route";
 import { userRoutes } from "./modules/user/user.route";
 
@@ -23,7 +23,11 @@ export const app = new Elysia()
     const duration = Date.now() - startTime;
     logRequest(request.method, request.url, set.status || 200, duration);
   })
-  .onError(({ code, error }) => {
+  .onError(({ code, error, request, set }) => {
+    const startTime = requestTimes.get(request) || Date.now();
+    const duration = Date.now() - startTime;
+    logRequest(request.method, request.url, set.status || 500, duration);
+
     if (code === "VALIDATION") {
       error.all.forEach((err) => {
         console.error(err.summary);
@@ -44,10 +48,10 @@ export const app = new Elysia()
   )
   .use(helmet())
   .use(swagger())
-  .mount(auth.handler)
+  .use(authRoutes)
   .use(userRoutes)
   .use(freeboxRoutes)
-  .use(indexerRoutes)
+  .use(indexerManagerRoutes)
   .use(torrentRoutes)
   .get("/", () => ({ status: "healthy", timestamp: new Date().toISOString() }));
 

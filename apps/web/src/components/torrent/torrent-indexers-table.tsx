@@ -20,6 +20,7 @@ interface Indexer {
 
 interface TorrentIndexersTableProps {
   indexers: Indexer[];
+  // biome-ignore lint/suspicious/noExplicitAny: any is used to avoid type errors
   torrentQueries: UseQueryResult<any, Error>[];
   onVisibilityChange: (visibleIndexers: Set<string>) => void;
 }

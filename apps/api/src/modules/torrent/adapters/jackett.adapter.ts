@@ -1,4 +1,5 @@
 import { getTorrentQuality } from "@/helpers/video.helper";
+import { IndexerType } from "../../../db/schema";
 import { IndexerAdapter, Torrent, TorrentIndexer } from "./base.adapter";
 
 interface JackettSearchItem {
@@ -39,7 +40,7 @@ export class JackettAdapter implements IndexerAdapter {
 
     return data.map((indexer) => ({
       id: indexer.ID,
-      name: indexer.Name,
+      name: indexer.Name as IndexerType,
       privacy: indexer.Type as "private" | "semi-private" | "public",
     }));
   }

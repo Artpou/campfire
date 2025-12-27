@@ -5,7 +5,7 @@
   "exports": {
     "./user.validators": "./src/user.validators.ts",
     "./auth.validators": "./src/auth.validators.ts",
-    "./indexer.validators": "./src/indexer.validators.ts"
+    "./indexerManager.validators": "./src/indexerManager.validators.ts"
   },
   "scripts": {
     "lint": "biome check .",

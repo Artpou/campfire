@@ -1,4 +1,5 @@
 import { getTorrentQuality } from "@/helpers/video.helper";
+import { IndexerType } from "../../../db/schema";
 import { IndexerAdapter, Torrent, TorrentIndexer, TorrentQuality } from "./base.adapter";
 
 interface ProwlarrSearchItem {
@@ -40,7 +41,7 @@ export class ProwlarrAdapter implements IndexerAdapter {
       .filter((indexer) => !!indexer.enable)
       .map((indexer) => ({
         id: indexer.id.toString(),
-        name: indexer.name,
+        name: indexer.name as IndexerType,
         privacy: indexer.privacy as "private" | "semi-private" | "public",
       }));
   }

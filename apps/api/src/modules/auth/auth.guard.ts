@@ -1,14 +1,21 @@
 import type { Elysia } from "elysia";
-import { auth, type User } from "@/auth";
+import { validateSession } from "@/auth/session.util";
+import { UserService } from "../user/user.service";
 import { UnauthorizedError } from "./error";
 
+const SESSION_COOKIE_NAME = "session";
+
 export const authGuard = () => (app: Elysia) =>
-  app.resolve(async ({ request }): Promise<{ user: User }> => {
-    const session = await auth.api.getSession({ headers: request.headers });
+  app.resolve(async ({ cookie }) => {
+    const sessionToken = cookie[SESSION_COOKIE_NAME]?.value;
 
-    if (!session?.user) {
-      throw new UnauthorizedError();
-    }
+    if (typeof sessionToken !== "string") throw new UnauthorizedError();
 
-    return { user: session.user };
+    const userId = await validateSession(sessionToken);
+    if (!userId) throw new UnauthorizedError();
+
+    const currentUser = await new UserService().getById(userId);
+    if (!currentUser) throw new UnauthorizedError();
+
+    return { user: currentUser };
   });

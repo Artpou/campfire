@@ -7,7 +7,7 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { Play } from "lucide-react";
 import ms from "ms";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { TMDB, type WatchLocale } from "tmdb-ts";
 import { MovieCard } from "@/components/movies/movie-card";
 import { MovieDetailsSkeleton } from "@/components/movies/movie-details-skeleton";
@@ -36,16 +36,14 @@ export type IndexerType = "jackett" | "prowlarr";
 
 function MovieDetailsPage() {
   const params = Route.useParams();
-  const movieId = params.movieId;
-  const [selectedIndexerType, setSelectedIndexerType] = useState<IndexerType | null>(null);
-  const [visibleIndexers, setVisibleIndexers] = useState<Set<string>>(new Set());
-
-  // Get current locale from Lingui (country code) and convert to TMDB locale
   const { i18n } = useLingui();
   const tmdbLocale = countryToTmdbLocale(i18n.locale);
 
-  // Fetch movie details from TMDB
-  const { data: movieData, isLoading: isLoadingMovie } = useQuery({
+  const movieId = params.movieId;
+
+  const [visibleIndexers, setVisibleIndexers] = useState<Set<string>>(new Set());
+
+  const { data: { movie, providers, similarMovies } = {}, isLoading: isLoadingMovie } = useQuery({
     queryKey: ["movie", movieId, tmdbLocale],
     queryFn: async () => {
       const apiKey = import.meta.env.VITE_TMDB_API_KEY || "";
@@ -59,48 +57,17 @@ function MovieDetailsPage() {
 
       return { movie, providers, similarMovies };
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    gcTime: 1000 * 60 * 30, // 30 minutes
-    refetchOnWindowFocus: false,
+    staleTime: ms("5m"),
   });
-  // Fetch user indexers
-  const { data: userIndexers = [] } = useQuery({
+
+  const { data: indexers = [] } = useQuery({
     queryKey: ["indexers"],
     queryFn: async () => {
-      const response = await api.indexers.get();
-      return response.data || [];
+      const response = await api.torrents.indexers.get();
+      if (!response.data) return [];
+      return response.data;
     },
   });
-
-  // Default to first available indexer if none selected
-  useEffect(() => {
-    if (!selectedIndexerType && userIndexers.length > 0) {
-      setSelectedIndexerType(userIndexers[0].name as IndexerType);
-    }
-  }, [userIndexers, selectedIndexerType]);
-
-  const currentIndexer = userIndexers.find((i) => i.name === selectedIndexerType);
-
-  // Fetch available indexers from the selected indexer type
-  const { data: indexersResponse } = useQuery({
-    queryKey: ["indexers", selectedIndexerType],
-    queryFn: async () => {
-      if (!selectedIndexerType) return { data: [] };
-      return api.indexers.get({ query: { indexer: selectedIndexerType } });
-    },
-    enabled: !!selectedIndexerType && !!currentIndexer,
-    staleTime: ms("1h"),
-    retry: 1,
-  });
-
-  const indexers = Array.isArray(indexersResponse?.data)
-    ? (indexersResponse.data as Array<{ id: string; name: string }>)
-    : [];
-
-  // Get movie data with fallback
-  const movie = movieData?.movie;
-  const providersData = movieData?.providers;
-  const similarMovies = movieData?.similarMovies;
 
   // Search query parameters
   const search = movie?.original_title || "";
@@ -111,21 +78,19 @@ function MovieDetailsPage() {
   // Fetch torrents from all indexers
   const { recommended, others, queries } = useQueries({
     queries: indexers.map((indexer) => ({
-      queryKey: ["torrents", selectedIndexerType, search, release_year, indexer.id],
+      queryKey: ["torrents", search, release_year, indexer.id],
       queryFn: () => {
-        if (!selectedIndexerType) throw new Error("No indexer selected");
+        console.log("indexer", indexer);
         return api.torrents.search.get({
           query: {
             q: search,
             t: "movie",
             year: release_year,
-            indexer: selectedIndexerType,
             indexerId: indexer.id,
           },
         });
       },
-      enabled: !!search && !!selectedIndexerType && !!currentIndexer,
-      staleTime: ms("5m"),
+      enabled: !!search,
       retry: 1,
     })),
     combine: (results) => {
@@ -159,22 +124,22 @@ function MovieDetailsPage() {
     },
   });
 
-  // Extract country code from tmdbLocale (e.g., "fr-FR" -> "FR")
-  const countryCode = (tmdbLocale?.split("-")[1] || "US") as keyof WatchLocale;
+  const uniqueProviders = useMemo(() => {
+    const countryCode = (tmdbLocale?.split("-")[1] || "US") as keyof WatchLocale;
+    const countryProviders = providers?.results?.[countryCode];
 
-  const providers = providersData?.results?.[countryCode] || providersData?.results?.US;
+    if (!countryProviders) return [];
 
-  const allProviders = providers
-    ? [...("flatrate" in providers ? providers.flatrate || [] : [])]
-    : [];
+    if ("flatrate" in countryProviders) {
+      return countryProviders.flatrate?.filter(
+        (v, i, a) => a.findIndex((t) => t.provider_id === v.provider_id) === i,
+      );
+    }
 
-  // Deduplicate providers by provider_id
-  const uniqueProviders = allProviders.filter(
-    (v, i, a) => a.findIndex((t) => t.provider_id === v.provider_id) === i,
-  );
+    return [];
+  }, [providers, tmdbLocale]);
 
-  // Show loading state after all hooks
-  if (isLoadingMovie || !movieData) {
+  if (isLoadingMovie) {
     return <MovieDetailsSkeleton />;
   }
 

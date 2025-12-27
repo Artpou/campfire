@@ -1,64 +1,24 @@
 import { integer, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 
-// User table - Better Auth with username plugin
+// Enum for indexer types
+export const indexerTypeEnum = ["prowlarr", "jackett"] as const;
+export type IndexerType = (typeof indexerTypeEnum)[number];
+
+// User table - Custom auth with username/password
 export const user = sqliteTable("user", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email").notNull().unique(),
-  emailVerified: integer("emailVerified", { mode: "boolean" }).notNull(),
-  image: text("image"),
-  username: text("username").unique(),
-  displayUsername: text("displayUsername"),
-  createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
-  updatedAt: integer("updatedAt", { mode: "timestamp" }).notNull(),
-});
-
-// Session table - Better Auth
-export const session = sqliteTable("session", {
-  id: text("id").primaryKey(),
-  expiresAt: integer("expiresAt", { mode: "timestamp" }).notNull(),
-  token: text("token").notNull().unique(),
-  createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
-  updatedAt: integer("updatedAt", { mode: "timestamp" }).notNull(),
-  ipAddress: text("ipAddress"),
-  userAgent: text("userAgent"),
-  userId: text("userId")
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(), // format: "salt:hash"
+  createdAt: integer("createdAt", { mode: "timestamp" })
     .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
+    .$defaultFn(() => new Date()),
 });
 
-// Account table - Better Auth (for OAuth and credentials)
-export const account = sqliteTable("account", {
-  id: text("id").primaryKey(),
-  accountId: text("accountId").notNull(),
-  providerId: text("providerId").notNull(),
-  userId: text("userId")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  accessToken: text("accessToken"),
-  refreshToken: text("refreshToken"),
-  idToken: text("idToken"),
-  accessTokenExpiresAt: integer("accessTokenExpiresAt", { mode: "timestamp" }),
-  refreshTokenExpiresAt: integer("refreshTokenExpiresAt", { mode: "timestamp" }),
-  scope: text("scope"),
-  password: text("password"),
-  createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
-  updatedAt: integer("updatedAt", { mode: "timestamp" }).notNull(),
-});
-
-// Verification table - Better Auth (for email verification, password reset, etc.)
-export const verification = sqliteTable("verification", {
-  id: text("id").primaryKey(),
-  identifier: text("identifier").notNull(),
-  value: text("value").notNull(),
-  expiresAt: integer("expiresAt", { mode: "timestamp" }).notNull(),
-  createdAt: integer("createdAt", { mode: "timestamp" }),
-  updatedAt: integer("updatedAt", { mode: "timestamp" }),
-});
-
-// Indexer table - Store user-specific indexer configurations
-export const indexer = sqliteTable(
-  "indexer",
+// IndexerManager table - Store user-specific indexer configurations
+export const indexerManager = sqliteTable(
+  "indexerManager",
   {
     id: text("id")
       .primaryKey()
@@ -66,17 +26,34 @@ export const indexer = sqliteTable(
     userId: text("userId")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    name: text("name").notNull(), // "prowlarr" | "jackett"
-    apiKey: text("apiKey").notNull(),
-    baseUrl: text("baseUrl"), // optional, for custom installations
+    name: text("name", { enum: indexerTypeEnum }).notNull(),
+    apiKey: text("apiKey"),
+    baseUrl: text("baseUrl"),
+    selected: integer("selected", { mode: "boolean" })
+      .notNull()
+      .$default(() => false),
   },
   (table) => ({
     userIdName: unique().on(table.userId, table.name),
   }),
 );
 
+// Session table - Store user sessions for authentication persistence
+export const session = sqliteTable("session", {
+  token: text("token").primaryKey(),
+  userId: text("userId")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  expiresAt: integer("expiresAt", { mode: "timestamp" }).notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
 // Export types
-export type User = typeof user.$inferSelect;
+export type User = Omit<typeof user.$inferSelect, "password">;
 export type NewUser = typeof user.$inferInsert;
-export type Indexer = typeof indexer.$inferSelect;
-export type NewIndexer = typeof indexer.$inferInsert;
+export type IndexerManager = typeof indexerManager.$inferSelect;
+export type NewIndexerManager = typeof indexerManager.$inferInsert;
+export type Session = typeof session.$inferSelect;
+export type NewSession = typeof session.$inferInsert;

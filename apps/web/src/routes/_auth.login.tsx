@@ -1,108 +1,110 @@
-import { signInSchema } from "@basement/validators/auth.validators";
-import { typeboxResolver } from "@hookform/resolvers/typebox";
+import { Trans } from "@lingui/react/macro";
+import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import React from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { FormInput } from "@/components/ui/form-input";
 import { Input } from "@/components/ui/input";
-import { authClient } from "@/lib/auth";
+import { api } from "@/lib/api";
+import { useAuthStore } from "@/stores/auth-store";
 
 export const Route = createFileRoute("/_auth/login")({
   component: Login,
 });
 
+interface LoginForm {
+  username: string;
+  password: string;
+}
+
 function Login() {
   const navigate = useNavigate();
-  const form = useForm({
-    resolver: typeboxResolver(signInSchema),
-    defaultValues: {
-      username: "",
-      password: "",
+  const setUser = useAuthStore((state) => state.setUser);
+  const [error, setError] = React.useState<string>();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginForm>();
+
+  const { mutate: login, isPending } = useMutation({
+    mutationFn: async (data: LoginForm) => {
+      const response = await api.auth.login.post(data);
+      if (response.error) {
+        throw new Error("Login failed");
+      }
+      return response.data;
+    },
+    onSuccess: (data) => {
+      if (data) {
+        setUser(data);
+        navigate({ to: "/", search: { tab: "movie" } });
+      }
+    },
+    onError: (err: unknown) => {
+      setError(err instanceof Error ? err.message : "An error occurred");
     },
   });
 
-  const [error, setError] = React.useState<string | null>(null);
-  const [isLoading, setIsLoading] = React.useState(false);
-
-  const onSubmit = async (data: LoginFormValues) => {
-    setError(null);
-    setIsLoading(true);
-
-    try {
-      const response = await authClient.signIn.username({
-        username: data.username,
-        password: data.password,
-      });
-
-      if (response.error) {
-        throw new Error(response.error.message || "Login failed");
-      }
-
-      // Redirect to home after successful login
-      navigate({ to: "/", search: {} });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+  const onSubmit = (data: LoginForm) => {
+    setError(undefined);
+    login(data);
   };
 
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle>Sign In</CardTitle>
+        <CardTitle>
+          <Trans>Login</Trans>
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="username"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Username</FormLabel>
-                  <FormControl>
-                    <Input type="text" placeholder="username" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div>
+            <label htmlFor="username">
+              <Trans>Username</Trans>
+            </label>
+            <Input
+              id="username"
+              {...register("username", {
+                required: "Username is required",
+                minLength: { value: 3, message: "Min 3 characters" },
+              })}
             />
-            <FormInput<LoginFormValues>
-              name="password"
-              label="Password"
-              type="password"
-              placeholder="••••••••"
-            />
-
-            {error && (
-              <div className="p-3 bg-destructive/10 border border-destructive/20">
-                <p className="text-sm text-destructive">{error}</p>
-              </div>
+            {errors.username && (
+              <p className="text-sm text-destructive">{errors.username.message}</p>
             )}
+          </div>
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign In"}
-            </Button>
+          <div>
+            <label htmlFor="password">
+              <Trans>Password</Trans>
+            </label>
+            <Input
+              id="password"
+              type="password"
+              {...register("password", { required: "Password is required" })}
+            />
+            {errors.password && (
+              <p className="text-sm text-destructive">{errors.password.message}</p>
+            )}
+          </div>
 
-            <div className="text-center text-sm text-muted-foreground mt-4">
-              Don't have an account?{" "}
-              <Link to="/signup" className="text-primary hover:text-primary/80 underline">
-                Sign up
-              </Link>
-            </div>
-          </form>
-        </Form>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+
+          <Button type="submit" disabled={isPending} className="w-full">
+            {isPending ? <Trans>Loading...</Trans> : <Trans>Login</Trans>}
+          </Button>
+
+          <p className="text-sm text-center">
+            <Trans>Don't have an account?</Trans>{" "}
+            <Link to="/signup" className="text-primary hover:underline">
+              <Trans>Sign up</Trans>
+            </Link>
+          </p>
+        </form>
       </CardContent>
     </Card>
   );
