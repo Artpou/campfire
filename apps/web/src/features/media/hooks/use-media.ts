@@ -5,6 +5,7 @@ import { TMDB } from "tmdb-ts";
 
 import { api } from "@/lib/api";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
+import { useTMDB } from "@/shared/hooks/use-tmdb";
 
 import {
   FMDBResult,
@@ -42,20 +43,11 @@ export type MovieList = "popular" | "toprated" | "latest" | "upcoming";
 export type TVList = "popular" | "toprated" | "latest" | "airing";
 
 export function useMovies(list: MovieList = "popular") {
-  const { i18n } = useLingui();
-  const tmdbLocale = countryToTmdbLocale(i18n.locale);
+  const { tmdb, tmdbLocale } = useTMDB();
 
   return useQuery<Media[]>({
     queryKey: ["movies", list, tmdbLocale],
     queryFn: async () => {
-      const apiKey = import.meta.env.VITE_TMDB_API_KEY || "";
-
-      if (!apiKey) {
-        throw new Error("API key is required");
-      }
-
-      const tmdb = new TMDB(apiKey);
-
       switch (list) {
         case "popular": {
           const data = await tmdb.movies.popular({ language: tmdbLocale });
@@ -82,20 +74,11 @@ export function useMovies(list: MovieList = "popular") {
 }
 
 export function useTV(list: TVList = "popular") {
-  const { i18n } = useLingui();
-  const tmdbLocale = countryToTmdbLocale(i18n.locale);
+  const { tmdb, tmdbLocale } = useTMDB();
 
   return useQuery<Media[]>({
     queryKey: ["tv", list, tmdbLocale],
     queryFn: async () => {
-      const apiKey = import.meta.env.VITE_TMDB_API_KEY || "";
-
-      if (!apiKey) {
-        return [];
-      }
-
-      const tmdb = new TMDB(apiKey);
-
       switch (list) {
         case "popular": {
           const data = await tmdb.tvShows.popular({ language: tmdbLocale });
@@ -119,19 +102,11 @@ export function useTV(list: TVList = "popular") {
 }
 
 export function useMediaSearch(query: string) {
-  const { i18n } = useLingui();
-  const tmdbLocale = countryToTmdbLocale(i18n.locale);
+  const { tmdb, tmdbLocale } = useTMDB();
 
   return useQuery({
     queryKey: ["media-search", query, tmdbLocale],
     queryFn: async () => {
-      const apiKey = import.meta.env.VITE_TMDB_API_KEY || "";
-
-      if (!apiKey || !query) {
-        return [];
-      }
-
-      const tmdb = new TMDB(apiKey);
       const searchResults = await tmdb.search.multi({ query, language: tmdbLocale });
 
       // Transform results to Media type, filtering for movies and TV shows only
