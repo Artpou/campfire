@@ -1,8 +1,10 @@
+import { useState } from "react";
+
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { FileExplorer, type FileItem } from "@/components/file-explorer";
+
 import { api } from "@/lib/api";
+import { FileExplorer, type FileItem } from "@/shared/file-explorer";
 
 export const Route = createFileRoute("/_app/server")({
   component: ServerPage,

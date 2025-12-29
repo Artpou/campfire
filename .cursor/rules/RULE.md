@@ -2,7 +2,7 @@
 alwaysApply: true
 ---
 
-# Campfire Project Rules
+# Seedarr Project Rules
 
 ## Tech Stack
 
@@ -60,6 +60,61 @@ alwaysApply: true
 
 ## Web Patterns (React)
 
+### Project Structure (Feature-Based)
+
+```
+src/
+├── features/           # Feature modules (domain-driven)
+│   ├── auth/          # Authentication feature
+│   │   └── auth-store.ts
+│   ├── media/         # Media management
+│   │   ├── components/
+│   │   ├── helpers/
+│   │   ├── hooks/
+│   │   ├── parsers/
+│   │   └── media.d.ts
+│   ├── movies/        # Movie-specific UI
+│   │   ├── components/
+│   │   └── hooks/
+│   ├── person/        # Person/cast features
+│   └── torrent/       # Torrent search
+├── shared/            # Shared/reusable code
+│   ├── ui/           # Radix UI components
+│   ├── hooks/        # Global hooks (use-theme, use-mobile)
+│   ├── helpers/      # Utility functions
+│   ├── app-sidebar.tsx
+│   └── app-topbar.tsx
+├── lib/              # Core utilities
+│   ├── api.ts       # Eden Treaty client
+│   └── utils.ts     # cn() and helpers
+├── routes/           # TanStack Router routes
+│   ├── _app.*       # Authenticated routes
+│   └── _auth.*      # Public routes
+└── locales/          # i18n translations
+```
+
+### Feature Organization
+
+- **Features** (`features/[feature]/`):
+
+  - `components/` - Feature-specific UI components
+  - `hooks/` - Feature-specific React hooks
+  - `helpers/` - Feature-specific utilities
+  - `parsers/` - Data transformation logic
+  - `[feature].d.ts` - Feature type definitions
+  - `[feature]-store.ts` - Feature state (Zustand)
+
+- **Shared** (`shared/`):
+
+  - `ui/` - Reusable UI components (Radix primitives)
+  - `hooks/` - Global hooks (theme, mobile, locale)
+  - `helpers/` - Cross-feature utilities
+  - Layout components (sidebar, topbar)
+
+- **Lib** (`lib/`):
+  - Core utilities and API client
+  - No feature-specific code
+
 ### Routing (TanStack Router)
 
 - File-based routes in `src/routes/`
@@ -76,16 +131,17 @@ alwaysApply: true
 
 ### Components
 
-- Radix UI primitives in `components/ui/`
-- Feature components in `components/[feature]/`
+- Radix UI primitives in `shared/ui/`
+- Feature components in `features/[feature]/components/`
+- Shared layout components in `shared/`
 - Use `cn()` utility for className merging
 - Variants via `class-variance-authority` (cva)
 
 ### State Management
 
-- Zustand stores in `stores/[feature]-store.ts`
+- Zustand stores in `features/[feature]/[feature]-store.ts`
 - Use `persist` middleware for localStorage
-- Auth state in `useAuthStore` (synced with API)
+- Auth state in `features/auth/auth-store.ts` (synced with API)
 
 ### Styling
 
@@ -142,10 +198,11 @@ alwaysApply: true
 
 ### File Naming
 
-- kebab-case for files: `user-service.ts`, `movie-card.tsx`
+- kebab-case for files: `user-service.ts`, `movie-card.tsx`, `use-theme.ts`
 - PascalCase for components: `MovieCard`, `Button`
 - camelCase for functions/variables
 - SCREAMING_SNAKE_CASE for constants
+- Feature folders: singular noun (`media/`, `auth/`, not `medias/`, `auths/`)
 
 ## Development Workflow
 
@@ -183,10 +240,16 @@ alwaysApply: true
 - Handle errors with try-catch
 - Services return promises
 
-### Type Imports
+### Import Organization (Biome)
 
+- **Group 1**: React packages (`react`, `react-dom`)
+- **Group 2**: External packages (npm dependencies)
+- **Group 3**: `@/lib/**` imports
+- **Group 4**: `@/shared/**` imports
+- **Group 5**: Other `@/**` imports (features, routes)
+- **Group 6**: Relative imports (`./`, `../`)
+- Blank lines between groups
 - Use `import type` for type-only imports when possible
-- Biome will warn if regular import used for types
 
 ### Environment Variables
 

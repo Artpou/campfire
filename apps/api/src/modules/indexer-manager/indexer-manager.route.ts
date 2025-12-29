@@ -1,5 +1,6 @@
 import { createIndexerManagerSchema } from "@basement/validators/indexerManager.validators";
 import { Elysia } from "elysia";
+
 import { authGuard } from "@/modules/auth/auth.guard";
 import { IndexerManagerService } from "./indexer-manager.service";
 

@@ -1,4 +1,5 @@
 import { Elysia, t } from "elysia";
+
 import { freeboxService } from "./freebox.service";
 
 export const freeboxRoutes = new Elysia({ prefix: "/freebox" }).get(

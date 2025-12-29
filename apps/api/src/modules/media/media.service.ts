@@ -1,34 +1,20 @@
 import { desc, eq } from "drizzle-orm";
+
 import { AuthenticatedService } from "@/classes/authenticated-service";
 import { db } from "@/db/db";
-import { media, type NewMedia, userMedia } from "@/db/schema";
+import { Media, media, userMedia } from "@/db/schema";
 
 export class MediaService extends AuthenticatedService {
-  private query = db
-    .select({
-      media: media,
-      viewedAt: userMedia.viewedAt,
-    })
-    .from(userMedia)
-    .innerJoin(media, eq(userMedia.mediaId, media.id));
+  async get(id: number) {
+    const [result] = await db.select().from(media).where(eq(media.id, id)).limit(1);
+    return result ?? null;
+  }
 
-  async track(mediaData: NewMedia) {
-    if (!mediaData.id) {
-      throw new Error("Media ID is required");
-    }
-
-    await db
-      .insert(media)
-      .values(mediaData)
-      .onConflictDoUpdate({
-        target: media.id,
-        set: {
-          title: mediaData.title,
-          poster_path: mediaData.poster_path,
-          vote_average: mediaData.vote_average,
-          release_date: mediaData.release_date,
-        },
-      });
+  async track(mediaData: Media) {
+    await db.insert(media).values(mediaData).onConflictDoUpdate({
+      target: media.id,
+      set: mediaData,
+    });
 
     await db
       .insert(userMedia)
@@ -46,7 +32,13 @@ export class MediaService extends AuthenticatedService {
   }
 
   async getRecentlyViewed(type?: "movie" | "tv", limit = 20) {
-    const results = await this.query
+    const results = await db
+      .select({
+        media: media,
+        viewedAt: userMedia.viewedAt,
+      })
+      .from(userMedia)
+      .innerJoin(media, eq(userMedia.mediaId, media.id))
       .where(eq(userMedia.userId, this.user.id))
       .orderBy(desc(userMedia.viewedAt))
       .limit(limit);

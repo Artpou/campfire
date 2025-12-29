@@ -1,7 +1,11 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { AppTopbar } from "@/components/app-topbar";
+
 import { api } from "@/lib/api";
-import { useAuthStore } from "@/stores/auth-store";
+import { AppSidebar } from "@/shared/app-sidebar";
+import { AppTopbar } from "@/shared/app-topbar";
+import { SidebarProvider } from "@/shared/ui/sidebar";
+
+import { useAuthStore } from "@/features/auth/auth-store";
 
 export const Route = createFileRoute("/_app")({
   beforeLoad: async () => {
@@ -21,11 +25,14 @@ export const Route = createFileRoute("/_app")({
 
 function AuthenticatedLayout() {
   return (
-    <>
-      <AppTopbar isAuthenticated={true} />
-      <main className="flex-1 overflow-y-auto">
-        <Outlet />
-      </main>
-    </>
+    <SidebarProvider>
+      <AppSidebar />
+      <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
+        <AppTopbar isAuthenticated={true} />
+        <main className="flex-1 overflow-y-auto">
+          <Outlet />
+        </main>
+      </div>
+    </SidebarProvider>
   );
 }

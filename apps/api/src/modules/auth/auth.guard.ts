@@ -1,4 +1,5 @@
 import type { Elysia } from "elysia";
+
 import { validateSession } from "@/auth/session.util";
 import { UserService } from "../user/user.service";
 import { UnauthorizedError } from "./error";

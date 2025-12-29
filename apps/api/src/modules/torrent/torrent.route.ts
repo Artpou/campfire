@@ -1,4 +1,5 @@
 import { Elysia, t } from "elysia";
+
 import { authGuard } from "@/modules/auth/auth.guard";
 import { IndexerManagerService } from "../indexer-manager/indexer-manager.service";
 import { TorrentService } from "./torrent.service";

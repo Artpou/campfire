@@ -1,12 +1,14 @@
+import { useState } from "react";
+
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import ms from "ms";
-import { useState } from "react";
-import { LinguiClientProvider } from "@/components/lingui-client-provider";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getI18nInstance } from "@/i18n";
+
+import { getI18nInstance } from "@/shared/helpers/i18n.helper";
+import { LinguiClientProvider } from "@/shared/lingui-client-provider";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 
 export const Route = createRootRoute({
   errorComponent: ({ error }) => (
@@ -64,7 +66,7 @@ function RootComponent() {
           queries: {
             staleTime: ms("5m"),
             gcTime: ms("30m"),
-            retry: false,
+            retry: 1,
             refetchOnWindowFocus: false,
           },
         },
@@ -95,28 +97,21 @@ function RootComponent() {
   const i18n = getI18nInstance(uiLanguage);
 
   return (
-    <>
-      {/* Modern gradient background */}
-      <div className="fixed inset-0 -z-10 bg-linear-to-br from-primary/12 via-background to-accent/5" />
-
-      <LinguiClientProvider initialLocale={initialCountry} initialMessages={i18n.messages}>
-        <QueryClientProvider client={queryClient}>
-          <div className="h-screen flex flex-col">
-            <Outlet />
-          </div>
-          <TanStackDevtools
-            config={{
-              position: "bottom-right",
-            }}
-            plugins={[
-              {
-                name: "Tanstack Router",
-                render: <TanStackRouterDevtoolsPanel />,
-              },
-            ]}
-          />
-        </QueryClientProvider>
-      </LinguiClientProvider>
-    </>
+    <LinguiClientProvider initialLocale={initialCountry} initialMessages={i18n.messages}>
+      <QueryClientProvider client={queryClient}>
+        <Outlet />
+        <TanStackDevtools
+          config={{
+            position: "bottom-right",
+          }}
+          plugins={[
+            {
+              name: "Tanstack Router",
+              render: <TanStackRouterDevtoolsPanel />,
+            },
+          ]}
+        />
+      </QueryClientProvider>
+    </LinguiClientProvider>
   );
 }

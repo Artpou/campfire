@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+
 import { db } from "@/db/db";
 import { type NewUser, user } from "@/db/schema";
 

@@ -1,13 +1,16 @@
+import React from "react";
+
 import { Trans } from "@lingui/react/macro";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import React from "react";
 import { useForm } from "react-hook-form";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+
 import { api } from "@/lib/api";
-import { useAuthStore } from "@/stores/auth-store";
+import { Button } from "@/shared/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
+import { Input } from "@/shared/ui/input";
+
+import { useAuthStore } from "@/features/auth/auth-store";
 
 export const Route = createFileRoute("/_auth/login")({
   component: Login,

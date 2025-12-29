@@ -14,8 +14,11 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AuthSignupRouteImport } from './routes/_auth.signup'
 import { Route as AuthLoginRouteImport } from './routes/_auth.login'
+import { Route as AppTvRouteImport } from './routes/_app.tv'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppServerRouteImport } from './routes/_app.server'
+import { Route as AppSearchRouteImport } from './routes/_app.search'
+import { Route as AppMoviesIndexRouteImport } from './routes/_app.movies.index'
 import { Route as AppMoviesMovieIdRouteImport } from './routes/_app.movies.$movieId'
 
 const AuthRoute = AuthRouteImport.update({
@@ -41,6 +44,11 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => AuthRoute,
 } as any)
+const AppTvRoute = AppTvRouteImport.update({
+  id: '/tv',
+  path: '/tv',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -51,6 +59,16 @@ const AppServerRoute = AppServerRouteImport.update({
   path: '/server',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSearchRoute = AppSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMoviesIndexRoute = AppMoviesIndexRouteImport.update({
+  id: '/movies/',
+  path: '/movies/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMoviesMovieIdRoute = AppMoviesMovieIdRouteImport.update({
   id: '/movies/$movieId',
   path: '/movies/$movieId',
@@ -58,53 +76,77 @@ const AppMoviesMovieIdRoute = AppMoviesMovieIdRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/search': typeof AppSearchRoute
   '/server': typeof AppServerRoute
   '/settings': typeof AppSettingsRoute
+  '/tv': typeof AppTvRoute
   '/login': typeof AuthLoginRoute
   '/signup': typeof AuthSignupRoute
   '/': typeof AppIndexRoute
   '/movies/$movieId': typeof AppMoviesMovieIdRoute
+  '/movies': typeof AppMoviesIndexRoute
 }
 export interface FileRoutesByTo {
+  '/search': typeof AppSearchRoute
   '/server': typeof AppServerRoute
   '/settings': typeof AppSettingsRoute
+  '/tv': typeof AppTvRoute
   '/login': typeof AuthLoginRoute
   '/signup': typeof AuthSignupRoute
   '/': typeof AppIndexRoute
   '/movies/$movieId': typeof AppMoviesMovieIdRoute
+  '/movies': typeof AppMoviesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
+  '/_app/search': typeof AppSearchRoute
   '/_app/server': typeof AppServerRoute
   '/_app/settings': typeof AppSettingsRoute
+  '/_app/tv': typeof AppTvRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/signup': typeof AuthSignupRoute
   '/_app/': typeof AppIndexRoute
   '/_app/movies/$movieId': typeof AppMoviesMovieIdRoute
+  '/_app/movies/': typeof AppMoviesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/search'
     | '/server'
     | '/settings'
+    | '/tv'
     | '/login'
     | '/signup'
     | '/'
     | '/movies/$movieId'
+    | '/movies'
   fileRoutesByTo: FileRoutesByTo
-  to: '/server' | '/settings' | '/login' | '/signup' | '/' | '/movies/$movieId'
+  to:
+    | '/search'
+    | '/server'
+    | '/settings'
+    | '/tv'
+    | '/login'
+    | '/signup'
+    | '/'
+    | '/movies/$movieId'
+    | '/movies'
   id:
     | '__root__'
     | '/_app'
     | '/_auth'
+    | '/_app/search'
     | '/_app/server'
     | '/_app/settings'
+    | '/_app/tv'
     | '/_auth/login'
     | '/_auth/signup'
     | '/_app/'
     | '/_app/movies/$movieId'
+    | '/_app/movies/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -149,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_app/tv': {
+      id: '/_app/tv'
+      path: '/tv'
+      fullPath: '/tv'
+      preLoaderRoute: typeof AppTvRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/settings': {
       id: '/_app/settings'
       path: '/settings'
@@ -163,6 +212,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppServerRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/search': {
+      id: '/_app/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof AppSearchRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/movies/': {
+      id: '/_app/movies/'
+      path: '/movies'
+      fullPath: '/movies'
+      preLoaderRoute: typeof AppMoviesIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/movies/$movieId': {
       id: '/_app/movies/$movieId'
       path: '/movies/$movieId'
@@ -174,17 +237,23 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppSearchRoute: typeof AppSearchRoute
   AppServerRoute: typeof AppServerRoute
   AppSettingsRoute: typeof AppSettingsRoute
+  AppTvRoute: typeof AppTvRoute
   AppIndexRoute: typeof AppIndexRoute
   AppMoviesMovieIdRoute: typeof AppMoviesMovieIdRoute
+  AppMoviesIndexRoute: typeof AppMoviesIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppSearchRoute: AppSearchRoute,
   AppServerRoute: AppServerRoute,
   AppSettingsRoute: AppSettingsRoute,
+  AppTvRoute: AppTvRoute,
   AppIndexRoute: AppIndexRoute,
   AppMoviesMovieIdRoute: AppMoviesMovieIdRoute,
+  AppMoviesIndexRoute: AppMoviesIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

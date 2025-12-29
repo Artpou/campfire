@@ -1,4 +1,4 @@
-import { TorrentQuality } from "@/types";
+import { TorrentQuality } from "@/modules/torrent/adapters/base.adapter";
 
 export function getTorrentQuality(title: string): TorrentQuality {
   const t = title.toLowerCase();

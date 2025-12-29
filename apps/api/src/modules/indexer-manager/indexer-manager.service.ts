@@ -1,5 +1,6 @@
 import { CreateIndexerManager } from "@basement/validators/indexerManager.validators";
 import { and, eq } from "drizzle-orm";
+
 import { db } from "@/db/db";
 import { IndexerType, indexerManager, type NewIndexerManager } from "@/db/schema";
 import { AuthenticatedService } from "../../classes/authenticated-service";

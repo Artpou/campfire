@@ -1,4 +1,5 @@
 import { Elysia, status, t } from "elysia";
+
 import { authGuard } from "@/modules/auth/auth.guard";
 import { userService } from "./user.service";
 

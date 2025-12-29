@@ -2,6 +2,7 @@ import { cors } from "@elysiajs/cors";
 import { swagger } from "@elysiajs/swagger";
 import { Elysia } from "elysia";
 import { helmet } from "elysia-helmet";
+
 import { colors, logRequest } from "./helpers/logger.helper";
 import { authRoutes } from "./modules/auth/auth.route";
 import { freeboxRoutes } from "./modules/freebox/freebox.route";

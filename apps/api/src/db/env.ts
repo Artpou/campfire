@@ -1,7 +1,8 @@
+import { config } from "@dotenvx/dotenvx";
+
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { config } from "@dotenvx/dotenvx";
 
 /**
  * Loads .env file by searching up the directory tree.

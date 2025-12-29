@@ -59,6 +59,7 @@ export const media = sqliteTable("media", {
   id: integer("id").primaryKey(), // TMDB ID
   type: text("type", { enum: mediaTypeEnum }).notNull(),
   title: text("title").notNull(),
+  overview: text("overview"),
   poster_path: text("poster_path"),
   vote_average: real("vote_average"),
   release_date: text("release_date"), // ISO date string

@@ -1,16 +1,18 @@
+import { useMemo } from "react";
+
 import { CreateIndexerManager } from "@basement/validators/indexerManager.validators";
 import { Trans } from "@lingui/react/macro";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Download, LogOut } from "lucide-react";
-import ms from "ms";
-import { useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { api } from "@/lib/api";
-import { useAuthStore } from "@/stores/auth-store";
+import { Button } from "@/shared/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
+import { Input } from "@/shared/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
+
+import { useAuthStore } from "@/features/auth/auth-store";
 import { IndexerType } from "../../../api/src/db/schema";
 
 export const Route = createFileRoute("/_app/settings")({
@@ -30,7 +32,6 @@ function SettingsPage() {
       return response.data || [];
     },
     initialData: [],
-    staleTime: ms("5m"),
   });
 
   const handleLogout = async () => {
