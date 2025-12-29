@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 
+import { Trans } from "@lingui/react/macro";
 import type { Cast, Crew, MovieDetails as TMDBMovieDetails } from "tmdb-ts";
 
 import { CarouselItem } from "@/shared/ui/carousel";
@@ -33,7 +34,7 @@ export function MovieCast({ movie }: MovieCastProps) {
 
   return (
     <section className="container mx-auto px-6 md:px-12 py-8">
-      <CarouselWrapper title="Cast & Crew">
+      <CarouselWrapper title={<Trans>Cast & Crew</Trans>}>
         {castAndCrew.map((person) => (
           <CarouselItem
             key={`${person.id}-${person.role}`}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { useLingui } from "@lingui/react/macro";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { useDebounce } from "@uidotdev/usehooks";
 import { Search } from "lucide-react";
@@ -13,6 +14,7 @@ export function MediaSearch() {
   const [query, setQuery] = useState(searchParams.q || "");
   const debouncedQuery = useDebounce(query, 300);
   const isTypingRef = useRef(false);
+  const { t } = useLingui();
 
   useEffect(() => {
     if (!isTypingRef.current) return;
@@ -40,10 +42,10 @@ export function MediaSearch() {
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
       <Input
         type="text"
-        placeholder="Search movies and TV shows..."
+        className="placeholder:font-bold placeholder:text-lg pl-9 py-5"
+        placeholder={t`Search movies and TV shows...`}
         value={query}
         onChange={(e) => handleChange(e.target.value)}
-        className="pl-9"
       />
     </div>
   );

@@ -13,173 +13,364 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/components/torrent/torrent-table.tsx:178
+#. placeholder {0}: collection?.name
+#. placeholder {0}: config.description
+#. placeholder {0}: config.label
+#: src/features/movies/components/movie-related.tsx:49
+#: src/routes/_app.settings.tsx:106
+#: src/routes/_app.settings.tsx:130
+msgid "{0}"
+msgstr "{0}"
+
+#. placeholder {0}: config.label
+#: src/routes/_app.settings.tsx:120
+msgid "{0} API Key"
+msgstr "Clé API {0}"
+
+#: src/features/media/components/media-list-dropdown.tsx:47
+#~ msgid "{label}"
+#~ msgstr "{label}"
+
+#: src/shared/ui/carousel-wrapper.tsx:27
+#~ msgid "{title}"
+#~ msgstr "{title}"
+
+#: src/features/person/components/person-card.tsx:34
+msgid "{type}"
+msgstr "{type}"
+
+#: src/routes/_app.settings.tsx:145
+msgid "Account"
+msgstr "Compte"
+
+#: src/features/torrent/components/torrent-table.tsx:146
 msgid "Add"
 msgstr "Ajouter"
 
+#: src/features/media/components/media-list-dropdown.tsx:45
+msgid "Airing Today"
+msgstr "En cours de diffusion"
+
+#: src/routes/_auth.signup.tsx:136
+msgid "Already have an account?"
+msgstr "Vous avez déjà un compte ?"
+
 #: src/routes/settings.tsx:112
-msgid "API Key"
-msgstr "Clé API"
+#~ msgid "API Key"
+#~ msgstr "Clé API"
+
+#: src/features/movies/components/movie-details.tsx:43
+msgid "Budget"
+msgstr "Budget"
+
+#: src/features/movies/components/movie-info.tsx:139
+msgid "Buy / Rent"
+msgstr "Acheter / Louer"
+
+#: src/features/movies/components/movie-cast.tsx:37
+msgid "Cast & Crew"
+msgstr "Têtes d'affiche"
 
 #: src/routes/index.tsx:79
-msgid "Configure your TMDB API Key in settings to get started."
-msgstr "Configurez votre clé API TMDB dans les paramètres pour commencer."
+#~ msgid "Configure your TMDB API Key in settings to get started."
+#~ msgstr "Configurez votre clé API TMDB dans les paramètres pour commencer."
 
-#: src/routes/settings.tsx:47
+#: src/routes/_app.settings.tsx:93
 msgid "Configure your torrent indexer to search and download torrents."
 msgstr "Configurez votre indexeur de torrents pour rechercher et télécharger des torrents."
 
-#: src/components/torrent/torrent-table.tsx:174
+#: src/routes/_auth.signup.tsx:114
+msgid "Confirm Password"
+msgstr "Confirmer le mot de passe"
+
+#: src/routes/_auth.signup.tsx:132
+msgid "Creating account..."
+msgstr "Création du compte..."
+
+#: src/routes/_auth.login.tsx:105
+msgid "Don't have an account?"
+msgstr "Vous n'avez pas de compte ?"
+
+#: src/features/torrent/components/torrent-table.tsx:142
 msgid "Download"
 msgstr "Télécharger"
 
 #: src/routes/settings.tsx:104
-msgid "Enter your TMDB API key to enable personalized search and detailed movie information."
-msgstr "Entrez votre clé API TMDB pour activer la recherche personnalisée et les informations détaillées sur les films."
+#~ msgid "Enter your TMDB API key to enable personalized search and detailed movie information."
+#~ msgstr "Entrez votre clé API TMDB pour activer la recherche personnalisée et les informations détaillées sur les films."
 
 #: src/components/torrent/torrent-table.tsx:209
-msgid "Failed to load indexers"
-msgstr "Échec du chargement des indexeurs"
+#~ msgid "Failed to load indexers"
+#~ msgstr "Échec du chargement des indexeurs"
 
 #: src/routes/movies.$movieId.tsx:93
-msgid "Go Back"
-msgstr "Retour"
+#~ msgid "Go Back"
+#~ msgstr "Retour"
 
-#: src/components/torrent/torrent-table.tsx:124
+#: src/features/torrent/components/torrent-table.tsx:98
 msgid "Health"
 msgstr "Santé"
 
 #: src/components/app-topbar.tsx:37
-msgid "Home"
-msgstr "Accueil"
+#~ msgid "Home"
+#~ msgstr "Accueil"
 
-#: src/components/torrent/torrent-table.tsx:235
+#: src/features/movies/components/movie-details.tsx:77
+msgid "IMDb"
+msgstr "IMDb"
+
+#: src/features/torrent/components/torrent-table.tsx:193
 msgid "Indexers"
 msgstr "Indexeurs"
 
 #: src/routes/settings.tsx:57
-msgid "Jackett"
-msgstr "Jackett"
+#~ msgid "Jackett"
+#~ msgstr "Jackett"
 
 #: src/routes/settings.tsx:68
-msgid "Jackett API Key"
-msgstr "Clé API Jackett"
+#~ msgid "Jackett API Key"
+#~ msgstr "Clé API Jackett"
 
-#: src/routes/settings.tsx:34
+#: src/routes/_auth.login.tsx:101
+msgid "Loading..."
+msgstr "Chargement..."
+
+#: src/routes/_auth.login.tsx:63
+#: src/routes/_auth.login.tsx:101
+msgid "Login"
+msgstr "Connexion"
+
+#: src/routes/_app.settings.tsx:149
+msgid "Manage your account settings and sign out."
+msgstr "Gérez vos paramètres de compte et déconnectez-vous."
+
+#: src/routes/_app.settings.tsx:80
 msgid "Manage your application preferences and API integrations."
 msgstr "Gérez vos préférences d'application et vos intégrations API."
 
 #: src/routes/movies.$movieId.tsx:90
-msgid "Movie not found"
-msgstr "Film introuvable"
+#~ msgid "Movie not found"
+#~ msgstr "Film introuvable"
 
-#: src/routes/index.tsx:96
+#: src/shared/app-sidebar.tsx:21
 msgid "Movies"
 msgstr "Films"
 
-#: src/components/torrent/torrent-table.tsx:188
+#: src/routes/_app.search.tsx:59
+msgid "No results found for \"{q}\""
+msgstr "Aucun résultat trouvé pour \"{q}\""
+
+#: src/features/torrent/components/torrent-table.tsx:157
 msgid "No torrents found"
 msgstr "Aucun torrent trouvé"
 
 #: src/routes/index.tsx:110
-msgid "Now Playing"
-msgstr "À l'affiche"
+#~ msgid "Now Playing"
+#~ msgstr "À l'affiche"
 
 #: src/routes/index.tsx:125
-msgid "On The Air"
-msgstr "En cours de diffusion"
+#~ msgid "On The Air"
+#~ msgstr "En cours de diffusion"
+
+#: src/features/torrent/components/torrent-table.tsx:185
+msgid "Others"
+msgstr "Autres"
+
+#: src/routes/_auth.login.tsx:86
+#: src/routes/_auth.signup.tsx:97
+msgid "Password"
+msgstr "Mot de passe"
 
 #: src/components/torrent/torrent-table.tsx:219
-msgid "Please check your API key and make sure {indexerType} is running."
-msgstr "Veuillez vérifier votre clé API et vous assurer que {indexerType} est en cours d'exécution."
+#~ msgid "Please check your API key and make sure {indexerType} is running."
+#~ msgstr "Veuillez vérifier votre clé API et vous assurer que {indexerType} est en cours d'exécution."
+
+#: src/features/media/components/media-list-dropdown.tsx:39
+msgid "Popular"
+msgstr "Populaire"
 
 #: src/routes/index.tsx:106
-msgid "Popular Movies"
-msgstr "Films populaires"
+#~ msgid "Popular Movies"
+#~ msgstr "Films populaires"
 
 #: src/routes/index.tsx:121
-msgid "Popular TV Shows"
-msgstr "Séries populaires"
+#~ msgid "Popular TV Shows"
+#~ msgstr "Séries populaires"
+
+#: src/features/movies/components/movie-details.tsx:61
+msgid "Production"
+msgstr "Production"
 
 #: src/routes/settings.tsx:60
-msgid "Prowlarr"
-msgstr "Prowlarr"
+#~ msgid "Prowlarr"
+#~ msgstr "Prowlarr"
 
 #: src/routes/settings.tsx:82
-msgid "Prowlarr API Key"
-msgstr "Clé API Prowlarr"
+#~ msgid "Prowlarr API Key"
+#~ msgstr "Clé API Prowlarr"
+
+#: src/routes/_app.movies.index.tsx:30
+#: src/routes/_app.tv.tsx:30
+msgid "Recently Viewed"
+msgstr "Vus récemment"
+
+#: src/features/movies/components/movie-related.tsx:52
+msgid "Recommended"
+msgstr "Recommandé"
+
+#: src/features/torrent/components/torrent-table.tsx:182
+msgid "Recommended Torrents"
+msgstr "Torrents recommandés"
+
+#: src/features/movies/components/movie-related.tsx:57
+msgid "Related"
+msgstr "Similaires"
+
+#: src/features/movies/components/movie-details.tsx:52
+msgid "Revenue"
+msgstr "Revenus"
 
 #: src/routes/index.tsx:81
 #: src/routes/index.tsx:103
 #~ msgid "Search a movie or a TV show"
 #~ msgstr "Rechercher un film ou une série"
 
+#: src/routes/_app.search.tsx:42
+msgid "Search for Movies and TV Shows"
+msgstr "Rechercher des films et séries"
+
 #: src/components/movies/search-movie.tsx:76
-msgid "Search movies"
-msgstr "Rechercher des films"
+#~ msgid "Search movies"
+#~ msgstr "Rechercher des films"
+
+#: src/features/media/components/media-search.tsx:45
+msgid "Search movies and TV shows..."
+msgstr "Rechercher un film ou une série..."
+
+#: src/routes/_app.search.tsx:51
+msgid "Search Results for \"{q}\""
+msgstr "Résultats de recherche pour \"{q}\""
+
+#: src/features/media/components/media-poster.tsx:85
+msgid "Search Torrent"
+msgstr "Rechercher un torrent"
+
+#. placeholder {0}: uniqueProviders.flatrate.length + uniqueProviders.buyRent.length
+#: src/features/movies/components/movie-info.tsx:110
+msgid "See all ({0})"
+msgstr "Tout voir ({0})"
 
 #: src/components/app-topbar.tsx:52
-msgid "Server"
-msgstr "Serveur"
+#~ msgid "Server"
+#~ msgstr "Serveur"
 
-#: src/components/app-topbar.tsx:72
-#: src/routes/settings.tsx:31
+#: src/routes/_app.settings.tsx:77
+#: src/shared/app-sidebar.tsx:31
 msgid "Settings"
 msgstr "Paramètres"
 
-#: src/routes/movies.$movieId.tsx:227
-msgid "Similar Movies"
-msgstr "Films similaires"
+#: src/routes/_auth.signup.tsx:138
+msgid "Sign in"
+msgstr "Se connecter"
 
-#: src/components/torrent/torrent-table.tsx:121
+#: src/routes/_app.settings.tsx:155
+msgid "Sign Out"
+msgstr "Déconnexion"
+
+#: src/routes/_auth.login.tsx:107
+msgid "Sign up"
+msgstr "S'inscrire"
+
+#: src/routes/_auth.signup.tsx:74
+#: src/routes/_auth.signup.tsx:132
+msgid "Sign Up"
+msgstr "Inscription"
+
+#: src/routes/movies.$movieId.tsx:227
+#~ msgid "Similar Movies"
+#~ msgstr "Films similaires"
+
+#: src/features/torrent/components/torrent-table.tsx:95
 msgid "Size"
 msgstr "Taille"
 
-#: src/routes/settings.tsx:100
-msgid "TMDB API"
-msgstr "API TMDB"
+#: src/features/movies/components/movie-details.tsx:34
+msgid "Status"
+msgstr "Statut"
 
-#: src/routes/index.tsx:114
-#: src/routes/index.tsx:129
+#: src/features/movies/components/movie-info.tsx:119
+msgid "Streaming"
+msgstr "Streaming"
+
+#: src/features/movies/components/movie-details.tsx:90
+msgid "TMDB"
+msgstr "TMDB"
+
+#: src/routes/settings.tsx:100
+#~ msgid "TMDB API"
+#~ msgstr "API TMDB"
+
+#: src/features/media/components/media-list-dropdown.tsx:41
 msgid "Top Rated"
 msgstr "Mieux notés"
 
-#: src/routes/settings.tsx:43
+#: src/routes/_app.settings.tsx:89
 msgid "Torrent Indexer"
 msgstr "Indexeur de torrents"
 
-#: src/components/torrent/torrent-table.tsx:241
+#: src/features/torrent/components/torrent-table.tsx:199
 msgid "Torrent Indexers"
 msgstr "Indexeurs de torrents"
 
-#: src/components/torrent/torrent-table.tsx:118
+#: src/features/torrent/components/torrent-table.tsx:92
 msgid "Torrent Name"
 msgstr "Nom du torrent"
 
-#: src/components/torrent/torrent-table.tsx:191
+#: src/routes/_app.search.tsx:62
+msgid "Try a different search term"
+msgstr "Essayez un autre mot-clé"
+
+#: src/features/torrent/components/torrent-table.tsx:160
 msgid "Try adjusting your search query"
 msgstr "Essayez d'ajuster votre recherche"
 
-#: src/routes/index.tsx:99
+#: src/shared/app-sidebar.tsx:26
 msgid "TV Shows"
 msgstr "Séries"
 
 #: src/components/torrent/torrent-table.tsx:215
-msgid "Unknown error occurred"
-msgstr "Une erreur inconnue s'est produite"
+#~ msgid "Unknown error occurred"
+#~ msgstr "Une erreur inconnue s'est produite"
+
+#: src/features/media/components/media-list-dropdown.tsx:47
+msgid "Upcoming"
+msgstr "À venir"
+
+#: src/routes/_app.search.tsx:45
+msgid "Use the search box in the sidebar to get started"
+msgstr "Utilisez la barre de recherche latérale pour commencer"
+
+#: src/routes/_auth.login.tsx:70
+#: src/routes/_auth.signup.tsx:81
+msgid "Username"
+msgstr "Nom d'utilisateur"
+
+#: src/features/media/components/media-poster.tsx:62
+msgid "Watch Trailer"
+msgstr "Voir la bande-annonce"
 
 #: src/routes/movies.$movieId.tsx:134
-msgid "WATCH TRAILER"
-msgstr "BANDE-ANNONCE"
+#~ msgid "WATCH TRAILER"
+#~ msgstr "BANDE-ANNONCE"
 
 #: src/routes/settings.tsx:117
-msgid "Your API key is stored locally in your browser and is never sent to our servers except as an Authorization header."
-msgstr "Votre clé API est stockée localement dans votre navigateur et n'est jamais envoyée à nos serveurs sauf en tant qu'en-tête d'autorisation."
+#~ msgid "Your API key is stored locally in your browser and is never sent to our servers except as an Authorization header."
+#~ msgstr "Votre clé API est stockée localement dans votre navigateur et n'est jamais envoyée à nos serveurs sauf en tant qu'en-tête d'autorisation."
 
 #: src/routes/settings.tsx:73
-msgid "Your Jackett API key is stored locally and used to search torrents."
-msgstr "Votre clé API Jackett est stockée localement et utilisée pour rechercher des torrents."
+#~ msgid "Your Jackett API key is stored locally and used to search torrents."
+#~ msgstr "Votre clé API Jackett est stockée localement et utilisée pour rechercher des torrents."
 
 #: src/routes/settings.tsx:87
-msgid "Your Prowlarr API key is stored locally and used to search torrents."
-msgstr "Votre clé API Prowlarr est stockée localement et utilisée pour rechercher des torrents."
+#~ msgid "Your Prowlarr API key is stored locally and used to search torrents."
+#~ msgstr "Votre clé API Prowlarr est stockée localement et utilisée pour rechercher des torrents."

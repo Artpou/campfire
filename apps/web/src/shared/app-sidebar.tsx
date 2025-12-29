@@ -1,3 +1,5 @@
+import { msg } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Link, useLocation } from "@tanstack/react-router";
 import { Film, Moon, Settings, Sun, Tv } from "lucide-react";
 
@@ -16,17 +18,17 @@ import {
 
 const navItems = [
   {
-    title: "Movies",
+    title: msg`Movies`,
     url: "/movies",
     icon: Film,
   },
   {
-    title: "TV Shows",
+    title: msg`TV Shows`,
     url: "/tv",
     icon: Tv,
   },
   {
-    title: "Settings",
+    title: msg`Settings`,
     url: "/settings",
     icon: Settings,
   },
@@ -35,6 +37,7 @@ const navItems = [
 export function AppSidebar() {
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
+  const { t } = useLingui();
 
   return (
     <Sidebar>
@@ -60,7 +63,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.title.toString()}>
                   <SidebarMenuButton
                     asChild
                     isActive={location.pathname === item.url}
@@ -68,7 +71,7 @@ export function AppSidebar() {
                   >
                     <Link to={item.url}>
                       <item.icon className="size-5" />
-                      <span>{item.title}</span>
+                      <span>{t(item.title)}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

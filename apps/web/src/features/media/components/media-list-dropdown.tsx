@@ -1,4 +1,5 @@
-import { Trans } from "@lingui/react/macro";
+import { msg } from "@lingui/core/macro";
+import { useLingui } from "@lingui/react/macro";
 import { Calendar, Radio, Star, TrendingUp } from "lucide-react";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
@@ -21,6 +22,7 @@ type MediaCategoryDropdownProps = MovieCategoryDropdownProps | TVCategoryDropdow
 
 export function MediaListDropdown(props: MediaCategoryDropdownProps) {
   const { value, onValueChange } = props;
+  const { t } = useLingui();
 
   return (
     <Select value={value} onValueChange={onValueChange}>
@@ -31,20 +33,24 @@ export function MediaListDropdown(props: MediaCategoryDropdownProps) {
       </SelectTrigger>
       <SelectContent>
         {[
-          { value: "popular", icon: <TrendingUp className="text-foreground" />, label: "Popular" },
-          { value: "toprated", icon: <Star className="text-foreground" />, label: "Top Rated" },
+          {
+            value: "popular",
+            icon: <TrendingUp className="text-foreground" />,
+            label: msg`Popular`,
+          },
+          { value: "toprated", icon: <Star className="text-foreground" />, label: msg`Top Rated` },
           {
             value: "latest",
             icon: <Calendar className="text-foreground" />,
-            label: "Airing Today",
+            label: msg`Airing Today`,
           },
-          { value: "airing", icon: <Radio className="text-foreground" />, label: "Upcoming" },
+          { value: "airing", icon: <Radio className="text-foreground" />, label: msg`Upcoming` },
         ].map(({ value, icon, label }) => (
           <SelectItem key={value} value={value} className="text-base">
             <div className="flex items-center gap-2">
               {icon}
               <span className="font-bold">
-                <Trans>{label}</Trans>
+                <span>{t(label)}</span>
               </span>
             </div>
           </SelectItem>

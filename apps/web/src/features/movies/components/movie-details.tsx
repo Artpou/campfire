@@ -65,20 +65,34 @@ export function MovieDetails({ movie }: MovieDetailsProps) {
           </dd>
         </div>
       )}
-      {!!movie.external_ids && (
+      <div className="space-x-2">
+        {!!movie.external_ids && (
+          <Badge variant="secondary" className="text-md px-2 py-1">
+            <a
+              href={`https://www.imdb.com/title/${movie.external_ids.imdb_id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <div className="flex items-center gap-2">
+                <Trans>IMDb</Trans>
+                <ExternalLink className="size-4" />
+              </div>
+            </a>
+          </Badge>
+        )}
         <Badge variant="secondary" className="text-md px-2 py-1">
           <a
-            href={`https://www.imdb.com/title/${movie.external_ids.imdb_id}`}
+            href={`https://www.themoviedb.org/movie/${movie.id}`}
             target="_blank"
             rel="noopener noreferrer"
           >
             <div className="flex items-center gap-2">
-              <Trans>IMDb</Trans>
+              <Trans>TMDB</Trans>
               <ExternalLink className="size-4" />
             </div>
           </a>
         </Badge>
-      )}
+      </div>
     </dl>
   );
 }
