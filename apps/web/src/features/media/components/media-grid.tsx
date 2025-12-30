@@ -1,6 +1,6 @@
 import { Skeleton } from "@/shared/ui/skeleton";
 
-import { Media } from "@/features/media/hooks/use-media";
+import { Media } from "@/features/media/media";
 import { MediaCard } from "./media-card";
 
 interface MediaGridProps {

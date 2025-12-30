@@ -7,7 +7,7 @@ interface SeedarrLoaderProps {
 
 export function SeedarrLoader({ className, size = 100 }: SeedarrLoaderProps) {
   return (
-    <div className={cn("flex items-center justify-center", className)}>
+    <div className={cn("flex flex-col items-center justify-center gap-3", className)}>
       <svg
         width={size}
         height={size}

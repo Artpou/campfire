@@ -1,13 +1,13 @@
 import { useMemo } from "react";
 
 import { Trans } from "@lingui/react/macro";
+import { Link } from "@tanstack/react-router";
 import { Play, Search } from "lucide-react";
 
 import { Button } from "@/shared/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/shared/ui/dialog";
 
 import { getPosterUrl } from "@/features/media/helpers/media.helper";
-import { TorrentTable } from "@/features/torrent/components/torrent-table";
 
 interface MediaPosterProps {
   media: {
@@ -23,9 +23,10 @@ interface MediaPosterProps {
       }[];
     };
   };
+  movieId?: number;
 }
 
-export function MediaPoster({ media }: MediaPosterProps) {
+export function MediaPoster({ media, movieId }: MediaPosterProps) {
   const youtubeTrailer = useMemo(() => {
     if (!media?.videos?.results) return null;
     const trailer = media.videos.results.find(
@@ -34,9 +35,7 @@ export function MediaPoster({ media }: MediaPosterProps) {
     return trailer || media.videos.results.find((video) => video.site === "YouTube");
   }, [media?.videos]);
 
-  const releaseYear = media?.release_date
-    ? new Date(media.release_date).getFullYear().toString()
-    : undefined;
+  const releaseYear = media?.release_date ? media.release_date.split("-")[0] : undefined;
 
   const sanitizedMovieTitle = useMemo(() => {
     const clean = (t?: string) => t?.normalize("NFD").replace(/[\u0300-\u036f]/g, "") || "";
@@ -78,17 +77,19 @@ export function MediaPoster({ media }: MediaPosterProps) {
       )}
 
       {media && (
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button className="w-full">
-              <Search className="size-3 mr-2" />
-              <Trans>Search Torrent</Trans>
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="w-full max-w-[90vw]! h-[90vh]! overflow-y-auto">
-            <TorrentTable movieTitle={sanitizedMovieTitle} releaseYear={releaseYear} />
-          </DialogContent>
-        </Dialog>
+        <Button className="w-full" asChild>
+          <Link
+            to="/torrent"
+            search={{
+              q: sanitizedMovieTitle,
+              movie: movieId,
+              year: releaseYear,
+            }}
+          >
+            <Search className="size-3 mr-2" />
+            <Trans>Search Torrent</Trans>
+          </Link>
+        </Button>
       )}
     </div>
   );

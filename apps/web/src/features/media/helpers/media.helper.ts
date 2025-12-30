@@ -1,4 +1,4 @@
-import { Media } from "@/features/media/hooks/use-media";
+import { Media } from "@/features/media/media";
 
 export type PosterFormat = "w92" | "w154" | "w185" | "w342" | "w500" | "w780" | "original";
 
@@ -79,7 +79,7 @@ export interface FMDBResult {
 
 export function fmdbResultToMedia(fmdbResult: FMDBResult): Media {
   return {
-    id: fmdbResult.tmdbId,
+    id: Number(fmdbResult.tmdbId),
     type: "movie",
     title: fmdbResult.title,
     overview: null,

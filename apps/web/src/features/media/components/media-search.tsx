@@ -42,7 +42,7 @@ export function MediaSearch() {
       <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
       <Input
         type="text"
-        className="placeholder:font-bold placeholder:text-lg pl-9 py-5"
+        className="font-bold placeholder:font-bold pl-9 py-5"
         placeholder={t`Search movies and TV shows...`}
         value={query}
         onChange={(e) => handleChange(e.target.value)}

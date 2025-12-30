@@ -5,20 +5,22 @@
 
 body {
   @apply m-0;
-  font-family:
-    "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
-    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  font-family: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
+    "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+    monospace;
 }
 
 @theme inline {
   --radius-md: calc(var(--radius) - 2px);
-  --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -95,6 +97,8 @@ code {
   --chart-5: oklch(0.48 0.08 135);
 }
 
+/* oklch(0.78 0.11 128) */
+
 .dark {
   /* Dark theme - Nord-inspired, less green, more neutral */
   --background: oklch(0.22 0.004 240); /* bleu-gris froid */
@@ -103,7 +107,7 @@ code {
   --card-foreground: oklch(0.92 0.01 140);
   --popover: oklch(0.26 0.012 225);
   --popover-foreground: oklch(0.92 0.01 140);
-  --primary: oklch(0.62 0.1 125); /* vert soft, pour accent */
+  --primary: oklch(0.63 0.13 135); /* vert soft, pour accent */
   --primary-foreground: oklch(0.98 0.005 140);
   --secondary: oklch(0.24 0.006 220);
   --secondary-foreground: oklch(0.9 0.01 135);
@@ -114,15 +118,15 @@ code {
   --destructive: oklch(0.58 0.18 25);
   --border: oklch(0.32 0.006 230);
   --input: oklch(0.32 0.012 210);
-  --ring: oklch(0.62 0.1 125);
+  --ring: oklch(0.63 0.13 135);
   --sidebar: oklch(0.24 0.006 235); /* bleu-gris neutre */
   --sidebar-foreground: oklch(0.9 0.01 135);
-  --sidebar-primary: oklch(0.62 0.1 125);
+  --sidebar-primary: oklch(0.63 0.13 135);
   --sidebar-primary-foreground: oklch(0.98 0.005 140);
   --sidebar-accent: oklch(0.28 0.007 230);
   --sidebar-accent-foreground: oklch(0.92 0.01 140);
   --sidebar-border: oklch(0.3 0.007 230);
-  --sidebar-ring: oklch(0.62 0.1 125);
+  --sidebar-ring: oklch(0.63 0.13 135);
   /* Chart colors - blue/green spectrum, less green */
   --chart-1: oklch(0.7 0.09 125);
   --chart-2: oklch(0.65 0.1 127);
@@ -151,13 +155,21 @@ code {
     @apply text-lg font-medium text-foreground;
   }
   .text-gradient {
-    background: linear-gradient(135deg, oklch(0.62 0.12 130), oklch(0.78 0.09 125));
+    background: linear-gradient(
+      135deg,
+      oklch(0.62 0.12 130),
+      oklch(0.78 0.09 125)
+    );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     font-weight: bold;
   }
   .bg-primary-gradient {
-    background-image: linear-gradient(135deg, oklch(0.62 0.12 130), oklch(0.78 0.09 125));
+    background-image: linear-gradient(
+      135deg,
+      oklch(0.62 0.12 130),
+      oklch(0.78 0.09 125)
+    );
   }
 }

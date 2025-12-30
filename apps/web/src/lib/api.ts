@@ -15,3 +15,9 @@ export const api = treaty<App>(getBaseUrl(), {
     credentials: "include",
   },
 });
+
+// @ts-expect-error - data is not a property of the Awaited type
+export type ApiData<T> = NonNullable<Awaited<T>["data"]>;
+
+// @ts-expect-error - data is not a property of the Awaited type
+export type ApiDataItem<T> = NonNullable<Awaited<T>["data"]>[number];

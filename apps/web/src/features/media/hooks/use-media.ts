@@ -13,18 +13,19 @@ import {
   tmdbMovieToMedia,
   tmdbTVToMedia,
 } from "@/features/media/helpers/media.helper";
+import { Media } from "@/features/media/media";
 
 export function useMedia(id: number) {
   return useQuery({
     queryKey: ["media", id],
     queryFn: async () => {
+      // biome-ignore lint/suspicious/noTsIgnore: Eden treaty doesn't properly type dynamic routes
+      // @ts-ignore
       const response = await api.media({ id }).get();
       return response.data;
     },
   });
 }
-
-export type Media = NonNullable<ReturnType<typeof useMedia>["data"]>;
 
 export function useRecentlyViewed(type: Media["type"], limit = 20) {
   return useQuery({

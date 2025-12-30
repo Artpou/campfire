@@ -8,11 +8,13 @@ import { ArrowDown, ArrowUp, Download, ListFilter, Plus } from "lucide-react";
 import { api } from "@/lib/api";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
+import { SeedarrLoader } from "@/shared/ui/seedarr-loader";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/shared/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { TorrentIndexersTable } from "@/features/torrent/components/torrent-indexers-table";
+import { Torrent } from "@/features/torrent/torrent";
 
 interface TorrentTableProps {
   movieTitle: string;
@@ -20,8 +22,8 @@ interface TorrentTableProps {
 }
 
 export function TorrentTable({ movieTitle, releaseYear }: TorrentTableProps) {
-  const [visibleIndexers, setVisibleIndexers] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<"recommended" | "others">("recommended");
+  const [visibleIndexers, setVisibleIndexers] = useState<Set<string>>(new Set());
 
   const { data: indexers = [] } = useQuery({
     queryKey: ["indexers"],
@@ -83,6 +85,16 @@ export function TorrentTable({ movieTitle, releaseYear }: TorrentTableProps) {
   console.log(recommended);
 
   const renderTable = (data: Torrent[]) => {
+    const isAnyIndexerLoading = queries.some((query) => query.isLoading);
+
+    if (isAnyIndexerLoading && data.length === 0) {
+      return (
+        <Table className="h-[50vh] flex items-center justify-center">
+          <SeedarrLoader />
+        </Table>
+      );
+    }
+
     return (
       <div className="w-full overflow-hidden">
         <Table>

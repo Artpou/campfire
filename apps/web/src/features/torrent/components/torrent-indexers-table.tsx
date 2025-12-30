@@ -8,13 +8,10 @@ import { Button } from "@/shared/ui/button";
 import { Spinner } from "@/shared/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
-interface Indexer {
-  id: string;
-  name: string;
-}
+import { TorrentIndexer } from "@/features/torrent/torrent";
 
 interface TorrentIndexersTableProps {
-  indexers: Indexer[];
+  indexers: TorrentIndexer[];
   // biome-ignore lint/suspicious/noExplicitAny: any is used to avoid type errors
   torrentQueries: UseQueryResult<any, Error>[];
   onVisibilityChange: (visibleIndexers: Set<string>) => void;

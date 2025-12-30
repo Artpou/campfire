@@ -1,11 +1,13 @@
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 
+import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/shared/ui/card";
 import { CarouselItem } from "@/shared/ui/carousel";
 import { CarouselWrapper } from "@/shared/ui/carousel-wrapper";
 import { Skeleton } from "@/shared/ui/skeleton";
 
-import { Media, useMovieGenres, useTVGenres } from "@/features/media/hooks/use-media";
+import { useMovieGenres, useTVGenres } from "@/features/media/hooks/use-media";
+import { Media } from "@/features/media/media";
 
 interface MediaCategoryCarouselProps {
   type: Media["type"];
@@ -15,15 +17,25 @@ export function MediaCategoryCarousel({ type }: MediaCategoryCarouselProps) {
   const { data: movieGenres = [], isLoading: isLoadingMovies } = useMovieGenres();
   const { data: tvGenres = [], isLoading: isLoadingTV } = useTVGenres();
   const navigate = useNavigate();
+  const search = useSearch({ strict: false }) as { genre?: string };
 
   const genres = type === "movie" ? movieGenres : tvGenres;
   const isLoading = type === "movie" ? isLoadingMovies : isLoadingTV;
+  const selectedGenreId = search.genre ? Number.parseInt(search.genre) : undefined;
 
   const handleGenreClick = (genreId: number) => {
-    navigate({
-      to: type === "movie" ? "/movies" : "/tv",
-      search: { genre: genreId.toString() },
-    });
+    // Toggle: if clicking the same genre, deactivate it
+    if (selectedGenreId === genreId) {
+      navigate({
+        to: type === "movie" ? "/movies" : "/tv",
+        search: {},
+      });
+    } else {
+      navigate({
+        to: type === "movie" ? "/movies" : "/tv",
+        search: { genre: genreId.toString() },
+      });
+    }
   };
 
   if (isLoading) {
@@ -52,9 +64,19 @@ export function MediaCategoryCarousel({ type }: MediaCategoryCarouselProps) {
               <img
                 src={`/${type}/category/${genre.id}.jpg`}
                 alt={genre.name}
-                className="absolute inset-0 h-full w-full object-cover"
+                className={cn(
+                  `absolute inset-0 h-full w-full object-cover transition-all duration-300`,
+                  selectedGenreId !== undefined && selectedGenreId !== genre.id && "grayscale",
+                )}
               />
-              <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/40 to-transparent" />
+              <div
+                className={cn(
+                  `absolute inset-0 transition-all duration-300`,
+                  selectedGenreId === genre.id
+                    ? "bg-linear-to-t from-primary/80 via-primary/40 to-transparent"
+                    : "bg-linear-to-t from-black/80 via-black/40 to-transparent",
+                )}
+              />
               <div className="relative flex h-full items-center justify-center">
                 <h3 className="text-lg font-bold text-white drop-shadow-lg">{genre.name}</h3>
               </div>

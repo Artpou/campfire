@@ -95,7 +95,7 @@ function MoviePage() {
         {/* Content */}
         <div className="container mx-auto px-4 md:px-8">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
-            <MediaPoster media={movie} />
+            <MediaPoster media={movie} movieId={movie.id} />
             <div className="md:col-span-3">
               <MovieInfo movie={movie} />
             </div>

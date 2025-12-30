@@ -15,6 +15,7 @@ import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AuthSignupRouteImport } from './routes/_auth.signup'
 import { Route as AuthLoginRouteImport } from './routes/_auth.login'
 import { Route as AppTvRouteImport } from './routes/_app.tv'
+import { Route as AppTorrentRouteImport } from './routes/_app.torrent'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
 import { Route as AppServerRouteImport } from './routes/_app.server'
 import { Route as AppSearchRouteImport } from './routes/_app.search'
@@ -49,6 +50,11 @@ const AppTvRoute = AppTvRouteImport.update({
   path: '/tv',
   getParentRoute: () => AppRoute,
 } as any)
+const AppTorrentRoute = AppTorrentRouteImport.update({
+  id: '/torrent',
+  path: '/torrent',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof AppSearchRoute
   '/server': typeof AppServerRoute
   '/settings': typeof AppSettingsRoute
+  '/torrent': typeof AppTorrentRoute
   '/tv': typeof AppTvRoute
   '/login': typeof AuthLoginRoute
   '/signup': typeof AuthSignupRoute
@@ -90,6 +97,7 @@ export interface FileRoutesByTo {
   '/search': typeof AppSearchRoute
   '/server': typeof AppServerRoute
   '/settings': typeof AppSettingsRoute
+  '/torrent': typeof AppTorrentRoute
   '/tv': typeof AppTvRoute
   '/login': typeof AuthLoginRoute
   '/signup': typeof AuthSignupRoute
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/_app/search': typeof AppSearchRoute
   '/_app/server': typeof AppServerRoute
   '/_app/settings': typeof AppSettingsRoute
+  '/_app/torrent': typeof AppTorrentRoute
   '/_app/tv': typeof AppTvRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/signup': typeof AuthSignupRoute
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/server'
     | '/settings'
+    | '/torrent'
     | '/tv'
     | '/login'
     | '/signup'
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/server'
     | '/settings'
+    | '/torrent'
     | '/tv'
     | '/login'
     | '/signup'
@@ -141,6 +152,7 @@ export interface FileRouteTypes {
     | '/_app/search'
     | '/_app/server'
     | '/_app/settings'
+    | '/_app/torrent'
     | '/_app/tv'
     | '/_auth/login'
     | '/_auth/signup'
@@ -198,6 +210,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTvRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/torrent': {
+      id: '/_app/torrent'
+      path: '/torrent'
+      fullPath: '/torrent'
+      preLoaderRoute: typeof AppTorrentRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/settings': {
       id: '/_app/settings'
       path: '/settings'
@@ -240,6 +259,7 @@ interface AppRouteChildren {
   AppSearchRoute: typeof AppSearchRoute
   AppServerRoute: typeof AppServerRoute
   AppSettingsRoute: typeof AppSettingsRoute
+  AppTorrentRoute: typeof AppTorrentRoute
   AppTvRoute: typeof AppTvRoute
   AppIndexRoute: typeof AppIndexRoute
   AppMoviesMovieIdRoute: typeof AppMoviesMovieIdRoute
@@ -250,6 +270,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSearchRoute: AppSearchRoute,
   AppServerRoute: AppServerRoute,
   AppSettingsRoute: AppSettingsRoute,
+  AppTorrentRoute: AppTorrentRoute,
   AppTvRoute: AppTvRoute,
   AppIndexRoute: AppIndexRoute,
   AppMoviesMovieIdRoute: AppMoviesMovieIdRoute,

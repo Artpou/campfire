@@ -10,6 +10,7 @@ const fetchTMDB = (apiKey: string, language?: AvailableLanguage) => {
     options?: {
       appendToResponse?: string[];
       query?: string;
+      with_genres?: string;
     },
   ) => {
     const fullUrl = new URL(`${TMDB_API_URL}${url}`);
@@ -20,6 +21,7 @@ const fetchTMDB = (apiKey: string, language?: AvailableLanguage) => {
     if (options?.appendToResponse)
       fullUrl.searchParams.set("append_to_response", options.appendToResponse.join(","));
     if (options?.query) fullUrl.searchParams.set("query", options.query);
+    if (options?.with_genres) fullUrl.searchParams.set("with_genres", options.with_genres);
 
     const res = await fetch(fullUrl.toString());
 
@@ -35,6 +37,7 @@ export interface TMDBClientType {
   movies: Pick<TMDB["movies"], "popular" | "topRated" | "upcoming" | "nowPlaying" | "details">;
   tvShows: Pick<TMDB["tvShows"], "popular" | "topRated" | "onTheAir" | "airingToday" | "details">;
   search: Pick<TMDB["search"], "multi">;
+  discover: Pick<TMDB["discover"], "movie" | "tvShow">;
 }
 
 export const tmdbClient = ({
@@ -63,6 +66,10 @@ export const tmdbClient = ({
     },
     search: {
       multi: async ({ query }) => request("/search/multi", { query }),
+    },
+    discover: {
+      movie: async ({ with_genres } = {}) => request("/discover/movie", { with_genres }),
+      tvShow: async ({ with_genres } = {}) => request("/discover/tv", { with_genres }),
     },
   };
 };
