@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { TvShowQueryOptions } from "tmdb-ts";
+import { CountryCode, TvShowQueryOptions } from "tmdb-ts";
 
 import { useTMDB } from "@/shared/hooks/use-tmdb";
 
@@ -61,33 +61,22 @@ export function useTVProviders() {
 
       const data = await tmdb.watchProviders.getTvProviders();
       // Extract country code from locale (e.g., "fr-FR" -> "FR")
-      const country = tmdbLocale.split("-")[1] || "US";
+      const country = (tmdbLocale.split("-")[1] || "US") as CountryCode;
 
-      const sortedProviders = data.results
+      const result = data.results
         .filter(
-          (provider: { logo_path: string; display_priorities: Record<string, number> }) =>
-            provider.logo_path && provider.display_priorities?.[country],
+          (provider, index, self) =>
+            provider.logo_path &&
+            provider.display_priorities?.[country] &&
+            // deduplicate by provider_name
+            index === self.findIndex((p) => p.provider_name === provider.provider_name),
         )
-        .sort(
-          (
-            a: { display_priorities: Record<string, number> },
-            b: { display_priorities: Record<string, number> },
-          ) => a.display_priorities[country] - b.display_priorities[country],
-        );
-
-      // Deduplicate by provider_name (keeps first occurrence)
-      const providerMap = new Map();
-      for (const provider of sortedProviders) {
-        if (!providerMap.has(provider.provider_name)) {
-          providerMap.set(provider.provider_name, provider);
-        }
-      }
-
-      const result = Array.from(providerMap.values()).map((provider) => {
-        // don't need display_priorities for the UI
-        provider.display_priorities = {} as typeof provider.display_priorities;
-        return provider;
-      });
+        .sort((a, b) => a.display_priorities[country] - b.display_priorities[country])
+        .map((provider) => {
+          // don't need display_priorities for the UI
+          provider.display_priorities = {} as typeof provider.display_priorities;
+          return provider;
+        });
 
       setTVProviders(tmdbLocale, result);
       return result.slice(0, NUMBER_OF_PROVIDERS);
