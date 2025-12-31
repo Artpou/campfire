@@ -15,6 +15,11 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/sh
 
 import { MediaPoster } from "@/features/media/components/media-poster";
 import { getBackdropUrl } from "@/features/media/helpers/media.helper";
+import {
+  useMediaStatus,
+  useToggleLike,
+  useToggleWatchList,
+} from "@/features/media/hooks/use-media";
 import { MovieCast } from "@/features/movies/components/movie-cast";
 import { MovieDetails } from "@/features/movies/components/movie-details";
 import { MovieInfo } from "@/features/movies/components/movie-info";
@@ -30,6 +35,10 @@ function MoviePage() {
   const tmdbLocale = countryToTmdbLocale(i18n.locale);
   const queryClient = useQueryClient();
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  const toggleLike = useToggleLike();
+  const toggleWatchList = useToggleWatchList();
+  const { data: mediaStatus } = useMediaStatus(Number(params.movieId));
 
   const { data, isLoading } = useQuery({
     queryKey: ["movie-full", params.movieId, tmdbLocale],
@@ -82,6 +91,30 @@ function MoviePage() {
 
   const { movie, collection } = data;
 
+  const handleToggleLike = () => {
+    toggleLike.mutate({
+      id: movie.id,
+      type: "movie",
+      title: movie.title || movie.original_title,
+      overview: movie.overview || null,
+      poster_path: movie.poster_path ?? null,
+      vote_average: movie.vote_average ?? null,
+      release_date: movie.release_date || null,
+    });
+  };
+
+  const handleToggleWatchList = () => {
+    toggleWatchList.mutate({
+      id: movie.id,
+      type: "movie",
+      title: movie.title || movie.original_title,
+      overview: movie.overview || null,
+      poster_path: movie.poster_path ?? null,
+      vote_average: movie.vote_average ?? null,
+      release_date: movie.release_date || null,
+    });
+  };
+
   return (
     <div className="pb-20">
       {/* Hero Section with full-width background */}
@@ -107,11 +140,27 @@ function MoviePage() {
                   <Button size="icon-lg" variant="outline" rounded>
                     <Info />
                   </Button>
-                  <Button size="icon-lg" variant="outline" rounded>
-                    <Heart />
+                  <Button
+                    size="icon-lg"
+                    variant={mediaStatus?.isLiked ? "default" : "outline"}
+                    rounded
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleToggleLike();
+                    }}
+                  >
+                    <Heart fill={mediaStatus?.isLiked ? "currentColor" : "none"} />
                   </Button>
-                  <Button size="icon-lg" variant="outline" rounded>
-                    <ClockPlus />
+                  <Button
+                    size="icon-lg"
+                    variant={mediaStatus?.isInWatchList ? "default" : "outline"}
+                    rounded
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleToggleWatchList();
+                    }}
+                  >
+                    <ClockPlus fill={mediaStatus?.isInWatchList ? "currentColor" : "none"} />
                   </Button>
                 </div>
               </SheetTrigger>

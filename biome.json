@@ -9,7 +9,6 @@
     "ignoreUnknown": true,
     "includes": [
       "**/src/**/*",
-      "**/*.{json}",
       "!**/routeTree.gen.ts",
       "!**/drizzle/**/*",
       "!**/locales/**/messages.mjs"

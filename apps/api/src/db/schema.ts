@@ -82,6 +82,40 @@ export const userMedia = sqliteTable(
   (table) => [primaryKey({ columns: [table.userId, table.mediaId] })],
 );
 
+// UserLikes join table - Track user's liked media
+export const userLikes = sqliteTable(
+  "userLikes",
+  {
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    mediaId: integer("mediaId")
+      .notNull()
+      .references(() => media.id, { onDelete: "cascade" }),
+    likedAt: integer("likedAt", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.mediaId] })],
+);
+
+// UserWatchList join table - Track user's watch list
+export const userWatchList = sqliteTable(
+  "userWatchList",
+  {
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    mediaId: integer("mediaId")
+      .notNull()
+      .references(() => media.id, { onDelete: "cascade" }),
+    addedAt: integer("addedAt", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.mediaId] })],
+);
+
 // Export types
 export type User = Omit<typeof user.$inferSelect, "password">;
 export type NewUser = typeof user.$inferInsert;
@@ -93,3 +127,7 @@ export type Media = typeof media.$inferSelect;
 export type NewMedia = typeof media.$inferInsert;
 export type UserMedia = typeof userMedia.$inferSelect;
 export type NewUserMedia = typeof userMedia.$inferInsert;
+export type UserLikes = typeof userLikes.$inferSelect;
+export type NewUserLikes = typeof userLikes.$inferInsert;
+export type UserWatchList = typeof userWatchList.$inferSelect;
+export type NewUserWatchList = typeof userWatchList.$inferInsert;

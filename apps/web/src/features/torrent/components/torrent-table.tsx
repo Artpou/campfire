@@ -82,8 +82,6 @@ export function TorrentTable({ movieTitle, releaseYear }: TorrentTableProps) {
     },
   });
 
-  console.log(recommended);
-
   const renderTable = (data: Torrent[]) => {
     const isAnyIndexerLoading = queries.some((query) => query.isLoading);
 

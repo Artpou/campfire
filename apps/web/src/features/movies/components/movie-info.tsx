@@ -47,8 +47,6 @@ const ProviderIcon = ({ provider, movieName }: { provider: Flatrate; movieName: 
     }
   }, [provider.provider_name, movieName]);
 
-  console.log(provider);
-
   return (
     <button
       type="button"

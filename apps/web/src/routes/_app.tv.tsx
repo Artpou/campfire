@@ -38,8 +38,12 @@ export const Route = createFileRoute("/_app/tv")({
 function TVPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
-  const { data: recentlyViewedTV = [] } = useRecentlyViewed("tv", 20);
+  const { data: recentlyViewedData } = useRecentlyViewed("tv", 20);
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useTVDiscover(search);
+
+  const recentlyViewedTV = useMemo(() => {
+    return recentlyViewedData?.pages.flatMap((page) => page.results) ?? [];
+  }, [recentlyViewedData]);
 
   const tvShows = useMemo(() => {
     return data?.pages.flatMap((page) => page.results) ?? [];

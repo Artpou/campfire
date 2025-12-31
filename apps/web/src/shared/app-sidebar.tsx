@@ -1,7 +1,20 @@
+import { useState } from "react";
+
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { Link, useLocation } from "@tanstack/react-router";
-import { Film, Moon, Settings, Sun, Tv } from "lucide-react";
+import {
+  ChevronDown,
+  ClockPlus,
+  Eye,
+  Film,
+  Heart,
+  List,
+  Moon,
+  Settings,
+  Sun,
+  Tv,
+} from "lucide-react";
 
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Button } from "@/shared/ui/button";
@@ -14,6 +27,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarTrigger,
 } from "@/shared/ui/sidebar";
 
@@ -28,10 +44,23 @@ const navItems = [
     url: "/tv",
     icon: Tv,
   },
+];
+
+const listItems = [
   {
-    title: msg`Settings`,
-    url: "/settings",
-    icon: Settings,
+    title: msg`Watch List`,
+    url: "/lists/watch-list",
+    icon: ClockPlus,
+  },
+  {
+    title: msg`Liked`,
+    url: "/lists/like",
+    icon: Heart,
+  },
+  {
+    title: msg`History`,
+    url: "/lists/history",
+    icon: Eye,
   },
 ];
 
@@ -39,6 +68,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
   const { t } = useLingui();
+  const [listsOpen, setListsOpen] = useState(true);
 
   return (
     <Sidebar collapsible="icon">
@@ -73,13 +103,58 @@ export function AppSidebar() {
                     isActive={location.pathname === item.url}
                     className="text-base py-6"
                   >
-                    <Link to={item.url}>
+                    <Link to={item.url} search={{}}>
                       <item.icon className="size-5" />
                       <span>{t(item.title)}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => setListsOpen(!listsOpen)}
+                  className="text-base py-6"
+                  data-state={listsOpen ? "open" : "closed"}
+                >
+                  <List className="size-5" />
+                  <span>{t(msg`Lists`)}</span>
+                  <ChevronDown
+                    className={`ml-auto size-4 transition-transform ${listsOpen ? "rotate-180" : ""}`}
+                  />
+                </SidebarMenuButton>
+                {listsOpen && (
+                  <SidebarMenuSub>
+                    {listItems.map((item) => (
+                      <SidebarMenuSubItem key={item.title.toString()}>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={location.pathname === item.url}
+                          className="text-base py-5"
+                        >
+                          <Link to={item.url}>
+                            <item.icon className="size-5" />
+                            <span>{t(item.title)}</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                )}
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname === "/settings"}
+                  className="text-base py-6"
+                >
+                  <Link to="/settings" search={{}}>
+                    <Settings className="size-5" />
+                    <span>{t(msg`Settings`)}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

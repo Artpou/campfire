@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { MultiSearchResult } from "tmdb-ts";
 
 import { api } from "@/lib/api";
@@ -25,15 +25,110 @@ export function useMedia(id: number) {
 }
 
 export function useRecentlyViewed(type: Media["type"], limit = 20) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ["recently-viewed", type],
-    queryFn: async () => {
+    queryFn: async ({ pageParam = 1 }) => {
       const response = await api.media["recently-viewed"].get({
-        query: { type, limit },
+        query: { type, page: pageParam, limit },
       });
-      return response.data || [];
+      return response.data || { results: [], page: 1, hasMore: false };
     },
-    refetchOnMount: "always",
+    getNextPageParam: (lastPage) => {
+      return lastPage.hasMore ? lastPage.page + 1 : undefined;
+    },
+    initialPageParam: 1,
+  });
+}
+
+export function useLikeMedia(type: Media["type"], limit = 20) {
+  return useInfiniteQuery({
+    queryKey: ["like-media", type],
+    queryFn: async ({ pageParam = 1 }) => {
+      const response = await api.media.like.get({
+        query: { type, page: pageParam, limit },
+      });
+      return response.data || { results: [], page: 1, hasMore: false };
+    },
+    getNextPageParam: (lastPage) => {
+      return lastPage.hasMore ? lastPage.page + 1 : undefined;
+    },
+    initialPageParam: 1,
+  });
+}
+
+export function useWatchListMedia(type: Media["type"], limit = 20) {
+  return useInfiniteQuery({
+    queryKey: ["watch-list-media", type],
+    queryFn: async ({ pageParam = 1 }) => {
+      const response = await api.media["watch-list"].get({
+        query: { type, page: pageParam, limit },
+      });
+      return response.data || { results: [], page: 1, hasMore: false };
+    },
+    getNextPageParam: (lastPage) => {
+      return lastPage.hasMore ? lastPage.page + 1 : undefined;
+    },
+    initialPageParam: 1,
+  });
+}
+
+export function useMediaStatus(mediaId: number) {
+  return useQuery({
+    queryKey: ["media-status", mediaId],
+    queryFn: async () => {
+      // biome-ignore lint/suspicious/noTsIgnore: Eden treaty doesn't properly type dynamic routes
+      // @ts-ignore - bun type-check not working for /:id/status route
+      const response = await api.media({ id: mediaId }).status.get();
+      return response.data;
+    },
+  });
+}
+
+export function useMediaStatusBatch(mediaIds: number[]) {
+  return useQuery({
+    queryKey: ["media-status-batch", ...mediaIds.sort()],
+    queryFn: async () => {
+      if (mediaIds.length === 0) {
+        return {};
+      }
+      const response = await api.media.status.batch.post({ mediaIds });
+      return response.data as Record<number, { isLiked: boolean; isInWatchList: boolean }>;
+    },
+    enabled: mediaIds.length > 0,
+  });
+}
+
+export function useToggleLike() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (media: Media) => {
+      const response = await api.media.like.post(media);
+      return response.data;
+    },
+    onSuccess: (_, media) => {
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ["media-status", media.id] });
+      queryClient.invalidateQueries({ queryKey: ["media-status-batch"] });
+      queryClient.invalidateQueries({ queryKey: ["like-media"] });
+    },
+  });
+}
+
+export function useToggleWatchList() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (media: Media) => {
+      const response = await api.media["watch-list"].post(media);
+      return response.data;
+    },
+    onSuccess: (_, media) => {
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: ["media-status", media.id] });
+      queryClient.invalidateQueries({ queryKey: ["media-status-batch"] });
+      queryClient.invalidateQueries({ queryKey: ["watch-list-media"] });
+    },
   });
 }
 

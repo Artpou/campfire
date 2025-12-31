@@ -6,6 +6,7 @@ import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { CircularProgress } from "@/shared/ui/circular-progress";
 
+import { useToggleLike, useToggleWatchList } from "@/features/media/hooks/use-media";
 import { Media } from "@/features/media/media";
 import { MovieImage } from "@/features/movies/components/movie-image";
 
@@ -15,10 +16,26 @@ const MAX_OVERVIEW_LENGTH = 100;
 interface MediaCardProps {
   media: Media;
   withType?: boolean;
+  isLiked?: boolean;
+  isInWatchList?: boolean;
 }
 
-export function MediaCard({ media, withType = false }: MediaCardProps) {
+export function MediaCard({ media, withType = false, isLiked, isInWatchList }: MediaCardProps) {
   const year = media.release_date ? new Date(media.release_date).getFullYear() : "";
+  const toggleLike = useToggleLike();
+  const toggleWatchList = useToggleWatchList();
+
+  const handleToggleLike = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleLike.mutate(media);
+  };
+
+  const handleToggleWatchList = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleWatchList.mutate(media);
+  };
 
   const cardContent = (
     <Card className="overflow-hidden aspect-2/3 relative pt-0 pb-0">
@@ -46,42 +63,34 @@ export function MediaCard({ media, withType = false }: MediaCardProps) {
       )}
       <div className="absolute top-2 left-2 right-2 flex justify-between gap-1">
         <div className="flex gap-1">
-          {[
-            {
-              id: "like",
-              icon: HeartIcon,
-              tooltip: <Trans>Like</Trans>,
-              onClick: () => {
-                // TODO: Implement like functionality
-              },
-            },
-            {
-              id: "watchlist",
-              icon: ClockPlusIcon,
-              tooltip: <Trans>Add to watch list</Trans>,
-              onClick: () => {
-                // TODO: Implement add to watch list functionality
-              },
-            },
-          ].map((action) => {
-            const Icon = action.icon;
-            return (
-              <Button
-                key={action.id}
-                variant="outline"
-                size="icon"
-                tooltip={action.tooltip}
-                className="sm:opacity-0 group-hover:opacity-100"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  action.onClick();
-                }}
-              >
-                <Icon />
-              </Button>
-            );
-          })}
+          {isLiked !== undefined && (
+            <Button
+              variant={isLiked ? "default" : "outline"}
+              size="icon"
+              tooltip={isLiked ? <Trans>Unlike</Trans> : <Trans>Like</Trans>}
+              className="sm:opacity-0 group-hover:opacity-100"
+              onClick={handleToggleLike}
+            >
+              <HeartIcon fill={isLiked ? "currentColor" : "none"} />
+            </Button>
+          )}
+          {isInWatchList !== undefined && (
+            <Button
+              variant={isInWatchList ? "default" : "outline"}
+              size="icon"
+              tooltip={
+                isInWatchList ? (
+                  <Trans>Remove from watch list</Trans>
+                ) : (
+                  <Trans>Add to watch list</Trans>
+                )
+              }
+              className="sm:opacity-0 group-hover:opacity-100"
+              onClick={handleToggleWatchList}
+            >
+              <ClockPlusIcon fill={isInWatchList ? "currentColor" : "none"} />
+            </Button>
+          )}
         </div>
         {media.vote_average != null && media.vote_average > 0 && (
           <CircularProgress value={(media.vote_average || 0) * 10} size={52} strokeWidth={5} />
