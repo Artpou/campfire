@@ -26,6 +26,8 @@ const CircularProgress = React.forwardRef<HTMLDivElement, CircularProgressProps>
       return "text-red-500"; // Very Poor (0-24)
     };
 
+    if (!value) return null;
+
     return (
       <div
         ref={ref}

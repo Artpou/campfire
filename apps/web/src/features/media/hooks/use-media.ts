@@ -16,8 +16,6 @@ export function useMedia(id: number) {
   return useQuery({
     queryKey: ["media", id],
     queryFn: async () => {
-      // biome-ignore lint/suspicious/noTsIgnore: Eden treaty doesn't properly type dynamic routes
-      // @ts-ignore - bun type-check not working for /:id route at root level
       const response = await api.media({ id }).get();
       return response.data;
     },
@@ -76,8 +74,6 @@ export function useMediaStatus(mediaId: number) {
   return useQuery({
     queryKey: ["media-status", mediaId],
     queryFn: async () => {
-      // biome-ignore lint/suspicious/noTsIgnore: Eden treaty doesn't properly type dynamic routes
-      // @ts-ignore - bun type-check not working for /:id/status route
       const response = await api.media({ id: mediaId }).status.get();
       return response.data;
     },

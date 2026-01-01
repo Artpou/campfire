@@ -9,7 +9,7 @@ import { AppSidebar } from "@/shared/app-sidebar";
 import { AppTopbar } from "@/shared/app-topbar";
 import { SidebarProvider } from "@/shared/ui/sidebar";
 
-import { useAuthStore } from "@/features/auth/auth-store";
+import { useAuth } from "@/features/auth/auth-store";
 
 const navItems = [
   {
@@ -34,7 +34,7 @@ export const Route = createFileRoute("/_app")({
     try {
       const response = await api.auth.me.get();
       if (response.data) {
-        useAuthStore.getState().setUser(response.data);
+        useAuth.getState().setUser(response.data);
       } else {
         throw redirect({ to: "/login" });
       }

@@ -12,6 +12,7 @@ interface MediaGridProps {
   items: Media[];
   isLoading?: boolean;
   withType?: boolean;
+  withLoading?: boolean;
   onLoadMore?: () => void;
 }
 
@@ -21,6 +22,7 @@ export function MediaGrid({
   items,
   isLoading = false,
   withType = false,
+  withLoading = true,
   onLoadMore,
 }: MediaGridProps) {
   const [lastItemRef, entry] = useIntersectionObserver({
@@ -36,7 +38,7 @@ export function MediaGrid({
     }
   }, [entry, onLoadMore]);
 
-  if (!items || !items.length) return null;
+  if (!isLoading && (!items || !items.length)) return null;
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-6 gap-4">
@@ -57,7 +59,8 @@ export function MediaGrid({
           </div>
         );
       })}
-      {isLoading &&
+      {withLoading &&
+        isLoading &&
         Array.from({ length: 20 }, (_, i) => (
           <Skeleton key={`skeleton-${i.toString()}`} className="aspect-2/3 w-full rounded-md" />
         ))}

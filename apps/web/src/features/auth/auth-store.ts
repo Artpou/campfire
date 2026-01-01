@@ -4,6 +4,7 @@ import { persist } from "zustand/middleware";
 interface User {
   id: string;
   username: string;
+  role: "owner" | "admin" | "member" | "viewer";
   createdAt: Date;
 }
 
@@ -13,7 +14,7 @@ interface AuthStore {
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthStore>()(
+export const useAuth = create<AuthStore>()(
   persist(
     (set) => ({
       user: null,

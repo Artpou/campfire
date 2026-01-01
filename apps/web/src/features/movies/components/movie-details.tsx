@@ -7,6 +7,10 @@ import { Button } from "@/shared/ui/button";
 
 interface MovieDetailsProps {
   movie: AppendToResponse<TMDBMovieDetails, "external_ids"[], "movie">;
+  isLiked?: boolean;
+  isInWatchList?: boolean;
+  onToggleLike?: () => void;
+  onToggleWatchList?: () => void;
 }
 
 const formatCurrency = (amount?: number) => {
@@ -18,7 +22,13 @@ const formatCurrency = (amount?: number) => {
   }).format(amount);
 };
 
-export function MovieDetails({ movie }: MovieDetailsProps) {
+export function MovieDetails({
+  movie,
+  isLiked,
+  isInWatchList,
+  onToggleLike,
+  onToggleWatchList,
+}: MovieDetailsProps) {
   const hasAnyDetails =
     movie.status ||
     (movie.budget && movie.budget > 0) ||
@@ -30,11 +40,21 @@ export function MovieDetails({ movie }: MovieDetailsProps) {
   return (
     <dl className="dark text-foreground space-y-4">
       <div className="flex gap-3">
-        <Button size="icon-lg" variant="outline" rounded>
-          <Heart />
+        <Button
+          size="icon-lg"
+          variant={isLiked ? "default" : "outline"}
+          rounded
+          onClick={onToggleLike}
+        >
+          <Heart fill={isLiked ? "currentColor" : "none"} />
         </Button>
-        <Button size="icon-lg" variant="outline" rounded>
-          <ClockPlus />
+        <Button
+          size="icon-lg"
+          variant={isInWatchList ? "default" : "outline"}
+          rounded
+          onClick={onToggleWatchList}
+        >
+          <ClockPlus fill={isInWatchList ? "currentColor" : "none"} />
         </Button>
       </div>
 

@@ -1,7 +1,7 @@
 import React from "react";
 
 import { Trans } from "@lingui/react/macro";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 
 import { api } from "@/lib/api";
@@ -9,10 +9,16 @@ import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
 
-import { useAuthStore } from "@/features/auth/auth-store";
+import { useAuth } from "@/features/auth/auth-store";
 
 export const Route = createFileRoute("/_auth/signup")({
   component: Signup,
+  beforeLoad: async () => {
+    const response = await api.auth["has-owner"].get();
+    if (response.data?.hasOwner) {
+      throw redirect({ to: "/login" });
+    }
+  },
 });
 
 interface SignupForm {
@@ -23,7 +29,7 @@ interface SignupForm {
 
 function Signup() {
   const navigate = useNavigate();
-  const setUser = useAuthStore((state) => state.setUser);
+  const setUser = useAuth((state) => state.setUser);
   const [error, setError] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
 
@@ -71,7 +77,7 @@ function Signup() {
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle>
-          <Trans>Sign Up</Trans>
+          <Trans>Create Owner Account</Trans>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -131,13 +137,6 @@ function Signup() {
           <Button type="submit" disabled={isLoading} className="w-full">
             {isLoading ? <Trans>Creating account...</Trans> : <Trans>Sign Up</Trans>}
           </Button>
-
-          <p className="text-sm text-center">
-            <Trans>Already have an account?</Trans>{" "}
-            <Link to="/login" className="text-primary hover:underline">
-              <Trans>Sign in</Trans>
-            </Link>
-          </p>
         </form>
       </CardContent>
     </Card>

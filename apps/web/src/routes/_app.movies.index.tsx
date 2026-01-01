@@ -1,11 +1,13 @@
 import { useMemo } from "react";
 
+import { Trans } from "@lingui/react/macro";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { FilterIcon } from "lucide-react";
 import { SortOption } from "tmdb-ts";
 
 import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
+import { PlaceholderEmpty } from "@/shared/ui/seedarr-placeholder";
 
 import { MediaCategoryCarousel } from "@/features/media/components/media-category-carousel";
 import { MediaGrid } from "@/features/media/components/media-grid";
@@ -77,11 +79,18 @@ function MoviesPage() {
             </Button>
           </div>
         </div>
-        <MediaGrid
-          items={movies}
-          isLoading={isLoading || isFetchingNextPage}
-          onLoadMore={handleLoadMore}
-        />
+        {!isLoading && movies.length === 0 ? (
+          <PlaceholderEmpty
+            title={<Trans>No movies found</Trans>}
+            subtitle={<Trans>Try adjusting your filters or search criteria</Trans>}
+          />
+        ) : (
+          <MediaGrid
+            items={movies}
+            isLoading={isLoading || isFetchingNextPage}
+            onLoadMore={handleLoadMore}
+          />
+        )}
       </div>
     </Container>
   );

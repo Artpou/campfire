@@ -59,6 +59,16 @@ export const tmdbClient = ({
     if (options.sort_by === "vote_average.desc") {
       options["vote_count.gte"] = 300;
     }
+
+    if (options.sort_by === "release_date.desc") {
+      options.sort_by = "popularity.desc";
+      const today = new Date().toISOString().split("T")[0];
+      // @ts-expect-error - ugly fix to handle MovieQueryOptions and TvShowQueryOptions sorting
+      options["primary_release_date.gte"] = today;
+      // @ts-expect-error - same
+      options["first_air_date.gte"] = today;
+    }
+
     return Object.fromEntries(Object.entries(options).filter(([_, value]) => value !== undefined));
   };
 

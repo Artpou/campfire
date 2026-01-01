@@ -17,8 +17,8 @@ code {
 }
 
 @theme inline {
-  --radius-md: calc(var(--radius) - 2px);
   --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -44,13 +44,10 @@ code {
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
   --color-muted: var(--muted);
+
   --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 8px);
@@ -60,77 +57,64 @@ code {
 
 :root {
   --radius: 0.45rem;
-  /* Light theme - Nord-inspired green */
+
   --background: oklch(0.98 0.005 140);
   --foreground: oklch(0.25 0.02 140);
   --card: oklch(0.99 0.003 140);
   --card-foreground: oklch(0.25 0.02 140);
   --popover: oklch(0.99 0.003 140);
   --popover-foreground: oklch(0.25 0.02 140);
-  --primary: oklch(0.62 0.12 130); /* rgb(102,155,71) */
+  --primary: oklch(0.63 0.13 135);
   --primary-foreground: oklch(0.98 0.005 140);
   --secondary: oklch(0.92 0.015 135);
   --secondary-foreground: oklch(0.3 0.03 130);
   --muted: oklch(0.95 0.01 135);
   --muted-foreground: oklch(0.5 0.02 135);
-  --accent: oklch(0.78 0.09 125); /* rgb(164,199,117) */
+  --accent: oklch(0.78 0.09 125);
   --accent-foreground: oklch(0.25 0.02 130);
   --destructive: oklch(0.55 0.22 25);
+
   --border: oklch(0.88 0.015 135);
   --input: oklch(0.88 0.015 135);
-  --ring: oklch(0.62 0.12 130);
+  --ring: oklch(0.63 0.13 135);
   --sidebar: oklch(0.97 0.035 133);
   --sidebar-foreground: oklch(0.28 0.02 135);
-  --sidebar-primary: oklch(0.62 0.12 130);
+  --sidebar-primary: oklch(0.63 0.13 135);
   --sidebar-primary-foreground: oklch(0.98 0.005 140);
   --sidebar-accent: oklch(0.93 0.012 135);
   --sidebar-accent-foreground: oklch(0.3 0.03 130);
   --sidebar-border: oklch(0.86 0.018 135);
-  --sidebar-ring: oklch(0.62 0.12 130);
-  /* Chart colors - green spectrum */
-  --chart-1: oklch(0.78 0.09 125);
-  --chart-2: oklch(0.7 0.11 128);
-  --chart-3: oklch(0.62 0.12 130);
-  --chart-4: oklch(0.55 0.1 132);
-  --chart-5: oklch(0.48 0.08 135);
+  --sidebar-ring: oklch(0.63 0.13 135);
+
+  --role-owner: oklch(0.62 0.18 25);
+  --role-admin: oklch(0.6 0.15 275);
+  --role-member: oklch(0.63 0.13 135);
+  --role-viewer: oklch(0.65 0.13 210);
 }
 
-/* oklch(0.78 0.11 128) */
-
 .dark {
-  /* Dark theme - Nord-inspired, less green, more neutral */
-  --background: oklch(0.22 0.004 240); /* bleu-gris froid */
+  --background: oklch(0.22 0.004 240);
   --foreground: oklch(0.92 0.01 140);
-  --card: oklch(0.28 0.006 230); /* neutre, légèrement froid */
+  --card: oklch(0.26 0.008 225);
   --card-foreground: oklch(0.92 0.01 140);
   --popover: oklch(0.26 0.012 225);
   --popover-foreground: oklch(0.92 0.01 140);
-  --primary: oklch(0.63 0.13 135); /* vert soft, pour accent */
   --primary-foreground: oklch(0.98 0.005 140);
   --secondary: oklch(0.24 0.006 220);
   --secondary-foreground: oklch(0.9 0.01 135);
   --muted: oklch(0.25 0.006 230);
   --muted-foreground: oklch(0.68 0.008 230);
-  --accent: oklch(0.78 0.08 125); /* vert accent doux */
+  --accent: oklch(0.32 0.012 225);
   --accent-foreground: oklch(0.92 0.01 140);
-  --destructive: oklch(0.58 0.18 25);
+  --destructive: oklch(0.6 0.18 25);
+
   --border: oklch(0.32 0.006 230);
   --input: oklch(0.32 0.012 210);
-  --ring: oklch(0.63 0.13 135);
-  --sidebar: oklch(0.24 0.006 235); /* bleu-gris neutre */
+  --sidebar: oklch(0.24 0.008 210);
   --sidebar-foreground: oklch(0.9 0.01 135);
-  --sidebar-primary: oklch(0.63 0.13 135);
-  --sidebar-primary-foreground: oklch(0.98 0.005 140);
   --sidebar-accent: oklch(0.28 0.007 230);
   --sidebar-accent-foreground: oklch(0.92 0.01 140);
   --sidebar-border: oklch(0.3 0.007 230);
-  --sidebar-ring: oklch(0.63 0.13 135);
-  /* Chart colors - blue/green spectrum, less green */
-  --chart-1: oklch(0.7 0.09 125);
-  --chart-2: oklch(0.65 0.1 127);
-  --chart-3: oklch(0.6 0.09 130);
-  --chart-4: oklch(0.55 0.08 133);
-  --chart-5: oklch(0.5 0.07 135);
 }
 
 @layer base {
@@ -151,15 +135,5 @@ code {
   }
   h3 {
     @apply text-lg font-medium text-foreground;
-  }
-  .text-gradient {
-    background: linear-gradient(135deg, oklch(0.62 0.12 130), oklch(0.78 0.09 125));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    font-weight: bold;
-  }
-  .bg-primary-gradient {
-    background-image: linear-gradient(135deg, oklch(0.62 0.12 130), oklch(0.78 0.09 125));
   }
 }

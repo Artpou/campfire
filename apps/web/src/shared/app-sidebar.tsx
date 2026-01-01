@@ -14,6 +14,7 @@ import {
   Settings,
   Sun,
   Tv,
+  Users,
 } from "lucide-react";
 
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -32,6 +33,8 @@ import {
   SidebarMenuSubItem,
   SidebarTrigger,
 } from "@/shared/ui/sidebar";
+
+import { useRole } from "@/features/auth/hooks/use-role";
 
 const navItems = [
   {
@@ -69,6 +72,7 @@ export function AppSidebar() {
   const { theme, toggleTheme } = useTheme();
   const { t } = useLingui();
   const [listsOpen, setListsOpen] = useState(true);
+  const { isAdmin } = useRole();
 
   return (
     <Sidebar collapsible="icon">
@@ -142,6 +146,21 @@ export function AppSidebar() {
                   </SidebarMenuSub>
                 )}
               </SidebarMenuItem>
+
+              {isAdmin && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location.pathname === "/users"}
+                    className="text-base py-6"
+                  >
+                    <Link to="/users" search={{}}>
+                      <Users className="size-5" />
+                      <span>{t(msg`Users`)}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
 
               <SidebarMenuItem>
                 <SidebarMenuButton

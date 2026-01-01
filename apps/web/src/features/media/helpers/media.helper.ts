@@ -14,8 +14,11 @@ export function getPosterUrl(path?: string | null, format: PosterFormat = "w500"
 
 export type BackdropFormat = "w300" | "w780" | "w1280" | "original";
 
-export function getBackdropUrl(path?: string | null, format: BackdropFormat = "original"): string {
-  if (!path) return "";
+export function getBackdropUrl(
+  path?: string | null,
+  format: BackdropFormat = "original",
+): string | undefined {
+  if (!path) return undefined;
 
   if (path.includes("https")) {
     return path;

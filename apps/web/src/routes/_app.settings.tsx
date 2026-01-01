@@ -13,7 +13,8 @@ import { Container } from "@/shared/ui/container";
 import { Input } from "@/shared/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
-import { useAuthStore } from "@/features/auth/auth-store";
+import { useAuth } from "@/features/auth/auth-store";
+import { useRole } from "@/features/auth/hooks/use-role";
 import { IndexerType } from "../../../api/src/db/schema";
 
 export const Route = createFileRoute("/_app/settings")({
@@ -23,7 +24,8 @@ export const Route = createFileRoute("/_app/settings")({
 function SettingsPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const logout = useAuthStore((state) => state.logout);
+  const logout = useAuth((state) => state.logout);
+  const { isAdmin } = useRole();
 
   // Fetch indexers using React Query
   const { data: indexerManagers = [] } = useQuery({
@@ -82,61 +84,63 @@ function SettingsPage() {
           </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Download className="size-5" />
-              <CardTitle>
-                <Trans>Torrent Indexer</Trans>
-              </CardTitle>
-            </div>
-            <CardDescription>
-              <Trans>Configure your torrent indexer to search and download torrents.</Trans>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Tabs
-              value={selectedIndexerManager}
-              onValueChange={(v) =>
-                upsertIndexerManager({ name: v as IndexerType, selected: true })
-              }
-            >
-              <TabsList className="grid w-full grid-cols-2">
-                {indexerConfigs.map((config) => (
-                  <TabsTrigger key={config.name} value={config.name}>
-                    <Trans>{config.label}</Trans>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              {indexerConfigs.map((config) => {
-                const indexer = indexerManagers.find(
-                  (i: { name: IndexerType }) => i.name === config.name,
-                );
-                return (
-                  <TabsContent key={config.name} value={config.name} className="space-y-4">
-                    <div className="space-y-2">
-                      <Input
-                        id={`${config.name}-api-key`}
-                        placeholder={config.placeholder}
-                        label={<Trans>{config.label} API Key</Trans>}
-                        defaultValue={indexer?.apiKey || ""}
-                        onBlur={(e) => {
-                          upsertIndexerManager({
-                            name: config.name,
-                            apiKey: e.target.value,
-                          });
-                        }}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        <Trans>{config.description}</Trans>
-                      </p>
-                    </div>
-                  </TabsContent>
-                );
-              })}
-            </Tabs>
-          </CardContent>
-        </Card>
+        {isAdmin && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Download className="size-5" />
+                <CardTitle>
+                  <Trans>Torrent Indexer</Trans>
+                </CardTitle>
+              </div>
+              <CardDescription>
+                <Trans>Configure your torrent indexer to search and download torrents.</Trans>
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Tabs
+                value={selectedIndexerManager}
+                onValueChange={(v) =>
+                  upsertIndexerManager({ name: v as IndexerType, selected: true })
+                }
+              >
+                <TabsList className="grid w-full grid-cols-2">
+                  {indexerConfigs.map((config) => (
+                    <TabsTrigger key={config.name} value={config.name}>
+                      <Trans>{config.label}</Trans>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+                {indexerConfigs.map((config) => {
+                  const indexer = indexerManagers.find(
+                    (i: { name: IndexerType }) => i.name === config.name,
+                  );
+                  return (
+                    <TabsContent key={config.name} value={config.name} className="space-y-4">
+                      <div className="space-y-2">
+                        <Input
+                          id={`${config.name}-api-key`}
+                          placeholder={config.placeholder}
+                          label={<Trans>{config.label} API Key</Trans>}
+                          defaultValue={indexer?.apiKey || ""}
+                          onBlur={(e) => {
+                            upsertIndexerManager({
+                              name: config.name,
+                              apiKey: e.target.value,
+                            });
+                          }}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          <Trans>{config.description}</Trans>
+                        </p>
+                      </div>
+                    </TabsContent>
+                  );
+                })}
+              </Tabs>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

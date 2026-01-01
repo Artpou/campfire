@@ -1,11 +1,12 @@
 import { useEffect } from "react";
 
 import { Trans } from "@lingui/react/macro";
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useRouter } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/shared/ui/button";
 
+import { useAuth } from "@/features/auth/auth-store";
 import { TorrentTable } from "@/features/torrent/components/torrent-table";
 
 export interface TorrentSearchParams {
@@ -22,6 +23,12 @@ export const Route = createFileRoute("/_app/torrent")({
       movie: typeof search.movie === "number" ? search.movie : undefined,
       year: typeof search.year === "string" ? search.year : undefined,
     };
+  },
+  beforeLoad: () => {
+    const user = useAuth.getState().user;
+    if (user?.role === "viewer") {
+      throw redirect({ to: "/404" });
+    }
   },
 });
 

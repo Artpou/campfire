@@ -18,16 +18,34 @@ const cookieOptions = {
 };
 
 export const authRoutes = new Elysia({ prefix: "/auth" })
+  .get("/has-owner", async () => {
+    const userService = new UserService();
+    const hasOwner = await userService.hasOwner();
+    return { hasOwner };
+  })
   .post(
     "/register",
     async ({ body, cookie }) => {
       const { username, password } = body;
       const userService = new UserService();
 
+      // Check if owner exists
+      const hasOwner = await userService.hasOwner();
+
+      // If owner already exists, disable signup
+      if (hasOwner) {
+        throw new Error("Registration is closed. Contact an administrator.");
+      }
+
       const existingUser = await userService.getByUsername(username);
       if (existingUser) throw new Error("Username already exists");
 
-      const newUser = await userService.create({ username, password: hashPassword(password) });
+      // First user becomes owner
+      const newUser = await userService.create({
+        username,
+        password: hashPassword(password),
+        role: "owner",
+      });
       const sessionToken = await createSession(newUser.id);
 
       cookie[SESSION_COOKIE_NAME].set({

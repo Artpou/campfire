@@ -11,9 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AppRouteImport } from './routes/_app'
+import { Route as R404RouteImport } from './routes/404'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AuthSignupRouteImport } from './routes/_auth.signup'
 import { Route as AuthLoginRouteImport } from './routes/_auth.login'
+import { Route as AppUsersRouteImport } from './routes/_app.users'
 import { Route as AppTvRouteImport } from './routes/_app.tv'
 import { Route as AppTorrentRouteImport } from './routes/_app.torrent'
 import { Route as AppSettingsRouteImport } from './routes/_app.settings'
@@ -33,6 +35,11 @@ const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
+const R404Route = R404RouteImport.update({
+  id: '/404',
+  path: '/404',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -47,6 +54,11 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => AuthRoute,
+} as any)
+const AppUsersRoute = AppUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppTvRoute = AppTvRouteImport.update({
   id: '/tv',
@@ -100,11 +112,13 @@ const AppListsHistoryRoute = AppListsHistoryRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/404': typeof R404Route
   '/search': typeof AppSearchRoute
   '/server': typeof AppServerRoute
   '/settings': typeof AppSettingsRoute
   '/torrent': typeof AppTorrentRoute
   '/tv': typeof AppTvRoute
+  '/users': typeof AppUsersRoute
   '/login': typeof AuthLoginRoute
   '/signup': typeof AuthSignupRoute
   '/': typeof AppIndexRoute
@@ -115,11 +129,13 @@ export interface FileRoutesByFullPath {
   '/movies': typeof AppMoviesIndexRoute
 }
 export interface FileRoutesByTo {
+  '/404': typeof R404Route
   '/search': typeof AppSearchRoute
   '/server': typeof AppServerRoute
   '/settings': typeof AppSettingsRoute
   '/torrent': typeof AppTorrentRoute
   '/tv': typeof AppTvRoute
+  '/users': typeof AppUsersRoute
   '/login': typeof AuthLoginRoute
   '/signup': typeof AuthSignupRoute
   '/': typeof AppIndexRoute
@@ -131,6 +147,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/404': typeof R404Route
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
   '/_app/search': typeof AppSearchRoute
@@ -138,6 +155,7 @@ export interface FileRoutesById {
   '/_app/settings': typeof AppSettingsRoute
   '/_app/torrent': typeof AppTorrentRoute
   '/_app/tv': typeof AppTvRoute
+  '/_app/users': typeof AppUsersRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/signup': typeof AuthSignupRoute
   '/_app/': typeof AppIndexRoute
@@ -150,11 +168,13 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/404'
     | '/search'
     | '/server'
     | '/settings'
     | '/torrent'
     | '/tv'
+    | '/users'
     | '/login'
     | '/signup'
     | '/'
@@ -165,11 +185,13 @@ export interface FileRouteTypes {
     | '/movies'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/404'
     | '/search'
     | '/server'
     | '/settings'
     | '/torrent'
     | '/tv'
+    | '/users'
     | '/login'
     | '/signup'
     | '/'
@@ -180,6 +202,7 @@ export interface FileRouteTypes {
     | '/movies'
   id:
     | '__root__'
+    | '/404'
     | '/_app'
     | '/_auth'
     | '/_app/search'
@@ -187,6 +210,7 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/_app/torrent'
     | '/_app/tv'
+    | '/_app/users'
     | '/_auth/login'
     | '/_auth/signup'
     | '/_app/'
@@ -198,6 +222,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  R404Route: typeof R404Route
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
 }
@@ -216,6 +241,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: ''
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/404': {
+      id: '/404'
+      path: '/404'
+      fullPath: '/404'
+      preLoaderRoute: typeof R404RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/': {
@@ -238,6 +270,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/login'
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/_app/users': {
+      id: '/_app/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof AppUsersRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/tv': {
       id: '/_app/tv'
@@ -318,6 +357,7 @@ interface AppRouteChildren {
   AppSettingsRoute: typeof AppSettingsRoute
   AppTorrentRoute: typeof AppTorrentRoute
   AppTvRoute: typeof AppTvRoute
+  AppUsersRoute: typeof AppUsersRoute
   AppIndexRoute: typeof AppIndexRoute
   AppListsHistoryRoute: typeof AppListsHistoryRoute
   AppListsLikeRoute: typeof AppListsLikeRoute
@@ -332,6 +372,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsRoute: AppSettingsRoute,
   AppTorrentRoute: AppTorrentRoute,
   AppTvRoute: AppTvRoute,
+  AppUsersRoute: AppUsersRoute,
   AppIndexRoute: AppIndexRoute,
   AppListsHistoryRoute: AppListsHistoryRoute,
   AppListsLikeRoute: AppListsLikeRoute,
@@ -355,6 +396,7 @@ const AuthRouteChildren: AuthRouteChildren = {
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  R404Route: R404Route,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
 }

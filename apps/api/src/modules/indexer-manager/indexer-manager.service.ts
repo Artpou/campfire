@@ -1,57 +1,47 @@
-import { CreateIndexerManager } from "@basement/validators/indexerManager.validators";
-import { and, eq } from "drizzle-orm";
+import type { CreateIndexerManager } from "@basement/validators/indexerManager.validators";
+import { eq } from "drizzle-orm";
 
+import { AuthenticatedService } from "@/classes/authenticated-service";
 import { db } from "@/db/db";
-import { IndexerType, indexerManager, type NewIndexerManager } from "@/db/schema";
-import { AuthenticatedService } from "../../classes/authenticated-service";
+import { type IndexerType, indexerManager, type NewIndexerManager } from "@/db/schema";
 
 export class IndexerManagerService extends AuthenticatedService {
   private query = db.select().from(indexerManager);
 
   async list() {
-    return await this.query.where(eq(indexerManager.userId, this.user.id));
+    return await this.query;
   }
 
   async getSelected() {
-    const [result] = await this.query
-      .where(and(eq(indexerManager.userId, this.user.id), eq(indexerManager.selected, true)))
-      .limit(1);
-    return result ?? null;
-  }
-
-  async getById(id: string) {
-    const [result] = await this.query.where(eq(indexerManager.id, id)).limit(1);
+    const [result] = await this.query.where(eq(indexerManager.selected, true)).limit(1);
     return result ?? null;
   }
 
   async getByName(name: IndexerType) {
-    const [result] = await this.query
-      .where(and(eq(indexerManager.name, name), eq(indexerManager.userId, this.user.id)))
-      .limit(1);
+    const [result] = await this.query.where(eq(indexerManager.name, name)).limit(1);
     return result ?? null;
   }
 
-  async create(data: Omit<NewIndexerManager, "id">) {
+  async create(data: NewIndexerManager) {
     const [result] = await db.insert(indexerManager).values(data).returning();
     return result;
   }
 
-  async select(id: string) {
-    await db
-      .update(indexerManager)
-      .set({ selected: false })
-      .where(eq(indexerManager.userId, this.user.id));
-    await db.update(indexerManager).set({ selected: true }).where(eq(indexerManager.id, id));
+  async select(name: IndexerType) {
+    // Deselect all first
+    await db.update(indexerManager).set({ selected: false });
+    // Select the specified one
+    await db.update(indexerManager).set({ selected: true }).where(eq(indexerManager.name, name));
   }
 
-  async update(id: string, data: Partial<Omit<NewIndexerManager, "id" | "userId">>) {
-    await db.update(indexerManager).set(data).where(eq(indexerManager.id, id));
-    await this.select(id);
-    return await this.getById(id);
+  async update(name: IndexerType, data: Partial<Omit<NewIndexerManager, "name">>) {
+    await db.update(indexerManager).set(data).where(eq(indexerManager.name, name));
+    await this.select(name);
+    return await this.getByName(name);
   }
 
-  async delete(id: string) {
-    await db.delete(indexerManager).where(eq(indexerManager.id, id));
+  async delete(name: IndexerType) {
+    await db.delete(indexerManager).where(eq(indexerManager.name, name));
   }
 
   async upsert(data: CreateIndexerManager) {
@@ -65,14 +55,14 @@ export class IndexerManagerService extends AuthenticatedService {
 
     const [result] = await db
       .insert(indexerManager)
-      .values({ ...data, userId: this.user.id })
+      .values(data)
       .onConflictDoUpdate({
-        target: [indexerManager.userId, indexerManager.name],
+        target: indexerManager.name,
         set: updateData,
       })
       .returning();
 
-    await this.select(result.id);
+    await this.select(result.name);
     return result;
   }
 }

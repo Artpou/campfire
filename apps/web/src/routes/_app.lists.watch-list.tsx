@@ -53,6 +53,7 @@ function WatchListPage() {
             items={items}
             isLoading={isLoading || isFetchingNextPage}
             onLoadMore={handleLoadMore}
+            withLoading={false}
           />
         )}
       </div>

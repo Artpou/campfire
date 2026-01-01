@@ -1,11 +1,11 @@
-import { eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 
 import { db } from "@/db/db";
 import { type NewUser, user } from "@/db/schema";
 
 export class UserService {
   private query = db
-    .select({ id: user.id, username: user.username, createdAt: user.createdAt })
+    .select({ id: user.id, username: user.username, role: user.role, createdAt: user.createdAt })
     .from(user);
 
   async getById(id: string) {
@@ -16,6 +16,24 @@ export class UserService {
   async getByUsername(username: string) {
     const [result] = await this.query.where(eq(user.username, username)).limit(1);
     return result ?? null;
+  }
+
+  async count() {
+    const [result] = await db.select({ count: count() }).from(user);
+    return result?.count ?? 0;
+  }
+
+  async hasOwner() {
+    const [result] = await db
+      .select({ id: user.id })
+      .from(user)
+      .where(eq(user.role, "owner"))
+      .limit(1);
+    return !!result;
+  }
+
+  async list() {
+    return await this.query;
   }
 
   async getFullUser(username: string) {

@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createRootRoute, Outlet } from "@tanstack/react-router";
+import { createRootRoute, Navigate, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import ms from "ms";
 
@@ -35,25 +35,7 @@ export const Route = createRootRoute({
     </div>
   ),
 
-  notFoundComponent: () => (
-    <div className="min-h-screen flex items-center justify-center px-6">
-      <Card className="max-w-2xl w-full text-center">
-        <CardHeader>
-          <CardTitle className="text-4xl font-bold text-destructive">404</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-foreground text-lg mb-6">The page you're looking for doesn't exist.</p>
-          <button
-            type="button"
-            onClick={() => window.history.back()}
-            className="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold  transition-colors"
-          >
-            Go Back
-          </button>
-        </CardContent>
-      </Card>
-    </div>
-  ),
+  notFoundComponent: () => <Navigate to="/404" replace />,
 
   component: RootComponent,
 });

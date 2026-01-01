@@ -2,7 +2,7 @@ import React from "react";
 
 import { Trans } from "@lingui/react/macro";
 import { useMutation } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 
 import { api } from "@/lib/api";
@@ -10,10 +10,16 @@ import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
 
-import { useAuthStore } from "@/features/auth/auth-store";
+import { useAuth } from "@/features/auth/auth-store";
 
 export const Route = createFileRoute("/_auth/login")({
   component: Login,
+  beforeLoad: async () => {
+    const response = await api.auth["has-owner"].get();
+    if (!response.data?.hasOwner) {
+      throw redirect({ to: "/signup" });
+    }
+  },
 });
 
 interface LoginForm {
@@ -23,7 +29,7 @@ interface LoginForm {
 
 function Login() {
   const navigate = useNavigate();
-  const setUser = useAuthStore((state) => state.setUser);
+  const setUser = useAuth((state) => state.setUser);
   const [error, setError] = React.useState<string>();
 
   const {
@@ -100,13 +106,6 @@ function Login() {
           <Button type="submit" disabled={isPending} className="w-full">
             {isPending ? <Trans>Loading...</Trans> : <Trans>Login</Trans>}
           </Button>
-
-          <p className="text-sm text-center">
-            <Trans>Don't have an account?</Trans>{" "}
-            <Link to="/signup" className="text-primary hover:underline">
-              <Trans>Sign up</Trans>
-            </Link>
-          </p>
         </form>
       </CardContent>
     </Card>

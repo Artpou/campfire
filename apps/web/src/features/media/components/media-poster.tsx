@@ -8,6 +8,7 @@ import { AppendToResponse, MovieDetails } from "tmdb-ts";
 import { Button } from "@/shared/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/shared/ui/dialog";
 
+import { useRole } from "@/features/auth/hooks/use-role";
 import { getPosterUrl } from "@/features/media/helpers/media.helper";
 
 interface MediaPosterProps {
@@ -16,6 +17,7 @@ interface MediaPosterProps {
 }
 
 export function MediaPoster({ media, movieId }: MediaPosterProps) {
+  const { role } = useRole();
   const youtubeTrailer = useMemo(() => {
     if (!media?.videos?.results) return null;
     const trailer = media.videos.results.find(
@@ -65,7 +67,7 @@ export function MediaPoster({ media, movieId }: MediaPosterProps) {
         </Dialog>
       )}
 
-      {media && (
+      {media && role !== "viewer" && (
         <Button className="w-full" asChild>
           <Link
             to="/torrent"

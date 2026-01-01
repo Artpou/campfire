@@ -1,8 +1,12 @@
-import { integer, primaryKey, real, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
+import { integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 // Enum for indexer types
 export const indexerTypeEnum = ["prowlarr", "jackett"] as const;
 export type IndexerType = (typeof indexerTypeEnum)[number];
+
+// Enum for user roles
+export const userRoleEnum = ["owner", "admin", "member", "viewer"] as const;
+export type UserRole = (typeof userRoleEnum)[number];
 
 // User table - Custom auth with username/password
 export const user = sqliteTable("user", {
@@ -11,32 +15,21 @@ export const user = sqliteTable("user", {
     .$defaultFn(() => crypto.randomUUID()),
   username: text("username").notNull().unique(),
   password: text("password").notNull(), // format: "salt:hash"
+  role: text("role", { enum: userRoleEnum }).notNull().default("viewer"),
   createdAt: integer("createdAt", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
 });
 
-// IndexerManager table - Store user-specific indexer configurations
-export const indexerManager = sqliteTable(
-  "indexerManager",
-  {
-    id: text("id")
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
-    userId: text("userId")
-      .notNull()
-      .references(() => user.id, { onDelete: "cascade" }),
-    name: text("name", { enum: indexerTypeEnum }).notNull(),
-    apiKey: text("apiKey"),
-    baseUrl: text("baseUrl"),
-    selected: integer("selected", { mode: "boolean" })
-      .notNull()
-      .$default(() => false),
-  },
-  (table) => ({
-    userIdName: unique().on(table.userId, table.name),
-  }),
-);
+// IndexerManager table - Store global indexer configurations (one per type)
+export const indexerManager = sqliteTable("indexerManager", {
+  name: text("name", { enum: indexerTypeEnum }).primaryKey(),
+  apiKey: text("apiKey"),
+  baseUrl: text("baseUrl"),
+  selected: integer("selected", { mode: "boolean" })
+    .notNull()
+    .$default(() => false),
+});
 
 // Session table - Store user sessions for authentication persistence
 export const session = sqliteTable("session", {

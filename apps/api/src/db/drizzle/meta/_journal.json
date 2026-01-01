@@ -22,6 +22,13 @@
       "when": 1767132487133,
       "tag": "0002_wooden_ser_duncan",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1767143089027,
+      "tag": "0003_lonely_quentin_quire",
+      "breakpoints": true
     }
   ]
 }

@@ -14,7 +14,11 @@ import { SeedarrLoader } from "@/shared/ui/seedarr-loader";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/shared/ui/sheet";
 
 import { MediaPoster } from "@/features/media/components/media-poster";
-import { getBackdropUrl } from "@/features/media/helpers/media.helper";
+import {
+  getBackdropUrl,
+  getPosterUrl,
+  tmdbMovieToMedia,
+} from "@/features/media/helpers/media.helper";
 import {
   useMediaStatus,
   useToggleLike,
@@ -92,28 +96,14 @@ function MoviePage() {
   const { movie, collection } = data;
 
   const handleToggleLike = () => {
-    toggleLike.mutate({
-      id: movie.id,
-      type: "movie",
-      title: movie.title || movie.original_title,
-      overview: movie.overview || null,
-      poster_path: movie.poster_path ?? null,
-      vote_average: movie.vote_average ?? null,
-      release_date: movie.release_date || null,
-    });
+    toggleLike.mutate(tmdbMovieToMedia(movie));
   };
 
   const handleToggleWatchList = () => {
-    toggleWatchList.mutate({
-      id: movie.id,
-      type: "movie",
-      title: movie.title || movie.original_title,
-      overview: movie.overview || null,
-      poster_path: movie.poster_path ?? null,
-      vote_average: movie.vote_average ?? null,
-      release_date: movie.release_date || null,
-    });
+    toggleWatchList.mutate(tmdbMovieToMedia(movie));
   };
+
+  console.log(getBackdropUrl(movie.backdrop_path));
 
   return (
     <div className="pb-20">
@@ -123,7 +113,7 @@ function MoviePage() {
         <div
           className="absolute inset-0 bg-cover bg-center -z-10 filter"
           style={{
-            backgroundImage: `url(${getBackdropUrl(movie.backdrop_path)})`,
+            backgroundImage: `url(${getBackdropUrl(movie.backdrop_path) || getPosterUrl(movie.poster_path)})`,
           }}
         >
           <div className="absolute inset-0 bg-linear-to-r from-[oklch(0.22_0.004_240/0.95)] via-[oklch(0.22_0.004_240/0.75)] to-[oklch(0.22_0.004_240/0.75)]" />
@@ -169,7 +159,13 @@ function MoviePage() {
                   <SheetTitle>{movie.title}</SheetTitle>
                 </SheetHeader>
                 <div className="mx-4">
-                  <MovieDetails movie={movie} />
+                  <MovieDetails
+                    movie={movie}
+                    isLiked={mediaStatus?.isLiked}
+                    isInWatchList={mediaStatus?.isInWatchList}
+                    onToggleLike={handleToggleLike}
+                    onToggleWatchList={handleToggleWatchList}
+                  />
                 </div>
               </SheetContent>
             </Sheet>
@@ -182,7 +178,13 @@ function MoviePage() {
             <MovieInfo movie={movie} />
           </div>
           <div className="hidden xl:block w-[300px]">
-            <MovieDetails movie={movie} />
+            <MovieDetails
+              movie={movie}
+              isLiked={mediaStatus?.isLiked}
+              isInWatchList={mediaStatus?.isInWatchList}
+              onToggleLike={handleToggleLike}
+              onToggleWatchList={handleToggleWatchList}
+            />
           </div>
         </Container>
       </div>
