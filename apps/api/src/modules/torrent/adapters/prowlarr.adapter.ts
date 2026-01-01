@@ -1,4 +1,4 @@
-import { getTorrentQuality } from "@/helpers/video.helper";
+import { getLanguageFromTitle, getTorrentQuality } from "@/helpers/video.helper";
 import { IndexerType } from "../../../db/schema";
 import { IndexerAdapter, Torrent, TorrentIndexer, TorrentQuality } from "./base.adapter";
 
@@ -92,6 +92,7 @@ export class ProwlarrAdapter implements IndexerAdapter {
       link: result.downloadUrl,
       guid: result.guid,
       quality: getTorrentQuality(result.title),
+      language: getLanguageFromTitle(result.title),
       detailsUrl: result.infoUrl,
       indexerType: "prowlarr",
     }));

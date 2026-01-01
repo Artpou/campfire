@@ -20,6 +20,11 @@ const fetchTMDB = (apiKey: string, language?: AvailableLanguage) => {
           fullUrl.searchParams.set("watch_region", language?.split("-")[1] || "US");
         }
 
+        if (key === "with_release_type") {
+          const today = new Date().toISOString().split("T")[0];
+          fullUrl.searchParams.set("release_date.lte", today);
+        }
+
         const paramValue = Array.isArray(value) ? value.join(",") : value;
         const snakeCaseKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
         fullUrl.searchParams.set(snakeCaseKey, paramValue);

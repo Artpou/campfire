@@ -16,14 +16,14 @@ msgstr ""
 #. placeholder {0}: collection?.name
 #. placeholder {0}: config.description
 #. placeholder {0}: config.label
-#: src/features/movies/components/movie-related.tsx:49
-#: src/routes/_app.settings.tsx:106
-#: src/routes/_app.settings.tsx:130
+#: src/features/movies/components/movie-related.tsx:48
+#: src/routes/_app.settings.tsx:110
+#: src/routes/_app.settings.tsx:134
 msgid "{0}"
 msgstr "{0}"
 
 #. placeholder {0}: config.label
-#: src/routes/_app.settings.tsx:120
+#: src/routes/_app.settings.tsx:124
 msgid "{0} API Key"
 msgstr "{0} API Key"
 
@@ -39,35 +39,57 @@ msgstr "{0} API Key"
 msgid "{type}"
 msgstr "{type}"
 
-#: src/routes/_app.settings.tsx:145
+#: src/routes/_app.settings.tsx:150
 msgid "Account"
 msgstr "Account"
 
-#: src/features/torrent/components/torrent-table.tsx:146
+#: src/features/user/components/users-table.tsx:123
+msgid "Actions"
+msgstr "Actions"
+
+#: src/features/torrent/components/torrent-table.tsx:75
 msgid "Add"
 msgstr "Add"
 
+#: src/features/media/components/media-card.tsx:85
+msgid "Add to watch list"
+msgstr "Add to watch list"
+
 #: src/features/media/components/media-list-dropdown.tsx:45
-msgid "Airing Today"
-msgstr "Airing Today"
+#~ msgid "Airing Today"
+#~ msgstr "Airing Today"
 
 #: src/routes/_auth.signup.tsx:136
-msgid "Already have an account?"
-msgstr "Already have an account?"
+#~ msgid "Already have an account?"
+#~ msgstr "Already have an account?"
 
 #: src/routes/settings.tsx:112
 #~ msgid "API Key"
 #~ msgstr "API Key"
 
-#: src/features/movies/components/movie-details.tsx:43
+#. placeholder {0}: userToDelete?.username
+#: src/features/user/components/users-table.tsx:195
+msgid "Are you sure you want to delete user \"{0}\"? This action cannot be undone."
+msgstr "Are you sure you want to delete user \"{0}\"? This action cannot be undone."
+
+#: src/features/media/components/media-sort-tabs.tsx:19
+msgid "At Home"
+msgstr "At Home"
+
+#: src/features/movies/components/movie-details.tsx:73
 msgid "Budget"
 msgstr "Budget"
 
-#: src/features/movies/components/movie-info.tsx:139
+#: src/features/movies/components/movie-info.tsx:177
 msgid "Buy / Rent"
 msgstr "Buy / Rent"
 
-#: src/features/movies/components/movie-cast.tsx:37
+#: src/features/user/components/user-form-modal.tsx:293
+#: src/features/user/components/users-table.tsx:203
+msgid "Cancel"
+msgstr "Cancel"
+
+#: src/features/movies/components/movie-cast.tsx:36
 msgid "Cast & Crew"
 msgstr "Cast & Crew"
 
@@ -75,51 +97,112 @@ msgstr "Cast & Crew"
 #~ msgid "Configure your TMDB API Key in settings to get started."
 #~ msgstr "Configure your TMDB API Key in settings to get started."
 
-#: src/routes/_app.settings.tsx:93
+#: src/routes/_app.settings.tsx:97
 msgid "Configure your torrent indexer to search and download torrents."
 msgstr "Configure your torrent indexer to search and download torrents."
 
-#: src/routes/_auth.signup.tsx:114
+#: src/features/user/components/user-form-modal.tsx:215
+#: src/features/user/components/user-form-modal.tsx:234
+#: src/routes/_auth.signup.tsx:120
 msgid "Confirm Password"
 msgstr "Confirm Password"
 
-#: src/routes/_auth.signup.tsx:132
+#: src/features/user/components/user-form-modal.tsx:296
+msgid "Create"
+msgstr "Create"
+
+#: src/features/user/components/user-form-modal.tsx:170
+msgid "Create a new user account with specified role"
+msgstr "Create a new user account with specified role"
+
+#: src/routes/_auth.signup.tsx:80
+msgid "Create Owner Account"
+msgstr "Create Owner Account"
+
+#: src/features/user/components/user-form-modal.tsx:164
+#: src/routes/_app.users.tsx:76
+msgid "Create User"
+msgstr "Create User"
+
+#: src/features/user/components/users-table.tsx:120
+msgid "Created At"
+msgstr "Created At"
+
+#: src/routes/_auth.signup.tsx:138
 msgid "Creating account..."
 msgstr "Creating account..."
 
-#: src/routes/_auth.login.tsx:105
-msgid "Don't have an account?"
-msgstr "Don't have an account?"
+#: src/features/user/components/users-table.tsx:175
+#: src/features/user/components/users-table.tsx:209
+msgid "Delete"
+msgstr "Delete"
 
-#: src/features/torrent/components/torrent-table.tsx:142
+#: src/features/user/components/users-table.tsx:192
+msgid "Delete User"
+msgstr "Delete User"
+
+#: src/routes/_auth.login.tsx:105
+#~ msgid "Don't have an account?"
+#~ msgstr "Don't have an account?"
+
+#: src/features/torrent/components/torrent-table.tsx:71
 msgid "Download"
 msgstr "Download"
+
+#: src/features/user/components/users-table.tsx:164
+msgid "Edit"
+msgstr "Edit"
+
+#: src/features/user/components/user-form-modal.tsx:164
+msgid "Edit User"
+msgstr "Edit User"
 
 #: src/routes/settings.tsx:104
 #~ msgid "Enter your TMDB API key to enable personalized search and detailed movie information."
 #~ msgstr "Enter your TMDB API key to enable personalized search and detailed movie information."
 
+#: src/features/torrent/components/torrent-indexers-table.tsx:82
+msgid "Error"
+msgstr "Error"
+
 #: src/components/torrent/torrent-table.tsx:209
 #~ msgid "Failed to load indexers"
 #~ msgstr "Failed to load indexers"
 
-#: src/routes/movies.$movieId.tsx:93
-#~ msgid "Go Back"
-#~ msgstr "Go Back"
+#: src/features/torrent/components/torrent-indexers-table.tsx:120
+msgid "Found"
+msgstr "Found"
 
-#: src/features/torrent/components/torrent-table.tsx:98
+#: src/routes/404.tsx:33
+msgid "Go Back"
+msgstr "Go Back"
+
+#: src/features/torrent/components/torrent-table.tsx:27
 msgid "Health"
 msgstr "Health"
+
+#: src/routes/_app.lists.history.tsx:43
+#: src/shared/app-sidebar.tsx:64
+msgid "History"
+msgstr "History"
 
 #: src/components/app-topbar.tsx:37
 #~ msgid "Home"
 #~ msgstr "Home"
 
-#: src/features/movies/components/movie-details.tsx:77
+#: src/features/torrent/components/torrent-indexers-table.tsx:97
+msgid "Idle"
+msgstr "Idle"
+
+#: src/features/movies/components/movie-details.tsx:107
 msgid "IMDb"
 msgstr "IMDb"
 
-#: src/features/torrent/components/torrent-table.tsx:193
+#: src/features/media/components/media-sort-tabs.tsx:13
+msgid "In Cinema"
+msgstr "In Cinema"
+
+#: src/features/torrent/components/torrent-indexers-table.tsx:106
 msgid "Indexers"
 msgstr "Indexers"
 
@@ -131,20 +214,41 @@ msgstr "Indexers"
 #~ msgid "Jackett API Key"
 #~ msgstr "Jackett API Key"
 
-#: src/routes/_auth.login.tsx:101
+#: src/features/media/components/media-card.tsx:70
+msgid "Like"
+msgstr "Like"
+
+#: src/routes/_app.lists.like.tsx:43
+#: src/shared/app-sidebar.tsx:59
+msgid "Liked"
+msgstr "Liked"
+
+#: src/shared/app-sidebar.tsx:125
+msgid "Lists"
+msgstr "Lists"
+
+#: src/features/torrent/components/torrent-indexers-table.tsx:76
+msgid "Loading"
+msgstr "Loading"
+
+#: src/routes/_auth.login.tsx:107
 msgid "Loading..."
 msgstr "Loading..."
 
-#: src/routes/_auth.login.tsx:63
-#: src/routes/_auth.login.tsx:101
+#: src/routes/_auth.login.tsx:69
+#: src/routes/_auth.login.tsx:107
 msgid "Login"
 msgstr "Login"
 
-#: src/routes/_app.settings.tsx:149
+#: src/routes/_app.users.tsx:70
+msgid "Manage user accounts and permissions"
+msgstr "Manage user accounts and permissions"
+
+#: src/routes/_app.settings.tsx:154
 msgid "Manage your account settings and sign out."
 msgstr "Manage your account settings and sign out."
 
-#: src/routes/_app.settings.tsx:80
+#: src/routes/_app.settings.tsx:83
 msgid "Manage your application preferences and API integrations."
 msgstr "Manage your application preferences and API integrations."
 
@@ -152,17 +256,46 @@ msgstr "Manage your application preferences and API integrations."
 #~ msgid "Movie not found"
 #~ msgstr "Movie not found"
 
-#: src/shared/app-sidebar.tsx:21
+#: src/routes/_app.tsx:16
+#: src/shared/app-sidebar.tsx:41
 msgid "Movies"
 msgstr "Movies"
 
-#: src/routes/_app.search.tsx:59
+#: src/features/torrent/components/torrent-indexers-table.tsx:114
+msgid "Name"
+msgstr "Name"
+
+#: src/features/torrent/components/torrent-indexers-table.tsx:157
+msgid "No indexers configured"
+msgstr "No indexers configured"
+
+#: src/routes/_app.lists.watch-list.tsx:48
+msgid "No items in your watch list yet."
+msgstr "No items in your watch list yet."
+
+#: src/routes/_app.lists.like.tsx:48
+msgid "No liked items yet."
+msgstr "No liked items yet."
+
+#: src/routes/_app.movies.index.tsx:117
+msgid "No movies found"
+msgstr "No movies found"
+
+#: src/routes/_app.search.tsx:66
 msgid "No results found for \"{q}\""
 msgstr "No results found for \"{q}\""
 
-#: src/features/torrent/components/torrent-table.tsx:157
+#: src/features/torrent/components/torrent-table.tsx:86
 msgid "No torrents found"
 msgstr "No torrents found"
+
+#: src/features/user/components/users-table.tsx:131
+msgid "No users found"
+msgstr "No users found"
+
+#: src/routes/_app.lists.history.tsx:48
+msgid "No viewing history yet."
+msgstr "No viewing history yet."
 
 #: src/routes/index.tsx:110
 #~ msgid "Now Playing"
@@ -173,11 +306,12 @@ msgstr "No torrents found"
 #~ msgstr "On The Air"
 
 #: src/features/torrent/components/torrent-table.tsx:185
-msgid "Others"
-msgstr "Others"
+#~ msgid "Others"
+#~ msgstr "Others"
 
-#: src/routes/_auth.login.tsx:86
-#: src/routes/_auth.signup.tsx:97
+#: src/features/user/components/user-form-modal.tsx:194
+#: src/routes/_auth.login.tsx:92
+#: src/routes/_auth.signup.tsx:103
 msgid "Password"
 msgstr "Password"
 
@@ -186,8 +320,8 @@ msgstr "Password"
 #~ msgstr "Please check your API key and make sure {indexerType} is running."
 
 #: src/features/media/components/media-list-dropdown.tsx:39
-msgid "Popular"
-msgstr "Popular"
+#~ msgid "Popular"
+#~ msgstr "Popular"
 
 #: src/routes/index.tsx:106
 #~ msgid "Popular Movies"
@@ -197,7 +331,7 @@ msgstr "Popular"
 #~ msgid "Popular TV Shows"
 #~ msgstr "Popular TV Shows"
 
-#: src/features/movies/components/movie-details.tsx:61
+#: src/features/movies/components/movie-details.tsx:91
 msgid "Production"
 msgstr "Production"
 
@@ -209,33 +343,41 @@ msgstr "Production"
 #~ msgid "Prowlarr API Key"
 #~ msgstr "Prowlarr API Key"
 
-#: src/routes/_app.movies.index.tsx:30
-#: src/routes/_app.tv.tsx:30
+#: src/routes/_app.tv.tsx:102
 msgid "Recently Viewed"
 msgstr "Recently Viewed"
 
-#: src/features/movies/components/movie-related.tsx:52
+#: src/features/movies/components/movie-related.tsx:51
 msgid "Recommended"
 msgstr "Recommended"
 
 #: src/features/torrent/components/torrent-table.tsx:182
-msgid "Recommended Torrents"
-msgstr "Recommended Torrents"
+#~ msgid "Recommended Torrents"
+#~ msgstr "Recommended Torrents"
 
-#: src/features/movies/components/movie-related.tsx:57
+#: src/features/movies/components/movie-related.tsx:56
 msgid "Related"
 msgstr "Related"
 
-#: src/features/movies/components/movie-details.tsx:52
+#: src/features/media/components/media-card.tsx:83
+msgid "Remove from watch list"
+msgstr "Remove from watch list"
+
+#: src/features/movies/components/movie-details.tsx:82
 msgid "Revenue"
 msgstr "Revenue"
+
+#: src/features/user/components/user-form-modal.tsx:253
+#: src/features/user/components/users-table.tsx:117
+msgid "Role"
+msgstr "Role"
 
 #: src/routes/index.tsx:81
 #: src/routes/index.tsx:103
 #~ msgid "Search a movie or a TV show"
 #~ msgstr "Search a movie or a TV show"
 
-#: src/routes/_app.search.tsx:42
+#: src/routes/_app.search.tsx:44
 msgid "Search for Movies and TV Shows"
 msgstr "Search for Movies and TV Shows"
 
@@ -243,46 +385,50 @@ msgstr "Search for Movies and TV Shows"
 #~ msgid "Search movies"
 #~ msgstr "Search movies"
 
-#: src/features/media/components/media-search.tsx:45
+#: src/features/media/components/media-search.tsx:46
 msgid "Search movies and TV shows..."
 msgstr "Search movies and TV shows..."
 
-#: src/routes/_app.search.tsx:51
+#: src/routes/_app.search.tsx:57
 msgid "Search Results for \"{q}\""
 msgstr "Search Results for \"{q}\""
 
-#: src/features/media/components/media-poster.tsx:85
+#: src/features/media/components/media-poster.tsx:64
 msgid "Search Torrent"
 msgstr "Search Torrent"
 
-#. placeholder {0}: uniqueProviders.flatrate.length + uniqueProviders.buyRent.length
+#. placeholder {0}: media.title
+#: src/routes/_app.movies.$movieId.torrents.tsx:72
+msgid "Search torrents for \"{0}\""
+msgstr "Search torrents for \"{0}\""
+
 #: src/features/movies/components/movie-info.tsx:110
-msgid "See all ({0})"
-msgstr "See all ({0})"
+#~ msgid "See all ({0})"
+#~ msgstr "See all ({0})"
 
 #: src/components/app-topbar.tsx:52
 #~ msgid "Server"
 #~ msgstr "Server"
 
-#: src/routes/_app.settings.tsx:77
-#: src/shared/app-sidebar.tsx:31
+#: src/routes/_app.settings.tsx:80
+#: src/routes/_app.tsx:26
+#: src/shared/app-sidebar.tsx:173
 msgid "Settings"
 msgstr "Settings"
 
 #: src/routes/_auth.signup.tsx:138
-msgid "Sign in"
-msgstr "Sign in"
+#~ msgid "Sign in"
+#~ msgstr "Sign in"
 
-#: src/routes/_app.settings.tsx:155
+#: src/routes/_app.settings.tsx:160
 msgid "Sign Out"
 msgstr "Sign Out"
 
 #: src/routes/_auth.login.tsx:107
-msgid "Sign up"
-msgstr "Sign up"
+#~ msgid "Sign up"
+#~ msgstr "Sign up"
 
-#: src/routes/_auth.signup.tsx:74
-#: src/routes/_auth.signup.tsx:132
+#: src/routes/_auth.signup.tsx:138
 msgid "Sign Up"
 msgstr "Sign Up"
 
@@ -290,19 +436,28 @@ msgstr "Sign Up"
 #~ msgid "Similar Movies"
 #~ msgstr "Similar Movies"
 
-#: src/features/torrent/components/torrent-table.tsx:95
+#: src/features/torrent/components/torrent-table.tsx:24
 msgid "Size"
 msgstr "Size"
 
-#: src/features/movies/components/movie-details.tsx:34
+#: src/features/movies/components/movie-details.tsx:64
+#: src/features/torrent/components/torrent-indexers-table.tsx:117
 msgid "Status"
 msgstr "Status"
 
-#: src/features/movies/components/movie-info.tsx:119
+#: src/features/movies/components/movie-info.tsx:159
 msgid "Streaming"
 msgstr "Streaming"
 
-#: src/features/movies/components/movie-details.tsx:90
+#: src/features/torrent/components/torrent-indexers-table.tsx:91
+msgid "Success"
+msgstr "Success"
+
+#: src/routes/404.tsx:30
+msgid "The page you're looking for doesn't exist."
+msgstr "The page you're looking for doesn't exist."
+
+#: src/features/movies/components/movie-details.tsx:120
 msgid "TMDB"
 msgstr "TMDB"
 
@@ -310,31 +465,36 @@ msgstr "TMDB"
 #~ msgid "TMDB API"
 #~ msgstr "TMDB API"
 
-#: src/features/media/components/media-list-dropdown.tsx:41
+#: src/features/media/components/media-sort-tabs.tsx:25
 msgid "Top Rated"
 msgstr "Top Rated"
 
-#: src/routes/_app.settings.tsx:89
+#: src/routes/_app.settings.tsx:93
 msgid "Torrent Indexer"
 msgstr "Torrent Indexer"
 
 #: src/features/torrent/components/torrent-table.tsx:199
-msgid "Torrent Indexers"
-msgstr "Torrent Indexers"
+#~ msgid "Torrent Indexers"
+#~ msgstr "Torrent Indexers"
 
-#: src/features/torrent/components/torrent-table.tsx:92
+#: src/features/torrent/components/torrent-table.tsx:21
 msgid "Torrent Name"
 msgstr "Torrent Name"
 
-#: src/routes/_app.search.tsx:62
+#: src/routes/_app.search.tsx:69
 msgid "Try a different search term"
 msgstr "Try a different search term"
 
-#: src/features/torrent/components/torrent-table.tsx:160
+#: src/routes/_app.movies.index.tsx:118
+msgid "Try adjusting your filters or search criteria"
+msgstr "Try adjusting your filters or search criteria"
+
+#: src/features/torrent/components/torrent-table.tsx:89
 msgid "Try adjusting your search query"
 msgstr "Try adjusting your search query"
 
-#: src/shared/app-sidebar.tsx:26
+#: src/routes/_app.tsx:21
+#: src/shared/app-sidebar.tsx:46
 msgid "TV Shows"
 msgstr "TV Shows"
 
@@ -342,20 +502,47 @@ msgstr "TV Shows"
 #~ msgid "Unknown error occurred"
 #~ msgstr "Unknown error occurred"
 
-#: src/features/media/components/media-list-dropdown.tsx:47
+#: src/features/media/components/media-card.tsx:70
+msgid "Unlike"
+msgstr "Unlike"
+
+#: src/features/media/components/media-sort-tabs.tsx:31
 msgid "Upcoming"
 msgstr "Upcoming"
 
-#: src/routes/_app.search.tsx:45
+#: src/features/user/components/user-form-modal.tsx:296
+msgid "Update"
+msgstr "Update"
+
+#: src/features/user/components/user-form-modal.tsx:168
+msgid "Update user information and permissions"
+msgstr "Update user information and permissions"
+
+#: src/routes/_app.search.tsx:47
 msgid "Use the search box in the sidebar to get started"
 msgstr "Use the search box in the sidebar to get started"
 
-#: src/routes/_auth.login.tsx:70
-#: src/routes/_auth.signup.tsx:81
+#: src/routes/_app.users.tsx:67
+msgid "User Management"
+msgstr "User Management"
+
+#: src/features/user/components/user-form-modal.tsx:178
+#: src/features/user/components/users-table.tsx:114
+#: src/routes/_auth.login.tsx:76
+#: src/routes/_auth.signup.tsx:87
 msgid "Username"
 msgstr "Username"
 
-#: src/features/media/components/media-poster.tsx:62
+#: src/shared/app-sidebar.tsx:159
+msgid "Users"
+msgstr "Users"
+
+#: src/routes/_app.lists.watch-list.tsx:43
+#: src/shared/app-sidebar.tsx:54
+msgid "Watch List"
+msgstr "Watch List"
+
+#: src/features/media/components/media-poster.tsx:42
 msgid "Watch Trailer"
 msgstr "Watch Trailer"
 

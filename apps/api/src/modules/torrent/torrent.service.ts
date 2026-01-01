@@ -56,7 +56,7 @@ export class TorrentService extends AuthenticatedService {
       torrents = await search(`${media.title}`);
     }
 
-    return torrents.sort((a, b) => b.seeders - a.seeders);
+    return torrents;
   }
 
   private sanitizeQuery(query: string): string {

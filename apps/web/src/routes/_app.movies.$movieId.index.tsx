@@ -1,13 +1,8 @@
 import { useState } from "react";
 
-import { useLingui } from "@lingui/react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { ClockPlus, Heart, Info } from "lucide-react";
-import { TMDB } from "tmdb-ts";
 
-import { api } from "@/lib/api";
-import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
 import { SeedarrLoader } from "@/shared/ui/seedarr-loader";
@@ -28,6 +23,7 @@ import { MovieCast } from "@/features/movies/components/movie-cast";
 import { MovieDetails } from "@/features/movies/components/movie-details";
 import { MovieInfo } from "@/features/movies/components/movie-info";
 import { MovieRelated } from "@/features/movies/components/movie-related";
+import { useMovieDetails } from "@/features/movies/hooks/use-movie";
 
 export const Route = createFileRoute("/_app/movies/$movieId/")({
   component: MoviePage,
@@ -35,52 +31,13 @@ export const Route = createFileRoute("/_app/movies/$movieId/")({
 
 function MoviePage() {
   const params = Route.useParams();
-  const { i18n } = useLingui();
-  const tmdbLocale = countryToTmdbLocale(i18n.locale);
-  const queryClient = useQueryClient();
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const toggleLike = useToggleLike();
   const toggleWatchList = useToggleWatchList();
   const { data: mediaStatus } = useMediaStatus(Number(params.movieId));
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["movie-full", params.movieId, tmdbLocale],
-    queryFn: async () => {
-      const apiKey = import.meta.env.VITE_TMDB_API_KEY || "";
-      const tmdb = new TMDB(apiKey);
-
-      // Single request with all data
-      const movieData = await tmdb.movies.details(
-        Number(params.movieId),
-        ["watch/providers", "videos", "credits", "recommendations", "external_ids"],
-        tmdbLocale,
-      );
-
-      // Track the movie view
-      await api.media.track.post({
-        type: "movie",
-        ...movieData,
-        id: Number(params.movieId),
-        title: movieData.title || movieData.original_title,
-        original_title: movieData.original_title ?? null,
-        poster_path: movieData.poster_path ?? null,
-      });
-
-      // Invalidate recently-viewed cache after tracking
-      queryClient.invalidateQueries({ queryKey: ["recently-viewed"] });
-
-      // Fetch collection if exists
-      let collection = null;
-      if (movieData.belongs_to_collection?.id) {
-        collection = await tmdb.collections.details(movieData.belongs_to_collection.id, {
-          language: tmdbLocale,
-        });
-      }
-
-      return { movie: movieData, collection };
-    },
-  });
+  const { data, isLoading } = useMovieDetails(params.movieId);
 
   if (isLoading) {
     return (

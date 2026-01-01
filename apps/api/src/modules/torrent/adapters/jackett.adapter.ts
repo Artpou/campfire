@@ -1,4 +1,4 @@
-import { getTorrentQuality } from "@/helpers/video.helper";
+import { getLanguageFromTitle, getTorrentQuality } from "@/helpers/video.helper";
 import { IndexerType } from "../../../db/schema";
 import { IndexerAdapter, Torrent, TorrentIndexer } from "./base.adapter";
 
@@ -79,6 +79,7 @@ export class JackettAdapter implements IndexerAdapter {
       link: result.Link,
       guid: result.Guid,
       quality: getTorrentQuality(result.Title),
+      language: getLanguageFromTitle(result.Title),
       detailsUrl: result.Details,
       indexerType: "jackett",
     }));

@@ -19,15 +19,19 @@ export interface MovieSearchParams {
   sort_by?: SortOption;
   with_genres?: string;
   with_watch_providers?: string;
+  with_release_type?: string;
 }
 
 export const Route = createFileRoute("/_app/movies/")({
   component: MoviesPage,
-  validateSearch: (search: MovieSearchParams) => {
+  validateSearch: (search: Record<string, unknown>): MovieSearchParams => {
+    const { sort_by, with_genres, with_watch_providers, with_release_type } = search;
     return {
-      sort_by: search.sort_by ?? "popularity.desc",
-      with_genres: search.with_genres,
-      with_watch_providers: search.with_watch_providers,
+      sort_by: typeof sort_by === "string" ? (sort_by as SortOption) : undefined,
+      with_genres: typeof with_genres === "string" ? with_genres : undefined,
+      with_watch_providers:
+        typeof with_watch_providers === "string" ? with_watch_providers : undefined,
+      with_release_type: typeof with_release_type === "string" ? with_release_type : undefined,
     };
   },
 });
@@ -39,6 +43,7 @@ function MoviesPage() {
     sort_by: search.sort_by,
     with_genres: search.with_genres,
     with_watch_providers: search.with_watch_providers,
+    with_release_type: search.with_release_type,
   });
 
   const movies = useMemo(() => {
@@ -55,6 +60,31 @@ function MoviesPage() {
     });
   };
 
+  const handleReleaseTypeChange = (updates: {
+    with_release_type: string;
+    release_date: { lte: string };
+  }) => {
+    navigate({
+      to: "/movies",
+      search: {
+        ...search,
+        with_release_type: updates.with_release_type,
+        sort_by: undefined,
+      },
+    });
+  };
+
+  const handleSortChange = (updates: { sort_by: SortOption }) => {
+    navigate({
+      to: "/movies",
+      search: {
+        ...search,
+        sort_by: updates.sort_by,
+        with_release_type: undefined,
+      },
+    });
+  };
+
   const handleLoadMore = () => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
@@ -67,13 +97,19 @@ function MoviesPage() {
 
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-4">
-          <MediaSortTabs value={search.sort_by} onValueChange={handleSearchChange} />
+          <MediaSortTabs
+            releaseValue={search.with_release_type}
+            onSortChange={handleSortChange}
+            onReleaseChange={handleReleaseTypeChange}
+          />
           <div className="flex items-center gap-2">
-            <MovieProviderTabs
-              className="hidden xl:flex"
-              value={search.with_watch_providers}
-              onValueChange={handleSearchChange}
-            />
+            {search.with_release_type !== "3" && (
+              <MovieProviderTabs
+                className="hidden xl:flex"
+                value={search.with_watch_providers}
+                onValueChange={handleSearchChange}
+              />
+            )}
             <Button variant="secondary" size="icon-lg">
               <FilterIcon />
             </Button>

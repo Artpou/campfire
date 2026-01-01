@@ -15,6 +15,7 @@ export function useTorrents(media: Media | null | undefined, indexers: TorrentIn
           media,
           indexerId: indexer.id,
         });
+
         return (response.data || []).filter((torrent) => torrent.seeders > 0);
       },
       enabled: !!media?.id,

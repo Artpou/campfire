@@ -30,25 +30,42 @@ function MovieTorrentsPage() {
   const { data: media, isLoading: isMediaLoading } = useMedia(Number(params.movieId));
   const { data: indexers, isLoading: isIndexersLoading } = useIndexers();
   const torrentQueries = useTorrents(media, indexers || []);
+
   const [visibleIndexers, setVisibleIndexers] = useState<Set<string>>(new Set());
 
   const allTorrents = useMemo(() => {
     if (!indexers) return [];
-    return torrentQueries
-      .flatMap((query, index) => {
-        if (!query.data) return [];
-        const indexerId = indexers[index]?.id;
-        return query.data.map((torrent) => ({ ...torrent, indexerId }));
-      })
+    const torrents = torrentQueries.flatMap((query, index) => {
+      if (!query.data) return [];
+      const indexerId = indexers[index]?.id;
+      return query.data.map((torrent) => ({ ...torrent, indexerId }));
+    });
+
+    const year = new Date(media?.release_date || "").getFullYear().toString();
+
+    const torrentsWithYear = torrents
+      .filter((torrent) => torrent.title.includes(year || ""))
       .sort((a, b) => b.seeders - a.seeders);
-  }, [torrentQueries, indexers]);
+
+    const torrentsWithoutYear = torrents
+      .filter((torrent) => !torrent.title.includes(year || ""))
+      .sort((a, b) => b.seeders - a.seeders);
+
+    return [...torrentsWithYear, ...torrentsWithoutYear];
+  }, [torrentQueries, indexers, media]);
 
   const filteredTorrents = useMemo(() => {
     if (visibleIndexers.size === 0) return allTorrents;
     return allTorrents.filter((t) => t.indexerId && visibleIndexers.has(t.indexerId));
   }, [allTorrents, visibleIndexers]);
 
-  if (isMediaLoading || isIndexersLoading) {
+  console.log(allTorrents.map((torrent) => torrent.title));
+  console.log(filteredTorrents.map((torrent) => torrent.title));
+
+  const isLoading =
+    isMediaLoading || isIndexersLoading || !torrentQueries.some((query) => !query.isLoading);
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center size-full">
         <SeedarrLoader />
@@ -56,9 +73,7 @@ function MovieTorrentsPage() {
     );
   }
 
-  if (!media || !indexers) {
-    return null;
-  }
+  if (!media || !indexers) return null;
 
   return (
     <Container>
@@ -75,7 +90,7 @@ function MovieTorrentsPage() {
 
       <div className="xl:grid xl:grid-cols-7 xl:gap-6">
         <div className="xl:col-span-5">
-          <TorrentTable torrents={filteredTorrents} />
+          <TorrentTable torrents={filteredTorrents} media={media} />
         </div>
         <div className="hidden xl:block xl:col-span-2">
           <TorrentIndexersTable

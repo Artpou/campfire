@@ -28,3 +28,17 @@ export function getTorrentQuality(title: string): TorrentQuality {
 
   return undefined;
 }
+
+export function getLanguageFromTitle(title: string): string | undefined {
+  const t = title.toLowerCase();
+  if (t.includes("english")) {
+    return "en";
+  }
+  if (t.includes("french")) {
+    return "fr";
+  }
+  if (t.includes("spanish")) {
+    return "es";
+  }
+  return undefined;
+}

@@ -33,6 +33,7 @@ interface TMDBMedia {
   name?: string;
   original_title?: string;
   original_name?: string;
+  original_language?: string;
   overview?: string | null;
   poster_path?: string | null;
   vote_average?: number | null;
@@ -46,6 +47,7 @@ export function tmdbMovieToMedia(movie: TMDBMedia): Media {
     type: "movie",
     title: movie.title ?? movie.original_title ?? "",
     original_title: movie.original_title ?? null,
+    original_language: movie.original_language ?? null,
     overview: movie.overview ?? null,
     poster_path: movie.poster_path ?? null,
     vote_average: movie.vote_average ?? null,
@@ -59,6 +61,7 @@ export function tmdbTVToMedia(tv: TMDBMedia): Media {
     type: "tv",
     title: tv.name ?? tv.original_name ?? "",
     original_title: tv.original_name ?? null,
+    original_language: tv.original_language ?? null,
     overview: tv.overview ?? null,
     poster_path: tv.poster_path ?? null,
     vote_average: tv.vote_average ?? null,
@@ -88,6 +91,7 @@ export function fmdbResultToMedia(fmdbResult: FMDBResult): Media {
     type: "movie",
     title: fmdbResult.title,
     original_title: null,
+    original_language: null,
     overview: null,
     poster_path: fmdbResult.photo_url[0],
     vote_average: null,

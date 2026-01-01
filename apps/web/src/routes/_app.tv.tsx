@@ -19,18 +19,19 @@ export interface TVSearchParams {
   sort_by?: SortOption;
   with_genres?: string;
   with_watch_providers?: string;
+  with_release_type?: string;
 }
 
 export const Route = createFileRoute("/_app/tv")({
   component: TVPage,
   validateSearch: (search: Record<string, unknown>): TVSearchParams => {
     return {
-      sort_by: (typeof search.sort_by === "string"
-        ? search.sort_by
-        : "popularity.desc") as SortOption,
+      sort_by: typeof search.sort_by === "string" ? (search.sort_by as SortOption) : undefined,
       with_genres: typeof search.with_genres === "string" ? search.with_genres : undefined,
       with_watch_providers:
         typeof search.with_watch_providers === "string" ? search.with_watch_providers : undefined,
+      with_release_type:
+        typeof search.with_release_type === "string" ? search.with_release_type : undefined,
     };
   },
 });
@@ -59,6 +60,31 @@ function TVPage() {
     });
   };
 
+  const handleReleaseTypeChange = (updates: {
+    with_release_type: string;
+    release_date: { lte: string };
+  }) => {
+    navigate({
+      to: "/tv",
+      search: {
+        ...search,
+        with_release_type: updates.with_release_type,
+        sort_by: undefined,
+      },
+    });
+  };
+
+  const handleSortChange = (updates: { sort_by: SortOption }) => {
+    navigate({
+      to: "/tv",
+      search: {
+        ...search,
+        sort_by: updates.sort_by,
+        with_release_type: undefined,
+      },
+    });
+  };
+
   const handleLoadMore = () => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
@@ -83,8 +109,10 @@ function TVPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-4">
           <MediaSortTabs
-            value={search.sort_by ?? "popularity.desc"}
-            onValueChange={handleSearchChange}
+            sortValue={search.sort_by}
+            releaseValue={search.with_release_type}
+            onSortChange={handleSortChange}
+            onReleaseChange={handleReleaseTypeChange}
           />
           <TVProviderTabs value={search.with_watch_providers} onValueChange={handleSearchChange} />
         </div>

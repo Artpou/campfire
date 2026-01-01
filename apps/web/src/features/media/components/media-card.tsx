@@ -41,6 +41,7 @@ export function MediaCard({ media, withType = false, isLiked, isInWatchList }: M
     <Card className="overflow-hidden aspect-2/3 relative pt-0 pb-0">
       <MovieImage src={media.poster_path || ""} alt={media.title} iconSize={64} />
       <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-background via-background/95 to-background/60 transition-all duration-200 translate-y-full group-hover:translate-y-0 p-3">
+        <p className="text-xs font-bold">{year}</p>
         <h3 className="font-semibold text-base">
           {media.title?.slice(0, MAX_TITLE_LENGTH)}
           {media.title?.length > MAX_TITLE_LENGTH ? "..." : ""}
@@ -49,7 +50,6 @@ export function MediaCard({ media, withType = false, isLiked, isInWatchList }: M
           {media.overview?.slice(0, MAX_OVERVIEW_LENGTH)}
           {(media.overview?.length || 0) > MAX_OVERVIEW_LENGTH ? "..." : ""}
         </p>
-        <p className="text-xs font-bold">{year}</p>
       </div>
       {withType && (
         <Button

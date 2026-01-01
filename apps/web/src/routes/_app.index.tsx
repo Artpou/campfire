@@ -5,14 +5,5 @@ export const Route = createFileRoute("/_app/")({
 });
 
 function IndexPage() {
-  return (
-    <Navigate
-      to="/movies"
-      search={{
-        sort_by: "popularity.desc",
-        with_genres: undefined,
-        with_watch_providers: undefined,
-      }}
-    />
-  );
+  return <Navigate to="/movies" />;
 }

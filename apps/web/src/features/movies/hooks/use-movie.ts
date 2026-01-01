@@ -21,7 +21,10 @@ export function useMovieDetails(id: string) {
         "credits",
         "recommendations",
         "external_ids",
+        "release_dates",
       ]);
+
+      console.log(movieData.release_dates);
 
       // Track the movie view
       await api.media.track.post({
@@ -29,6 +32,7 @@ export function useMovieDetails(id: string) {
         ...movieData,
         id: Number(id),
         title: movieData.title || movieData.original_title,
+        original_title: movieData.original_title ?? null,
         poster_path: movieData.poster_path ?? null,
       });
 
@@ -52,7 +56,11 @@ export function useMovieDiscover(options: MovieQueryOptions = {}) {
   return useInfiniteQuery({
     queryKey: ["movie-discover", tmdbLocale, JSON.stringify(options)],
     queryFn: async ({ pageParam = 1 }) => {
-      const data = await tmdb.discover.movie({ ...options, page: pageParam });
+      const data = await tmdb.discover.movie({
+        ...options,
+        with_release_type: options.with_release_type || "4|5",
+        page: pageParam,
+      });
       return {
         results: data.results.map(tmdbMovieToMedia),
         page: data.page,

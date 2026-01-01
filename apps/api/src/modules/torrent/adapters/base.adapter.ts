@@ -18,6 +18,7 @@ export interface Torrent {
   link: string;
   guid: string;
   quality: TorrentQuality;
+  language?: string;
   detailsUrl?: string;
   indexerType: IndexerType;
 }

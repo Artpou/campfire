@@ -1,17 +1,20 @@
 import { Trans } from "@lingui/react/macro";
 import { ArrowDown, ArrowUp, Download, Plus } from "lucide-react";
 
+import { getFlagUrl } from "@/shared/helpers/lang.helper";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
+import type { Media } from "@/features/media/media";
 import type { Torrent } from "@/features/torrent/torrent";
 
 interface TorrentTableProps {
   torrents: Torrent[];
+  media: Media;
 }
 
-export function TorrentTable({ torrents }: TorrentTableProps) {
+export function TorrentTable({ torrents, media }: TorrentTableProps) {
   return (
     <div className="w-full overflow-hidden">
       <Table>
@@ -46,6 +49,11 @@ export function TorrentTable({ torrents }: TorrentTableProps) {
                     <div className="flex items-center gap-2">
                       <Badge variant="default">{torrent.tracker}</Badge>
                       {torrent.quality && <Badge variant="secondary">{torrent.quality}</Badge>}
+                      <img
+                        src={getFlagUrl(torrent.language || media.original_language || "")}
+                        alt={torrent.language}
+                        className="size-4"
+                      />
                     </div>
                   </div>
                 </TableCell>
