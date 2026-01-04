@@ -5,9 +5,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { FilterIcon } from "lucide-react";
 import { SortOption } from "tmdb-ts";
 
+import { PlaceholderEmpty } from "@/shared/components/seedarr-placeholder";
 import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
-import { PlaceholderEmpty } from "@/shared/ui/seedarr-placeholder";
 
 import { MediaCategoryCarousel } from "@/features/media/components/media-category-carousel";
 import { MediaGrid } from "@/features/media/components/media-grid";

@@ -4,8 +4,8 @@ import { Link } from "@tanstack/react-router";
 import { Clapperboard } from "lucide-react";
 import type { MultiSearchResult } from "tmdb-ts";
 
+import { CircularProgress } from "@/shared/components/circular-progress";
 import { Badge } from "@/shared/ui/badge";
-import { CircularProgress } from "@/shared/ui/circular-progress";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 
 import { getPosterUrl } from "@/features/media/helpers/media.helper";

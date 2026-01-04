@@ -1,10 +1,10 @@
 import { Trans } from "@lingui/react/macro";
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft, Search } from "lucide-react";
+import { Search } from "lucide-react";
 
-import { Button } from "@/shared/ui/button";
+import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
+import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { Container } from "@/shared/ui/container";
-import { SeedarrLoader } from "@/shared/ui/seedarr-loader";
 
 import { MediaGrid } from "@/features/media/components/media-grid";
 import { useMediaSearch } from "@/features/media/hooks/use-media";
@@ -49,14 +49,7 @@ function SearchPage() {
         </div>
       ) : searchResults.length > 0 ? (
         <div className="space-y-4">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => window.history.back()}>
-              <ArrowLeft className="size-4" />
-            </Button>
-            <h2 className="text-xl font-semibold">
-              <Trans>Search Results for "{q}"</Trans>
-            </h2>
-          </div>
+          <AppBreadcrumb items={[{ name: "Search", link: "/search" }, { name: q }]} />
           <MediaGrid items={searchResults} withType />
         </div>
       ) : (

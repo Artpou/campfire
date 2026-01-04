@@ -1,12 +1,10 @@
 import { useMemo, useState } from "react";
 
-import { Trans } from "@lingui/react/macro";
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { Button } from "@/shared/ui/button";
+import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
+import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { Container } from "@/shared/ui/container";
-import { SeedarrLoader } from "@/shared/ui/seedarr-loader";
 
 import { useAuth } from "@/features/auth/auth-store";
 import { useMedia } from "@/features/media/hooks/use-media";
@@ -74,16 +72,13 @@ function MovieTorrentsPage() {
 
   return (
     <Container>
-      <div className="flex items-center gap-4 mb-6">
-        <Button variant="outline" size="icon" asChild>
-          <Link to="/movies/$movieId" params={{ movieId: params.movieId }}>
-            <ArrowLeft className="size-4" />
-          </Link>
-        </Button>
-        <h2 className="text-xl font-semibold">
-          <Trans>Search torrents for "{media.title}"</Trans>
-        </h2>
-      </div>
+      <AppBreadcrumb
+        items={[
+          { name: "Movies", link: "/movies" },
+          { name: media.title, link: `/movies/${params.movieId}` },
+          { name: "Torrents" },
+        ]}
+      />
 
       <div className="xl:grid xl:grid-cols-7 xl:gap-6">
         <div className="xl:col-span-5">

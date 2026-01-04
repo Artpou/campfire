@@ -1,13 +1,12 @@
 import { useEffect, useRef } from "react";
 
 import { Trans } from "@lingui/react/macro";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
 
 import { getBaseUrl } from "@/lib/api";
-import { Button } from "@/shared/ui/button";
+import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
+import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { Container } from "@/shared/ui/container";
-import { SeedarrLoader } from "@/shared/ui/seedarr-loader";
 
 import { useTorrentDownload } from "@/features/torrent/hooks/use-torrent-download";
 
@@ -17,7 +16,6 @@ export const Route = createFileRoute("/_app/downloads/$downloadId/play")({
 
 function VideoPlayerPage() {
   const { downloadId } = Route.useParams();
-  const navigate = useNavigate();
   const { data: torrent, isLoading } = useTorrentDownload(downloadId);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -58,10 +56,6 @@ function VideoPlayerPage() {
     };
   }, [downloadId]);
 
-  const handleBack = () => {
-    navigate({ to: "/downloads/$downloadId", params: { downloadId } });
-  };
-
   if (isLoading) {
     return (
       <Container>
@@ -85,13 +79,13 @@ function VideoPlayerPage() {
   return (
     <Container className="max-w-7xl">
       <div className="space-y-4">
-        {/* Header with back button */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={handleBack}>
-            <ArrowLeft />
-          </Button>
-          <h1 className="text-2xl font-bold">{torrent.name}</h1>
-        </div>
+        <AppBreadcrumb
+          items={[
+            { name: "Downloads", link: "/downloads" },
+            { name: torrent.name, link: `/downloads/${downloadId}` },
+            { name: "Play" },
+          ]}
+        />
 
         {/* Video Player */}
         <div className="w-full bg-black rounded-lg overflow-hidden">

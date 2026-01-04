@@ -6,10 +6,10 @@ import { Plus } from "lucide-react";
 import type { AppendToResponse, Flatrate, MovieDetails, WatchLocale } from "tmdb-ts";
 
 import { cn } from "@/lib/utils";
+import { CircularProgress } from "@/shared/components/circular-progress";
 import { formatRuntime } from "@/shared/helpers/date";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { getFlagUrl } from "@/shared/helpers/lang.helper";
-import { CircularProgress } from "@/shared/ui/circular-progress";
 import {
   DropdownMenu,
   DropdownMenuContent,

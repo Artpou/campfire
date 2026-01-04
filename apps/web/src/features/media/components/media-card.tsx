@@ -4,9 +4,9 @@ import { Link } from "@tanstack/react-router";
 import { ClockPlusIcon, FilmIcon, HeartIcon, TvIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { CircularProgress } from "@/shared/components/circular-progress";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
-import { CircularProgress } from "@/shared/ui/circular-progress";
 
 import { getPosterUrl } from "@/features/media/helpers/media.helper";
 import { useToggleLike, useToggleWatchList } from "@/features/media/hooks/use-media";

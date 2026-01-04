@@ -3,9 +3,9 @@ import { useState } from "react";
 import { Trans } from "@lingui/react/macro";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
+import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
-import { SeedarrLoader } from "@/shared/ui/seedarr-loader";
 
 import { useAuth } from "@/features/auth/auth-store";
 import { DownloadCard } from "@/features/downloads/components/download-card";

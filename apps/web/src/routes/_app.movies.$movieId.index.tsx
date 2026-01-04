@@ -3,9 +3,9 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { ClockPlus, Heart, Info } from "lucide-react";
 
+import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
-import { SeedarrLoader } from "@/shared/ui/seedarr-loader";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/shared/ui/sheet";
 
 import { MediaPoster } from "@/features/media/components/media-poster";

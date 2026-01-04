@@ -1,7 +1,8 @@
 import { Trans } from "@lingui/react/macro";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Clock, ExternalLink, Play, Trash2 } from "lucide-react";
+import { Clock, ExternalLink, Play, Trash2 } from "lucide-react";
 
+import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
@@ -73,14 +74,9 @@ function DownloadDetailPage() {
 
   return (
     <Container>
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <Button variant="outline" size="icon" onClick={() => navigate({ to: "/downloads" })}>
-          <ArrowLeft />
-        </Button>
-        <h1 className="text-2xl font-bold flex-1 line-clamp-1">{media?.title || torrent.name}</h1>
-        <DownloadStatusBadge status={torrent.status} />
-      </div>
+      <AppBreadcrumb
+        items={[{ name: "Downloads", link: "/downloads" }, { name: media?.title || torrent.name }]}
+      />
 
       {/* Main Content */}
       <div className="grid gap-6">

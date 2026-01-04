@@ -1,5 +1,5 @@
+import { SeedarrLogoSad } from "@/shared/components/seedarr-logo";
 import { Card, CardContent } from "@/shared/ui/card";
-import { SeedarrLogoSad } from "@/shared/ui/seedarr-logo";
 
 interface PlaceholderEmptyProps {
   title?: React.ReactNode;
