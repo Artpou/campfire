@@ -1,0 +1,198 @@
+---
+globs: apps/web/*
+alwaysApply: false
+---
+
+# Frontend Development Rules (Web)
+
+## Feature Organization
+
+### Features (`features/[feature]/`)
+
+- `components/` - Feature-specific UI components
+- `hooks/` - Feature-specific React hooks
+- `helpers/` - Feature-specific utilities
+- `parsers/` - Data transformation logic
+- `[feature].d.ts` - Feature type definitions
+- `[feature]-store.ts` - Feature state (Zustand)
+
+### Shared (`shared/`)
+
+- `ui/` - Reusable UI components (Radix primitives)
+- `hooks/` - Global hooks (theme, mobile, locale)
+- `helpers/` - Cross-feature utilities
+- Layout components (sidebar, topbar)
+
+### Lib (`lib/`)
+
+- Core utilities and API client
+- `api.ts` - Hono RPC client with `unwrap()` helper
+- `utils.ts` - Utility functions like `cn()`
+- No feature-specific code
+
+## Routing (TanStack Router)
+
+- File-based routes in `src/routes/`
+- Route groups: `_app.*` (authenticated), `_auth.*` (public)
+- Use `beforeLoad` for auth checks and redirects
+- Protected routes check auth via `api.auth.me.$get()`
+- Wrap route content in `<Container>` component for consistent layout and spacing
+
+Example:
+
+```typescript
+export const Route = createFileRoute("/_app/movies")({
+  component: MoviesPage,
+  beforeLoad: async () => {
+    const user = useAuth.getState().user;
+    if (!user) {
+      throw redirect({ to: "/login" });
+    }
+  },
+});
+
+function MoviesPage() {
+  return (
+    <Container>
+      {/* Page content */}
+    </Container>
+  );
+}
+```
+
+## API Client (Hono RPC)
+
+### Setup
+
+- Use Hono RPC client: `hc<AppType>(baseUrl, options)`
+- Type-safe client from `AppType` export: `api.[module].[endpoint].$method()`
+- Methods: `$get()`, `$post()`, `$put()`, `$delete()`, `$patch()`
+
+### Response Handling
+
+- **Use `unwrap()` helper** from `lib/api.ts` for all API calls
+- Pattern: `unwrap(api.endpoint.$method(params))`
+- Benefits: Consistent error handling, throws on non-ok responses
+- Works with both Hono RPC responses and standard `fetch` Response
+- Let React Query handle errors (don't use try-catch unless specific fallback needed)
+
+Example:
+
+```typescript
+const { data, isLoading, error } = useQuery({
+  queryKey: ["media", id],
+  queryFn: () => unwrap(api.media[":id"].$get({ param: { id } })),
+});
+```
+
+## Type Usage
+
+### Import from API
+
+- **Always** import types from `@basement/api/types`
+- **Never** recreate types that exist in the API
+- **Never** define inline types for API data structures
+- **Use** existing DTO types for mutations and queries
+
+### Examples
+
+❌ **Bad: Recreating types**
+
+```typescript
+// DON'T recreate types that exist in the API
+type UserRole = "owner" | "admin" | "member" | "viewer";
+
+// DON'T define inline parameter types
+export function useStartDownload() {
+  return useMutation({
+    mutationFn: ({
+      magnetUri,
+      name,
+      mediaId,
+    }: {
+      magnetUri: string;
+      name: string;
+      mediaId?: number;
+    }) => {
+      // This is wrong! Use DownloadTorrentInput instead
+    },
+  });
+}
+
+// DON'T recreate API data structures
+interface LocalTorrent {
+  title: string;
+  tracker: string;
+  // ... duplicating API types
+}
+```
+
+## Hook Libraries
+
+- Use `@uidotdev/usehooks` for common React patterns when available
+- Examples: `useIntersectionObserver`, `useDebounce`, `useLocalStorage`
+- Custom hooks in `shared/hooks/` for global behavior
+- Feature-specific hooks in `features/[feature]/hooks/`
+
+## State Management
+
+### React Query (TanStack Query)
+
+- Use for all API calls and server state
+- Define query keys consistently: `["resource", id, filters]`
+- Implement optimistic updates for mutations
+- Use query invalidation properly
+
+### Zustand
+
+- Use for global client-side state
+- Stores in `features/[feature]/[feature]-store.ts`
+- Use `persist` middleware for localStorage
+- Auth state in `features/auth/auth-store.ts` (synced with API)
+
+## Styling
+
+- Tailwind v4 (no config file, use `@theme` in CSS)
+- Design tokens via CSS variables in `styles.css`
+- Dark mode support via `dark:` prefix
+- Use `cn()` from `lib/utils.ts` for conditional classes
+
+## Form
+
+- Use **React Hook Form** for complex forms
+- Use **Zod** for form validation with `@hookform/resolvers`
+- Implement proper error messages
+- Handle loading/submitting states
+
+## Internationalization i18n (Lingui)
+
+- Wrap translatable strings in `<Trans>` component
+- Use `t` macro for programmatic translations
+- Extract messages: `pnpm lingui:extract` (in web package)
+- Compile messages: `pnpm lingui:compile` (in web package)
+
+## Icons
+
+- Use **Lucide React** for icons
+- use Icon suffix for icons: `HomeIcon`, `SettingsIcon`, `UserIcon`
+
+## Common Pitfalls to Avoid
+
+❌ **DON'T:**
+
+- Use `any` type
+- Recreate types that exist in the API
+- Create large monolithic components
+- Forget to handle loading/error states
+- Hardcode strings (use i18n)
+- Use inline styles (use Tailwind)
+- Fetch data in components (use TanStack Query)
+- Store derived state
+- Use `index` as key in lists
+
+✅ **DO:**
+
+- Use TypeScript properly
+- Import types from `@basement/api/types`
+- Keep components small and focused
+- Extract reusable logic into hooks

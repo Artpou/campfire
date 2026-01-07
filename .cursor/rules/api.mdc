@@ -32,6 +32,7 @@ src/modules/
 ### DTO Pattern
 
 Each module **must** have a `{module}.dto.ts` file containing:
+
 - **Zod schemas** for validation (request/response)
 - **TypeScript types** inferred from schemas
 - **Database types** using drizzle-zod's `createSelectSchema` and `createInsertSchema`
@@ -73,41 +74,11 @@ export const torrentSchema = z.object({
 export type Torrent = z.infer<typeof torrentSchema>;
 ```
 
-#### Request Schemas
-
-For API request validation:
-
-```typescript
-export const createUserSchema = z.object({
-  username: z.string().min(3),
-  password: z.string().min(8),
-  role: z.enum(["owner", "admin", "member", "viewer"]),
-});
-
-export type CreateUserInput = z.infer<typeof createUserSchema>;
-```
-
 ### Type Exports
 
 - **`schema.ts`**: Only export table definitions and enums (e.g., `IndexerType`, `UserRole`)
 - **`{module}.dto.ts`**: Export all types and schemas for the module
 - **`types.ts`**: Re-export only TypeScript types (not Zod schemas) for frontend consumption
-
-Example `types.ts`:
-
-```typescript
-// Export DTO types (TypeScript types only, not Zod schemas)
-export type { User, CreateUserInput, UpdateUserInput } from "./modules/user/user.dto";
-export type { Media, MediaStatusBatchInput } from "./modules/media/media.dto";
-export type { Torrent, TorrentIndexer } from "./modules/torrent/torrent.dto";
-
-// Export enums from schema
-export type { IndexerType, UserRole } from "./db/schema";
-
-// Export route types
-export type { AuthRoutesType } from "./modules/auth/auth.route";
-export type { AppType } from "./server";
-```
 
 ### Service Pattern
 
@@ -143,14 +114,10 @@ import { MediaService } from "./media.service";
 
 export const mediaRoutes = new Hono<{ Variables: HonoVariables }>()
   .use("*", authGuard) // Apply middleware
-  .get("/", async (c) => {
-    // Route handler
-    return c.json(await MediaService.fromContext(c).getAll());
-  })
-  .post("/", zValidator("json", createMediaSchema), async (c) => {
-    const data = c.req.valid("json");
-    return c.json(await MediaService.fromContext(c).create(data));
-  });
+  .get("/", async (c) => c.json(await MediaService.fromContext(c).getAll()))
+  .post("/", zValidator("json", createMediaSchema), async (c) =>
+    c.json(await MediaService.fromContext(c).create(c.req.valid("json")))
+  );
 
 export type MediaRoutesType = typeof mediaRoutes;
 ```
@@ -173,17 +140,6 @@ export type MediaRoutesType = typeof mediaRoutes;
 - **requireRole**: Check user role
 - Use middleware for cross-cutting concerns
 - Order matters - apply in correct sequence
-
-Example:
-
-```typescript
-export const adminRoutes = new Hono<{ Variables: HonoVariables }>()
-  .use("*", authGuard) // First authenticate
-  .use("*", requireRole("admin")) // Then check role
-  .get("/users", async (c) => {
-    // Only admins reach here
-  });
-```
 
 ## 🔐 Authentication & Authorization
 
@@ -213,47 +169,6 @@ if (!["admin", "owner"].includes(user.role)) {
 ```
 
 ## 🗄️ Database (Drizzle ORM)
-
-### Schema Definition
-
-```typescript
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
-
-export const user = sqliteTable("user", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  role: text("role", { enum: userRoleEnum }).notNull().default("viewer"),
-  createdAt: integer("createdAt", { mode: "timestamp" })
-    .notNull()
-    .$defaultFn(() => new Date()),
-});
-```
-
-### Query Patterns
-
-```typescript
-// Select
-const users = await db.select().from(user).where(eq(user.role, "admin"));
-
-// Insert
-await db.insert(user).values({ username, password, role });
-
-// Update
-await db.update(user).set({ role: "admin" }).where(eq(user.id, userId));
-
-// Delete
-await db.delete(user).where(eq(user.id, userId));
-
-// Joins
-const result = await db
-  .select()
-  .from(media)
-  .leftJoin(mediaLike, eq(media.id, mediaLike.mediaId))
-  .where(eq(mediaLike.userId, userId));
-```
 
 ### Migrations
 
@@ -306,9 +221,7 @@ const result = await db
 - Recreate types that already exist
 - Export types from `schema.ts` (only tables and enums)
 - Define inline Zod schemas in route files
-- Import types from `schema.ts` in services (use DTOs)
 - Hardcode configuration values
-- Expose internal errors to clients
 - Use synchronous file operations
 
 ✅ **DO:**

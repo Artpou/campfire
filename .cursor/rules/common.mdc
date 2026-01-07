@@ -4,7 +4,7 @@ alwaysApply: true
 
 # Seedarr Project Rules
 
-> For specific patterns, see [API Rules](.cursor/rules/api/RULE.md) and [Web Rules](.cursor/rules/web/RULE.md)
+> For specific patterns, see [API Rules](.cursor/rules/api.mdc) and [Web Rules](.cursor/rules/web.mdc)
 
 ## Tech Stack
 
@@ -41,7 +41,7 @@ alwaysApply: true
 - React recommended rules enabled
 - a11y rules enabled
 - Import type coercion disabled (`useImportType: off`)
-- Auto-fix on save via `biome check --write`
+- Auto-fix on save via `pnpm lint:fix`
 
 ### File Naming
 
@@ -64,54 +64,13 @@ alwaysApply: true
 - `pnpm type-check` - TypeScript validation
 - `pnpm check` - Run lint:fix + type-check + lint (comprehensive check)
 
-### Database Commands
-
-- `pnpm db:generate` - Generate migrations
-- `pnpm db:migrate` - Apply migrations
-- `pnpm db:push` - Push schema (dev only)
-- `pnpm db:studio` - Open Drizzle Studio
-
-### Git Hooks (Husky + lint-staged)
-
-- Pre-commit: Biome check on staged files
-- Runs on `*.{ts,tsx,js,jsx}` and `*.{json,md}`
-- Auto-formats and fixes linting issues
-
 ### Type Safety
 
 - Strict TypeScript enabled
 - **Never use `any`** - use `unknown` if type is truly unknown
 - Use `as const` for constant objects/arrays
-- Prefer type narrowing over type assertions
-- Share types via workspace packages (`@basement/api`)
-- API types exported for web consumption
-- Use Zod for runtime validation
 
 ## Common Patterns
-
-### Error Handling
-
-- API: Throw errors, caught by Hono error handling middleware
-- Web: Use `unwrap()` helper, let React Query handle errors naturally
-- Avoid try-catch blocks unless specific fallback behavior is needed
-- Use custom error classes when appropriate (e.g., `UnauthorizedError`)
-
-### Async/Await
-
-- Always use async/await (no `.then()`)
-- Handle errors with try-catch when needed
-- Services return promises
-
-### Import Organization (Biome)
-
-- **Group 1**: React packages (`react`, `react-dom`)
-- **Group 2**: External packages (npm dependencies)
-- **Group 3**: `@/lib/**` imports
-- **Group 4**: `@/shared/**` imports
-- **Group 5**: Other `@/**` imports (features, routes)
-- **Group 6**: Relative imports (`./`, `../`)
-- Blank lines between groups
-- Use `import type` for type-only imports when possible
 
 ### Environment Variables
 
@@ -124,16 +83,6 @@ alwaysApply: true
 
 ## Security
 
-### Authentication & Authorization
-
-- Session-based auth with httpOnly cookies
-- Password hashing with salt (custom util)
-- Session validation via `validateSession(token)`
-- Never store passwords in plain text
-- Roles: `viewer`, `member`, `admin`, `owner`
-- Use `authGuard` middleware for protected routes
-- Use `requireRole()` middleware for role-specific routes
-
 ### Input Validation
 
 - Validate ALL user inputs with Zod
@@ -142,46 +91,20 @@ alwaysApply: true
 - Return appropriate HTTP status codes
 - Don't expose internal errors to clients
 
-## Common Pitfalls to Avoid
-
-❌ **DON'T:**
-
-- Use `any` type (use `unknown` or proper types)
-- Mutate props directly
-- Create large monolithic components/functions
-- Forget to handle loading/error states
-- Hardcode strings (use i18n with Lingui)
-- Skip input validation
-- Trust client-side data
-- Expose internal errors to clients
-- Store derived state
-- Use `index` as key in lists
-
-✅ **DO:**
-
-- Use TypeScript properly with strict mode
-- Keep components and functions small and focused
-- Extract reusable logic into hooks/services
-- Use semantic HTML
-
 ## Checklist Before Commit
 
 - [ ] No TypeScript errors
 - [ ] Linting passes: `pnpm check`
 - [ ] No console.log in production code
 - [ ] Properly typed (no `any`)
-- [ ] Error handling implemented
-- [ ] Validation schemas defined (Zod)
 - [ ] Sensitive data not exposed
 - [ ] Resources cleaned up properly
 
 ## Additional Resources
 
-- See [`.cursor/rules/api/RULE.md`](.cursor/rules/api/RULE.md) for API-specific patterns
-- See [`.cursor/rules/web/RULE.md`](.cursor/rules/web/RULE.md) for web-specific patterns
-- See [`/rules/GENERAL.md`](../../rules/GENERAL.md) for comprehensive guidelines
+- See [`.cursor/rules/api.mdc`](.cursor/rules/api.mdc) for API-specific patterns
+- See [`.cursor/rules/web.mdc`](.cursor/rules/web.mdc) for web-specific patterns
 - [Hono Documentation](https://hono.dev/)
-- [React Docs](https://react.dev/)
 - [Drizzle ORM](https://orm.drizzle.team/)
 - [TanStack Query](https://tanstack.com/query/latest)
 - [TanStack Router](https://tanstack.com/router/latest)
