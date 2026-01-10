@@ -3,18 +3,35 @@ import type WebTorrent from "webtorrent";
 
 import { db } from "@/db/db";
 import { torrentDownload } from "@/db/schema";
+import { TorrentLiveData } from "@/types";
 import * as path from "node:path";
 
 /**
  * Singleton WebTorrent client manager
  * Handles initialization, lifecycle, and active torrent tracking
  */
+
+// biome-ignore lint/complexity/noStaticOnlyClass: we want to keep the class static
 export class WebTorrentClient {
   private static client: WebTorrent.Instance | null = null;
   private static activeTorrents = new Map<string, WebTorrent.Torrent>();
   private static initError: Error | null = null;
   private static isInitialized = false;
   private static isInitializing = false;
+
+  private static pauseCache = new Map<string, TorrentLiveData>();
+
+  static setPausedData(id: string, data: TorrentLiveData) {
+    this.pauseCache.set(id, { ...data, uploadSpeed: 0, downloadSpeed: 0 });
+  }
+
+  static getPausedData(id: string) {
+    return this.pauseCache.get(id);
+  }
+
+  static clearPausedData(id: string) {
+    this.pauseCache.delete(id);
+  }
 
   /**
    * Initialize WebTorrent client and restore active torrents (non-blocking)

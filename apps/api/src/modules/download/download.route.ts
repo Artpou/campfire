@@ -27,13 +27,13 @@ export const downloadRoutes = new Hono<{ Variables: HonoVariables }>()
   .use("*", authGuard)
   .use("*", requireRole("member"))
   .post("/", zValidator("json", downloadTorrentSchema), async (c) => {
-    return c.json(await DownloadService.fromContext(c).startDownload(c.req.valid("json")));
+    return c.json(await DownloadService.fromContext(c).start(c.req.valid("json")));
   })
   .get("/", async (c) => {
-    return c.json(await DownloadService.fromContext(c).listDownloads());
+    return c.json(await DownloadService.fromContext(c).list());
   })
   .get("/:id", async (c) => {
-    const download = await DownloadService.fromContext(c).getDownloadById(c.req.param("id"));
+    const download = await DownloadService.fromContext(c).getById(c.req.param("id"));
     if (!download) throw new Error("Download not found");
     return c.json(download);
   })
@@ -50,8 +50,7 @@ export const downloadRoutes = new Hono<{ Variables: HonoVariables }>()
 
     return stream(c, async (honoStream) => {
       honoStream.onAbort(() => {
-        console.log(`[STREAM] Connection closed for ${fileName}. Cleaning up...`);
-        // biome-ignore lint/suspicious/noExplicitAny: destroy the node stream
+        // biome-ignore lint/suspicious/noExplicitAny: nodeStream is any
         (nodeStream as any).destroy?.();
       });
 
@@ -102,7 +101,7 @@ export const downloadRoutes = new Hono<{ Variables: HonoVariables }>()
     const filePath = decodeURIComponent(c.req.param("filePath"));
 
     const downloadPath = process.env.DOWNLOADS_PATH || "./downloads";
-    const download = await DownloadService.fromContext(c).getDownloadById(id);
+    const download = await DownloadService.fromContext(c).getById(id);
 
     if (!download) {
       return c.json({ error: "Download not found" }, 404);
@@ -139,7 +138,7 @@ export const downloadRoutes = new Hono<{ Variables: HonoVariables }>()
     const filePath = decodeURIComponent(c.req.param("filePath"));
 
     const downloadPath = process.env.DOWNLOADS_PATH || "./downloads";
-    const download = await DownloadService.fromContext(c).getDownloadById(id);
+    const download = await DownloadService.fromContext(c).getById(id);
 
     if (!download) {
       return c.json({ error: "Download not found" }, 404);
@@ -193,15 +192,15 @@ export const downloadRoutes = new Hono<{ Variables: HonoVariables }>()
   })
   // Protected routes
   .post("/:id/pause", requireDownloadOwnership, async (c) => {
-    await DownloadService.fromContext(c).pauseDownload(c.req.param("id"));
+    await DownloadService.fromContext(c).pause(c.req.param("id"));
     return c.json({ success: true });
   })
   .post("/:id/resume", requireDownloadOwnership, async (c) => {
-    await DownloadService.fromContext(c).resumeDownload(c.req.param("id"));
+    await DownloadService.fromContext(c).resume(c.req.param("id"));
     return c.json({ success: true });
   })
   .delete("/:id", requireDownloadOwnership, async (c) => {
-    await DownloadService.fromContext(c).deleteDownload(c.req.param("id"));
+    await DownloadService.fromContext(c).delete(c.req.param("id"));
     return c.json({ success: true });
   });
 

@@ -15,7 +15,7 @@ export async function requireDownloadOwnership(
   const user = c.get("user");
 
   // Get the download
-  const download = await DownloadService.fromContext(c).getDownloadById(downloadId);
+  const download = await DownloadService.fromContext(c).getById(downloadId);
 
   if (!download) {
     return c.json({ error: "Download not found" }, 404);

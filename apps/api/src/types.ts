@@ -11,7 +11,6 @@ export type {
   DownloadTorrentInput,
   NewTorrentDownload,
   TorrentDownload,
-  TorrentFileInfo,
   TorrentLiveData,
 } from "./modules/download/download.dto";
 export type { DownloadRoutesType } from "./modules/download/download.route";

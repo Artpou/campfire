@@ -2,7 +2,7 @@ import { Trans } from "@lingui/react/macro";
 import { createFileRoute } from "@tanstack/react-router";
 import { Plyr } from "plyr-react";
 import "plyr-react/plyr.css";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import { getBaseUrl } from "@/lib/api";
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
@@ -24,6 +24,18 @@ function VideoPlayerPage() {
   const videoUrl = useTorrentLink(id);
   // get session from cookies
   const { user } = useAuth();
+
+  const playerRef = useRef(null);
+
+  useEffect(() => {
+    const progress = torrent?.live?.progress;
+    const bufferBar = document.querySelector(".plyr__progress--buffer") as HTMLElement;
+    console.log("bufferBar", bufferBar);
+
+    if (bufferBar && typeof progress === "number") {
+      bufferBar.style.width = `${progress * 100}%`;
+    }
+  }, [torrent?.live?.progress]);
 
   // Extract subtitle files from torrent
   const subtitleTracks = useMemo(() => {
@@ -92,28 +104,6 @@ function VideoPlayerPage() {
     });
   }, [torrent, id, user?.sessionToken]);
 
-  const plyrOptions = {
-    controls: [
-      "play-large",
-      "restart",
-      "rewind",
-      "play",
-      "fast-forward",
-      "progress",
-      "current-time",
-      "duration",
-      "mute",
-      "volume",
-      "captions",
-      "settings",
-      "pip",
-      "airplay",
-      "fullscreen",
-    ],
-    settings: ["captions", "quality", "speed"],
-    crossorigin: true,
-  };
-
   if (isLoading) {
     return (
       <Container>
@@ -134,6 +124,8 @@ function VideoPlayerPage() {
     );
   }
 
+  console.log(torrent?.live?.progress);
+
   return (
     <Container className="max-w-7xl">
       <div className="space-y-4">
@@ -151,10 +143,12 @@ function VideoPlayerPage() {
           style={
             {
               "--plyr-color-main": "var(--primary)",
+              "--torrent-progress": `${torrent?.live?.progress === 1 ? 0 : (torrent?.live?.progress || 0) * 100 + 2}%`,
             } as React.CSSProperties
           }
         >
           <Plyr
+            ref={playerRef}
             source={{
               type: "video",
               sources: [
@@ -165,7 +159,26 @@ function VideoPlayerPage() {
               ],
               tracks: subtitleTracks,
             }}
-            options={plyrOptions}
+            options={{
+              controls: [
+                "play-large",
+                "restart",
+                "rewind",
+                "play",
+                "fast-forward",
+                "progress",
+                "current-time",
+                "duration",
+                "mute",
+                "volume",
+                "captions",
+                "settings",
+                "pip",
+                "airplay",
+                "fullscreen",
+              ],
+              settings: ["captions", "quality", "speed"],
+            }}
           />
         </div>
 
@@ -193,6 +206,13 @@ function VideoPlayerPage() {
               .plyr__captions .plyr__caption {
                   font-size: 20px !important;
               }
+          }
+
+          .plyr__progress__buffer {
+            width: var(--torrent-progress) !important;
+            transition: width 0.3s ease !important;
+            opacity: 1 !important;
+            background: rgba(255, 255, 255, 0.2) !important; 
           }
         `}</style>
       </div>

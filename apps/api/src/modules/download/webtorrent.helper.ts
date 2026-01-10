@@ -1,44 +1,44 @@
+/** biome-ignore-all lint/correctness/noUnusedVariables: we want to exclude some properties */
 import type WebTorrent from "webtorrent";
 
-import type { TorrentFileInfo, TorrentLiveData } from "./download.dto";
+import type { TorrentLiveData } from "./download.dto";
 
-export function extractTorrentLiveData(torrent: WebTorrent.Torrent): TorrentLiveData {
-  return {
-    // Progress information
-    progress: torrent.progress,
-    done: torrent.done,
-    paused: torrent.paused,
-
-    // Transfer speeds (bytes/sec)
-    downloadSpeed: torrent.downloadSpeed,
-    uploadSpeed: torrent.uploadSpeed,
-
-    // Transfer amounts (bytes)
-    downloaded: torrent.downloaded,
-    uploaded: torrent.uploaded,
-    length: torrent.length,
-    ratio: torrent.ratio,
-
-    // Network information
-    numPeers: torrent.numPeers,
-
-    // Time estimation
-    timeRemaining: torrent.timeRemaining,
-
-    // Files in the torrent (without streams/buffers)
-    files: extractTorrentFiles(torrent.files),
-  };
-}
-
-export function extractTorrentFiles(files: WebTorrent.TorrentFile[]): TorrentFileInfo[] {
-  return files.map((file) => ({
+export const extractTorrentLiveData = (torrent: WebTorrent.Torrent): TorrentLiveData => ({
+  infoHash: torrent.infoHash,
+  magnetURI: torrent.magnetURI,
+  torrentFile: torrent.torrentFile,
+  torrentFileBlobURL: torrent.torrentFileBlobURL,
+  announce: torrent.announce,
+  "announce-list": torrent["announce-list"],
+  timeRemaining: torrent.timeRemaining,
+  received: torrent.received,
+  downloaded: torrent.downloaded,
+  uploaded: torrent.uploaded,
+  downloadSpeed: torrent.downloadSpeed,
+  uploadSpeed: torrent.uploadSpeed,
+  progress: torrent.progress,
+  ratio: torrent.ratio,
+  length: torrent.length,
+  pieceLength: torrent.pieceLength,
+  lastPieceLength: torrent.lastPieceLength,
+  numPeers: torrent.numPeers,
+  path: torrent.path,
+  ready: torrent.ready,
+  paused: torrent.paused,
+  done: torrent.done,
+  name: torrent.name,
+  created: torrent.created,
+  createdBy: torrent.createdBy,
+  comment: torrent.comment,
+  maxWebConns: torrent.maxWebConns,
+  files: torrent.files.map((file) => ({
     name: file.name,
     path: file.path,
     length: file.length,
     downloaded: file.downloaded,
     progress: file.progress,
-  }));
-}
+  })),
+});
 
 export function findLargestVideoFile(torrent: WebTorrent.Torrent): WebTorrent.TorrentFile | null {
   const videoExtensions = /\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v)$/i;

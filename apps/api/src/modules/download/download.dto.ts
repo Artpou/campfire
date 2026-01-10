@@ -1,4 +1,5 @@
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import WebTorrent from "webtorrent";
 import { z } from "zod";
 
 import { torrentDownload } from "@/db/schema";
@@ -22,31 +23,17 @@ export const downloadTorrentSchema = z.object({
 
 export type DownloadTorrentInput = z.infer<typeof downloadTorrentSchema>;
 
-// Live download data (from WebTorrent)
-export interface TorrentLiveData {
-  progress: number;
-  done: boolean;
-  paused: boolean;
-
-  downloadSpeed: number;
-  uploadSpeed: number;
-
-  downloaded: number;
-  uploaded: number;
-  length: number;
-  ratio: number;
-
-  numPeers: number;
-
-  timeRemaining: number;
-
-  files: TorrentFileInfo[];
-}
-
-export interface TorrentFileInfo {
-  name: string;
-  path: string;
-  length: number;
-  downloaded: number;
-  progress: number;
+type DataPropertiesOnly<T> = {
+  // biome-ignore lint/complexity/noBannedTypes: we want to exclude functions
+  [K in keyof T as T[K] extends Function ? never : K]: T[K];
+};
+export interface TorrentLiveData
+  extends DataPropertiesOnly<Omit<WebTorrent.Torrent, "files" | "pieces">> {
+  files: {
+    name: string;
+    path: string;
+    length: number;
+    downloaded: number;
+    progress: number;
+  }[];
 }

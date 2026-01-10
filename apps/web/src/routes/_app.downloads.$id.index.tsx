@@ -184,6 +184,10 @@ function DownloadDetailPage() {
             )}
             <DownloadNetworkCard type="upload" value={uploadSpeed} />
             <DownloadNetworkCard type="peers" value={numPeers} />
+            <DownloadNetworkCard
+              type="ratio"
+              value={(torrent.live?.uploaded ?? 0) / (torrent.live?.downloaded ?? 0)}
+            />
           </div>
         </div>
       </div>

@@ -17,7 +17,7 @@
     "build": "tsc --emitDeclarationOnly --outDir dist",
     "start": "node --loader tsx src/server.ts",
     "lint": "biome check .",
-    "lint:fix": "biome check --write .",
+    "lint:fix": "biome check --write --unsafe .",
     "format": "biome format --write .",
     "type-check": "tsc --noEmit",
     "db:generate": "pnpx @dotenvx/dotenvx run -f ../../.env -- drizzle-kit generate",

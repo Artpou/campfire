@@ -20,14 +20,50 @@ export class DownloadService extends AuthenticatedService {
     this.downloadPath = process.env.DOWNLOADS_PATH || "./downloads";
   }
 
-  async startDownload(input: DownloadTorrentInput): Promise<TorrentDownload> {
-    const client = WebTorrentClient.getClient();
-    const { magnetUri, name, mediaId, origin, quality, language } = input;
+  private select = db.select().from(torrentDownload);
+  private insert = db.insert(torrentDownload);
 
-    // Check if download already exists in DB
-    const existingDownload = await db.query.torrentDownload.findFirst({
-      where: eq(torrentDownload.magnetUri, magnetUri),
-    });
+  private getTorrentDetails(item: TorrentDownload): TorrentDownload & { live?: TorrentLiveData } {
+    const activeTorrent = WebTorrentClient.getActiveTorrent(item.id);
+    return {
+      ...item,
+      live:
+        item.status === "paused" || !activeTorrent
+          ? WebTorrentClient.getPausedData(item.id)
+          : extractTorrentLiveData(activeTorrent),
+    };
+  }
+
+  async getById(id: string) {
+    const [download] = await this.select.where(eq(torrentDownload.id, id)).limit(1);
+    if (!download) return null;
+
+    return this.getTorrentDetails(download);
+  }
+
+  async list(): Promise<(TorrentDownload & { live?: TorrentLiveData })[]> {
+    const downloads = await this.select.all();
+
+    return downloads.map(this.getTorrentDetails);
+  }
+
+  async delete(id: string) {
+    const activeTorrent = WebTorrentClient.getActiveTorrent(id);
+    if (activeTorrent) {
+      activeTorrent.destroy();
+      WebTorrentClient.deleteActiveTorrent(id);
+    }
+
+    // Delete from DB
+    await db.delete(torrentDownload).where(eq(torrentDownload.id, id));
+  }
+
+  async start(input: DownloadTorrentInput): Promise<TorrentDownload> {
+    const client = WebTorrentClient.getClient();
+
+    const [existingDownload] = await this.select
+      .where(eq(torrentDownload.magnetUri, input.magnetUri))
+      .limit(1);
 
     if (existingDownload) {
       console.log(`[DOWNLOAD] Download already exists: ${existingDownload.name}`);
@@ -48,18 +84,11 @@ export class DownloadService extends AuthenticatedService {
       return existingDownload;
     }
 
-    // Create new download entry in DB
-    const [newDownload] = await db
-      .insert(torrentDownload)
+    const [newDownload] = await this.insert
       .values({
+        ...input,
         userId: this.user.id,
-        magnetUri,
         infoHash: "",
-        name,
-        mediaId,
-        origin,
-        quality,
-        language,
         status: "queued",
       })
       .returning();
@@ -68,77 +97,17 @@ export class DownloadService extends AuthenticatedService {
       throw new Error("Failed to create download entry.");
     }
 
-    // Add to WebTorrent client
-    const torrent = client.add(magnetUri, { path: this.downloadPath });
+    const torrent = client.add(input.magnetUri, { path: this.downloadPath });
     WebTorrentClient.setupTorrentHandlers(torrent, newDownload.id, this.downloadPath);
 
-    console.log(`[DOWNLOAD] Started download for: ${name}`);
+    console.log(`[DOWNLOAD] Started download for: ${input.name}`);
     return newDownload;
   }
 
-  async listDownloads(): Promise<(TorrentDownload & { live?: TorrentLiveData })[]> {
-    // Fetch downloads from DB for the current user
-    const downloads = await db
-      .select()
-      .from(torrentDownload)
-      .where(eq(torrentDownload.userId, this.user.id))
-      .all();
-
-    // Enrich with live data from WebTorrent for active downloads
-    return downloads.map((download) => {
-      const activeTorrent = WebTorrentClient.getActiveTorrent(download.id);
-      if (activeTorrent) {
-        return {
-          ...download,
-          live: extractTorrentLiveData(activeTorrent),
-        };
-      }
-      return download;
-    });
-  }
-
-  async getDownloadById(
-    id: string,
-  ): Promise<(TorrentDownload & { live?: TorrentLiveData }) | null> {
-    const [download] = await db
-      .select()
-      .from(torrentDownload)
-      .where(eq(torrentDownload.id, id))
-      .limit(1);
-
-    if (!download) return null;
-
-    // Merge with live data from WebTorrent if active
-    const activeTorrent = WebTorrentClient.getActiveTorrent(id);
-    if (activeTorrent) {
-      return {
-        ...download,
-        live: extractTorrentLiveData(activeTorrent),
-      };
-    }
-
-    return download;
-  }
-
-  async deleteDownload(id: string): Promise<void> {
-    const activeTorrent = WebTorrentClient.getActiveTorrent(id);
-    if (activeTorrent) {
-      activeTorrent.destroy();
-      WebTorrentClient.deleteActiveTorrent(id);
-    }
-
-    // Delete from DB
-    await db.delete(torrentDownload).where(eq(torrentDownload.id, id));
-  }
-
-  async pauseDownload(id: string): Promise<void> {
+  async pause(id: string): Promise<void> {
     const activeTorrent = WebTorrentClient.getActiveTorrent(id);
     if (!activeTorrent) {
-      const [dbDownload] = await db
-        .select()
-        .from(torrentDownload)
-        .where(eq(torrentDownload.id, id))
-        .limit(1);
+      const [dbDownload] = await this.select.where(eq(torrentDownload.id, id)).limit(1);
 
       if (!dbDownload) {
         throw new Error("Download not found");
@@ -146,6 +115,8 @@ export class DownloadService extends AuthenticatedService {
 
       throw new Error(`Download is not active. Current status: ${dbDownload.status}`);
     }
+
+    WebTorrentClient.setPausedData(id, extractTorrentLiveData(activeTorrent));
 
     // Destroy all peer connections to truly pause
     activeTorrent.destroy({ destroyStore: false });
@@ -156,12 +127,8 @@ export class DownloadService extends AuthenticatedService {
     await db.update(torrentDownload).set({ status: "paused" }).where(eq(torrentDownload.id, id));
   }
 
-  async resumeDownload(id: string): Promise<void> {
-    const [dbDownload] = await db
-      .select()
-      .from(torrentDownload)
-      .where(eq(torrentDownload.id, id))
-      .limit(1);
+  async resume(id: string): Promise<void> {
+    const [dbDownload] = await this.select.where(eq(torrentDownload.id, id)).limit(1);
 
     if (!dbDownload) {
       throw new Error("Download not found");
@@ -170,6 +137,8 @@ export class DownloadService extends AuthenticatedService {
     if (dbDownload.status !== "paused") {
       throw new Error(`Cannot resume download with status: ${dbDownload.status}`);
     }
+
+    WebTorrentClient.clearPausedData(id);
 
     console.log(`[DOWNLOAD] Resuming download: ${dbDownload.name}`);
 
