@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import type { Media, Torrent, TorrentQuality } from "@basement/api/types";
 import { Trans } from "@lingui/react/macro";
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowDown, ArrowUp, Download, EarthIcon } from "lucide-react";
+import { ArrowDown, ArrowUp, Download, EarthIcon, Info } from "lucide-react";
 
 import { getFlagUrl } from "@/shared/helpers/lang.helper";
 import { Badge } from "@/shared/ui/badge";
@@ -14,6 +14,7 @@ import { Slider } from "@/shared/ui/slider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
 import { useStartDownload } from "@/features/torrent/hooks/use-torrent-download";
+import { TorrentInspectModal } from "./torrent-inspect-modal";
 
 interface TorrentTableProps {
   torrents: Torrent[];
@@ -27,6 +28,11 @@ export function TorrentTable({ torrents, media }: TorrentTableProps) {
   // Filter states
   const [selectedLanguage, setSelectedLanguage] = useState("all");
   const [selectedQualityIndex, setSelectedQualityIndex] = useState<number>(0);
+
+  // Modal states
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedTorrent, setSelectedTorrent] = useState<Torrent | null>(null);
+  const [selectedMagnetUri, setSelectedMagnetUri] = useState<string | null>(null);
 
   // Quality hierarchy (index-based for slider)
   const qualityLevels: (TorrentQuality | "all")[] = [
@@ -50,8 +56,6 @@ export function TorrentTable({ torrents, media }: TorrentTableProps) {
 
     return [...langs, "original"];
   }, [torrents]);
-
-  console.log(torrents);
 
   // Filter torrents based on selections
   const filteredTorrents = useMemo(() => {
@@ -104,16 +108,15 @@ export function TorrentTable({ torrents, media }: TorrentTableProps) {
     return torrent.link;
   };
 
+  const handleOpenInspectModal = (torrent: Torrent) => {
+    const magnetUri = getTorrentUri(torrent);
+    setSelectedTorrent(torrent);
+    setSelectedMagnetUri(magnetUri);
+    setModalOpen(true);
+  };
+
   const handleAddDownload = async (torrent: Torrent) => {
     const magnetUri = getTorrentUri(torrent);
-
-    if (import.meta.env.DEV) {
-      console.log("[TORRENT] Starting download:", {
-        title: torrent.title,
-        uri: `${magnetUri.substring(0, 100)}...`,
-        indexer: torrent.tracker,
-      });
-    }
 
     await startDownload.mutateAsync({
       magnetUri,
@@ -242,14 +245,27 @@ export function TorrentTable({ torrents, media }: TorrentTableProps) {
                       <span className="text-xs">{torrent.peers}</span>
                     </div>
                   </div>
-                  <div className="absolute inset-y-0 right-2 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100">
+                  <div className="absolute inset-y-0 right-2 z-10 flex items-center gap-2 opacity-0 group-hover:opacity-100">
                     <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenInspectModal(torrent);
+                      }}
+                    >
+                      <Info className="size-4" />
+                      <Trans>Details</Trans>
+                    </Button>
+                    <Button
+                      size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleAddDownload(torrent);
                       }}
                     >
-                      <Download /> <Trans>Download</Trans>
+                      <Download className="size-4" />
+                      <Trans>Download</Trans>
                     </Button>
                   </div>
                 </TableCell>
@@ -271,6 +287,13 @@ export function TorrentTable({ torrents, media }: TorrentTableProps) {
           )}
         </TableBody>
       </Table>
+
+      <TorrentInspectModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        torrent={selectedTorrent}
+        magnetUri={selectedMagnetUri}
+      />
     </div>
   );
 }

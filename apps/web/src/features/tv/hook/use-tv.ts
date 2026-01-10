@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { CountryCode, TvShowQueryOptions } from "tmdb-ts";
 
@@ -9,7 +11,7 @@ import { useTVStore } from "@/features/tv/store/tv-store";
 export function useTVDiscover(options: TvShowQueryOptions = {}) {
   const { tmdb, tmdbLocale } = useTMDB();
 
-  return useInfiniteQuery({
+  const query = useInfiniteQuery({
     queryKey: ["tv-discover", tmdbLocale, JSON.stringify(options)],
     queryFn: async ({ pageParam = 1 }) => {
       const data = await tmdb.discover.tvShow({ ...options, page: pageParam });
@@ -24,6 +26,13 @@ export function useTVDiscover(options: TvShowQueryOptions = {}) {
     },
     initialPageParam: 1,
   });
+
+  const results = useMemo(
+    () => query.data?.pages.flatMap((page) => page.results) ?? [],
+    [query.data],
+  );
+
+  return { ...query, results };
 }
 
 export function useTVGenres() {

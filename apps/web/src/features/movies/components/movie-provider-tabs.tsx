@@ -7,7 +7,7 @@ import { useMovieProviders } from "@/features/movies/hooks/use-movie";
 
 interface MovieProviderTabsProps {
   value?: string;
-  onValueChange: (updates: { with_watch_providers?: string }) => void;
+  onValueChange: (value?: string) => void;
   className?: string;
 }
 
@@ -20,10 +20,9 @@ export function MovieProviderTabs({ value, onValueChange, className }: MovieProv
 
   const handleProviderChange = (providerId: string) => {
     if (providerId === value) {
-      // Deselect if clicking the same provider
-      onValueChange({ with_watch_providers: undefined });
+      onValueChange(undefined);
     } else {
-      onValueChange({ with_watch_providers: providerId });
+      onValueChange(providerId);
     }
   };
 

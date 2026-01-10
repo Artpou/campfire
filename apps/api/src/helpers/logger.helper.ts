@@ -80,13 +80,19 @@ export const logRequest = (
   url: string,
   status: number | string,
   durationMs: number,
+  params: Record<string, string>,
 ) => {
   const timestamp = `${colors.gray}${formatTimestamp()}${colors.reset}`;
   const duration = `${colors.gray} ${formatDuration(durationMs)}${colors.reset}`;
   const coloredMethod = colorMethod(method);
-  const route = new URL(url).pathname;
   const statusCode = typeof status === "string" ? parseInt(status, 10) : status;
   const coloredStatus = colorStatus(statusCode);
+
+  const formatedParams = Object.entries(params || {})
+    .map(([key, value]) => `${key}=${value}`)
+    .join("&");
+
+  const route = new URL(url).pathname + (formatedParams ? `?${formatedParams}` : "");
 
   console.log(`${timestamp} ${coloredMethod} ${route} ${coloredStatus} ${duration}`);
 };

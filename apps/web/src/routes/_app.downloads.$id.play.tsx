@@ -30,7 +30,6 @@ function VideoPlayerPage() {
   useEffect(() => {
     const progress = torrent?.live?.progress;
     const bufferBar = document.querySelector(".plyr__progress--buffer") as HTMLElement;
-    console.log("bufferBar", bufferBar);
 
     if (bufferBar && typeof progress === "number") {
       bufferBar.style.width = `${progress * 100}%`;
@@ -123,8 +122,6 @@ function VideoPlayerPage() {
       </Container>
     );
   }
-
-  console.log(torrent?.live?.progress);
 
   return (
     <Container className="max-w-7xl">

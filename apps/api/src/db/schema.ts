@@ -53,6 +53,7 @@ export const media = sqliteTable("media", {
   type: text("type", { enum: mediaTypeEnum }).notNull(),
   title: text("title").notNull(),
   original_title: text("original_title"),
+  sanitize_title: text("sanitize_title"),
   original_language: text("original_language"),
   overview: text("overview"),
   poster_path: text("poster_path"),
@@ -70,7 +71,7 @@ export const userMedia = sqliteTable(
     mediaId: integer("mediaId")
       .notNull()
       .references(() => media.id, { onDelete: "cascade" }),
-    viewedAt: integer("viewedAt", { mode: "timestamp" })
+    createdAt: integer("createdAt", { mode: "timestamp" })
       .notNull()
       .$defaultFn(() => new Date()),
   },
@@ -87,7 +88,7 @@ export const userLikes = sqliteTable(
     mediaId: integer("mediaId")
       .notNull()
       .references(() => media.id, { onDelete: "cascade" }),
-    likedAt: integer("likedAt", { mode: "timestamp" })
+    createdAt: integer("createdAt", { mode: "timestamp" })
       .notNull()
       .$defaultFn(() => new Date()),
   },
@@ -104,7 +105,7 @@ export const userWatchList = sqliteTable(
     mediaId: integer("mediaId")
       .notNull()
       .references(() => media.id, { onDelete: "cascade" }),
-    addedAt: integer("addedAt", { mode: "timestamp" })
+    createdAt: integer("createdAt", { mode: "timestamp" })
       .notNull()
       .$defaultFn(() => new Date()),
   },

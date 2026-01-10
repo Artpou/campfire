@@ -24,7 +24,26 @@ export const app = new Hono<{ Variables: HonoVariables }>()
     requestTimes.set(c.req.raw, Date.now());
     await next();
     const duration = Date.now() - (requestTimes.get(c.req.raw) || Date.now());
-    logRequest(c.req.method, c.req.url, c.res.status, duration);
+    // log url params
+
+    logRequest(c.req.method, c.req.url, c.res.status, duration, c.req.query());
+
+    if (c.res.status === 400) {
+      try {
+        const body = (await c.res.clone().json()) as { error?: { issues?: unknown } };
+        if (body?.error?.issues) {
+          console.error(
+            `${colors.orange}[VALIDATION]${colors.reset}`,
+            JSON.stringify(body.error.issues, null, 2),
+          );
+        }
+      } catch {}
+    }
+  })
+  .onError((err, c) => {
+    console.error(`${colors.red}[ERROR]${colors.reset} ${c.req.method} ${c.req.url}`);
+    console.error(err);
+    return c.json({ error: "Internal server error" }, 500);
   })
   .use(
     "*",

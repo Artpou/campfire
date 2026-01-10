@@ -93,6 +93,8 @@ alwaysApply: true
 
 ## Checklist Before Commit
 
+IMPORTANT: ALWAYS RUN `pnpm check` AFTER REFACTORING OR ADDING NEW CODE.
+
 - [ ] No TypeScript errors
 - [ ] Linting passes: `pnpm check`
 - [ ] No console.log in production code

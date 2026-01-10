@@ -1,7 +1,9 @@
+import { useMemo } from "react";
+
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CountryCode, MovieQueryOptions } from "tmdb-ts";
 
-import { api } from "@/lib/api";
+import { api, unwrap } from "@/lib/api";
 import { useTMDB } from "@/shared/hooks/use-tmdb";
 
 import { tmdbMovieToMedia } from "@/features/media/helpers/media.helper";
@@ -14,7 +16,6 @@ export function useMovieDetails(id: string) {
   return useQuery({
     queryKey: ["movie-full", id, tmdbLocale],
     queryFn: async () => {
-      // Single request with all data
       const movieData = await tmdb.movies.details(Number(id), [
         "watch/providers",
         "videos",
@@ -25,28 +26,17 @@ export function useMovieDetails(id: string) {
         "alternative_titles",
       ]);
 
-      const usTitle = movieData.alternative_titles?.titles?.find(
-        (title) => title.iso_3166_1 === "US" && title.type === "",
-      )?.title;
+      const usTitle =
+        movieData.alternative_titles?.titles?.find(
+          (title) => title.iso_3166_1 === "US" && title.type === "",
+        )?.title ||
+        movieData.alternative_titles?.titles?.find((title) => title.type === "(English)")?.title;
 
-      // TODO: if no fr video, try with en
+      await unwrap(
+        api.media.$post({ json: tmdbMovieToMedia({ ...movieData, us_title: usTitle }) }),
+      );
+      queryClient.invalidateQueries({ queryKey: ["media"] });
 
-      // Track the movie view
-      await api.media.track.$post({
-        json: {
-          type: "movie",
-          ...movieData,
-          id: Number(id),
-          title: movieData.title || movieData.original_title,
-          original_title: usTitle ?? movieData.original_title ?? null,
-          poster_path: movieData.poster_path ?? null,
-        },
-      });
-
-      // Invalidate recently-viewed cache after tracking
-      queryClient.invalidateQueries({ queryKey: ["recently-viewed"] });
-
-      // Fetch collection if exists
       let collection = null;
       if (movieData.belongs_to_collection?.id) {
         collection = await tmdb.collections.details(movieData.belongs_to_collection.id);
@@ -59,17 +49,28 @@ export function useMovieDetails(id: string) {
 
 export function useMovieDiscover(options: MovieQueryOptions = {}) {
   const { tmdb, tmdbLocale } = useTMDB();
+  const queryClient = useQueryClient();
 
-  return useInfiniteQuery({
+  const query = useInfiniteQuery({
     queryKey: ["movie-discover", tmdbLocale, JSON.stringify(options)],
     queryFn: async ({ pageParam = 1 }) => {
-      const data = await tmdb.discover.movie({
-        ...options,
-        with_release_type: options.with_release_type || "4|5",
-        page: pageParam,
+      const data = await tmdb.discover.movie({ ...options, page: pageParam });
+
+      const ids = data.results.map((result) => result.id.toString());
+      const localMedias =
+        ids.length > 0
+          ? (await unwrap(api.media.$get({ query: { type: "movie", ids: ids.join(",") } }))).results
+          : [];
+
+      const results = data.results.map((result) => {
+        const media =
+          localMedias.find((media) => media.id === result.id) || tmdbMovieToMedia(result);
+        queryClient.setQueryData(["media", media.id], media);
+        return media;
       });
+
       return {
-        results: data.results.map(tmdbMovieToMedia),
+        results,
         page: data.page,
         totalPages: data.total_pages,
       };
@@ -79,6 +80,13 @@ export function useMovieDiscover(options: MovieQueryOptions = {}) {
     },
     initialPageParam: 1,
   });
+
+  const results = useMemo(
+    () => query.data?.pages.flatMap((page) => page.results) ?? [],
+    [query.data],
+  );
+
+  return { ...query, results };
 }
 
 export function useMovieGenres() {

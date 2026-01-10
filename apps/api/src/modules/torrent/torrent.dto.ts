@@ -33,3 +33,17 @@ export type TorrentQuality = z.infer<typeof torrentSchema>["quality"];
 export type TorrentLanguage = z.infer<typeof torrentSchema>["language"];
 
 export type Torrent = z.infer<typeof torrentSchema>;
+
+// Torrent inspect types
+export interface TorrentInspectFile {
+  name: string;
+  path: string;
+  length: number;
+}
+
+export interface TorrentInspectResult {
+  name: string;
+  infoHash: string;
+  files: TorrentInspectFile[];
+  totalSize: number;
+}

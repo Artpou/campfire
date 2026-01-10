@@ -10,28 +10,26 @@ import { Container } from "@/shared/ui/container";
 import { MediaCarousel } from "@/features/media/components/media-carousel";
 import { MediaCategoryCarousel } from "@/features/media/components/media-category-carousel";
 import { MediaGrid } from "@/features/media/components/media-grid";
-import { MediaSortTabs } from "@/features/media/components/media-sort-tabs";
-import { useRecentlyViewed } from "@/features/media/hooks/use-media";
+import { MediaSelected, MediaSortTabs } from "@/features/media/components/media-sort-tabs";
+import { useMedias } from "@/features/media/hooks/use-media";
 import { TVProviderTabs } from "@/features/tv/components/tv-provider-tabs";
 import { useTVDiscover } from "@/features/tv/hook/use-tv";
 
 export interface TVSearchParams {
-  sort_by?: SortOption;
   with_genres?: string;
   with_watch_providers?: string;
-  with_release_type?: string;
+  selected?: MediaSelected;
 }
 
 export const Route = createFileRoute("/_app/tv")({
   component: TVPage,
   validateSearch: (search: Record<string, unknown>): TVSearchParams => {
+    const { with_genres, with_watch_providers, selected } = search;
     return {
-      sort_by: typeof search.sort_by === "string" ? (search.sort_by as SortOption) : undefined,
-      with_genres: typeof search.with_genres === "string" ? search.with_genres : undefined,
+      with_genres: typeof with_genres === "string" ? with_genres : undefined,
       with_watch_providers:
-        typeof search.with_watch_providers === "string" ? search.with_watch_providers : undefined,
-      with_release_type:
-        typeof search.with_release_type === "string" ? search.with_release_type : undefined,
+        typeof with_watch_providers === "string" ? with_watch_providers : undefined,
+      selected: typeof selected === "string" ? (selected as MediaSelected) : undefined,
     };
   },
 });
@@ -39,51 +37,35 @@ export const Route = createFileRoute("/_app/tv")({
 function TVPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
-  const { data: recentlyViewedData } = useRecentlyViewed("tv", 20);
-  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useTVDiscover(search);
 
-  const recentlyViewedTV = useMemo(() => {
-    return recentlyViewedData?.pages.flatMap((page) => page.results) ?? [];
-  }, [recentlyViewedData]);
+  const sort_by: SortOption | undefined = useMemo(() => {
+    return search.selected === "top-rated"
+      ? "vote_average.desc"
+      : search.selected === "upcoming"
+        ? "popularity.desc"
+        : undefined;
+  }, [search.selected]);
 
-  const tvShows = useMemo(() => {
-    return data?.pages.flatMap((page) => page.results) ?? [];
-  }, [data]);
+  const { after_date } = useMemo(() => {
+    return {
+      after_date:
+        search.selected === "upcoming" ? new Date().toISOString().split("T")[0] : undefined,
+    };
+  }, [search]);
 
-  const handleSearchChange = (updates: Partial<TVSearchParams>) => {
-    navigate({
-      to: "/tv",
-      search: {
-        ...search,
-        ...updates,
-      },
-    });
-  };
-
-  const handleReleaseTypeChange = (updates: {
-    with_release_type: string;
-    release_date: { lte: string };
-  }) => {
-    navigate({
-      to: "/tv",
-      search: {
-        ...search,
-        with_release_type: updates.with_release_type,
-        sort_by: undefined,
-      },
-    });
-  };
-
-  const handleSortChange = (updates: { sort_by: SortOption }) => {
-    navigate({
-      to: "/tv",
-      search: {
-        ...search,
-        sort_by: updates.sort_by,
-        with_release_type: undefined,
-      },
-    });
-  };
+  const { results: recentlyViewedTV } = useMedias({ type: "tv", filter: "recently-viewed" });
+  const {
+    results: tvShows,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useTVDiscover({
+    sort_by,
+    with_genres: search.with_genres,
+    with_watch_providers: search.with_watch_providers,
+    "first_air_date.gte": after_date,
+  });
 
   const handleLoadMore = () => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -91,9 +73,22 @@ function TVPage() {
     }
   };
 
+  const handleSearchChange = (value: TVSearchParams) => {
+    navigate({
+      to: "/tv",
+      search: {
+        ...search,
+        ...value,
+      },
+    });
+  };
+
   return (
     <Container>
-      <MediaCategoryCarousel type="tv" onValueChange={handleSearchChange} />
+      <MediaCategoryCarousel
+        type="tv"
+        onValueChange={(value) => handleSearchChange({ with_genres: value })}
+      />
 
       {recentlyViewedTV.length > 0 && (
         <MediaCarousel
@@ -109,11 +104,16 @@ function TVPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-4">
           <MediaSortTabs
-            releaseValue={search.with_release_type}
-            onSortChange={handleSortChange}
-            onReleaseChange={handleReleaseTypeChange}
+            value={search.selected}
+            onChange={(value) => handleSearchChange({ selected: value })}
+            type="tv"
           />
-          <TVProviderTabs value={search.with_watch_providers} onValueChange={handleSearchChange} />
+          {search.selected !== "cinema" && (
+            <TVProviderTabs
+              value={search.with_watch_providers}
+              onValueChange={(value) => handleSearchChange(value)}
+            />
+          )}
         </div>
         <MediaGrid
           items={tvShows}

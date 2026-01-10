@@ -1,5 +1,5 @@
-import type { Media, Torrent, TorrentIndexer } from "@basement/api/types";
-import { useQueries } from "@tanstack/react-query";
+import type { Media, Torrent, TorrentIndexer, TorrentInspectResult } from "@basement/api/types";
+import { useQueries, useQuery } from "@tanstack/react-query";
 
 import { api, unwrap } from "@/lib/api";
 
@@ -20,21 +20,6 @@ export function useTorrents(media: Media | null | undefined, indexers: TorrentIn
             }),
           );
 
-          if (import.meta.env.DEV) {
-            console.log(`[TORRENT] ${indexer.name} search results (${data.length} torrents):`, {
-              total: data.length,
-              withSeeders: data.filter((t: Torrent) => t.seeders > 0).length,
-              sample: data[0]
-                ? {
-                    title: data[0].title,
-                    guid: `${data[0].guid?.substring(0, 50)}...`,
-                    downloadUrl: `${data[0].downloadUrl?.substring(0, 50)}...`,
-                    magnetUrl: `${data[0].magnetUrl?.substring(0, 50)}...`,
-                    link: `${data[0].link?.substring(0, 50)}...`,
-                  }
-                : null,
-            });
-          }
           return (data || []).filter((torrent: Torrent) => torrent.seeders > 0);
         } catch {
           return [];
@@ -43,5 +28,24 @@ export function useTorrents(media: Media | null | undefined, indexers: TorrentIn
       enabled: !!media?.id,
       retry: 1,
     })),
+  });
+}
+
+export function useTorrentInspect(magnetUri: string | null) {
+  return useQuery({
+    queryKey: ["torrent", "inspect", magnetUri],
+    queryFn: async () => {
+      if (!magnetUri) throw new Error("No magnet URI provided");
+
+      const response = await api.torrents.inspect.$get({
+        query: { magnet: magnetUri },
+      });
+
+      // biome-ignore lint/suspicious/noExplicitAny: TODO
+      return unwrap<TorrentInspectResult>(response as any);
+    },
+    enabled: !!magnetUri,
+    staleTime: 0,
+    gcTime: 0,
   });
 }

@@ -1,8 +1,10 @@
-import type { Media } from "@basement/api/types";
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { Ids, Media } from "@basement/api/types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ListMediaSchema } from "node_modules/@basement/api/src/modules/media/media.dto";
 import type { MultiSearchResult } from "tmdb-ts";
 
 import { api, unwrap } from "@/lib/api";
+import { useInfiniteQueryApi } from "@/shared/hooks/use-query-api";
 import { useTMDB } from "@/shared/hooks/use-tmdb";
 
 import {
@@ -19,74 +21,29 @@ export function useMedia(id: number) {
   });
 }
 
-export function useRecentlyViewed(type: "movie" | "tv" | undefined, limit = 20) {
-  return useInfiniteQuery({
-    queryKey: ["recently-viewed", type],
-    queryFn: ({ pageParam = 1 }) =>
-      unwrap(
-        api.media["recently-viewed"].$get({
-          query: { type, page: pageParam.toString(), limit: limit.toString() },
-        }),
-      ),
-    getNextPageParam: (lastPage) => {
-      return lastPage.hasMore ? lastPage.page + 1 : undefined;
+export function useMedias(params: ListMediaSchema) {
+  const queryClient = useQueryClient();
+
+  return useInfiniteQueryApi<Media>({
+    queryKey: ["medias", params.filter, params],
+    queryFn: async ({ pageParam }) => {
+      const data = await unwrap(
+        api.media.$get({ query: { ...params, page: pageParam.toString() } }),
+      );
+
+      data.results.forEach((result) => {
+        queryClient.setQueryData(["media", result.id], result);
+      });
+
+      return data;
     },
-    initialPageParam: 1,
   });
 }
 
-export function useLikeMedia(type: "movie" | "tv" | undefined, limit = 20) {
-  return useInfiniteQuery({
-    queryKey: ["like-media", type],
-    queryFn: ({ pageParam = 1 }) =>
-      unwrap(
-        api.media.like.$get({
-          query: { type, page: pageParam.toString(), limit: limit.toString() },
-        }),
-      ),
-    getNextPageParam: (lastPage) => {
-      return lastPage.hasMore ? lastPage.page + 1 : undefined;
-    },
-    initialPageParam: 1,
-  });
-}
-
-export function useWatchListMedia(type: "movie" | "tv" | undefined, limit = 20) {
-  return useInfiniteQuery({
-    queryKey: ["watch-list-media", type],
-    queryFn: ({ pageParam = 1 }) =>
-      unwrap(
-        api.media["watch-list"].$get({
-          query: { type, page: pageParam.toString(), limit: limit.toString() },
-        }),
-      ),
-    getNextPageParam: (lastPage) => {
-      return lastPage.hasMore ? lastPage.page + 1 : undefined;
-    },
-    initialPageParam: 1,
-  });
-}
-
-export function useMediaStatus(mediaId: number) {
+export function useMediasStatus(ids: Ids) {
   return useQuery({
-    queryKey: ["media-status", mediaId],
-    queryFn: () =>
-      unwrap(
-        api.media[":id"].status.$get({
-          param: { id: mediaId.toString() },
-        }),
-      ),
-  });
-}
-
-export function useMediaStatusBatch(mediaIds: number[]) {
-  return useQuery({
-    queryKey: ["media-status-batch", ...mediaIds.sort()],
-    queryFn: () =>
-      unwrap<Record<number, { isLiked: boolean; isInWatchList: boolean }>>(
-        api.media.status.batch.$post({ json: { mediaIds } }),
-      ),
-    enabled: mediaIds.length > 0,
+    queryKey: ["medias-status", ids],
+    queryFn: () => unwrap(api.media.status.$post({ json: ids.map((id) => id.toString()) })),
   });
 }
 
@@ -94,12 +51,11 @@ export function useToggleLike() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (media: Media) => unwrap(api.media.like.$post({ json: media })),
-    onSuccess: (_, media) => {
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ["media-status", media.id] });
-      queryClient.invalidateQueries({ queryKey: ["media-status-batch"] });
-      queryClient.invalidateQueries({ queryKey: ["like-media"] });
+    mutationFn: (data: Media) => unwrap(api.media.like.$post({ json: data })),
+    onSuccess: (updatedMedia) => {
+      queryClient.setQueryData(["media", updatedMedia.id], updatedMedia);
+      queryClient.invalidateQueries({ queryKey: ["medias", "like"] });
+      queryClient.invalidateQueries({ queryKey: ["medias-status"] });
     },
   });
 }
@@ -108,12 +64,11 @@ export function useToggleWatchList() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (media: Media) => unwrap(api.media["watch-list"].$post({ json: media })),
-    onSuccess: (_, media) => {
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ["media-status", media.id] });
-      queryClient.invalidateQueries({ queryKey: ["media-status-batch"] });
-      queryClient.invalidateQueries({ queryKey: ["watch-list-media"] });
+    mutationFn: (data: Media) => unwrap(api.media["watch-list"].$post({ json: data })),
+    onSuccess: (updatedMedia) => {
+      queryClient.setQueryData(["media", updatedMedia.id], updatedMedia);
+      queryClient.invalidateQueries({ queryKey: ["medias", "watch-list"] });
+      queryClient.invalidateQueries({ queryKey: ["medias-status"] });
     },
   });
 }
@@ -126,7 +81,6 @@ export function useMediaSearch(query: string) {
     queryFn: async () => {
       const searchResults = await tmdb.search.multi({ query, language: tmdbLocale });
 
-      // Transform results to Media type, filtering for movies and TV shows only
       const mediaResults: Media[] = [];
 
       for (const result of searchResults.results) {

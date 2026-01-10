@@ -34,7 +34,7 @@ export class DownloadService extends AuthenticatedService {
     };
   }
 
-  async getById(id: string) {
+  async getById(id: string): Promise<(TorrentDownload & { live?: TorrentLiveData }) | null> {
     const [download] = await this.select.where(eq(torrentDownload.id, id)).limit(1);
     if (!download) return null;
 
@@ -47,7 +47,7 @@ export class DownloadService extends AuthenticatedService {
     return downloads.map(this.getTorrentDetails);
   }
 
-  async delete(id: string) {
+  async delete(id: string): Promise<void> {
     const activeTorrent = WebTorrentClient.getActiveTorrent(id);
     if (activeTorrent) {
       activeTorrent.destroy();

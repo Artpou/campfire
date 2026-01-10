@@ -100,8 +100,6 @@ export function MovieInfo({ movie }: MovieInfoProps) {
     return [];
   }, [uniqueProviders]);
 
-  console.log(movie);
-
   return (
     <div className="dark text-foreground flex flex-col gap-4">
       <div>

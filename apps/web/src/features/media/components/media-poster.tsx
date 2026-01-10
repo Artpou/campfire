@@ -2,7 +2,7 @@ import { useMemo } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import { Link } from "@tanstack/react-router";
-import { Play, Search } from "lucide-react";
+import { MagnetIcon, Play } from "lucide-react";
 import { AppendToResponse, MovieDetails } from "tmdb-ts";
 
 import { Button } from "@/shared/ui/button";
@@ -60,8 +60,8 @@ export function MediaPoster({ media, id }: MediaPosterProps) {
       {media && role !== "viewer" && id && (
         <Button className="w-full" asChild>
           <Link to="/movies/$id/torrents" params={{ id: id.toString() }}>
-            <Search className="size-3 mr-2" />
-            <Trans>Search Torrent</Trans>
+            <MagnetIcon className="size-3 mr-2" />
+            <Trans>Torrents</Trans>
           </Link>
         </Button>
       )}

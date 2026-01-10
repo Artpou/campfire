@@ -12,7 +12,7 @@ import { useTVGenres } from "@/features/tv/hook/use-tv";
 
 interface MediaCategoryCarouselProps {
   type: Media["type"];
-  onValueChange?: (updates: { with_genres?: string }) => void;
+  onValueChange?: (value: string | undefined) => void;
 }
 
 export function MediaCategoryCarousel({ type, onValueChange }: MediaCategoryCarouselProps) {
@@ -27,9 +27,9 @@ export function MediaCategoryCarousel({ type, onValueChange }: MediaCategoryCaro
   const handleGenreClick = (genreId: number) => {
     // Toggle: if clicking the same genre, deactivate it
     if (selectedGenreId === genreId) {
-      onValueChange?.({ with_genres: undefined });
+      onValueChange?.(undefined);
     } else {
-      onValueChange?.({ with_genres: genreId.toString() });
+      onValueChange?.(genreId.toString());
     }
   };
 

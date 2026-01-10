@@ -1,62 +1,53 @@
+import { Media } from "@basement/api/types";
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { PopcornIcon, Radio, SofaIcon, Star } from "lucide-react";
-import { SortOption } from "tmdb-ts";
 
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
-const sortOptions = [
-  {
-    value: "4|5",
-    type: "release" as const,
-    icon: <SofaIcon className="text-foreground" />,
-    label: msg`At Home`,
-  },
-  {
-    value: "3",
-    type: "release" as const,
-    icon: <PopcornIcon className="text-foreground" />,
-    label: msg`In Cinema`,
-  },
-  {
-    value: "vote_average.desc",
-    type: "sort" as const,
-    icon: <Star className="text-foreground" />,
-    label: msg`Top Rated`,
-  },
-  {
-    value: "release_date.desc",
-    type: "sort" as const,
-    icon: <Radio className="text-foreground" />,
-    label: msg`Upcoming`,
-  },
-];
+export type MediaSelected = "home" | "cinema" | "top-rated" | "upcoming";
 
 interface MediaSortTabsProps {
-  releaseValue?: string;
-  onSortChange: (updates: { sort_by: SortOption }) => void;
-  onReleaseChange: (updates: { with_release_type: string; release_date: { lte: string } }) => void;
+  value?: MediaSelected;
+  type: Media["type"];
+  onChange: (value: MediaSelected) => void;
 }
 
-export function MediaSortTabs({ releaseValue, onSortChange, onReleaseChange }: MediaSortTabsProps) {
+export function MediaSortTabs({ value, type, onChange }: MediaSortTabsProps) {
   const { t } = useLingui();
 
-  const activeValue = releaseValue || "4|5";
+  const activeValue = value || "home";
 
   const handleChange = (value: string) => {
-    const option = sortOptions.find((opt) => opt.value === value);
-    if (!option) return;
-
-    if (option.type === "release") {
-      const today = new Date().toISOString().split("T")[0];
-      onReleaseChange({
-        with_release_type: value,
-        release_date: { lte: today },
-      });
-    } else {
-      onSortChange({ sort_by: value as SortOption });
-    }
+    onChange(value as MediaSelected);
   };
+
+  const sortOptions = [
+    {
+      value: "home",
+      icon: <SofaIcon className="text-foreground" />,
+      label: msg`At Home`,
+    },
+    ...(type === "movie"
+      ? [
+          {
+            value: "cinema",
+            icon: <PopcornIcon className="text-foreground" />,
+            label: msg`In Cinema`,
+          },
+        ]
+      : []),
+    {
+      value: "top-rated",
+      icon: <Star className="text-foreground" />,
+      label: msg`Top Rated`,
+    },
+    {
+      value: "upcoming",
+      icon: <Radio className="text-foreground" />,
+      label: msg`Upcoming`,
+    },
+  ];
 
   return (
     <Tabs value={activeValue} onValueChange={handleChange}>

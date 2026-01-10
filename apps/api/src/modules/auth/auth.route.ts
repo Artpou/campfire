@@ -47,6 +47,8 @@ export const authRoutes = new Hono()
       password: hashPassword(password),
       role: "owner",
     });
+
+    if (!newUser) throw new Error("Failed to create user");
     const sessionToken = await createSession(newUser.id);
 
     setCookie(c, SESSION_COOKIE_NAME, sessionToken, cookieOptions);

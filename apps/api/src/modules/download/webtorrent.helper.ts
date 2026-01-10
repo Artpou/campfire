@@ -6,7 +6,6 @@ import type { TorrentLiveData } from "./download.dto";
 export const extractTorrentLiveData = (torrent: WebTorrent.Torrent): TorrentLiveData => ({
   infoHash: torrent.infoHash,
   magnetURI: torrent.magnetURI,
-  torrentFile: torrent.torrentFile,
   torrentFileBlobURL: torrent.torrentFileBlobURL,
   announce: torrent.announce,
   "announce-list": torrent["announce-list"],

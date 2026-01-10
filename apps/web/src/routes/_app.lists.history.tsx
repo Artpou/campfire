@@ -1,6 +1,3 @@
-import { useMemo } from "react";
-
-import type { Media } from "@basement/api/types";
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
@@ -9,7 +6,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Container } from "@/shared/ui/container";
 
 import { MediaGrid } from "@/features/media/components/media-grid";
-import { useRecentlyViewed } from "@/features/media/hooks/use-media";
+import { useMedias } from "@/features/media/hooks/use-media";
 
 export const Route = createFileRoute("/_app/lists/history")({
   component: HistoryPage,
@@ -18,18 +15,10 @@ export const Route = createFileRoute("/_app/lists/history")({
 function HistoryPage() {
   const { _ } = useLingui();
 
-  const {
-    data: historyData,
-    isLoading,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useRecentlyViewed("movie", 20);
-
-  const items = useMemo(
-    () => historyData?.pages.flatMap((page: { results: Media[] }) => page.results) ?? [],
-    [historyData],
-  );
+  const { results, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useMedias({
+    type: "movie",
+    filter: "recently-viewed",
+  });
 
   const handleLoadMore = () => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -42,7 +31,7 @@ function HistoryPage() {
       <div className="space-y-6">
         <h1 className="text-3xl font-bold">{_(msg`History`)}</h1>
 
-        {!isLoading && items.length === 0 ? (
+        {!isLoading && results.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
             <p className="text-lg">
               <Trans>No viewing history yet.</Trans>
@@ -50,7 +39,7 @@ function HistoryPage() {
           </div>
         ) : (
           <MediaGrid
-            items={items}
+            items={results}
             isLoading={isLoading || isFetchingNextPage}
             onLoadMore={handleLoadMore}
             withLoading={false}

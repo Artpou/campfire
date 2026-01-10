@@ -1,7 +1,7 @@
 import type { Media } from "@basement/api/types";
 import { Trans } from "@lingui/react/macro";
-import { Link } from "@tanstack/react-router";
-import { ClockPlusIcon, FilmIcon, HeartIcon, TvIcon } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { ClockPlusIcon, FilmIcon, HeartIcon, MagnetIcon, TvIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { CircularProgress } from "@/shared/components/circular-progress";
@@ -17,8 +17,6 @@ const MAX_OVERVIEW_LENGTH = 100;
 interface MediaCardProps {
   media: Media;
   withType?: boolean;
-  isLiked?: boolean;
-  isInWatchList?: boolean;
   hideInfo?: boolean;
   className?: string;
 }
@@ -26,14 +24,14 @@ interface MediaCardProps {
 export function MediaCard({
   media,
   withType = false,
-  isLiked,
-  isInWatchList,
   hideInfo = false,
   className,
 }: MediaCardProps) {
-  const year = media.release_date ? new Date(media.release_date).getFullYear() : "";
   const toggleLike = useToggleLike();
   const toggleWatchList = useToggleWatchList();
+  const navigate = useNavigate();
+
+  const year = media.release_date ? new Date(media.release_date).getFullYear() : "";
 
   const handleToggleLike = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -69,7 +67,7 @@ export function MediaCard({
         />
         {!hideInfo && (
           <>
-            <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-background via-background/95 to-background/60 transition-all duration-200 translate-y-full p-3 group-hover:translate-y-0">
+            <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-background via-background/95 to-background/60 transition-all duration-200 translate-y-full p-2 group-hover:translate-y-0">
               <p className="text-xs font-bold">{year}</p>
               <h3 className="font-semibold text-base">
                 {media.title?.slice(0, MAX_TITLE_LENGTH)}
@@ -79,6 +77,15 @@ export function MediaCard({
                 {media.overview?.slice(0, MAX_OVERVIEW_LENGTH)}
                 {(media.overview?.length || 0) > MAX_OVERVIEW_LENGTH ? "..." : ""}
               </p>
+              <Button
+                className="w-full mt-1"
+                onClick={() =>
+                  navigate({ to: "/movies/$id/torrents", params: { id: media.id.toString() } })
+                }
+              >
+                <MagnetIcon />
+                <Trans>Torrents</Trans>
+              </Button>
             </div>
             {withType && (
               <Button
@@ -92,23 +99,23 @@ export function MediaCard({
             )}
             <div className="absolute top-2 left-2 right-2 flex justify-between gap-1">
               <div className="flex gap-1">
-                {isLiked !== undefined && (
+                {media.like !== undefined && (
                   <Button
-                    variant={isLiked ? "default" : "outline"}
+                    variant={media.like ? "default" : "outline"}
                     size="icon"
-                    tooltip={isLiked ? <Trans>Unlike</Trans> : <Trans>Like</Trans>}
+                    tooltip={media.like ? <Trans>Unlike</Trans> : <Trans>Like</Trans>}
                     className="sm:opacity-0 group-hover:opacity-100"
                     onClick={handleToggleLike}
                   >
-                    <HeartIcon fill={isLiked ? "currentColor" : "none"} />
+                    <HeartIcon fill={media.like ? "currentColor" : "none"} />
                   </Button>
                 )}
-                {isInWatchList !== undefined && (
+                {media.watchList !== undefined && (
                   <Button
-                    variant={isInWatchList ? "default" : "outline"}
+                    variant={media.watchList ? "default" : "outline"}
                     size="icon"
                     tooltip={
-                      isInWatchList ? (
+                      media.watchList ? (
                         <Trans>Remove from watch list</Trans>
                       ) : (
                         <Trans>Add to watch list</Trans>
@@ -117,7 +124,7 @@ export function MediaCard({
                     className="sm:opacity-0 group-hover:opacity-100"
                     onClick={handleToggleWatchList}
                   >
-                    <ClockPlusIcon fill={isInWatchList ? "currentColor" : "none"} />
+                    <ClockPlusIcon fill={media.watchList ? "currentColor" : "none"} />
                   </Button>
                 )}
               </div>

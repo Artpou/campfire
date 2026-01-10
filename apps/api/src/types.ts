@@ -22,12 +22,23 @@ export type {
   NewIndexerManager,
 } from "./modules/indexer-manager/indexer-manager.dto";
 export type { IndexerManagerRoutesType } from "./modules/indexer-manager/indexer-manager.route";
-export type { Media, MediaStatusBatchInput, NewMedia } from "./modules/media/media.dto";
+export type {
+  ListMediaParams,
+  Media,
+  MediaFilter,
+  MediaStatus,
+} from "./modules/media/media.dto";
 export type { MediaRoutesType } from "./modules/media/media.route";
+// Pagination types
+export type { Paginate, PaginationParams } from "./modules/pagination/pagination.dto";
+// Shared types
+export type { Ids } from "./modules/shared/shared.dto";
 // Torrent search types
 export type {
   Torrent,
   TorrentIndexer,
+  TorrentInspectFile,
+  TorrentInspectResult,
   TorrentLanguage,
   TorrentQuality,
 } from "./modules/torrent/torrent.dto";

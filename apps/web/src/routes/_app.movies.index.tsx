@@ -11,27 +11,25 @@ import { Container } from "@/shared/ui/container";
 
 import { MediaCategoryCarousel } from "@/features/media/components/media-category-carousel";
 import { MediaGrid } from "@/features/media/components/media-grid";
-import { MediaSortTabs } from "@/features/media/components/media-sort-tabs";
+import { MediaSelected, MediaSortTabs } from "@/features/media/components/media-sort-tabs";
 import { MovieProviderTabs } from "@/features/movies/components/movie-provider-tabs";
 import { useMovieDiscover } from "@/features/movies/hooks/use-movie";
 
 export interface MovieSearchParams {
-  sort_by?: SortOption;
   with_genres?: string;
   with_watch_providers?: string;
-  with_release_type?: string;
+  selected?: MediaSelected;
 }
 
 export const Route = createFileRoute("/_app/movies/")({
   component: MoviesPage,
   validateSearch: (search: Record<string, unknown>): MovieSearchParams => {
-    const { sort_by, with_genres, with_watch_providers, with_release_type } = search;
+    const { with_genres, with_watch_providers, selected } = search;
     return {
-      sort_by: typeof sort_by === "string" ? (sort_by as SortOption) : undefined,
       with_genres: typeof with_genres === "string" ? with_genres : undefined,
       with_watch_providers:
         typeof with_watch_providers === "string" ? with_watch_providers : undefined,
-      with_release_type: typeof with_release_type === "string" ? with_release_type : undefined,
+      selected: typeof selected === "string" ? (selected as MediaSelected) : undefined,
     };
   },
 });
@@ -39,75 +37,66 @@ export const Route = createFileRoute("/_app/movies/")({
 function MoviesPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
-  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useMovieDiscover({
-    sort_by: search.sort_by,
+
+  const { sort_by, with_release_type, after_date } = useMemo(() => {
+    return {
+      with_release_type:
+        search.selected === "home" ? "4|5" : search.selected === "cinema" ? "3" : undefined,
+      sort_by: (search.selected === "top-rated"
+        ? "vote_average.desc"
+        : search.selected === "upcoming"
+          ? "popularity.desc"
+          : undefined) satisfies SortOption | undefined,
+      after_date:
+        search.selected === "upcoming" ? new Date().toISOString().split("T")[0] : undefined,
+    };
+  }, [search]);
+
+  const { results, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useMovieDiscover({
+    sort_by: sort_by as SortOption | undefined,
+    with_release_type,
     with_genres: search.with_genres,
     with_watch_providers: search.with_watch_providers,
-    with_release_type: search.with_release_type,
+    "primary_release_date.gte": after_date,
   });
-
-  const movies = useMemo(() => {
-    return data?.pages.flatMap((page) => page.results) ?? [];
-  }, [data]);
-
-  const handleSearchChange = (updates: Partial<MovieSearchParams>) => {
-    navigate({
-      to: "/movies",
-      search: {
-        ...search,
-        ...updates,
-      },
-    });
-  };
-
-  const handleReleaseTypeChange = (updates: {
-    with_release_type: string;
-    release_date: { lte: string };
-  }) => {
-    navigate({
-      to: "/movies",
-      search: {
-        ...search,
-        with_release_type: updates.with_release_type,
-        sort_by: undefined,
-      },
-    });
-  };
-
-  const handleSortChange = (updates: { sort_by: SortOption }) => {
-    navigate({
-      to: "/movies",
-      search: {
-        ...search,
-        sort_by: updates.sort_by,
-        with_release_type: undefined,
-      },
-    });
-  };
 
   const handleLoadMore = () => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
   };
+  const handleSearchChange = (value: MovieSearchParams) => {
+    navigate({
+      to: "/movies",
+      search: {
+        ...search,
+        ...value,
+      },
+    });
+  };
 
   return (
     <Container>
-      <MediaCategoryCarousel type="movie" onValueChange={handleSearchChange} />
+      <MediaCategoryCarousel
+        type="movie"
+        onValueChange={(value) => handleSearchChange({ with_genres: value })}
+      />
 
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-4">
           <MediaSortTabs
-            releaseValue={search.with_release_type}
-            onSortChange={handleSortChange}
-            onReleaseChange={handleReleaseTypeChange}
+            value={search.selected}
+            onChange={(value) => handleSearchChange({ selected: value })}
+            type="movie"
           />
           <div className="flex items-center gap-2">
-            {search.with_release_type !== "3" && (
+            {search.selected !== "cinema" && (
               <MovieProviderTabs
                 className="hidden xl:flex"
                 value={search.with_watch_providers}
-                onValueChange={handleSearchChange}
+                onValueChange={(value) =>
+                  handleSearchChange({ with_watch_providers: value?.toString() })
+                }
               />
             )}
             <Button variant="secondary" size="icon-lg">
@@ -115,14 +104,14 @@ function MoviesPage() {
             </Button>
           </div>
         </div>
-        {!isLoading && movies.length === 0 ? (
+        {!isLoading && results.length === 0 ? (
           <PlaceholderEmpty
             title={<Trans>No movies found</Trans>}
             subtitle={<Trans>Try adjusting your filters or search criteria</Trans>}
           />
         ) : (
           <MediaGrid
-            items={movies}
+            items={results}
             isLoading={isLoading || isFetchingNextPage}
             onLoadMore={handleLoadMore}
           />

@@ -1,3 +1,6 @@
+import type WebTorrent from "webtorrent";
+
+import { WebTorrentClient } from "@/modules/download/webtorrent.client";
 import { IndexerManagerService } from "@/modules/indexer-manager/indexer-manager.service";
 import { AuthenticatedService } from "../../classes/authenticated-service";
 import { type IndexerType } from "../../db/schema";
@@ -5,7 +8,7 @@ import type { Media } from "../media/media.dto";
 import type { IndexerAdapter } from "./adapters/base.adapter";
 import { JackettAdapter } from "./adapters/jackett.adapter";
 import { ProwlarrAdapter } from "./adapters/prowlarr.adapter";
-import type { Torrent, TorrentIndexer } from "./torrent.dto";
+import type { Torrent, TorrentIndexer, TorrentInspectResult } from "./torrent.dto";
 
 export class TorrentService extends AuthenticatedService {
   private readonly adapters: Record<IndexerType, IndexerAdapter> = {
@@ -39,7 +42,7 @@ export class TorrentService extends AuthenticatedService {
     const search = async (query: string) => {
       return await this.getAdapter(indexerConfig.name).search(
         {
-          q: this.sanitizeQuery(query),
+          q: query,
           t: media.type,
           indexerId,
           categories,
@@ -48,10 +51,10 @@ export class TorrentService extends AuthenticatedService {
       );
     };
 
-    let torrents = await search(`${media.original_title}.${year || ""}`);
+    let torrents = await search(`${media.sanitize_title}+${year || ""}`);
 
-    if (torrents.length === 0 && media.title && media.title !== media.original_title) {
-      torrents = await search(`${media.title}.${year || ""}`);
+    if (torrents.length === 0 && media.title && media.title !== media.sanitize_title) {
+      torrents = await search(`${media.title}+${year || ""}`);
     }
 
     if (torrents.length === 0) {
@@ -61,10 +64,54 @@ export class TorrentService extends AuthenticatedService {
     return torrents;
   }
 
-  private sanitizeQuery(query: string): string {
-    return query
-      .replace(/[:;|<>"/\\*?]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
+  async inspectTorrent(torrentUri: string): Promise<TorrentInspectResult> {
+    const client = WebTorrentClient.getClient();
+
+    return new Promise((resolve, reject) => {
+      let torrent: WebTorrent.Torrent | null = null;
+
+      const timeoutId = setTimeout(() => {
+        if (torrent) torrent.destroy();
+        reject(new Error("Torrent metadata fetch timeout (30s)"));
+      }, 30000);
+
+      // WebTorrent supports both magnet URIs and HTTP URLs to .torrent files
+      torrent = client.add(torrentUri, {
+        path: "/tmp",
+      });
+
+      torrent.on("metadata", () => {
+        if (!torrent) return;
+        clearTimeout(timeoutId);
+
+        // Deselect all files to prevent downloading
+        for (const file of torrent.files) {
+          file.deselect();
+        }
+
+        const result: TorrentInspectResult = {
+          name: torrent.name,
+          infoHash: torrent.infoHash,
+          files: torrent.files.map((file) => ({
+            name: file.name,
+            path: file.path,
+            length: file.length,
+          })),
+          totalSize: torrent.length,
+        };
+
+        torrent.destroy();
+        resolve(result);
+      });
+
+      (torrent as unknown as { on: (event: string, callback: (err: Error) => void) => void }).on(
+        "error",
+        (err: Error) => {
+          clearTimeout(timeoutId);
+          if (torrent) torrent.destroy();
+          reject(err);
+        },
+      );
+    });
   }
 }

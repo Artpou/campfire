@@ -28,7 +28,7 @@ type DataPropertiesOnly<T> = {
   [K in keyof T as T[K] extends Function ? never : K]: T[K];
 };
 export interface TorrentLiveData
-  extends DataPropertiesOnly<Omit<WebTorrent.Torrent, "files" | "pieces">> {
+  extends DataPropertiesOnly<Omit<WebTorrent.Torrent, "files" | "pieces" | "torrentFile">> {
   files: {
     name: string;
     path: string;

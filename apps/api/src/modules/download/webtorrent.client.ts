@@ -52,19 +52,22 @@ export class WebTorrentClient {
 
       console.log("[WEBTORRENT] Client created");
 
-      // Restore torrents in background - don't await
-      this.restoreActiveTorrents(downloadPath).catch((error) => {
-        console.error("[WEBTORRENT] Failed to restore torrents:", error);
-      });
+      if (process.env.RESUME_DOWNLOADS === "true") {
+        // Restore torrents in background - don't await
+        this.restoreActiveTorrents(downloadPath).catch((error) => {
+          console.error("[WEBTORRENT] Failed to restore torrents:", error);
+        });
 
-      this.isInitialized = true;
-      this.isInitializing = false;
-      console.log("[WEBTORRENT] Initialization complete");
+        this.isInitialized = true;
+        this.isInitializing = false;
+        console.log("[WEBTORRENT] Initialization complete");
+      } else {
+        console.log("[WEBTORRENT] Resuming downloads disabled, skipping");
+      }
     } catch (error) {
       console.error("[WEBTORRENT] Failed to initialize:", error);
       this.initError = error as Error;
       this.isInitializing = false;
-      // Don't throw - allow server to continue
     }
   }
 

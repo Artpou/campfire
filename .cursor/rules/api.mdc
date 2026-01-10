@@ -87,16 +87,31 @@ export type Torrent = z.infer<typeof torrentSchema>;
 - Keep services focused on business logic
 - Handle errors appropriately
 - Import types from DTOs, not from schema
+- **Always add explicit return types to all service methods**
 
 Example:
 
 ```typescript
 import { AuthenticatedService } from "@/classes/authenticated-service";
 import type { Media } from "./media.dto";
+import type { Paginate, PaginationParams } from "@/modules/pagination";
 
 export class MediaService extends AuthenticatedService {
   async getMediaById(id: number): Promise<Media | null> {
     return await this.db.select().from(media).where(eq(media.id, id)).get();
+  }
+
+  async getAll(
+    type: Media["type"],
+    { page, limit, offset }: PaginationParams
+  ): Promise<Paginate<Media>> {
+    const results = await this.db
+      .select()
+      .from(media)
+      .where(eq(media.type, type))
+      .limit(limit + 1)
+      .offset(offset);
+    return toPaginate(results, page, limit);
   }
 }
 ```
@@ -106,18 +121,58 @@ export class MediaService extends AuthenticatedService {
 ### Route Definition
 
 ```typescript
-import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
+import { Hono } from "hono";
+
+import { authGuard } from "@/modules/auth/auth.guard";
+import { paginationParams } from "@/modules/pagination/pagination.helper";
 import type { HonoVariables } from "@/types/hono";
-import { createMediaSchema, mediaSelectSchema } from "./media.dto";
+import {
+  listMediaSchema,
+  mediaInsertSchema,
+  mediaSelectSchema,
+  mediaUpdateSchema,
+} from "./media.dto";
 import { MediaService } from "./media.service";
 
 export const mediaRoutes = new Hono<{ Variables: HonoVariables }>()
-  .use("*", authGuard) // Apply middleware
-  .get("/", async (c) => c.json(await MediaService.fromContext(c).getAll()))
-  .post("/", zValidator("json", createMediaSchema), async (c) =>
-    c.json(await MediaService.fromContext(c).create(c.req.valid("json")))
-  );
+  .use("*", authGuard)
+  .get("/", zValidator("query", listMediaSchema), async (c) => {
+    return c.json(
+      await MediaService.fromContext(c).list(
+        c.req.valid("query"),
+        paginationParams(c)
+      )
+    );
+  })
+  .get("/:id", async (c) => {
+    return c.json(
+      await MediaService.fromContext(c).get(Number(c.req.param("id")))
+    );
+  })
+  .post("/", zValidator("json", mediaInsertSchema), async (c) => {
+    return c.json(
+      await MediaService.fromContext(c).upsert(c.req.valid("json"))
+    );
+  })
+  .patch("/:id", zValidator("json", mediaUpdateSchema), async (c) => {
+    return c.json(
+      await MediaService.fromContext(c).update(
+        Number(c.req.param("id")),
+        c.req.valid("json")
+      )
+    );
+  })
+  .post("/like", zValidator("json", mediaSelectSchema), async (c) => {
+    return c.json(
+      await MediaService.fromContext(c).toggleLike(c.req.valid("json"))
+    );
+  })
+  .post("/watch-list", zValidator("json", mediaSelectSchema), async (c) => {
+    return c.json(
+      await MediaService.fromContext(c).toggleWatchList(c.req.valid("json"))
+    );
+  });
 
 export type MediaRoutesType = typeof mediaRoutes;
 ```
@@ -133,6 +188,60 @@ export type MediaRoutesType = typeof mediaRoutes;
 - Group related routes in modules
 - Apply middleware at appropriate levels
 - Return appropriate HTTP status codes
+
+### Validation
+
+- **Always use `zValidator`** for query params, body, and params
+- **Define validators as constants** when reused across routes (e.g., `mediaTypeValidator`)
+- **Use existing enums** from `schema.ts` - never redefine them
+- Access validated data with `c.req.valid("query")`, `c.req.valid("json")`, or `c.req.valid("param")`
+
+Example:
+
+```typescript
+import { z } from "zod";
+import { mediaTypeEnum } from "@/db/schema";
+
+// Reusable validator
+const mediaTypeValidator = z.object({ type: z.enum(mediaTypeEnum) });
+
+export const routes = new Hono().get(
+  "/",
+  zValidator("query", mediaTypeValidator),
+  async (c) => {
+    const { type } = c.req.valid("query"); // Validated and typed
+    // ...
+  }
+);
+```
+
+### Pagination
+
+Use the centralized pagination module for consistent paginated responses:
+
+```typescript
+import { paginationParams, toPaginate } from "@/modules/pagination";
+import type { Paginate, PaginationParams } from "@/modules/pagination";
+
+// In routes - parse pagination from query params
+.get("/", async (c) => {
+  const pagination = paginationParams(c); // { page, limit, offset }
+  return c.json(await Service.fromContext(c).getAll(pagination));
+});
+
+// In services - use PaginationParams type and toPaginate helper
+async getAll({ page, limit, offset }: PaginationParams): Promise<Paginate<Media>> {
+  const results = await db.select().from(media).limit(limit + 1).offset(offset);
+  return toPaginate(results, page, limit); // { results, page, hasMore }
+}
+```
+
+**Pagination Module:**
+
+- `paginationParams(c)`: Extracts `page`, `limit`, and `offset` from query params
+- `toPaginate(items, page, limit)`: Formats results into `Paginate<T>` with `hasMore` flag
+- `PaginationParams`: Type for `{ page, limit, offset }`
+- `Paginate<T>`: Type for `{ results: T[], page, hasMore }`
 
 ### Middleware
 
@@ -218,16 +327,21 @@ if (!["admin", "owner"].includes(user.role)) {
 
 - Trust user input
 - Use `any` type
-- Recreate types that already exist
+- Recreate types or enums that already exist (use imports from `schema.ts`)
 - Export types from `schema.ts` (only tables and enums)
-- Define inline Zod schemas in route files
+- Define inline Zod schemas in route files (use constants or DTOs)
 - Hardcode configuration values
 - Use synchronous file operations
+- Forget return types on service methods
 
 ✅ **DO:**
 
-- Define all schemas in DTO files
+- Define all schemas in DTO files or as constants in route files
 - Use `createSelectSchema` and `createInsertSchema` for database types
 - Infer TypeScript types from Zod schemas
 - Export only TypeScript types in `types.ts` (not Zod schemas)
 - Import types from DTOs in route and service files
+- Import enums from `schema.ts` (e.g., `mediaTypeEnum`, `userRoleEnum`)
+- Use `paginationParams(c)` helper for pagination
+- Add explicit return types to all service methods
+- Use `zValidator` for all input validation

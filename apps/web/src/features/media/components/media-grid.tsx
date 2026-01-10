@@ -1,11 +1,11 @@
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 
 import type { Media } from "@basement/api/types";
 import { useIntersectionObserver } from "@uidotdev/usehooks";
 
 import { Skeleton } from "@/shared/ui/skeleton";
 
-import { useMediaStatusBatch } from "@/features/media/hooks/use-media";
+import { useMediasStatus } from "@/features/media/hooks/use-media";
 import { MediaCard } from "./media-card";
 
 interface MediaGridProps {
@@ -16,8 +16,6 @@ interface MediaGridProps {
   onLoadMore?: () => void;
 }
 
-const MAX_IDS_TO_FETCH = 100;
-
 export function MediaGrid({
   items,
   isLoading = false,
@@ -25,12 +23,10 @@ export function MediaGrid({
   withLoading = true,
   onLoadMore,
 }: MediaGridProps) {
+  const { data: statuses } = useMediasStatus(items.map((item) => item.id.toString()));
   const [lastItemRef, entry] = useIntersectionObserver({
     threshold: 1.0,
   });
-
-  const mediaIds = useMemo(() => items.slice(-MAX_IDS_TO_FETCH).map((item) => item.id), [items]);
-  const { data: statusMap } = useMediaStatusBatch(mediaIds);
 
   useEffect(() => {
     if (entry?.isIntersecting && onLoadMore) {
@@ -42,23 +38,18 @@ export function MediaGrid({
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-6 gap-4">
-      {items.map((item, index) => {
-        const status = statusMap?.[item.id];
-        return (
-          <div
-            key={`${item.type}-${item.id}`}
-            ref={index === items.length - 1 ? lastItemRef : null}
-            className="hover:border-primary/50 border-2 border-transparent rounded-xl"
-          >
-            <MediaCard
-              media={item}
-              withType={withType}
-              isLiked={status?.isLiked}
-              isInWatchList={status?.isInWatchList}
-            />
-          </div>
-        );
-      })}
+      {items.map((item, index) => (
+        <div
+          key={`${item.type}-${item.id}`}
+          ref={index === items.length - 1 ? lastItemRef : null}
+          className="hover:border-primary/50 border-2 border-transparent rounded-xl"
+        >
+          <MediaCard
+            media={{ ...item, ...statuses?.find((status) => status.id === item.id) }}
+            withType={withType}
+          />
+        </div>
+      ))}
       {withLoading &&
         isLoading &&
         Array.from({ length: 20 }, (_, i) => (
