@@ -15,7 +15,7 @@ export const indexerManagerRoutes = new Hono<{ Variables: HonoVariables }>()
   })
   .post("/", zValidator("json", createIndexerManagerSchema), async (c) => {
     const body = c.req.valid("json");
-    return c.json(await IndexerManagerService.fromContext(c).create(body));
+    return c.json(await IndexerManagerService.fromContext(c).upsert(body));
   });
 
 export type IndexerManagerRoutesType = typeof indexerManagerRoutes;

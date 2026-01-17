@@ -1,7 +1,7 @@
 import { getLanguageFromTitle, getTorrentQuality } from "@/helpers/video.helper";
 import { IndexerType } from "../../../db/schema";
 import type { Torrent, TorrentIndexer } from "../torrent.dto";
-import type { IndexerAdapter } from "./base.adapter";
+import type { IndexerAdapter, IndexerConfig } from "./base.adapter";
 
 interface ProwlarrSearchItem {
   quality: string;
@@ -17,14 +17,19 @@ interface ProwlarrSearchItem {
 }
 
 export class ProwlarrAdapter implements IndexerAdapter {
-  private baseUrl = "http://localhost:9696/api/v1";
+  private getApiUrl(baseUrl: string): string {
+    // Ensure baseUrl doesn't have trailing slash and append /api/v1
+    const cleanBase = baseUrl.replace(/\/+$/, "");
+    return cleanBase.includes("/api/v1") ? cleanBase : `${cleanBase}/api/v1`;
+  }
 
-  async getIndexers(apiKey: string): Promise<TorrentIndexer[]> {
-    const url = `${this.baseUrl}/indexer`;
+  async getIndexers(config: IndexerConfig): Promise<TorrentIndexer[]> {
+    const apiUrl = this.getApiUrl(config.baseUrl);
+    const url = `${apiUrl}/indexer`;
 
     console.log(`[Prowlarr] GET ${url}`);
     const response = await fetch(url, {
-      headers: { "X-Api-Key": apiKey },
+      headers: { "X-Api-Key": config.apiKey },
     });
 
     if (!response.ok) {
@@ -49,9 +54,10 @@ export class ProwlarrAdapter implements IndexerAdapter {
 
   async search(
     query: { q: string; t: string; indexerId?: string; categories?: string[] },
-    apiKey: string,
+    config: IndexerConfig,
   ): Promise<Torrent[]> {
-    const url = new URL(`${this.baseUrl}/search`);
+    const apiUrl = this.getApiUrl(config.baseUrl);
+    const url = new URL(`${apiUrl}/search`);
     url.searchParams.set("query", query.q);
     url.searchParams.set("limit", "100");
 
@@ -68,7 +74,7 @@ export class ProwlarrAdapter implements IndexerAdapter {
 
     console.log(`[Prowlarr] GET ${url.toString()}`);
     const response = await fetch(url.toString(), {
-      headers: { "X-Api-Key": apiKey },
+      headers: { "X-Api-Key": config.apiKey },
     });
 
     if (!response.ok) {

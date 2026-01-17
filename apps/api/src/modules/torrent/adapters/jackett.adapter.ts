@@ -1,7 +1,7 @@
 import { getLanguageFromTitle, getTorrentQuality } from "@/helpers/video.helper";
 import { IndexerType } from "../../../db/schema";
 import type { Torrent, TorrentIndexer } from "../torrent.dto";
-import type { IndexerAdapter } from "./base.adapter";
+import type { IndexerAdapter, IndexerConfig } from "./base.adapter";
 
 interface JackettSearchItem {
   Title: string;
@@ -20,11 +20,16 @@ interface JackettSearchResponse {
 }
 
 export class JackettAdapter implements IndexerAdapter {
-  private baseUrl = "http://localhost:9117/api/v2.0";
+  private getApiUrl(baseUrl: string): string {
+    // Ensure baseUrl doesn't have trailing slash and append /api/v2.0
+    const cleanBase = baseUrl.replace(/\/+$/, "");
+    return cleanBase.includes("/api/v2.0") ? cleanBase : `${cleanBase}/api/v2.0`;
+  }
 
-  async getIndexers(apiKey: string): Promise<TorrentIndexer[]> {
-    const url = new URL(`${this.baseUrl}/indexers`);
-    url.searchParams.set("apikey", apiKey);
+  async getIndexers(config: IndexerConfig): Promise<TorrentIndexer[]> {
+    const apiUrl = this.getApiUrl(config.baseUrl);
+    const url = new URL(`${apiUrl}/indexers`);
+    url.searchParams.set("apikey", config.apiKey);
     url.searchParams.set("configured", "true");
 
     console.log(`[Jackett] GET ${url.toString()}`);
@@ -48,10 +53,11 @@ export class JackettAdapter implements IndexerAdapter {
 
   async search(
     query: { q: string; t: string; indexerId?: string; categories?: string[] },
-    apiKey: string,
+    config: IndexerConfig,
   ): Promise<Torrent[]> {
-    const url = new URL(`${this.baseUrl}/indexers/all/results`);
-    url.searchParams.set("apikey", apiKey);
+    const apiUrl = this.getApiUrl(config.baseUrl);
+    const url = new URL(`${apiUrl}/indexers/all/results`);
+    url.searchParams.set("apikey", config.apiKey);
     url.searchParams.set("Query", query.q);
     url.searchParams.set("Type", query.t);
 

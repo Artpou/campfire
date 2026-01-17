@@ -5,6 +5,7 @@ import ms from "ms";
 
 import { hashPassword, verifyPassword } from "@/auth/password.util";
 import { createSession, deleteSession, validateSession } from "@/auth/session.util";
+import { IndexerManagerService } from "../indexer-manager/indexer-manager.service";
 import { UserService } from "../user/user.service";
 import { loginSchema, registerSchema } from "./auth.dto";
 
@@ -95,9 +96,12 @@ export const authRoutes = new Hono()
     const currentUser = await new UserService().getById(userId);
     if (!currentUser) throw new Error("User not found");
 
+    const selectedIndexer = await new IndexerManagerService(currentUser).getSelected();
+
     return c.json({
       ...currentUser,
       sessionToken,
+      selectedIndexer,
     });
   });
 

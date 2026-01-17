@@ -1,0 +1,36 @@
+services:
+  app:
+    build: .
+    ports:
+      - "5551:3002"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:/data/campfire.db
+      - DOWNLOADS_PATH=/downloads
+      - API_PORT=3002
+    volumes:
+      - db_data:/data
+      - downloads:/downloads
+      # Mount your Plex media library here for hardlink support
+      # - /path/to/plex/media:/media
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3002/health').then(r => r.ok ? process.exit(0) : process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  db_data:
+    driver: local
+  downloads:
+    driver: local

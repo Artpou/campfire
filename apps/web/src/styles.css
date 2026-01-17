@@ -33,6 +33,7 @@ code {
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-warning: var(--warning);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -76,6 +77,7 @@ code {
   --accent: oklch(0.78 0.09 125);
   --accent-foreground: oklch(0.25 0.02 130);
   --destructive: oklch(0.55 0.22 25);
+  --warning: oklch(76.9% 0.188 70.08);
 
   --border: oklch(0.88 0.015 135);
   --input: oklch(0.88 0.015 135);

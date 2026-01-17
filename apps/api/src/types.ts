@@ -50,11 +50,13 @@ export type { AppType } from "./server";
 
 // API-serialized types (Date -> string for JSON)
 import type { TorrentDownload as TorrentDownloadDTO } from "./modules/download/download.dto";
+import type { IndexerManager as IndexerManagerDTO } from "./modules/indexer-manager/indexer-manager.dto";
 import type { User as UserDTO } from "./modules/user/user.dto";
 
 export type UserSerialized = Omit<UserDTO, "createdAt"> & {
   createdAt: string;
   sessionToken?: string;
+  selectedIndexer?: IndexerManagerDTO | null;
 };
 
 export type TorrentDownloadSerialized = Omit<

@@ -2,10 +2,10 @@ import type { AppType } from "@basement/api";
 import { hc } from "hono/client";
 
 export const getBaseUrl = () => {
-  if (typeof window !== "undefined") {
-    return import.meta.env.VITE_API_URL || "http://localhost:3002";
+  if (import.meta.env.DEV) {
+    return "http://localhost:3002";
   }
-  return process.env.INTERNAL_API_URL || "http://localhost:3002";
+  return "";
 };
 
 // Client-side API with credentials using Hono RPC

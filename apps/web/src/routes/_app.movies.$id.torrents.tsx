@@ -61,8 +61,9 @@ function MovieTorrentsPage() {
     return allTorrents.filter((t) => t.indexerId && visibleIndexers.has(t.indexerId));
   }, [allTorrents, visibleIndexers]);
 
-  const isLoading =
-    isMediaLoading || isIndexersLoading || !torrentQueries.some((query) => !query.isLoading);
+  const isLoading = isMediaLoading || isIndexersLoading;
+
+  console.log(isLoading);
 
   if (isLoading) {
     return (
@@ -72,7 +73,7 @@ function MovieTorrentsPage() {
     );
   }
 
-  if (!media || !indexers) return null;
+  if (!media) return null;
 
   return (
     <Container>
@@ -90,7 +91,7 @@ function MovieTorrentsPage() {
         </div>
         <div className="hidden xl:block xl:col-span-2">
           <TorrentIndexersTable
-            indexers={indexers}
+            indexers={indexers || []}
             torrentQueries={torrentQueries}
             onVisibilityChange={setVisibleIndexers}
           />

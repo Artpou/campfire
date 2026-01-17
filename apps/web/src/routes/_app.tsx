@@ -1,7 +1,7 @@
 import { msg } from "@lingui/core/macro";
-import { useLingui } from "@lingui/react/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { createFileRoute, Link, Outlet, redirect, useLocation } from "@tanstack/react-router";
-import { Film, Settings, Tv } from "lucide-react";
+import { AlertTriangle, Film, Settings, Tv } from "lucide-react";
 
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,7 @@ import { AppTopbar } from "@/shared/app-topbar";
 import { SidebarProvider } from "@/shared/ui/sidebar";
 
 import { useAuth } from "@/features/auth/auth-store";
+import { useRole } from "@/features/auth/hooks/use-role";
 
 const navItems = [
   {
@@ -49,11 +50,32 @@ export const Route = createFileRoute("/_app")({
 function AuthenticatedLayout() {
   const location = useLocation();
   const { t } = useLingui();
+  const { isAdmin } = useRole();
+  const user = useAuth((state) => state.user);
+
+  const selectedIndexer = user?.selectedIndexer;
+  const isIndexerMisconfigured =
+    isAdmin && (!selectedIndexer || !selectedIndexer.apiKey || !selectedIndexer.baseUrl);
 
   return (
     <SidebarProvider>
       <AppSidebar />
       <div className="flex-1 flex flex-col h-screen overflow-hidden min-w-0">
+        {isIndexerMisconfigured && (
+          <Link
+            to="/settings"
+            search={{ tab: "indexer" }}
+            className="bg-warning/10 border-b border-warning/20 px-4 py-2 flex items-center gap-2 text-warning hover:bg-warning/20 transition-colors"
+          >
+            <AlertTriangle className="size-4 shrink-0" />
+            <span className="text-sm">
+              <Trans>
+                Torrent indexer is not configured. Click here to set up your indexer (Prowlarr or
+                Jackett).
+              </Trans>
+            </span>
+          </Link>
+        )}
         <AppTopbar isAuthenticated={true} />
         <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
           <Outlet />

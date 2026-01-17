@@ -35,18 +35,23 @@ export class TorrentService extends AuthenticatedService {
     const indexerConfig = await new IndexerManagerService(this.user).getSelected();
 
     if (!indexerConfig) throw new Error(`No indexer is configured for this user`);
-    if (indexerConfig.apiKey === null) throw new Error(`No API key is configured for this indexer`);
+    if (!indexerConfig.apiKey) throw new Error(`No API key is configured for this indexer`);
+    if (!indexerConfig.baseUrl) throw new Error(`No base URL is configured for this indexer`);
 
-    return this.getAdapter(indexerConfig.name).getIndexers(indexerConfig.apiKey);
+    return this.getAdapter(indexerConfig.name).getIndexers({
+      apiKey: indexerConfig.apiKey,
+      baseUrl: indexerConfig.baseUrl,
+    });
   }
 
   async searchTorrents(media: Media, indexerId: string): Promise<Torrent[]> {
     const indexerConfig = await new IndexerManagerService(this.user).getSelected();
 
     if (!indexerConfig) throw new Error(`No indexer is configured for this user`);
-    if (indexerConfig.apiKey === null) throw new Error(`No API key is configured for this indexer`);
+    if (!indexerConfig.apiKey) throw new Error(`No API key is configured for this indexer`);
+    if (!indexerConfig.baseUrl) throw new Error(`No base URL is configured for this indexer`);
 
-    const apiKey = indexerConfig.apiKey;
+    const config = { apiKey: indexerConfig.apiKey, baseUrl: indexerConfig.baseUrl };
     const categories = media.type === "movie" ? ["2000"] : ["5000"];
 
     const search = async (query: string) => {
@@ -57,7 +62,7 @@ export class TorrentService extends AuthenticatedService {
           indexerId,
           categories,
         },
-        apiKey,
+        config,
       );
     };
 

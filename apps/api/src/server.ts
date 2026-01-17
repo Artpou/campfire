@@ -1,8 +1,10 @@
 import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import * as fs from "node:fs/promises";
+import * as path from "node:path";
 import { colors, logRequest } from "./helpers/logger.helper";
 import { authRoutes } from "./modules/auth/auth.route";
 import { downloadRoutes } from "./modules/download/download.route";
@@ -10,6 +12,7 @@ import { WebTorrentClient } from "./modules/download/webtorrent.client";
 import { freeboxRoutes } from "./modules/freebox/freebox.route";
 import { indexerManagerRoutes } from "./modules/indexer-manager/indexer-manager.route";
 import { mediaRoutes } from "./modules/media/media.route";
+import { plexRoutes } from "./modules/plex/plex.route";
 import { torrentRoutes } from "./modules/torrent/torrent.route";
 import { userRoutes } from "./modules/user/user.route";
 import type { HonoVariables } from "./types/hono";
@@ -48,7 +51,7 @@ export const app = new Hono<{ Variables: HonoVariables }>()
   .use(
     "*",
     cors({
-      origin: "http://localhost:3000",
+      origin: process.env.NODE_ENV === "production" ? "*" : "http://localhost:3000",
       credentials: true,
       allowHeaders: ["Content-Type", "Authorization", "Cookie"],
       allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -63,7 +66,25 @@ export const app = new Hono<{ Variables: HonoVariables }>()
   .route("/media", mediaRoutes)
   .route("/torrents", torrentRoutes)
   .route("/downloads", downloadRoutes)
-  .get("/", (c) => c.json({ status: "healthy", timestamp: new Date().toISOString() }));
+  .route("/plex", plexRoutes)
+  .get("/health", (c) => c.json({ status: "healthy", timestamp: new Date().toISOString() }))
+  .use(
+    "/*",
+    serveStatic({
+      root: path.join(process.cwd(), "../web/dist"),
+      rewriteRequestPath: (reqPath) => reqPath.replace(/^\//, ""),
+    }),
+  )
+  .get("/*", async (c) => {
+    // Catch-all for SPA routing - serve index.html for non-API routes
+    const indexPath = path.join(process.cwd(), "../web/dist/index.html");
+    try {
+      const indexContent = await fs.readFile(indexPath, "utf-8");
+      return c.html(indexContent);
+    } catch {
+      return c.notFound();
+    }
+  });
 
 export type AppType = typeof app;
 
@@ -87,6 +108,7 @@ const start = async () => {
   serve({
     fetch: app.fetch,
     port,
+    hostname: "0.0.0.0",
   });
 
   console.log(`[STARTUP] Server is now listening`);

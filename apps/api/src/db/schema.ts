@@ -158,3 +158,20 @@ export const torrentDownload = sqliteTable("torrentDownload", {
   // Error handling
   error: text("error"),
 });
+
+// PlexConfig table - Store Plex server configuration
+export const plexConfig = sqliteTable("plexConfig", {
+  id: text("id").primaryKey(), // Usually "singleton"
+  hostname: text("hostname"),
+  port: integer("port").default(32400),
+  token: text("token"),
+  serverName: text("serverName"),
+  machineIdentifier: text("machineIdentifier"),
+  useSsl: integer("useSsl", { mode: "boolean" }).notNull().default(false),
+  syncMovies: integer("syncMovies", { mode: "boolean" }).notNull().default(false),
+  syncTv: integer("syncTv", { mode: "boolean" }).notNull().default(false),
+  syncDownloads: integer("syncDownloads", { mode: "boolean" }).notNull().default(false),
+  updatedAt: integer("updatedAt", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
