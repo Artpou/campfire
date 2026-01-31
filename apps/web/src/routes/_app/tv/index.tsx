@@ -21,7 +21,7 @@ export interface TVSearchParams {
   selected?: MediaSelected;
 }
 
-export const Route = createFileRoute("/_app/tv")({
+export const Route = createFileRoute("/_app/tv/")({
   component: TVPage,
   validateSearch: (search: Record<string, unknown>): TVSearchParams => {
     const { with_genres, with_watch_providers, selected } = search;

@@ -12,23 +12,23 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as R404RouteImport } from './routes/404'
-import { Route as AppIndexRouteImport } from './routes/_app.index'
-import { Route as AuthSignupRouteImport } from './routes/_auth.signup'
-import { Route as AuthLoginRouteImport } from './routes/_auth.login'
-import { Route as AppUsersRouteImport } from './routes/_app.users'
-import { Route as AppTvRouteImport } from './routes/_app.tv'
-import { Route as AppSettingsRouteImport } from './routes/_app.settings'
-import { Route as AppServerRouteImport } from './routes/_app.server'
-import { Route as AppSearchRouteImport } from './routes/_app.search'
-import { Route as AppMoviesIndexRouteImport } from './routes/_app.movies.index'
-import { Route as AppDownloadsIndexRouteImport } from './routes/_app.downloads.index'
-import { Route as AppListsWatchListRouteImport } from './routes/_app.lists.watch-list'
-import { Route as AppListsLikeRouteImport } from './routes/_app.lists.like'
-import { Route as AppListsHistoryRouteImport } from './routes/_app.lists.history'
-import { Route as AppMoviesIdIndexRouteImport } from './routes/_app.movies.$id.index'
-import { Route as AppDownloadsIdIndexRouteImport } from './routes/_app.downloads.$id.index'
-import { Route as AppMoviesIdTorrentsRouteImport } from './routes/_app.movies.$id.torrents'
-import { Route as AppDownloadsIdPlayRouteImport } from './routes/_app.downloads.$id.play'
+import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AuthSignupRouteImport } from './routes/_auth/signup'
+import { Route as AuthLoginRouteImport } from './routes/_auth/login'
+import { Route as AppUsersRouteImport } from './routes/_app/users'
+import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as AppServerRouteImport } from './routes/_app/server'
+import { Route as AppSearchRouteImport } from './routes/_app/search'
+import { Route as AppTvIndexRouteImport } from './routes/_app/tv/index'
+import { Route as AppMoviesIndexRouteImport } from './routes/_app/movies/index'
+import { Route as AppDownloadsIndexRouteImport } from './routes/_app/downloads/index'
+import { Route as AppListsWatchListRouteImport } from './routes/_app/lists/watch-list'
+import { Route as AppListsLikeRouteImport } from './routes/_app/lists/like'
+import { Route as AppListsHistoryRouteImport } from './routes/_app/lists/history'
+import { Route as AppMoviesIdIndexRouteImport } from './routes/_app/movies/$id.index'
+import { Route as AppDownloadsIdIndexRouteImport } from './routes/_app/downloads/$id.index'
+import { Route as AppMoviesIdTorrentsRouteImport } from './routes/_app/movies/$id.torrents'
+import { Route as AppDownloadsIdPlayRouteImport } from './routes/_app/downloads/$id.play'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/_auth',
@@ -63,11 +63,6 @@ const AppUsersRoute = AppUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AppRoute,
 } as any)
-const AppTvRoute = AppTvRouteImport.update({
-  id: '/tv',
-  path: '/tv',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -81,6 +76,11 @@ const AppServerRoute = AppServerRouteImport.update({
 const AppSearchRoute = AppSearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTvIndexRoute = AppTvIndexRouteImport.update({
+  id: '/tv/',
+  path: '/tv/',
   getParentRoute: () => AppRoute,
 } as any)
 const AppMoviesIndexRoute = AppMoviesIndexRouteImport.update({
@@ -134,7 +134,6 @@ export interface FileRoutesByFullPath {
   '/search': typeof AppSearchRoute
   '/server': typeof AppServerRoute
   '/settings': typeof AppSettingsRoute
-  '/tv': typeof AppTvRoute
   '/users': typeof AppUsersRoute
   '/login': typeof AuthLoginRoute
   '/signup': typeof AuthSignupRoute
@@ -144,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/lists/watch-list': typeof AppListsWatchListRoute
   '/downloads': typeof AppDownloadsIndexRoute
   '/movies': typeof AppMoviesIndexRoute
+  '/tv': typeof AppTvIndexRoute
   '/downloads/$id/play': typeof AppDownloadsIdPlayRoute
   '/movies/$id/torrents': typeof AppMoviesIdTorrentsRoute
   '/downloads/$id': typeof AppDownloadsIdIndexRoute
@@ -154,7 +154,6 @@ export interface FileRoutesByTo {
   '/search': typeof AppSearchRoute
   '/server': typeof AppServerRoute
   '/settings': typeof AppSettingsRoute
-  '/tv': typeof AppTvRoute
   '/users': typeof AppUsersRoute
   '/login': typeof AuthLoginRoute
   '/signup': typeof AuthSignupRoute
@@ -164,6 +163,7 @@ export interface FileRoutesByTo {
   '/lists/watch-list': typeof AppListsWatchListRoute
   '/downloads': typeof AppDownloadsIndexRoute
   '/movies': typeof AppMoviesIndexRoute
+  '/tv': typeof AppTvIndexRoute
   '/downloads/$id/play': typeof AppDownloadsIdPlayRoute
   '/movies/$id/torrents': typeof AppMoviesIdTorrentsRoute
   '/downloads/$id': typeof AppDownloadsIdIndexRoute
@@ -177,7 +177,6 @@ export interface FileRoutesById {
   '/_app/search': typeof AppSearchRoute
   '/_app/server': typeof AppServerRoute
   '/_app/settings': typeof AppSettingsRoute
-  '/_app/tv': typeof AppTvRoute
   '/_app/users': typeof AppUsersRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/signup': typeof AuthSignupRoute
@@ -187,6 +186,7 @@ export interface FileRoutesById {
   '/_app/lists/watch-list': typeof AppListsWatchListRoute
   '/_app/downloads/': typeof AppDownloadsIndexRoute
   '/_app/movies/': typeof AppMoviesIndexRoute
+  '/_app/tv/': typeof AppTvIndexRoute
   '/_app/downloads/$id/play': typeof AppDownloadsIdPlayRoute
   '/_app/movies/$id/torrents': typeof AppMoviesIdTorrentsRoute
   '/_app/downloads/$id/': typeof AppDownloadsIdIndexRoute
@@ -199,7 +199,6 @@ export interface FileRouteTypes {
     | '/search'
     | '/server'
     | '/settings'
-    | '/tv'
     | '/users'
     | '/login'
     | '/signup'
@@ -209,6 +208,7 @@ export interface FileRouteTypes {
     | '/lists/watch-list'
     | '/downloads'
     | '/movies'
+    | '/tv'
     | '/downloads/$id/play'
     | '/movies/$id/torrents'
     | '/downloads/$id'
@@ -219,7 +219,6 @@ export interface FileRouteTypes {
     | '/search'
     | '/server'
     | '/settings'
-    | '/tv'
     | '/users'
     | '/login'
     | '/signup'
@@ -229,6 +228,7 @@ export interface FileRouteTypes {
     | '/lists/watch-list'
     | '/downloads'
     | '/movies'
+    | '/tv'
     | '/downloads/$id/play'
     | '/movies/$id/torrents'
     | '/downloads/$id'
@@ -241,7 +241,6 @@ export interface FileRouteTypes {
     | '/_app/search'
     | '/_app/server'
     | '/_app/settings'
-    | '/_app/tv'
     | '/_app/users'
     | '/_auth/login'
     | '/_auth/signup'
@@ -251,6 +250,7 @@ export interface FileRouteTypes {
     | '/_app/lists/watch-list'
     | '/_app/downloads/'
     | '/_app/movies/'
+    | '/_app/tv/'
     | '/_app/downloads/$id/play'
     | '/_app/movies/$id/torrents'
     | '/_app/downloads/$id/'
@@ -314,13 +314,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppUsersRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/tv': {
-      id: '/_app/tv'
-      path: '/tv'
-      fullPath: '/tv'
-      preLoaderRoute: typeof AppTvRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/settings': {
       id: '/_app/settings'
       path: '/settings'
@@ -340,6 +333,13 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof AppSearchRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/tv/': {
+      id: '/_app/tv/'
+      path: '/tv'
+      fullPath: '/tv'
+      preLoaderRoute: typeof AppTvIndexRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/movies/': {
@@ -412,7 +412,6 @@ interface AppRouteChildren {
   AppSearchRoute: typeof AppSearchRoute
   AppServerRoute: typeof AppServerRoute
   AppSettingsRoute: typeof AppSettingsRoute
-  AppTvRoute: typeof AppTvRoute
   AppUsersRoute: typeof AppUsersRoute
   AppIndexRoute: typeof AppIndexRoute
   AppListsHistoryRoute: typeof AppListsHistoryRoute
@@ -420,6 +419,7 @@ interface AppRouteChildren {
   AppListsWatchListRoute: typeof AppListsWatchListRoute
   AppDownloadsIndexRoute: typeof AppDownloadsIndexRoute
   AppMoviesIndexRoute: typeof AppMoviesIndexRoute
+  AppTvIndexRoute: typeof AppTvIndexRoute
   AppDownloadsIdPlayRoute: typeof AppDownloadsIdPlayRoute
   AppMoviesIdTorrentsRoute: typeof AppMoviesIdTorrentsRoute
   AppDownloadsIdIndexRoute: typeof AppDownloadsIdIndexRoute
@@ -430,7 +430,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppSearchRoute: AppSearchRoute,
   AppServerRoute: AppServerRoute,
   AppSettingsRoute: AppSettingsRoute,
-  AppTvRoute: AppTvRoute,
   AppUsersRoute: AppUsersRoute,
   AppIndexRoute: AppIndexRoute,
   AppListsHistoryRoute: AppListsHistoryRoute,
@@ -438,6 +437,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppListsWatchListRoute: AppListsWatchListRoute,
   AppDownloadsIndexRoute: AppDownloadsIndexRoute,
   AppMoviesIndexRoute: AppMoviesIndexRoute,
+  AppTvIndexRoute: AppTvIndexRoute,
   AppDownloadsIdPlayRoute: AppDownloadsIdPlayRoute,
   AppMoviesIdTorrentsRoute: AppMoviesIdTorrentsRoute,
   AppDownloadsIdIndexRoute: AppDownloadsIdIndexRoute,
