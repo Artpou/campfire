@@ -7,6 +7,7 @@ import { convertMkvToMp4Stream } from "@/helpers/video.helper";
 import { authGuard } from "@/modules/auth/auth.guard";
 import { requireRole } from "@/modules/auth/role.guard";
 import type { HonoVariables } from "@/types/hono";
+import type { Dirent } from "node:fs";
 import { Readable } from "node:stream";
 import { downloadTorrentSchema } from "./download.dto";
 import { requireDownloadOwnership } from "./download.guard";
@@ -133,6 +134,42 @@ export const downloadRoutes = new Hono<{ Variables: HonoVariables }>()
 
     return c.body(Readable.toWeb(fileStream as Readable));
   })
+  .get("/:id/external-subtitles", async (c) => {
+    const id = c.req.param("id");
+    const downloadPath = process.env.DOWNLOADS_PATH || "./downloads";
+    const download = await DownloadService.fromContext(c).getById(id);
+    if (!download) {
+      return c.json({ error: "Download not found" }, 404);
+    }
+    const path = await import("node:path");
+    const fs = await import("node:fs/promises");
+    const folderPath = path.join(downloadPath, download.savePath || download.name);
+    const torrentPaths = new Set(
+      (download.live?.files ?? [])
+        .filter((f) => /\.(srt|vtt)$/i.test(f.path))
+        .map((f) => path.join(download.savePath || download.name, f.path).replace(/\\/g, "/")),
+    );
+    const collected: string[] = [];
+    async function scan(dir: string): Promise<void> {
+      let entries: Dirent[];
+      try {
+        entries = (await fs.readdir(dir, { withFileTypes: true })) as Dirent[];
+      } catch {
+        return;
+      }
+      for (const e of entries) {
+        const full = path.join(dir, e.name);
+        const rel = path.relative(downloadPath, full).replace(/\\/g, "/");
+        if (e.isDirectory()) {
+          await scan(full);
+        } else if (/\.(srt|vtt)$/i.test(e.name) && !torrentPaths.has(rel)) {
+          collected.push(rel);
+        }
+      }
+    }
+    await scan(folderPath);
+    return c.json({ paths: collected });
+  })
   .get("/:id/subtitles/:filePath", async (c) => {
     const id = c.req.param("id");
     const filePath = decodeURIComponent(c.req.param("filePath"));
@@ -148,7 +185,6 @@ export const downloadRoutes = new Hono<{ Variables: HonoVariables }>()
     const path = await import("node:path");
     const fs = await import("node:fs/promises");
     const fullPath = path.join(downloadPath, filePath);
-    console.log("fullPath", fullPath);
 
     // Check if file exists
     try {
@@ -158,8 +194,9 @@ export const downloadRoutes = new Hono<{ Variables: HonoVariables }>()
     }
 
     // Only handle .srt files (convert to VTT)
-    if (!filePath.toLowerCase().endsWith(".srt")) {
-      return c.json({ error: "Only .srt files are supported" }, 400);
+    const lower = filePath.toLowerCase();
+    if (!lower.endsWith(".srt") && !lower.endsWith(".vtt")) {
+      return c.json({ error: "Only .srt and .vtt files are supported" }, 400);
     }
 
     // Read file as buffer for encoding detection
@@ -179,8 +216,7 @@ export const downloadRoutes = new Hono<{ Variables: HonoVariables }>()
       content = iconv.default.decode(buffer, "win1252");
     }
 
-    // Convert SRT to WebVTT
-    const vttContent = srt2webvtt(content);
+    const vttContent = lower.endsWith(".vtt") ? content : srt2webvtt(content);
 
     // Set proper headers with CORS
     c.header("Content-Type", "text/vtt; charset=utf-8");

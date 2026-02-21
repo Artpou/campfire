@@ -13,6 +13,7 @@ import { freeboxRoutes } from "./modules/freebox/freebox.route";
 import { indexerManagerRoutes } from "./modules/indexer-manager/indexer-manager.route";
 import { mediaRoutes } from "./modules/media/media.route";
 import { plexRoutes } from "./modules/plex/plex.route";
+import { subtitleRoutes } from "./modules/subtitle/subtitle.route";
 import { torrentRoutes } from "./modules/torrent/torrent.route";
 import { userRoutes } from "./modules/user/user.route";
 import type { HonoVariables } from "./types/hono";
@@ -66,6 +67,7 @@ export const app = new Hono<{ Variables: HonoVariables }>()
   .route("/media", mediaRoutes)
   .route("/torrents", torrentRoutes)
   .route("/downloads", downloadRoutes)
+  .route("/subtitles", subtitleRoutes)
   .route("/plex", plexRoutes)
   .get("/health", (c) => c.json({ status: "healthy", timestamp: new Date().toISOString() }))
   .use(

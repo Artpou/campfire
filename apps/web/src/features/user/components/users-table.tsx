@@ -32,23 +32,23 @@ interface UsersTableProps {
 const roleConfig = {
   owner: {
     icon: Crown,
-    color: "var(--role-owner)",
-    bgColor: "oklch(from var(--role-owner) l c h / 0.1)",
+    color: "var(--red)",
+    bgColor: "oklch(from var(--red) l c h / 0.1)",
   },
   admin: {
     icon: ShieldCheck,
-    color: "var(--role-admin)",
-    bgColor: "oklch(from var(--role-admin) l c h / 0.1)",
+    color: "var(--purple)",
+    bgColor: "oklch(from var(--purple) l c h / 0.1)",
   },
   member: {
     icon: UserCheck,
-    color: "var(--role-member)",
-    bgColor: "oklch(from var(--role-member) l c h / 0.1)",
+    color: "var(--primary)",
+    bgColor: "oklch(from var(--primary) l c h / 0.1)",
   },
   viewer: {
     icon: Glasses,
-    color: "var(--role-viewer)",
-    bgColor: "oklch(from var(--role-viewer) l c h / 0.1)",
+    color: "var(--blue)",
+    bgColor: "oklch(from var(--blue) l c h / 0.1)",
   },
 };
 

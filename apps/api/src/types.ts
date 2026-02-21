@@ -33,6 +33,12 @@ export type { MediaRoutesType } from "./modules/media/media.route";
 export type { Paginate, PaginationParams } from "./modules/pagination/pagination.dto";
 // Shared types
 export type { Ids } from "./modules/shared/shared.dto";
+// Subtitle (SUBDL) types
+export type {
+  SubdlSearchResponse,
+  SubdlSubtitle,
+} from "./modules/subtitle/subtitle.dto";
+export type { SubtitleRoutesType } from "./modules/subtitle/subtitle.route";
 // Torrent search types
 export type {
   Torrent,

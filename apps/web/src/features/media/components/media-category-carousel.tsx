@@ -18,7 +18,7 @@ interface MediaCategoryCarouselProps {
 export function MediaCategoryCarousel({ type, onValueChange }: MediaCategoryCarouselProps) {
   const { data: movieGenres = [], isLoading: isLoadingMovies } = useMovieGenres();
   const { data: tvGenres = [], isLoading: isLoadingTV } = useTVGenres();
-  const search = useSearch({ from: type === "movie" ? "/_app/movies/" : "/_app/tv" });
+  const search = useSearch({ from: type === "movie" ? "/_app/movies/" : "/_app/tv/" });
 
   const genres = type === "movie" ? movieGenres : tvGenres;
   const isLoading = type === "movie" ? isLoadingMovies : isLoadingTV;

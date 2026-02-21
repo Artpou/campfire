@@ -63,7 +63,7 @@ function MovieTorrentsPage() {
 
   const isLoading = isMediaLoading || isIndexersLoading;
 
-  console.log(isLoading);
+  const torrentAllLoading = torrentQueries.every((query) => query.isLoading);
 
   if (isLoading) {
     return (
@@ -87,7 +87,7 @@ function MovieTorrentsPage() {
 
       <div className="xl:grid xl:grid-cols-7 xl:gap-6">
         <div className="xl:col-span-5">
-          <TorrentTable torrents={filteredTorrents} media={media} />
+          <TorrentTable torrents={filteredTorrents} media={media} isLoading={torrentAllLoading} />
         </div>
         <div className="hidden xl:block xl:col-span-2">
           <TorrentIndexersTable

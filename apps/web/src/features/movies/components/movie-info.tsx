@@ -2,7 +2,7 @@ import { useMemo } from "react";
 
 import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
-import { Plus } from "lucide-react";
+import { ClockIcon, Plus } from "lucide-react";
 import type { AppendToResponse, Flatrate, MovieDetails, WatchLocale } from "tmdb-ts";
 
 import { cn } from "@/lib/utils";
@@ -130,6 +130,7 @@ export function MovieInfo({ movie }: MovieInfoProps) {
         </div>
         {movie.runtime > 0 && (
           <Badge variant="secondary" className="mt-2">
+            <ClockIcon className="size-4 mr-1" />
             <Trans>Ends estimated at</Trans>{" "}
             {new Date(Date.now() + movie.runtime * 60000).toLocaleTimeString([], {
               hour: "2-digit",

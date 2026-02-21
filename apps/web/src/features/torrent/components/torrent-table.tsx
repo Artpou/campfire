@@ -5,6 +5,7 @@ import { Trans } from "@lingui/react/macro";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowDown, ArrowUp, Download, EarthIcon, Info } from "lucide-react";
 
+import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { getFlagUrl } from "@/shared/helpers/lang.helper";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
@@ -19,9 +20,10 @@ import { TorrentInspectModal } from "./torrent-inspect-modal";
 interface TorrentTableProps {
   torrents: Torrent[];
   media: Media;
+  isLoading?: boolean;
 }
 
-export function TorrentTable({ torrents, media }: TorrentTableProps) {
+export function TorrentTable({ torrents, media, isLoading = false }: TorrentTableProps) {
   const startDownload = useStartDownload();
   const navigate = useNavigate();
 
@@ -197,7 +199,29 @@ export function TorrentTable({ torrents, media }: TorrentTableProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredTorrents.length > 0 ? (
+          {isLoading && (
+            <TableRow>
+              <TableCell colSpan={3} className="py-10 text-center">
+                <SeedarrLoader />
+              </TableCell>
+            </TableRow>
+          )}
+          {!isLoading && filteredTorrents.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={3} className="py-10 text-center">
+                <div className="p-10 border border-dashed rounded-sm bg-muted border-border">
+                  <p className="font-bold uppercase text-muted-foreground">
+                    <Trans>No torrents found</Trans>
+                  </p>
+                  <p className="mt-1 text-xs uppercase text-muted-foreground/50">
+                    <Trans>Try adjusting your search query</Trans>
+                  </p>
+                </div>
+              </TableCell>
+            </TableRow>
+          )}
+          {!isLoading &&
+            filteredTorrents.length > 0 &&
             filteredTorrents.map((torrent) => (
               <TableRow key={torrent.guid || torrent.link} className="relative group">
                 <TableCell className="w-full max-w-0">
@@ -270,21 +294,7 @@ export function TorrentTable({ torrents, media }: TorrentTableProps) {
                   </div>
                 </TableCell>
               </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={3} className="py-10 text-center">
-                <div className="p-10 border border-dashed rounded-sm bg-muted border-border">
-                  <p className="font-bold uppercase text-muted-foreground">
-                    <Trans>No torrents found</Trans>
-                  </p>
-                  <p className="mt-1 text-xs uppercase text-muted-foreground/50">
-                    <Trans>Try adjusting your search query</Trans>
-                  </p>
-                </div>
-              </TableCell>
-            </TableRow>
-          )}
+            ))}
         </TableBody>
       </Table>
 
