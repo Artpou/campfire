@@ -1,0 +1,22 @@
+meta {
+  name: Update Media
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/media/{{mediaId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "title": "Fight Club",
+    "overview": "Updated overview"
+  }
+}
+
+docs {
+  Partial update of a media entry.
+}

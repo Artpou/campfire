@@ -66,6 +66,21 @@
   },
   "overrides": [
     {
+      "includes": ["apps/web/src/**/*"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": {
+              "level": "warn",
+              "options": {
+                "allow": ["error", "warn", "info"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["**/*.d.ts"],
       "linter": {
         "rules": {

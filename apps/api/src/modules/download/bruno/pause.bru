@@ -1,0 +1,15 @@
+meta {
+  name: Pause Download
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/downloads/{{downloadId}}/pause
+  body: none
+  auth: inherit
+}
+
+docs {
+  Requires member role or higher. Requires download ownership (or admin/owner role).
+}

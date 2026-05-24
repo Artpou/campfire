@@ -1,0 +1,32 @@
+meta {
+  name: Start Download
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/downloads
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "magnetUri": "magnet:?xt=urn:btih:example",
+    "name": "Example Movie",
+    "mediaId": 550,
+    "origin": "search",
+    "quality": "1080p",
+    "language": "en"
+  }
+}
+
+script:post-response {
+  if (res.body?.id) {
+    bru.setEnvVar("downloadId", res.body.id);
+  }
+}
+
+docs {
+  Requires member role or higher. Starts a new torrent download.
+}

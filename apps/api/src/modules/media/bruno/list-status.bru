@@ -1,0 +1,22 @@
+meta {
+  name: List Media Status
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/media/status
+  body: json
+  auth: inherit
+}
+
+body:json {
+  [
+    "550",
+    "1396"
+  ]
+}
+
+docs {
+  Get like, watch-list, and download status for a list of TMDB IDs.
+}

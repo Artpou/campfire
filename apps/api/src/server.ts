@@ -3,9 +3,10 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
+import { errorHandler, requestLogger } from "@/middlewares/logger.middleware";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { colors, logRequest } from "./helpers/logger.helper";
+import { startupLogger } from "./helpers/logger.helper";
 import { authRoutes } from "./modules/auth/auth.route";
 import { downloadRoutes } from "./modules/download/download.route";
 import { WebTorrentClient } from "./modules/download/webtorrent.client";
@@ -21,34 +22,10 @@ import type { HonoVariables } from "./types/hono";
 const startTime = Date.now();
 
 // Store request start times
-const requestTimes = new WeakMap<Request, number>();
 
 export const app = new Hono<{ Variables: HonoVariables }>()
-  .use("*", async (c, next) => {
-    requestTimes.set(c.req.raw, Date.now());
-    await next();
-    const duration = Date.now() - (requestTimes.get(c.req.raw) || Date.now());
-    // log url params
-
-    logRequest(c.req.method, c.req.url, c.res.status, duration, c.req.query());
-
-    if (c.res.status === 400) {
-      try {
-        const body = (await c.res.clone().json()) as { error?: { issues?: unknown } };
-        if (body?.error?.issues) {
-          console.error(
-            `${colors.orange}[VALIDATION]${colors.reset}`,
-            JSON.stringify(body.error.issues, null, 2),
-          );
-        }
-      } catch {}
-    }
-  })
-  .onError((err, c) => {
-    console.error(`${colors.red}[ERROR]${colors.reset} ${c.req.method} ${c.req.url}`);
-    console.error(err);
-    return c.json({ error: "Internal server error" }, 500);
-  })
+  .use("*", requestLogger)
+  .onError(errorHandler)
   .use(
     "*",
     cors({
@@ -100,9 +77,7 @@ const start = async () => {
     console.error("[STARTUP] ✗ WebTorrent initialization failed:", error);
   });
 
-  if (!process.env.API_PORT) {
-    console.log("API_PORT is not set, using default 3002");
-  }
+  if (!process.env.API_PORT) console.log("API_PORT is not set, using default 3002");
 
   const port = parseInt(process.env.API_PORT || "3002", 10);
   console.log(`[STARTUP] About to listen on port ${port}`);
@@ -113,16 +88,7 @@ const start = async () => {
     hostname: "0.0.0.0",
   });
 
-  console.log(`[STARTUP] Server is now listening`);
-
-  console.log(
-    `\n  ${colors.bold}${colors.yellow}🔥 HONO${colors.reset} ${colors.yellow}v4.7.9${colors.reset}  ready in ${
-      Date.now() - startTime
-    } ms\n`,
-  );
-  console.log(
-    `  ${colors.bold}${colors.yellow}➜${colors.reset}  ${colors.bold}Local:${colors.reset}   ${colors.cyan}http://localhost:${colors.bold}${port}${colors.reset}${colors.cyan}/${colors.reset}\n`,
-  );
+  startupLogger(startTime, port);
 };
 
 start().catch((err) => {

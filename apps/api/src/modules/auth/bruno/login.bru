@@ -1,0 +1,35 @@
+meta {
+  name: Login
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+headers {
+  Cookie:
+}
+
+body:json {
+  {
+    "username": "{{username}}",
+    "password": "{{password}}"
+  }
+}
+
+script:post-response {
+  const jar = bru.cookies.jar();
+  jar.getCookie("{{baseUrl}}", "session", function(err, cookie) {
+    if (cookie?.value) {
+      bru.setEnvVar("sessionToken", cookie.value);
+    }
+  });
+
+  if (res.body?.id) {
+    bru.setEnvVar("userId", res.body.id);
+  }
+}

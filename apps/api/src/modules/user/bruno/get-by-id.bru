@@ -1,0 +1,15 @@
+meta {
+  name: Get User
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/users/{{userId}}
+  body: none
+  auth: inherit
+}
+
+docs {
+  Get a single user by ID. Available to any authenticated user.
+}

@@ -1,0 +1,32 @@
+meta {
+  name: Search Torrents
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/torrents/search
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "media": {
+      "id": 550,
+      "type": "movie",
+      "title": "Fight Club",
+      "original_title": "Fight Club",
+      "original_language": "en",
+      "overview": "A ticking-time-bomb insomniac and a soap maker form an underground fight club.",
+      "poster_path": "/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg",
+      "vote_average": 8.4,
+      "release_date": "1999-10-15"
+    },
+    "indexerId": "{{indexerId}}"
+  }
+}
+
+docs {
+  Search for torrents matching a media item via the specified indexer.
+}

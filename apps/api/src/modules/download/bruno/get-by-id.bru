@@ -1,0 +1,15 @@
+meta {
+  name: Get Download
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/downloads/{{downloadId}}
+  body: none
+  auth: inherit
+}
+
+docs {
+  Requires member role or higher. Get download status by ID.
+}

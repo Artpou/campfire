@@ -31,6 +31,12 @@ const fetchTMDB = (apiKey: string, language?: AvailableLanguage) => {
       }
     }
 
+    const isMovieOrTvDetails = url.startsWith("/movie/") || url.startsWith("/tv/");
+    const hasVideosRequested = fullUrl.searchParams.get("append_to_response")?.includes("videos");
+    if (isMovieOrTvDetails && hasVideosRequested && language) {
+      fullUrl.searchParams.set("include_video_language", `${language},en`);
+    }
+
     const res = await fetch(fullUrl.toString());
 
     if (!res.ok) {

@@ -1,0 +1,15 @@
+meta {
+  name: List Media
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/media?page=1&limit=20
+  body: none
+  auth: inherit
+}
+
+docs {
+  Query params: page, limit, type (movie|tv), filter (like|watch-list|recently-viewed), ids (comma-separated TMDB IDs).
+}

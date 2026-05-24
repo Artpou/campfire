@@ -1,0 +1,15 @@
+meta {
+  name: Get Config
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/plex/config
+  body: none
+  auth: inherit
+}
+
+docs {
+  Requires admin role or higher.
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Sync Library
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/plex/sync
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "movies": true,
+    "tv": true,
+    "downloads": false
+  }
+}
+
+docs {
+  Requires admin role or higher. Sync media from Plex library.
+}

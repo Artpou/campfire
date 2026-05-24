@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import { Trans } from "@lingui/react/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { Link } from "@tanstack/react-router";
 import { ClapperboardIcon, MagnetIcon, Play } from "lucide-react";
 import { AppendToResponse, MovieDetails } from "tmdb-ts";
@@ -18,16 +18,22 @@ interface MediaPosterProps {
 
 export function MediaPoster({ media, id }: MediaPosterProps) {
   const { role } = useRole();
+  const { i18n } = useLingui();
 
   const [imgError, setImgError] = useState(false);
 
   const youtubeTrailer = useMemo(() => {
-    if (!media?.videos?.results) return null;
-    const trailer = media.videos.results.find(
-      (video) => video.site === "YouTube" && video.type === "Trailer",
+    const videos = media?.videos?.results;
+    if (!videos) return null;
+
+    return (
+      videos.find(
+        (v) => v.site === "YouTube" && v.type === "Trailer" && v.iso_3166_1 === i18n.locale,
+      ) ??
+      videos.find((v) => v.site === "YouTube" && v.type === "Trailer") ??
+      videos.find((v) => v.site === "YouTube")
     );
-    return trailer || media.videos.results.find((video) => video.site === "YouTube");
-  }, [media?.videos]);
+  }, [media?.videos, i18n.locale]);
 
   return (
     <div className="flex flex-col shrink-0 space-y-2 items-center max-w-[230px]">

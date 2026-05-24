@@ -1,0 +1,21 @@
+meta {
+  name: Get Me
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/auth/me
+  body: none
+  auth: inherit
+}
+
+script:post-response {
+  if (res.body?.sessionToken) {
+    bru.setEnvVar("sessionToken", res.body.sessionToken);
+  }
+
+  if (res.body?.id) {
+    bru.setEnvVar("userId", res.body.id);
+  }
+}

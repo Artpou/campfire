@@ -13,7 +13,7 @@
     }
   },
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "tsx watch --include 'src/**' src/server.ts",
     "build": "tsc --emitDeclarationOnly --outDir dist",
     "start": "node --loader tsx src/server.ts",
     "lint": "biome check .",

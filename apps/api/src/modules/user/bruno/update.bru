@@ -1,0 +1,22 @@
+meta {
+  name: Update User
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/users/{{userId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "username": "updateduser",
+    "role": "member"
+  }
+}
+
+docs {
+  Requires admin role or higher. Owner account cannot be modified.
+}

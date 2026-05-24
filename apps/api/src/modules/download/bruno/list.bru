@@ -1,0 +1,15 @@
+meta {
+  name: List Downloads
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/downloads
+  body: none
+  auth: inherit
+}
+
+docs {
+  Requires member role or higher.
+}

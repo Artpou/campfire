@@ -1,0 +1,15 @@
+meta {
+  name: List External Subtitles
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/downloads/{{downloadId}}/external-subtitles
+  body: none
+  auth: inherit
+}
+
+docs {
+  Requires member role or higher. List external subtitle files found in the download folder.
+}

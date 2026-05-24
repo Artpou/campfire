@@ -2,15 +2,16 @@ import { useMemo } from "react";
 
 import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
-import { ClockIcon, Plus } from "lucide-react";
+import { ClockIcon, ExternalLink, Plus } from "lucide-react";
 import type { AppendToResponse, Flatrate, MovieDetails, WatchLocale } from "tmdb-ts";
 
 import { cn } from "@/lib/utils";
 import { CircularProgress } from "@/shared/components/circular-progress";
+import { Flag } from "@/shared/components/flag";
 import { formatRuntime } from "@/shared/helpers/date";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
-import { getFlagUrl } from "@/shared/helpers/lang.helper";
 import { Badge } from "@/shared/ui/badge";
+import { Button } from "@/shared/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +27,15 @@ interface MovieInfoProps {
   movie: AppendToResponse<MovieDetails, "watch/providers"[], "movie">;
 }
 
-const ProviderIcon = ({ provider, movieName }: { provider: Flatrate; movieName: string }) => {
+const ProviderIcon = ({
+  provider,
+  movieName,
+  fullButton = false,
+}: {
+  provider: Flatrate;
+  movieName: string;
+  fullButton?: boolean;
+}) => {
   const redirectUrl = useMemo(() => {
     const encodedMovieName = encodeURIComponent(movieName);
     switch (provider.provider_name.toLowerCase()) {
@@ -48,6 +57,17 @@ const ProviderIcon = ({ provider, movieName }: { provider: Flatrate; movieName: 
         return `https://www.paramountplus.com/`;
     }
   }, [provider.provider_name, movieName]);
+
+  if (fullButton && !redirectUrl) return null;
+
+  if (fullButton) {
+    return (
+      <Button variant="secondary" onClick={() => window.open(redirectUrl, "_blank")}>
+        <ExternalLink className="size-4 mr-1" />
+        <Trans>Watch on</Trans> {provider.provider_name}
+      </Button>
+    );
+  }
 
   return (
     <button
@@ -106,16 +126,21 @@ export function MovieInfo({ movie }: MovieInfoProps) {
       <div>
         <h1 className="text-4xl md:text-5xl font-black tracking-tight">{movie.title}</h1>
         <div className="flex items-center mt-1 gap-2">
-          <img
-            src={getFlagUrl(movie.original_language)}
-            alt={movie.original_language}
-            className="size-6"
-          />
+          <Flag lang={movie.original_language} />
           <p className="text-sm text-muted-foreground font-medium">{movie.original_title}</p>
         </div>
 
         <div className="flex items-center gap-2 text-sm font-medium mt-4">
-          {movie.release_date && <span>{new Date(movie.release_date).getFullYear()}</span>}
+          {movie.release_date && (
+            <span>
+              {new Date(movie.release_date).toLocaleDateString(undefined, {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+              })}
+            </span>
+          )}
+
           <span className="opacity-30">•</span>
           {movie.runtime && <span>{formatRuntime(movie.runtime)}</span>}
           <span className="opacity-30">•</span>
@@ -208,6 +233,9 @@ export function MovieInfo({ movie }: MovieInfoProps) {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
+          )}
+          {firstProviders.length > 0 && (
+            <ProviderIcon provider={firstProviders[0]} movieName={movie.title} fullButton />
           )}
         </div>
       </div>

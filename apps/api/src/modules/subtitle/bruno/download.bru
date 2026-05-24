@@ -1,0 +1,24 @@
+meta {
+  name: Download Subtitle
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/subtitles/download
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "downloadId": "{{downloadId}}",
+    "url": "https://example.com/subtitle.srt",
+    "language": "en",
+    "mediaTitle": "Fight Club"
+  }
+}
+
+docs {
+  Requires member role or higher. Download a subtitle file into a download folder.
+}

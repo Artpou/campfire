@@ -96,3 +96,15 @@ export const logRequest = (
 
   console.log(`${timestamp} ${coloredMethod} ${route} ${coloredStatus} ${duration}`);
 };
+
+export const startupLogger = (startTime: number, port: number) => {
+  console.log(`[STARTUP] Server is now listening`);
+  console.log(
+    `\n  ${colors.bold}${colors.yellow}🔥 HONO${colors.reset} ${colors.yellow}v4.7.9${colors.reset}  ready in ${
+      Date.now() - startTime
+    } ms\n`,
+  );
+  console.log(
+    `  ${colors.bold}${colors.yellow}➜${colors.reset}  ${colors.bold}Local:${colors.reset}   ${colors.cyan}http://localhost:${colors.bold}${port}${colors.reset}${colors.cyan}/${colors.reset}\n`,
+  );
+};

@@ -1,0 +1,15 @@
+meta {
+  name: Delete Download
+  type: http
+  seq: 10
+}
+
+delete {
+  url: {{baseUrl}}/downloads/{{downloadId}}
+  body: none
+  auth: inherit
+}
+
+docs {
+  Requires member role or higher. Requires download ownership (or admin/owner role).
+}

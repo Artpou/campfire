@@ -1,0 +1,15 @@
+meta {
+  name: Delete User
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/users/{{userId}}
+  body: none
+  auth: inherit
+}
+
+docs {
+  Requires admin role or higher. Owner account cannot be deleted.
+}

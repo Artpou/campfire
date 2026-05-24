@@ -2,8 +2,8 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 
 import { hashPassword } from "@/auth/password.util";
+import { ForbiddenError } from "@/errors/error";
 import { authGuard } from "@/modules/auth/auth.guard";
-import { ForbiddenError } from "@/modules/auth/error";
 import { requireRole } from "@/modules/auth/role.guard";
 import type { HonoVariables } from "@/types/hono";
 import { createUserSchema, type NewUser, updateUserSchema } from "./user.dto";

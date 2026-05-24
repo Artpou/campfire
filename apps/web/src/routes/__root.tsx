@@ -4,7 +4,11 @@ import { createRootRoute, Navigate, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import ms from "ms";
 
-import { getI18nInstance } from "@/shared/helpers/i18n.helper";
+import {
+  getI18nInstance,
+  getInitialCountry,
+  getLanguageFromCountry,
+} from "@/shared/helpers/i18n.helper";
 import { LinguiClientProvider } from "@/shared/lingui-client-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 
@@ -50,24 +54,7 @@ const queryClient = new QueryClient({
 });
 
 function RootComponent() {
-  // Get initial country code from browser locale (e.g., "en-US" -> "US")
-  const getInitialCountry = () => {
-    if (typeof window === "undefined") return "US";
-    const browserLocale = navigator.language || "en-US";
-    const countryCode = browserLocale.split("-")[1] || "US";
-    return countryCode;
-  };
-
   const initialCountry = getInitialCountry();
-
-  // Get the language for UI translations (e.g., "US" -> "en", "FR" -> "fr")
-  const getLanguageFromCountry = (country: string): string => {
-    const intlLocale = new Intl.Locale(`und-${country}`).maximize();
-    const language = intlLocale.language;
-    // Default to English if language not supported
-    return ["en", "fr"].includes(language) ? language : "en";
-  };
-
   const uiLanguage = getLanguageFromCountry(initialCountry);
 
   // Create i18n instance with UI language for messages, but use country as locale ID

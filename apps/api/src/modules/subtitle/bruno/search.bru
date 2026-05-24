@@ -1,0 +1,15 @@
+meta {
+  name: Search Subtitles
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/subtitles/search?tmdb_id=550&languages=en,fr&type=movie
+  body: none
+  auth: inherit
+}
+
+docs {
+  Requires member role or higher. Search subtitles via SUBDL for a TMDB media ID.
+}

@@ -5,13 +5,12 @@ import { Trans } from "@lingui/react/macro";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowDown, ArrowUp, Download, EarthIcon, Info } from "lucide-react";
 
+import { cn } from "@/lib/utils";
+import { Flag } from "@/shared/components/flag";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
-import { getFlagUrl } from "@/shared/helpers/lang.helper";
-import { Badge } from "@/shared/ui/badge";
+import { Badge, badgeVariants } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Label } from "@/shared/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
-import { Slider } from "@/shared/ui/slider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
 import { useStartDownload } from "@/features/torrent/hooks/use-torrent-download";
@@ -136,51 +135,27 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
     <div className="w-full overflow-hidden space-y-2">
       {/* Filters */}
       <div className="flex flex-row gap-4 items-center">
-        {/* Language Filter */}
-        <Select value={selectedLanguage} onValueChange={(value) => setSelectedLanguage(value)}>
-          <SelectTrigger className="min-w-28" id="language-filter">
-            <SelectValue placeholder="All languages" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">
-              <Trans>All</Trans>
-            </SelectItem>
-            <SelectItem value="multi">
-              <EarthIcon /> <Trans>Multi</Trans>
-            </SelectItem>
-            {availableLanguages.map((lang) => (
-              <SelectItem key={lang} value={lang}>
-                <img
-                  src={getFlagUrl(lang === "original" ? media.original_language || "" : lang)}
-                  alt={lang}
-                  className="size-4"
-                />
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Quality Filter */}
-        <div className="w-full max-w-md mb-1">
-          <Label htmlFor="quality-filter">
-            <Trans>Minimum Quality</Trans>:{" "}
-            <Badge variant="secondary">
-              {qualityLevels[selectedQualityIndex] === "all" ? (
-                <Trans>All</Trans>
-              ) : (
-                qualityLevels[selectedQualityIndex]
-              )}
-            </Badge>
+        <div className="flex flex-col gap-2">
+          <Label>
+            <Trans>Minimum Quality</Trans>
           </Label>
-          <Slider
-            id="quality-filter"
-            min={0}
-            max={qualityLevels.length - 1}
-            step={1}
-            value={[selectedQualityIndex]}
-            onValueChange={(value) => setSelectedQualityIndex(value[0])}
-            className="mt-2"
-          />
+          <div className="flex flex-wrap gap-1.5">
+            {qualityLevels.map((quality, index) => (
+              <button
+                key={quality}
+                type="button"
+                onClick={() => setSelectedQualityIndex(index)}
+                className={cn(
+                  badgeVariants({
+                    variant: selectedQualityIndex === index ? "default" : "outline",
+                  }),
+                  "cursor-pointer rounded-full px-3 py-1 text-xs transition-colors",
+                )}
+              >
+                {quality === "all" ? <Trans>All</Trans> : quality}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -244,11 +219,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
                           MULTI
                         </Badge>
                       ) : (
-                        <img
-                          src={getFlagUrl(torrent.language || media.original_language || "")}
-                          alt={torrent.language}
-                          className="size-4"
-                        />
+                        <Flag lang={torrent.language || media.original_language || ""} />
                       )}
                     </div>
                   </div>

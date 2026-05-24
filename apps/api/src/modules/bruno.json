@@ -1,0 +1,6 @@
+{
+  "version": "1",
+  "name": "seedarr",
+  "type": "collection",
+  "ignore": ["node_modules", ".git", "dist"]
+}

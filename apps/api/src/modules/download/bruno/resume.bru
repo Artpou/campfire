@@ -1,0 +1,15 @@
+meta {
+  name: Resume Download
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/downloads/{{downloadId}}/resume
+  body: none
+  auth: inherit
+}
+
+docs {
+  Requires member role or higher. Requires download ownership (or admin/owner role).
+}

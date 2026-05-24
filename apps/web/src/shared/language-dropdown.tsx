@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { useLingui } from "@lingui/react";
 
 import { Flag } from "@/shared/components/flag";
+import { setStoredCountry, UI_LOCALES } from "@/shared/helpers/i18n.helper";
 import { Badge } from "@/shared/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 
@@ -40,8 +41,6 @@ const TMDB_COUNTRIES = [
   "TR",
   "US",
 ] as const;
-
-const UI_LOCALES = ["en", "fr"] as const;
 
 const MESSAGES_MAP = {
   en: enMessages,
@@ -99,11 +98,9 @@ export function LanguageDropdown() {
     if (UI_LOCALES.includes(language as (typeof UI_LOCALES)[number])) {
       const messages = MESSAGES_MAP[language as keyof typeof MESSAGES_MAP];
       i18n.load(language, messages);
-      i18n.activate(country); // Use country as locale ID
-    } else {
-      // Just change the locale ID, keeping current UI messages
-      i18n.activate(country);
     }
+    i18n.activate(country);
+    setStoredCountry(country);
   };
 
   return (

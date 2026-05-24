@@ -1,0 +1,15 @@
+meta {
+  name: Inspect Torrent
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/torrents/inspect?magnet=magnet:?xt=urn:btih:example
+  body: none
+  auth: inherit
+}
+
+docs {
+  Inspect a torrent by magnet URI. Replace the magnet query param with a valid magnet link.
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Get Download File
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/downloads/{{downloadId}}/file/movie.mkv
+  body: none
+  auth: inherit
+}
+
+headers {
+  Content-Type:
+}
+
+docs {
+  Requires member role or higher. Download a specific file from a torrent by relative path.
+}

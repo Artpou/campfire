@@ -1,0 +1,20 @@
+meta {
+  name: Stream Download
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/downloads/{{downloadId}}/stream
+  body: none
+  auth: inherit
+}
+
+headers {
+  Content-Type:
+  Range: bytes=0-
+}
+
+docs {
+  Requires member role or higher. Stream the video file for a download. Supports Range requests for seeking.
+}

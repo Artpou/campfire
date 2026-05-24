@@ -2,8 +2,8 @@ import type { Context, Next } from "hono";
 import { getCookie } from "hono/cookie";
 
 import { validateSession } from "@/auth/session.util";
+import { UnauthorizedError } from "../../errors/error";
 import { UserService } from "../user/user.service";
-import { UnauthorizedError } from "./error";
 
 const SESSION_COOKIE_NAME = "session";
 
@@ -15,14 +15,10 @@ export const authGuard = async (c: Context, next: Next) => {
   }
 
   const userId = await validateSession(sessionToken);
-  if (!userId) {
-    throw new UnauthorizedError();
-  }
+  if (!userId) throw new UnauthorizedError();
 
   const currentUser = await new UserService().getById(userId);
-  if (!currentUser) {
-    throw new UnauthorizedError();
-  }
+  if (!currentUser) throw new UnauthorizedError();
 
   c.set("user", currentUser);
   await next();

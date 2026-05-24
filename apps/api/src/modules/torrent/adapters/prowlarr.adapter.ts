@@ -78,7 +78,6 @@ export class ProwlarrAdapter implements IndexerAdapter {
     });
 
     if (!response.ok) {
-      console.log(response.json());
       throw new Error(`Prowlarr indexer ${query.indexerId} failed: ${response.statusText}`);
     }
 

@@ -53,8 +53,6 @@ function VideoPlayerPage() {
     }[] = [];
     const session = user?.sessionToken;
 
-    console.log(torrent?.live?.files);
-
     if (torrent?.live?.files) {
       const videoExtensions = /\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v)$/i;
       const videoFiles = torrent.live.files.filter((file) => videoExtensions.test(file.name));

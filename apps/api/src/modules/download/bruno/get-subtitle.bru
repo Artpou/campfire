@@ -1,0 +1,19 @@
+meta {
+  name: Get Subtitle File
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/downloads/{{downloadId}}/subtitles/movie.en.srt
+  body: none
+  auth: inherit
+}
+
+headers {
+  Content-Type:
+}
+
+docs {
+  Requires member role or higher. Get a subtitle file converted to VTT format.
+}

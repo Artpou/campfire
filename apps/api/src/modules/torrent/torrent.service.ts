@@ -52,9 +52,12 @@ export class TorrentService extends AuthenticatedService {
     if (!indexerConfig.baseUrl) throw new Error(`No base URL is configured for this indexer`);
 
     const config = { apiKey: indexerConfig.apiKey, baseUrl: indexerConfig.baseUrl };
-    const categories = media.type === "movie" ? ["2000"] : ["5000"];
+    let categories =
+      media.type === "movie"
+        ? ["2010", "2020", "2030", "2040", "2050", "2060", "2070", "2080", "2090"]
+        : ["5010", "5020", "5030", "5040", "5050", "5060", "5070", "5080", "5090"];
 
-    const search = async (query: string) => {
+    const search = async (query: string, categories: string[]) => {
       return await this.getAdapter(indexerConfig.name).search(
         {
           q: query,
@@ -67,12 +70,21 @@ export class TorrentService extends AuthenticatedService {
     };
 
     const sanitizedTitle = this.sanitizeQuery(media.sanitize_title ?? "");
-    console.log(sanitizedTitle, media.sanitize_title);
     const title = this.sanitizeQuery(media.title ?? "");
 
-    const torrents = await search(this.sanitizeQuery(media.sanitize_title ?? ""));
+    const torrents = await search(this.sanitizeQuery(media.sanitize_title ?? ""), categories);
     if (title !== sanitizedTitle) {
-      torrents.push(...(await search(this.sanitizeQuery(media.title))));
+      torrents.push(...(await search(this.sanitizeQuery(media.title), categories)));
+    }
+
+    // If no torrents found, try default categories
+    if (torrents.length === 0) {
+      categories = media.type === "movie" ? ["2000"] : ["5000"];
+
+      torrents.push(...(await search(this.sanitizeQuery(media.sanitize_title ?? ""), categories)));
+      if (title !== sanitizedTitle) {
+        torrents.push(...(await search(this.sanitizeQuery(media.title), categories)));
+      }
     }
 
     // dedup

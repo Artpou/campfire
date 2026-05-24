@@ -1,0 +1,29 @@
+meta {
+  name: Upsert Media
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/media
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "id": 550,
+    "type": "movie",
+    "title": "Fight Club",
+    "original_title": "Fight Club",
+    "original_language": "en",
+    "overview": "A ticking-time-bomb insomniac and a soap maker form an underground fight club.",
+    "poster_path": "/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg",
+    "vote_average": 8.4,
+    "release_date": "1999-10-15"
+  }
+}
+
+docs {
+  Create or update a media entry from TMDB data.
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Create User
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "username": "newuser",
+    "password": "password123",
+    "role": "member"
+  }
+}
+
+docs {
+  Requires admin role or higher. Roles: owner, admin, member, viewer.
+}

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm --parallel --filter \"@basement/*\" dev",
+    "dev": "pnpm --filter @basement/api --filter web --parallel dev",
     "dev:api": "pnpm --filter @basement/api dev",
     "dev:web": "pnpm --filter web dev",
     "build": "pnpm --filter @basement/api build && pnpm --filter web build",
