@@ -21,14 +21,14 @@ export const user = sqliteTable("user", {
     .$defaultFn(() => new Date()),
 });
 
-// IndexerManager table - Store global indexer configurations (one per type)
+// IndexerManager table - Store the single global indexer configuration
 export const indexerManager = sqliteTable("indexerManager", {
-  name: text("name", { enum: indexerTypeEnum }).primaryKey(),
-  apiKey: text("apiKey"),
-  baseUrl: text("baseUrl"),
-  selected: integer("selected", { mode: "boolean" })
-    .notNull()
-    .$default(() => false),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  indexerType: text("indexer_type", { enum: indexerTypeEnum }).notNull(),
+  indexerUrl: text("indexer_url").notNull(),
+  indexerApiKey: text("indexer_api_key").notNull(),
 });
 
 // Session table - Store user sessions for authentication persistence

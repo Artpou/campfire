@@ -2,7 +2,7 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 
 import { hashPassword } from "@/auth/password.util";
-import { ForbiddenError } from "@/errors/error";
+import { ConflictError, ForbiddenError, NotFoundError } from "@/errors/error";
 import { authGuard } from "@/modules/auth/auth.guard";
 import { requireRole } from "@/modules/auth/role.guard";
 import type { HonoVariables } from "@/types/hono";
@@ -15,7 +15,7 @@ export const userRoutes = new Hono<{ Variables: HonoVariables }>()
   .get("/:id", async (c) => {
     const userService = new UserService();
     const user = await userService.getById(c.req.param("id"));
-    if (!user) throw new Error("User not found");
+    if (!user) throw new NotFoundError("User");
     return c.json(user);
   })
   // List all users (admin+ only)
@@ -37,7 +37,7 @@ export const userRoutes = new Hono<{ Variables: HonoVariables }>()
 
     // Check if username already exists
     const existingUser = await userService.getByUsername(body.username);
-    if (existingUser) throw new Error("Username already exists");
+    if (existingUser) throw new ConflictError("Username already exists");
 
     // Create user with hashed password
     const newUser = await userService.create({
@@ -55,7 +55,7 @@ export const userRoutes = new Hono<{ Variables: HonoVariables }>()
     const userService = new UserService();
 
     const targetUser = await userService.getById(c.req.param("id"));
-    if (!targetUser) throw new Error("User not found");
+    if (!targetUser) throw new NotFoundError("User");
 
     // Owner cannot be modified
     if (targetUser.role === "owner") {
@@ -87,7 +87,7 @@ export const userRoutes = new Hono<{ Variables: HonoVariables }>()
     const userService = new UserService();
 
     const targetUser = await userService.getById(c.req.param("id"));
-    if (!targetUser) throw new Error("User not found");
+    if (!targetUser) throw new NotFoundError("User");
 
     // Owner cannot be deleted
     if (targetUser.role === "owner") {

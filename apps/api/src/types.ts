@@ -17,9 +17,9 @@ export type { DownloadRoutesType } from "./modules/download/download.route";
 export type { FreeboxFile, FreeboxFilesResponse } from "./modules/freebox/freebox.dto";
 export type { FreeboxRoutesType } from "./modules/freebox/freebox.route";
 export type {
-  CreateIndexerManagerInput,
   IndexerManager,
   NewIndexerManager,
+  UpsertIndexerManagerInput,
 } from "./modules/indexer-manager/indexer-manager.dto";
 export type { IndexerManagerRoutesType } from "./modules/indexer-manager/indexer-manager.route";
 export type {

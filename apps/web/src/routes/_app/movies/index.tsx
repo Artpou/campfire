@@ -2,16 +2,18 @@ import { useMemo } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { FilterIcon } from "lucide-react";
 import { SortOption } from "tmdb-ts";
 
 import { PlaceholderEmpty } from "@/shared/components/seedarr-placeholder";
-import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
 
 import { MediaCategoryCarousel } from "@/features/media/components/media-category-carousel";
 import { MediaGrid } from "@/features/media/components/media-grid";
 import { MediaSelected, MediaSortTabs } from "@/features/media/components/media-sort-tabs";
+import {
+  MovieFiltersSheet,
+  type MovieFiltersValue,
+} from "@/features/movies/components/movie-filters-sheet";
 import { MovieProviderTabs } from "@/features/movies/components/movie-provider-tabs";
 import { useMovieDiscover } from "@/features/movies/hooks/use-movie";
 
@@ -19,17 +21,41 @@ export interface MovieSearchParams {
   with_genres?: string;
   with_watch_providers?: string;
   selected?: MediaSelected;
+  release_date_gte?: string;
+  release_date_lte?: string;
+  with_original_language?: string;
+  with_keywords?: string;
+  with_keywords_label?: string;
+  with_runtime_gte?: number;
+  with_runtime_lte?: number;
+  vote_average_gte?: number;
 }
+
+const optionalString = (v: unknown) => (typeof v === "string" && v.length > 0 ? v : undefined);
+const optionalNumber = (v: unknown) => {
+  if (typeof v === "number" && !Number.isNaN(v)) return v;
+  if (typeof v === "string" && v.length > 0) {
+    const n = Number(v);
+    return Number.isNaN(n) ? undefined : n;
+  }
+  return undefined;
+};
 
 export const Route = createFileRoute("/_app/movies/")({
   component: MoviesPage,
   validateSearch: (search: Record<string, unknown>): MovieSearchParams => {
-    const { with_genres, with_watch_providers, selected } = search;
     return {
-      with_genres: typeof with_genres === "string" ? with_genres : undefined,
-      with_watch_providers:
-        typeof with_watch_providers === "string" ? with_watch_providers : undefined,
-      selected: typeof selected === "string" ? (selected as MediaSelected) : "home",
+      with_genres: optionalString(search.with_genres),
+      with_watch_providers: optionalString(search.with_watch_providers),
+      selected: typeof search.selected === "string" ? (search.selected as MediaSelected) : "home",
+      release_date_gte: optionalString(search.release_date_gte),
+      release_date_lte: optionalString(search.release_date_lte),
+      with_original_language: optionalString(search.with_original_language),
+      with_keywords: optionalString(search.with_keywords),
+      with_keywords_label: optionalString(search.with_keywords_label),
+      with_runtime_gte: optionalNumber(search.with_runtime_gte),
+      with_runtime_lte: optionalNumber(search.with_runtime_lte),
+      vote_average_gte: optionalNumber(search.vote_average_gte),
     };
   },
 });
@@ -59,7 +85,13 @@ function MoviesPage() {
     with_release_type,
     with_genres: search.with_genres,
     with_watch_providers: search.with_watch_providers,
-    "primary_release_date.gte": after_date,
+    "primary_release_date.gte": search.release_date_gte ?? after_date,
+    "primary_release_date.lte": search.release_date_lte,
+    with_original_language: search.with_original_language,
+    with_keywords: search.with_keywords,
+    "with_runtime.gte": search.with_runtime_gte,
+    "with_runtime.lte": search.with_runtime_lte,
+    "vote_average.gte": search.vote_average_gte,
   });
 
   const handleLoadMore = () => {
@@ -67,13 +99,37 @@ function MoviesPage() {
       fetchNextPage();
     }
   };
-  const handleSearchChange = (value: MovieSearchParams) => {
+  const handleSearchChange = (value: Partial<MovieSearchParams>) => {
     navigate({
       to: "/movies",
       search: {
         ...search,
         ...value,
       },
+    });
+  };
+
+  const filtersValue: MovieFiltersValue = {
+    release_date_gte: search.release_date_gte,
+    release_date_lte: search.release_date_lte,
+    with_original_language: search.with_original_language,
+    with_keywords: search.with_keywords,
+    with_keywords_label: search.with_keywords_label,
+    with_runtime_gte: search.with_runtime_gte,
+    with_runtime_lte: search.with_runtime_lte,
+    vote_average_gte: search.vote_average_gte,
+  };
+
+  const handleFiltersChange = (value: MovieFiltersValue) => {
+    handleSearchChange({
+      release_date_gte: value.release_date_gte,
+      release_date_lte: value.release_date_lte,
+      with_original_language: value.with_original_language,
+      with_keywords: value.with_keywords,
+      with_keywords_label: value.with_keywords_label,
+      with_runtime_gte: value.with_runtime_gte,
+      with_runtime_lte: value.with_runtime_lte,
+      vote_average_gte: value.vote_average_gte,
     });
   };
 
@@ -101,9 +157,7 @@ function MoviesPage() {
                 }
               />
             )}
-            <Button variant="secondary" size="icon-lg">
-              <FilterIcon />
-            </Button>
+            <MovieFiltersSheet value={filtersValue} onChange={handleFiltersChange} />
           </div>
         </div>
         {!isLoading && results.length === 0 ? (

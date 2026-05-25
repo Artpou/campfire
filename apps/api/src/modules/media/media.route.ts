@@ -20,6 +20,9 @@ export const mediaRoutes = new Hono<{ Variables: HonoVariables }>()
       await MediaService.fromContext(c).list(c.req.valid("query"), paginationParams(c)),
     );
   })
+  .delete("/history", async (c) => {
+    return c.json(await MediaService.fromContext(c).clearHistory());
+  })
   .get("/:id", async (c) => {
     return c.json(await MediaService.fromContext(c).get(Number(c.req.param("id"))));
   })

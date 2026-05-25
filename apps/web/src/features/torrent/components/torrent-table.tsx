@@ -11,6 +11,7 @@ import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { Badge, badgeVariants } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Label } from "@/shared/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
 import { useStartDownload } from "@/features/torrent/hooks/use-torrent-download";
@@ -27,7 +28,6 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
   const navigate = useNavigate();
 
   // Filter states
-  const [selectedLanguage, setSelectedLanguage] = useState("all");
   const [selectedQualityIndex, setSelectedQualityIndex] = useState<number>(0);
 
   // Modal states
@@ -46,34 +46,11 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
     "4K",
   ];
 
-  // Get unique languages from torrents
-  const availableLanguages = useMemo(() => {
-    const langs: string[] = [];
-    torrents.forEach((t) => {
-      if (t.language && t.language !== "multi" && !langs.includes(t.language)) {
-        langs.push(t.language);
-      }
-    });
-
-    return [...langs, "original"];
-  }, [torrents]);
-
   // Filter torrents based on selections
   const filteredTorrents = useMemo(() => {
     return torrents.filter((torrent) => {
-      // Language filter
-      if (
-        selectedLanguage !== "all" &&
-        (selectedLanguage === "original"
-          ? torrent.language !== ""
-          : torrent.language !== selectedLanguage)
-      ) {
-        return false;
-      }
-
-      // Quality filter
+      // Quality filter (minimum-quality semantics)
       if (selectedQualityIndex > 0) {
-        // If torrent quality is empty or doesn't meet minimum, filter out
         if (!torrent.quality) return false;
         const torrentQualityIndex = qualityLevels.indexOf(torrent.quality);
         if (torrentQualityIndex === -1 || torrentQualityIndex < selectedQualityIndex) {
@@ -83,7 +60,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
 
       return true;
     });
-  }, [torrents, selectedLanguage, selectedQualityIndex]);
+  }, [torrents, selectedQualityIndex]);
 
   /**
    * Extract the best download URI from a torrent object
@@ -135,11 +112,11 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
     <div className="w-full overflow-hidden space-y-2">
       {/* Filters */}
       <div className="flex flex-row gap-4 items-center">
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 w-full md:w-auto">
           <Label>
             <Trans>Minimum Quality</Trans>
           </Label>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="hidden md:flex flex-wrap gap-1.5">
             {qualityLevels.map((quality, index) => (
               <button
                 key={quality}
@@ -156,6 +133,21 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
               </button>
             ))}
           </div>
+          <Select
+            value={selectedQualityIndex.toString()}
+            onValueChange={(v) => setSelectedQualityIndex(Number(v))}
+          >
+            <SelectTrigger className="md:hidden w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {qualityLevels.map((quality, index) => (
+                <SelectItem key={quality} value={index.toString()}>
+                  {quality === "all" ? <Trans>All qualities</Trans> : quality}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

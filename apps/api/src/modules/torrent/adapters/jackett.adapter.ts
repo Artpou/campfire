@@ -1,3 +1,4 @@
+import { ServiceUnavailableError } from "@/errors/error";
 import { getLanguageFromTitle, getTorrentQuality } from "@/helpers/video.helper";
 import { IndexerType } from "../../../db/schema";
 import type { Torrent, TorrentIndexer } from "../torrent.dto";
@@ -35,7 +36,7 @@ export class JackettAdapter implements IndexerAdapter {
     console.log(`[Jackett] GET ${url.toString()}`);
     const response = await fetch(url.toString());
     if (!response.ok) {
-      throw new Error(`Jackett indexers failed: ${response.statusText}`);
+      throw new ServiceUnavailableError(`Jackett (${response.status} ${response.statusText})`);
     }
 
     const data = (await response.json()) as {
@@ -71,7 +72,9 @@ export class JackettAdapter implements IndexerAdapter {
     console.log(`[Jackett] GET ${url.toString()}`);
     const response = await fetch(url.toString());
     if (!response.ok) {
-      throw new Error(`Jackett indexer ${query.indexerId} failed: ${response.statusText}`);
+      throw new ServiceUnavailableError(
+        `Jackett indexer ${query.indexerId} (${response.status} ${response.statusText})`,
+      );
     }
 
     const data = (await response.json()) as JackettSearchResponse;

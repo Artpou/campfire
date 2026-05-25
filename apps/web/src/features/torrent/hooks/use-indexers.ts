@@ -5,12 +5,7 @@ import { api, unwrap } from "@/lib/api";
 export function useIndexers() {
   return useQuery({
     queryKey: ["torrent-indexers"],
-    queryFn: async () => {
-      try {
-        return await unwrap(api.torrents.indexers.$get());
-      } catch {
-        return null;
-      }
-    },
+    queryFn: () => unwrap(api.torrents.indexers.$get()),
+    retry: false,
   });
 }

@@ -5,6 +5,7 @@ import ms from "ms";
 
 import { hashPassword, verifyPassword } from "@/auth/password.util";
 import { createSession, deleteSession, validateSession } from "@/auth/session.util";
+import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError } from "@/errors/error";
 import { IndexerManagerService } from "../indexer-manager/indexer-manager.service";
 import { UserService } from "../user/user.service";
 import { loginSchema, registerSchema } from "./auth.dto";
@@ -36,11 +37,11 @@ export const authRoutes = new Hono()
 
     // If owner already exists, disable signup
     if (hasOwner) {
-      throw new Error("Registration is closed. Contact an administrator.");
+      throw new ForbiddenError("Registration is closed. Contact an administrator.");
     }
 
     const existingUser = await userService.getByUsername(username);
-    if (existingUser) throw new Error("Username already exists");
+    if (existingUser) throw new ConflictError("Username already exists");
 
     // First user becomes owner
     const newUser = await userService.create({
@@ -49,7 +50,7 @@ export const authRoutes = new Hono()
       role: "owner",
     });
 
-    if (!newUser) throw new Error("Failed to create user");
+    if (!newUser) throw new ConflictError("Failed to create user");
     const sessionToken = await createSession(newUser.id);
 
     setCookie(c, SESSION_COOKIE_NAME, sessionToken, cookieOptions);
@@ -62,10 +63,10 @@ export const authRoutes = new Hono()
     const userService = new UserService();
 
     const existingUser = await userService.getFullUser(username);
-    if (!existingUser) throw new Error("Invalid username or password");
+    if (!existingUser) throw new UnauthorizedError("Invalid username or password");
 
     const isValid = verifyPassword(password, existingUser.password);
-    if (!isValid) throw new Error("Invalid username or password");
+    if (!isValid) throw new UnauthorizedError("Invalid username or password");
 
     const sessionToken = await createSession(existingUser.id);
 
@@ -88,15 +89,15 @@ export const authRoutes = new Hono()
   .get("/me", async (c) => {
     const sessionToken = getCookie(c, SESSION_COOKIE_NAME);
 
-    if (typeof sessionToken !== "string") throw new Error("Not authenticated");
+    if (typeof sessionToken !== "string") throw new UnauthorizedError("Not authenticated");
 
     const userId = await validateSession(sessionToken);
-    if (!userId) throw new Error("Invalid or expired session");
+    if (!userId) throw new UnauthorizedError("Invalid or expired session");
 
     const currentUser = await new UserService().getById(userId);
-    if (!currentUser) throw new Error("User not found");
+    if (!currentUser) throw new NotFoundError("User");
 
-    const selectedIndexer = await new IndexerManagerService(currentUser).getSelected();
+    const selectedIndexer = await new IndexerManagerService(currentUser).get();
 
     return c.json({
       ...currentUser,

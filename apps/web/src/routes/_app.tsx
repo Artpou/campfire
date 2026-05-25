@@ -55,7 +55,7 @@ function AuthenticatedLayout() {
 
   const selectedIndexer = user?.selectedIndexer;
   const isIndexerMisconfigured =
-    isAdmin && (!selectedIndexer || !selectedIndexer.apiKey || !selectedIndexer.baseUrl);
+    isAdmin && (!selectedIndexer || !selectedIndexer.indexerApiKey || !selectedIndexer.indexerUrl);
 
   return (
     <SidebarProvider>
@@ -64,7 +64,6 @@ function AuthenticatedLayout() {
         {isIndexerMisconfigured && (
           <Link
             to="/settings"
-            search={{ tab: "indexer" }}
             className="bg-warning/10 border-b border-warning/20 px-4 py-2 flex items-center gap-2 text-warning hover:bg-warning/20 transition-colors"
           >
             <AlertTriangle className="size-4 shrink-0" />

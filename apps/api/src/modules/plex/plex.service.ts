@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { AuthenticatedService } from "@/classes/authenticated-service";
 import { db } from "@/db/db";
 import { plexConfig } from "@/db/schema";
+import { ServiceUnavailableError } from "@/errors/error";
 import type { PlexConfig, UpdatePlexConfigInput } from "./plex.dto";
 
 const SINGLETON_ID = "singleton";
@@ -52,7 +53,7 @@ export class PlexService extends AuthenticatedService {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch servers from Plex TV");
+        throw new ServiceUnavailableError("Plex TV");
       }
 
       // Plex returns XML by default, but we asked for JSON.

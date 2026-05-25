@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import type { Torrent, TorrentIndexer } from "@basement/api/types";
 import { Trans } from "@lingui/react/macro";
 import type { UseQueryResult } from "@tanstack/react-query";
-import { Eye, EyeOff } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Eye, EyeOff, SettingsIcon } from "lucide-react";
 
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
@@ -161,6 +162,12 @@ export function TorrentIndexersTable({
           </TableBody>
         </Table>
       </div>
+      <Button asChild variant="outline" className="w-full">
+        <Link to="/settings">
+          <SettingsIcon className="size-4" />
+          <Trans>Configure indexers</Trans>
+        </Link>
+      </Button>
     </div>
   );
 }

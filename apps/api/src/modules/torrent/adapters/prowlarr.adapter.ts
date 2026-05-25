@@ -1,3 +1,4 @@
+import { ServiceUnavailableError } from "@/errors/error";
 import { getLanguageFromTitle, getTorrentQuality } from "@/helpers/video.helper";
 import { IndexerType } from "../../../db/schema";
 import type { Torrent, TorrentIndexer } from "../torrent.dto";
@@ -33,7 +34,7 @@ export class ProwlarrAdapter implements IndexerAdapter {
     });
 
     if (!response.ok) {
-      throw new Error(`Prowlarr indexers failed: ${response.statusText}`);
+      throw new ServiceUnavailableError(`Prowlarr (${response.status} ${response.statusText})`);
     }
 
     const data = (await response.json()) as {
@@ -42,6 +43,8 @@ export class ProwlarrAdapter implements IndexerAdapter {
       privacy: string;
       enable: boolean;
     }[];
+
+    console.log({ data });
 
     return data
       .filter((indexer) => !!indexer.enable)
@@ -78,13 +81,15 @@ export class ProwlarrAdapter implements IndexerAdapter {
     });
 
     if (!response.ok) {
-      throw new Error(`Prowlarr indexer ${query.indexerId} failed: ${response.statusText}`);
+      throw new ServiceUnavailableError(
+        `Prowlarr indexer ${query.indexerId} (${response.status} ${response.statusText})`,
+      );
     }
 
     const data = await response.json();
 
     if (!Array.isArray(data)) {
-      throw new Error(`Prowlarr indexer ${query.indexerId} returned invalid response`);
+      throw new ServiceUnavailableError(`Prowlarr indexer ${query.indexerId} (invalid response)`);
     }
 
     return data.map((result: ProwlarrSearchItem) => ({

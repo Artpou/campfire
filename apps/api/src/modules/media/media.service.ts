@@ -3,6 +3,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import { AuthenticatedService } from "@/classes/authenticated-service";
 import { db } from "@/db/db";
 import { media, torrentDownload, userLikes, userMedia, userWatchList } from "@/db/schema";
+import { BadRequestError, NotFoundError } from "@/errors/error";
 import type { Paginate, PaginationParams } from "@/modules/pagination/pagination.dto";
 import { toPaginate } from "@/modules/pagination/pagination.helper";
 import { Ids } from "@/modules/shared/shared.dto";
@@ -56,7 +57,7 @@ export class MediaService extends AuthenticatedService {
 
   async upsert(data: MediaInsert): Promise<Media> {
     const mediaId = data.id;
-    if (!mediaId) throw new Error("Media ID is required");
+    if (!mediaId) throw new BadRequestError("Media ID is required");
 
     await db.insert(media).values(data).onConflictDoUpdate({
       target: media.id,
@@ -77,7 +78,7 @@ export class MediaService extends AuthenticatedService {
       });
 
     const result = await this.get(mediaId);
-    if (!result) throw new Error("Failed to upsert media");
+    if (!result) throw new NotFoundError("Media");
     return result;
   }
 
@@ -134,6 +135,11 @@ export class MediaService extends AuthenticatedService {
     }
 
     return { ...media, watchList: !media.watchList };
+  }
+
+  async clearHistory(): Promise<{ success: true }> {
+    await db.delete(userMedia).where(eq(userMedia.userId, this.user.id));
+    return { success: true };
   }
 
   async listStatus(ids: Ids): Promise<MediaStatus[]> {

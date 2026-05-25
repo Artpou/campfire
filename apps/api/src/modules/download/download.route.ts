@@ -2,6 +2,7 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { stream } from "hono/streaming";
 
+import { NotFoundError } from "@/errors/error";
 import { srt2webvtt } from "@/helpers/subtitle.helper";
 import { convertMkvToMp4Stream } from "@/helpers/video.helper";
 import { authGuard } from "@/modules/auth/auth.guard";
@@ -35,7 +36,7 @@ export const downloadRoutes = new Hono<{ Variables: HonoVariables }>()
   })
   .get("/:id", async (c) => {
     const download = await DownloadService.fromContext(c).getById(c.req.param("id"));
-    if (!download) throw new Error("Download not found");
+    if (!download) throw new NotFoundError("Download");
     return c.json(download);
   })
   .get("/:id/stream", async (c) => {

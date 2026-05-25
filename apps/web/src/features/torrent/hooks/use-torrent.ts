@@ -10,20 +10,16 @@ export function useTorrents(media: Media | null | undefined, indexers: TorrentIn
       queryFn: async () => {
         if (!media) return [];
 
-        try {
-          const data = await unwrap(
-            api.torrents.search.$post({
-              json: {
-                media,
-                indexerId: indexer.id,
-              },
-            }),
-          );
+        const data = await unwrap(
+          api.torrents.search.$post({
+            json: {
+              media,
+              indexerId: indexer.id,
+            },
+          }),
+        );
 
-          return (data || []).filter((torrent: Torrent) => torrent.seeders > 0);
-        } catch {
-          return [];
-        }
+        return (data || []).filter((torrent: Torrent) => torrent.seeders > 0);
       },
       enabled: !!media?.id,
       retry: 1,

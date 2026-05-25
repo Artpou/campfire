@@ -48,6 +48,17 @@ export function useMediasStatus(ids: Ids) {
   });
 }
 
+export function useClearHistory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => unwrap(api.media.history.$delete()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["medias", "recently-viewed"] });
+    },
+  });
+}
+
 export function useToggleLike() {
   const queryClient = useQueryClient();
 

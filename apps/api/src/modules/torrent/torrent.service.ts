@@ -1,5 +1,6 @@
 import type WebTorrent from "webtorrent";
 
+import { BadRequestError, ServiceUnavailableError } from "@/errors/error";
 import { WebTorrentClient } from "@/modules/download/webtorrent.client";
 import { IndexerManagerService } from "@/modules/indexer-manager/indexer-manager.service";
 import { AuthenticatedService } from "../../classes/authenticated-service";
@@ -32,33 +33,29 @@ export class TorrentService extends AuthenticatedService {
   }
 
   async getIndexers(): Promise<TorrentIndexer[]> {
-    const indexerConfig = await new IndexerManagerService(this.user).getSelected();
+    const indexerConfig = await new IndexerManagerService(this.user).get();
 
-    if (!indexerConfig) throw new Error(`No indexer is configured for this user`);
-    if (!indexerConfig.apiKey) throw new Error(`No API key is configured for this indexer`);
-    if (!indexerConfig.baseUrl) throw new Error(`No base URL is configured for this indexer`);
+    if (!indexerConfig) throw new BadRequestError("No indexer is configured");
 
-    return this.getAdapter(indexerConfig.name).getIndexers({
-      apiKey: indexerConfig.apiKey,
-      baseUrl: indexerConfig.baseUrl,
+    return this.getAdapter(indexerConfig.indexerType).getIndexers({
+      apiKey: indexerConfig.indexerApiKey,
+      baseUrl: indexerConfig.indexerUrl,
     });
   }
 
   async searchTorrents(media: Media, indexerId: string): Promise<Torrent[]> {
-    const indexerConfig = await new IndexerManagerService(this.user).getSelected();
+    const indexerConfig = await new IndexerManagerService(this.user).get();
 
-    if (!indexerConfig) throw new Error(`No indexer is configured for this user`);
-    if (!indexerConfig.apiKey) throw new Error(`No API key is configured for this indexer`);
-    if (!indexerConfig.baseUrl) throw new Error(`No base URL is configured for this indexer`);
+    if (!indexerConfig) throw new BadRequestError("No indexer is configured");
 
-    const config = { apiKey: indexerConfig.apiKey, baseUrl: indexerConfig.baseUrl };
+    const config = { apiKey: indexerConfig.indexerApiKey, baseUrl: indexerConfig.indexerUrl };
     let categories =
       media.type === "movie"
         ? ["2010", "2020", "2030", "2040", "2050", "2060", "2070", "2080", "2090"]
         : ["5010", "5020", "5030", "5040", "5050", "5060", "5070", "5080", "5090"];
 
     const search = async (query: string, categories: string[]) => {
-      return await this.getAdapter(indexerConfig.name).search(
+      return await this.getAdapter(indexerConfig.indexerType).search(
         {
           q: query,
           t: media.type,
@@ -101,7 +98,7 @@ export class TorrentService extends AuthenticatedService {
 
       const timeoutId = setTimeout(() => {
         if (torrent) torrent.destroy();
-        reject(new Error("Torrent metadata fetch timeout (30s)"));
+        reject(new ServiceUnavailableError("Torrent metadata fetch"));
       }, 30000);
 
       // WebTorrent supports both magnet URIs and HTTP URLs to .torrent files

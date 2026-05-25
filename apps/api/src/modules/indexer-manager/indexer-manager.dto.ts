@@ -12,11 +12,10 @@ export type IndexerManager = typeof indexerManagerSelectSchema._output;
 export type NewIndexerManager = typeof indexerManagerInsertSchema._input;
 
 // Request schemas
-export const createIndexerManagerSchema = z.object({
-  name: z.enum(indexerTypeEnum),
-  apiKey: z.string().optional(),
-  baseUrl: z.string().optional(),
-  selected: z.boolean().optional(),
+export const upsertIndexerManagerSchema = z.object({
+  indexerType: z.enum(indexerTypeEnum),
+  indexerUrl: z.string().min(1),
+  indexerApiKey: z.string().min(1),
 });
 
-export type CreateIndexerManagerInput = z.infer<typeof createIndexerManagerSchema>;
+export type UpsertIndexerManagerInput = z.infer<typeof upsertIndexerManagerSchema>;

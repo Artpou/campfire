@@ -3,6 +3,7 @@ import type WebTorrent from "webtorrent";
 
 import { db } from "@/db/db";
 import { torrentDownload } from "@/db/schema";
+import { ServiceUnavailableError } from "@/errors/error";
 import { TorrentLiveData } from "@/types";
 import * as path from "node:path";
 
@@ -73,10 +74,10 @@ export class WebTorrentClient {
 
   static getClient(): WebTorrent.Instance {
     if (this.initError) {
-      throw new Error(`WebTorrent client failed to initialize: ${this.initError.message}`);
+      throw new ServiceUnavailableError(`WebTorrent (init failed: ${this.initError.message})`);
     }
     if (!this.client) {
-      throw new Error("WebTorrent client not initialized yet. Please try again in a moment.");
+      throw new ServiceUnavailableError("WebTorrent (initializing)");
     }
     return this.client;
   }

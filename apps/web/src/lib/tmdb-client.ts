@@ -50,7 +50,7 @@ const fetchTMDB = (apiKey: string, language?: AvailableLanguage) => {
 export interface TMDBClientType {
   movies: Pick<TMDB["movies"], "details">;
   tvShows: Pick<TMDB["tvShows"], "details">;
-  search: Pick<TMDB["search"], "multi">;
+  search: Pick<TMDB["search"], "multi" | "keywords">;
   discover: Pick<TMDB["discover"], "movie" | "tvShow">;
   genres: Pick<TMDB["genres"], "movies" | "tvShows">;
   collections: Pick<TMDB["collections"], "details">;
@@ -92,6 +92,8 @@ export const tmdbClient = ({
     },
     search: {
       multi: async ({ query }) => request("/search/multi", { query }),
+      keywords: async ({ query, page }) =>
+        request("/search/keyword", { query, page: page?.toString() }),
     },
     discover: {
       movie: async (options = {}) => request("/discover/movie", toGenericOptions(options)),

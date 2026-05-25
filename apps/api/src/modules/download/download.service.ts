@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { AuthenticatedService } from "@/classes/authenticated-service";
 import { db } from "@/db/db";
 import { torrentDownload } from "@/db/schema";
+import { BadRequestError, NotFoundError, ServiceUnavailableError } from "@/errors/error";
 import type { User } from "../user/user.dto";
 import type { DownloadTorrentInput, TorrentDownload, TorrentLiveData } from "./download.dto";
 import { WebTorrentClient } from "./webtorrent.client";
@@ -94,7 +95,7 @@ export class DownloadService extends AuthenticatedService {
       .returning();
 
     if (!newDownload) {
-      throw new Error("Failed to create download entry.");
+      throw new ServiceUnavailableError("Download creation");
     }
 
     const torrent = client.add(input.magnetUri, { path: this.downloadPath });
@@ -110,10 +111,10 @@ export class DownloadService extends AuthenticatedService {
       const [dbDownload] = await this.select.where(eq(torrentDownload.id, id)).limit(1);
 
       if (!dbDownload) {
-        throw new Error("Download not found");
+        throw new NotFoundError("Download");
       }
 
-      throw new Error(`Download is not active. Current status: ${dbDownload.status}`);
+      throw new BadRequestError(`Download is not active. Current status: ${dbDownload.status}`);
     }
 
     WebTorrentClient.setPausedData(id, extractTorrentLiveData(activeTorrent));
@@ -131,11 +132,11 @@ export class DownloadService extends AuthenticatedService {
     const [dbDownload] = await this.select.where(eq(torrentDownload.id, id)).limit(1);
 
     if (!dbDownload) {
-      throw new Error("Download not found");
+      throw new NotFoundError("Download");
     }
 
     if (dbDownload.status !== "paused") {
-      throw new Error(`Cannot resume download with status: ${dbDownload.status}`);
+      throw new BadRequestError(`Cannot resume download with status: ${dbDownload.status}`);
     }
 
     WebTorrentClient.clearPausedData(id);

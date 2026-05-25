@@ -1,3 +1,4 @@
+import { NotFoundError, ServiceUnavailableError } from "@/errors/error";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import type { SubdlSearchResponse } from "./subtitle.dto";
@@ -8,7 +9,7 @@ const SUBDL_DL_BASE = "https://dl.subdl.com";
 function getApiKey(): string {
   const key = process.env.SUBDL_API_KEY;
   if (!key) {
-    throw new Error("SUBDL_API_KEY is not set");
+    throw new ServiceUnavailableError("SUBDL (missing API key)");
   }
   return key;
 }
@@ -42,7 +43,7 @@ export async function search(
   const url = `${SUBDL_API_BASE}/subtitles?${params.toString()}`;
   const res = await fetch(url);
   if (!res.ok) {
-    throw new Error(`SUBDL API error: ${res.status} ${await res.text()}`);
+    throw new ServiceUnavailableError(`SUBDL (${res.status})`);
   }
   const data = (await res.json()) as SubdlSearchResponse;
   return data;
@@ -62,7 +63,7 @@ export async function download(
   const fullZipUrl = url.startsWith("http") ? url : `${SUBDL_DL_BASE}${url}`;
   const res = await fetch(fullZipUrl);
   if (!res.ok) {
-    throw new Error(`Failed to fetch subtitle zip: ${res.status}`);
+    throw new ServiceUnavailableError(`SUBDL download (${res.status})`);
   }
   const arrayBuffer = await res.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
@@ -75,7 +76,7 @@ export async function download(
       (f.path.toLowerCase().endsWith(".srt") || f.path.toLowerCase().endsWith(".vtt")),
   );
   if (!subtitleEntry) {
-    throw new Error("No .srt or .vtt file found in the subtitle archive");
+    throw new NotFoundError("Subtitle file (.srt/.vtt) in archive");
   }
 
   const ext = subtitleEntry.path.toLowerCase().endsWith(".vtt") ? ".vtt" : ".srt";
