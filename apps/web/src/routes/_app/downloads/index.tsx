@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
+import type { Media } from "@basement/api/types";
 import { Trans } from "@lingui/react/macro";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
@@ -18,6 +19,9 @@ import {
   type StatusFilter,
 } from "@/features/downloads/components/download-status-tabs";
 import { DownloadsGrid } from "@/features/downloads/components/downloads-grid";
+import { DownloadsSeriesGroupCard } from "@/features/downloads/components/downloads-series-group-card";
+import { groupDownloads } from "@/features/downloads/helpers/download-grouping";
+import { useMediasByIds } from "@/features/media/hooks/use-media";
 import { useTorrentDownloads } from "@/features/torrent/hooks/use-torrent-download";
 
 export const Route = createFileRoute("/_app/downloads/")({
@@ -35,15 +39,32 @@ function DownloadsPage() {
   const [displayMode, setDisplayMode] = useState<DisplayMode>("grid");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
-  if (!allTorrents) return null;
+  const torrents = useMemo(() => {
+    if (!allTorrents) return [];
+    if (statusFilter === "all") return allTorrents;
+    if (statusFilter === "ready") return allTorrents.filter((t) => t.status === "completed");
+    return allTorrents.filter((t) => t.status === "downloading" || t.status === "queued");
+  }, [allTorrents, statusFilter]);
 
-  // Filter torrents based on status
-  const torrents =
-    statusFilter === "all"
-      ? allTorrents
-      : statusFilter === "ready"
-        ? allTorrents.filter((t) => t.status === "completed")
-        : allTorrents.filter((t) => t.status === "downloading" || t.status === "queued");
+  const mediaIds = useMemo(() => {
+    const set = new Set<number>();
+    for (const t of torrents) {
+      if (t.mediaId) set.add(t.mediaId);
+    }
+    return Array.from(set);
+  }, [torrents]);
+
+  const { data: medias } = useMediasByIds(mediaIds);
+
+  const groupedItems = useMemo(() => {
+    const mediasByTvId = new Map<number, Media>();
+    if (medias) {
+      for (const m of medias) {
+        mediasByTvId.set(m.id, m);
+      }
+    }
+    return groupDownloads(torrents, mediasByTvId);
+  }, [torrents, medias]);
 
   if (isLoading) {
     return (
@@ -53,6 +74,8 @@ function DownloadsPage() {
     );
   }
 
+  if (!allTorrents) return null;
+
   return (
     <Container>
       <div className="flex justify-between items-center mb-6">
@@ -60,14 +83,23 @@ function DownloadsPage() {
         <DownloadDisplayTabs value={displayMode} onValueChange={setDisplayMode} />
       </div>
 
-      {torrents && torrents.length > 0 ? (
+      {groupedItems.length > 0 ? (
         displayMode === "grid" ? (
-          <DownloadsGrid items={torrents} isLoading={isLoading} />
+          <DownloadsGrid items={groupedItems} isLoading={isLoading} />
         ) : (
           <div className="space-y-4">
-            {torrents.map((torrent) => (
-              <DownloadCard key={torrent.id} torrent={torrent} />
-            ))}
+            {groupedItems.map((item) => {
+              if (item.kind === "tv-group") {
+                return (
+                  <DownloadsSeriesGroupCard
+                    key={`group-${item.mediaId}`}
+                    mediaId={item.mediaId}
+                    downloads={item.downloads}
+                  />
+                );
+              }
+              return <DownloadCard key={item.download.id} torrent={item.download} />;
+            })}
           </div>
         )
       ) : (

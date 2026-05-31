@@ -5,14 +5,7 @@ import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import {
-  ExternalLinkIcon,
-  ListIcon,
-  LogOut,
-  RefreshCwIcon,
-  SaveIcon,
-  SettingsIcon,
-} from "lucide-react";
+import { LogOut, SaveIcon, SettingsIcon } from "lucide-react";
 
 import { api, unwrap } from "@/lib/api";
 import { Button } from "@/shared/ui/button";

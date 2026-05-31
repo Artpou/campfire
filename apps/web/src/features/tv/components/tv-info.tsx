@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
 import { ClockIcon, ExternalLink, Plus } from "lucide-react";
-import type { AppendToResponse, Flatrate, MovieDetails, WatchLocale } from "tmdb-ts";
+import type { AppendToResponse, Flatrate, TvShowDetails, WatchLocale } from "tmdb-ts";
 
 import { cn } from "@/lib/utils";
 import { CircularProgress } from "@/shared/components/circular-progress";
@@ -23,24 +23,24 @@ import {
 
 import { getBackdropUrl } from "@/features/media/helpers/media.helper";
 
-interface MovieInfoProps {
-  movie: AppendToResponse<MovieDetails, "watch/providers"[], "movie">;
+interface TvInfoProps {
+  tv: AppendToResponse<TvShowDetails, "watch/providers"[], "tvShow">;
 }
 
 const ProviderIcon = ({
   provider,
-  movieName,
+  tvName,
   fullButton = false,
 }: {
   provider: Flatrate;
-  movieName: string;
+  tvName: string;
   fullButton?: boolean;
 }) => {
   const redirectUrl = useMemo(() => {
-    const encodedMovieName = encodeURIComponent(movieName);
+    const encodedName = encodeURIComponent(tvName);
     switch (provider.provider_name.toLowerCase()) {
       case "netflix":
-        return `https://www.netflix.com/search?q=${encodedMovieName}`;
+        return `https://www.netflix.com/search?q=${encodedName}`;
       case "disney plus":
         return `https://www.disneyplus.com/`;
       case "canal+":
@@ -48,7 +48,7 @@ const ProviderIcon = ({
       case "hbo max":
         return `https://www.hbomax.com/`;
       case "amazon prime video":
-        return `https://www.primevideo.com/search?phrase=${encodedMovieName}`;
+        return `https://www.primevideo.com/search?phrase=${encodedName}`;
       case "apple tv+":
         return `https://www.apple.com/apple-tv-plus/`;
       case "peacock":
@@ -56,7 +56,7 @@ const ProviderIcon = ({
       case "paramount+":
         return `https://www.paramountplus.com/`;
     }
-  }, [provider.provider_name, movieName]);
+  }, [provider.provider_name, tvName]);
 
   if (fullButton && !redirectUrl) return null;
 
@@ -89,13 +89,13 @@ const ProviderIcon = ({
   );
 };
 
-export function MovieInfo({ movie }: MovieInfoProps) {
+export function TvInfo({ tv }: TvInfoProps) {
   const { i18n } = useLingui();
   const tmdbLocale = countryToTmdbLocale(i18n.locale);
 
   const uniqueProviders = useMemo(() => {
     const countryProviders =
-      movie["watch/providers"]?.results?.[(tmdbLocale?.split("-")[1] || "US") as keyof WatchLocale];
+      tv["watch/providers"]?.results?.[(tmdbLocale?.split("-")[1] || "US") as keyof WatchLocale];
     if (!countryProviders) return { flatrate: [], buyRent: [] };
 
     const flatrate =
@@ -113,7 +113,7 @@ export function MovieInfo({ movie }: MovieInfoProps) {
     );
 
     return { flatrate, buyRent };
-  }, [movie, tmdbLocale]);
+  }, [tv, tmdbLocale]);
 
   const firstProviders = useMemo(() => {
     if (uniqueProviders.flatrate.length > 0) return uniqueProviders.flatrate.slice(0, 4);
@@ -121,19 +121,23 @@ export function MovieInfo({ movie }: MovieInfoProps) {
     return [];
   }, [uniqueProviders]);
 
+  const episodeRuntime = tv.episode_run_time?.[0];
+  const lastEpisode = tv.last_episode_to_air;
+  const nextEpisode = tv.next_episode_to_air;
+
   return (
     <div className="dark text-foreground flex flex-col gap-4">
       <div>
-        <h1 className="text-4xl md:text-5xl font-black tracking-tight">{movie.title}</h1>
+        <h1 className="text-4xl md:text-5xl font-black tracking-tight">{tv.name}</h1>
         <div className="flex items-center mt-1 gap-2">
-          <Flag lang={movie.original_language} />
-          <p className="text-sm text-muted-foreground font-medium">{movie.original_title}</p>
+          <Flag lang={tv.original_language} />
+          <p className="text-sm text-muted-foreground font-medium">{tv.original_name}</p>
         </div>
 
-        <div className="flex items-center gap-2 text-sm font-medium mt-4">
-          {movie.release_date && (
+        <div className="flex items-center gap-2 text-sm font-medium mt-4 flex-wrap">
+          {tv.first_air_date && (
             <span>
-              {new Date(movie.release_date).toLocaleDateString(undefined, {
+              {new Date(tv.first_air_date).toLocaleDateString(undefined, {
                 day: "2-digit",
                 month: "long",
                 year: "numeric",
@@ -141,47 +145,75 @@ export function MovieInfo({ movie }: MovieInfoProps) {
             </span>
           )}
 
-          <span className="opacity-30">•</span>
-          {movie.runtime && <span>{formatRuntime(movie.runtime)}</span>}
-          <span className="opacity-30">•</span>
-          {movie.genres && movie.genres.length > 0 && (
-            <span className="max-w-[50%] truncate">
-              {movie.genres
-                .slice(0, 3)
-                .map((genre) => (typeof genre === "string" ? genre : genre.name))
-                .join(", ")}
-            </span>
+          {episodeRuntime ? (
+            <>
+              <span className="opacity-30">•</span>
+              <span>{formatRuntime(episodeRuntime)}</span>
+            </>
+          ) : null}
+          {tv.number_of_seasons > 0 && (
+            <>
+              <span className="opacity-30">•</span>
+              <span>
+                <Trans>
+                  {tv.number_of_seasons} seasons · {tv.number_of_episodes} episodes
+                </Trans>
+              </span>
+            </>
+          )}
+          {tv.genres && tv.genres.length > 0 && (
+            <>
+              <span className="opacity-30">•</span>
+              <span className="max-w-[50%] truncate">
+                {tv.genres
+                  .slice(0, 3)
+                  .map((genre) => (typeof genre === "string" ? genre : genre.name))
+                  .join(", ")}
+              </span>
+            </>
           )}
         </div>
-        {movie.runtime > 0 && (
-          <Badge variant="secondary" className="mt-2">
+        {episodeRuntime && episodeRuntime > 0 && (
+          <Badge variant="secondary">
             <ClockIcon className="size-4 mr-1" />
             <Trans>Ends at</Trans>{" "}
-            {new Date(Date.now() + movie.runtime * 60000).toLocaleTimeString([], {
+            {new Date(Date.now() + episodeRuntime * 60000).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
             })}
           </Badge>
         )}
+        {nextEpisode?.air_date && (
+          <Badge variant="secondary">
+            <Trans>
+              Next episode: S{nextEpisode.season_number}E{nextEpisode.episode_number} -{" "}
+              {new Date(nextEpisode.air_date).toLocaleDateString()}
+            </Trans>
+          </Badge>
+        )}
+        {!nextEpisode && lastEpisode?.air_date && (
+          <Badge variant="outline">
+            <Trans>
+              Last episode: S{lastEpisode.season_number}E{lastEpisode.episode_number} -{" "}
+              {new Date(lastEpisode.air_date).toLocaleDateString()}
+            </Trans>
+          </Badge>
+        )}
       </div>
 
-      {(movie.tagline || movie.overview) && (
+      {(tv.tagline || tv.overview) && (
         <div className="space-y-2">
-          {movie.tagline && (
-            <p className="text-muted-foreground italic font-bold">{movie.tagline}</p>
-          )}
-          {movie.overview && (
-            <p className="text-sm font-medium leading-relaxed">{movie.overview}</p>
-          )}
+          {tv.tagline && <p className="text-muted-foreground italic font-bold">{tv.tagline}</p>}
+          {tv.overview && <p className="text-sm font-medium leading-relaxed">{tv.overview}</p>}
         </div>
       )}
 
       <div className="flex items-center gap-4">
-        <CircularProgress value={(movie.vote_average || 0) * 10} size={52} strokeWidth={5} />
+        <CircularProgress value={(tv.vote_average || 0) * 10} size={52} strokeWidth={5} />
 
         <div className="flex items-center gap-1.5 border-l border-white/10 pl-4">
           {firstProviders.map((provider) => (
-            <ProviderIcon key={provider.provider_id} provider={provider} movieName={movie.title} />
+            <ProviderIcon key={provider.provider_id} provider={provider} tvName={tv.name} />
           ))}
           {firstProviders.length <
             uniqueProviders.flatrate.length + uniqueProviders.buyRent.length && (
@@ -206,7 +238,7 @@ export function MovieInfo({ movie }: MovieInfoProps) {
                         <ProviderIcon
                           key={provider.provider_id}
                           provider={provider}
-                          movieName={movie.title}
+                          tvName={tv.name}
                         />
                       ))}
                     </div>
@@ -224,7 +256,7 @@ export function MovieInfo({ movie }: MovieInfoProps) {
                           <ProviderIcon
                             key={provider.provider_id}
                             provider={provider}
-                            movieName={movie.title}
+                            tvName={tv.name}
                           />
                         ))}
                       </div>
@@ -235,7 +267,7 @@ export function MovieInfo({ movie }: MovieInfoProps) {
             </DropdownMenu>
           )}
           {firstProviders.length > 0 && (
-            <ProviderIcon provider={firstProviders[0]} movieName={movie.title} fullButton />
+            <ProviderIcon provider={firstProviders[0]} tvName={tv.name} fullButton />
           )}
         </div>
       </div>

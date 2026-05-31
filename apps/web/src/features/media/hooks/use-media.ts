@@ -48,6 +48,27 @@ export function useMediasStatus(ids: Ids) {
   });
 }
 
+export function useMediasByIds(ids: number[], { enabled = true }: { enabled?: boolean } = {}) {
+  const queryClient = useQueryClient();
+
+  return useQuery({
+    queryKey: ["medias-by-ids", ids],
+    queryFn: async () => {
+      if (ids.length === 0) return [];
+      const data = await unwrap(
+        api.media.$get({
+          query: { ids: ids.join(","), limit: ids.length.toString() },
+        }),
+      );
+      data.results.forEach((result) => {
+        queryClient.setQueryData(["media", result.id], result);
+      });
+      return data.results;
+    },
+    enabled: enabled && ids.length > 0,
+  });
+}
+
 export function useClearHistory() {
   const queryClient = useQueryClient();
 

@@ -1,22 +1,77 @@
 import { useMemo } from "react";
 
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { CountryCode, TvShowQueryOptions } from "tmdb-ts";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CountryCode, SeasonSelection, TvShowQueryOptions } from "tmdb-ts";
 
+import { api, unwrap } from "@/lib/api";
 import { useTMDB } from "@/shared/hooks/use-tmdb";
 
 import { tmdbTVToMedia } from "@/features/media/helpers/media.helper";
 import { useTVStore } from "@/features/tv/store/tv-store";
 
+export function useTVDetails(id: string, { enabled = true }: { enabled?: boolean } = {}) {
+  const { tmdb, tmdbLocale } = useTMDB();
+  const queryClient = useQueryClient();
+
+  return useQuery({
+    enabled,
+    queryKey: ["tv-full", id, tmdbLocale],
+    queryFn: async () => {
+      const tvData = await tmdb.tvShows.details(Number(id), [
+        "watch/providers",
+        "videos",
+        "credits",
+        "recommendations",
+        "external_ids",
+        "aggregate_credits",
+      ]);
+
+      await unwrap(api.media.$post({ json: tmdbTVToMedia(tvData) }));
+      queryClient.invalidateQueries({ queryKey: ["media"] });
+
+      return { tv: tvData };
+    },
+  });
+}
+
+export function useTVSeasonDetails(
+  selection: SeasonSelection,
+  { enabled = true }: { enabled?: boolean } = {},
+) {
+  const { tmdb, tmdbLocale } = useTMDB();
+
+  return useQuery({
+    enabled,
+    queryKey: ["tv-season", selection.tvShowID, selection.seasonNumber, tmdbLocale],
+    queryFn: async () => {
+      return tmdb.tvSeasons.details(selection);
+    },
+  });
+}
+
 export function useTVDiscover(options: TvShowQueryOptions = {}) {
   const { tmdb, tmdbLocale } = useTMDB();
+  const queryClient = useQueryClient();
 
   const query = useInfiniteQuery({
     queryKey: ["tv-discover", tmdbLocale, JSON.stringify(options)],
     queryFn: async ({ pageParam = 1 }) => {
       const data = await tmdb.discover.tvShow({ ...options, page: pageParam });
+
+      const ids = data.results.map((result) => result.id.toString());
+      const localMedias =
+        ids.length > 0
+          ? (await unwrap(api.media.$get({ query: { type: "tv", ids: ids.join(",") } }))).results
+          : [];
+
+      const results = data.results.map((result) => {
+        const media = localMedias.find((m) => m.id === result.id) || tmdbTVToMedia(result);
+        queryClient.setQueryData(["media", media.id], media);
+        return media;
+      });
+
       return {
-        results: data.results.map(tmdbTVToMedia),
+        results,
         page: data.page,
         totalPages: data.total_pages,
       };

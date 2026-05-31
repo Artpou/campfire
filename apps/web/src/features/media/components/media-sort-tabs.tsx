@@ -53,11 +53,7 @@ export function MediaSortTabs({ value, type, onChange }: MediaSortTabsProps) {
     <Tabs value={activeValue} onValueChange={handleChange}>
       <TabsList className="h-auto p-1">
         {sortOptions.map(({ value, icon, label }) => (
-          <TabsTrigger
-            key={value}
-            value={value}
-            className="flex items-center gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-          >
+          <TabsTrigger key={value} value={value} className="gap-2 px-4 py-2">
             {icon}
             <span className="font-medium">{t(label)}</span>
           </TabsTrigger>

@@ -3,10 +3,14 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 
 import { api, unwrap } from "@/lib/api";
 
-export function useTorrents(media: Media | null | undefined, indexers: TorrentIndexer[]) {
+export function useTorrents(
+  media: Media | null | undefined,
+  indexers: TorrentIndexer[],
+  { season, episode }: { season?: number; episode?: number } = {},
+) {
   return useQueries({
     queries: indexers.map((indexer) => ({
-      queryKey: ["torrents", media?.id, media?.type, indexer.id],
+      queryKey: ["torrents", media?.id, media?.type, indexer.id, season, episode],
       queryFn: async () => {
         if (!media) return [];
 
@@ -15,6 +19,8 @@ export function useTorrents(media: Media | null | undefined, indexers: TorrentIn
             json: {
               media,
               indexerId: indexer.id,
+              season,
+              episode,
             },
           }),
         );

@@ -37,8 +37,6 @@ export function IndexerList({ indexers, isLoading = false, isError = false }: In
     );
   }
 
-  console.log({ indexers });
-
   return (
     <div className="w-full overflow-hidden">
       <Table>

@@ -138,9 +138,15 @@ export function DownloadCard({ torrent, inGrid = false }: DownloadCardProps) {
           <div className="space-y-2">
             <div className="flex items-start gap-4">
               <div className="flex flex-col">
-                <Link to="/movies/$id" params={{ id: media.id.toString() }}>
-                  <h3 className="text-lg font-semibold line-clamp-2 flex-1">{media.title}</h3>
-                </Link>
+                {media.type === "tv" ? (
+                  <Link to="/tv/$id" params={{ id: media.id.toString() }}>
+                    <h3 className="text-lg font-semibold line-clamp-2 flex-1">{media.title}</h3>
+                  </Link>
+                ) : (
+                  <Link to="/movies/$id" params={{ id: media.id.toString() }}>
+                    <h3 className="text-lg font-semibold line-clamp-2 flex-1">{media.title}</h3>
+                  </Link>
+                )}
                 <p className="text-sm text-muted-foreground line-clamp-3">{media.overview}</p>
               </div>
 

@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { Link } from "@tanstack/react-router";
 import { ClapperboardIcon, MagnetIcon, Play } from "lucide-react";
-import { AppendToResponse, MovieDetails } from "tmdb-ts";
+import type { AppendToResponse, MovieDetails, TvShowDetails } from "tmdb-ts";
 
 import { Button } from "@/shared/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/shared/ui/dialog";
@@ -11,16 +11,29 @@ import { Dialog, DialogContent, DialogTrigger } from "@/shared/ui/dialog";
 import { useRole } from "@/features/auth/hooks/use-role";
 import { getPosterUrl } from "@/features/media/helpers/media.helper";
 
+type MediaPosterMedia =
+  | AppendToResponse<MovieDetails, "videos"[], "movie">
+  | AppendToResponse<TvShowDetails, "videos"[], "tvShow">;
+
 interface MediaPosterProps {
-  media: AppendToResponse<MovieDetails, "videos"[], "movie">;
+  media: MediaPosterMedia;
   id?: number;
+  type?: "movie" | "tv";
 }
 
-export function MediaPoster({ media, id }: MediaPosterProps) {
+function getDisplayTitle(media: MediaPosterMedia): string {
+  if ("title" in media && media.title) return media.title;
+  if ("name" in media && media.name) return media.name;
+  return "";
+}
+
+export function MediaPoster({ media, id, type = "movie" }: MediaPosterProps) {
   const { role } = useRole();
   const { i18n } = useLingui();
 
   const [imgError, setImgError] = useState(false);
+
+  const displayTitle = getDisplayTitle(media);
 
   const youtubeTrailer = useMemo(() => {
     const videos = media?.videos?.results;
@@ -40,7 +53,7 @@ export function MediaPoster({ media, id }: MediaPosterProps) {
       {!imgError && !!media.poster_path ? (
         <img
           src={getPosterUrl(media.poster_path, "w500")}
-          alt={media.title}
+          alt={displayTitle}
           className="w-[200px] sm:w-full aspect-2/3 rounded-md object-cover border border-secondary shadow-2xl"
           onError={() => setImgError(true)}
         />
@@ -64,7 +77,7 @@ export function MediaPoster({ media, id }: MediaPosterProps) {
           >
             <iframe
               src={`https://www.youtube.com/embed/${youtubeTrailer.key}?autoplay=1`}
-              title={media.title}
+              title={displayTitle}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               className="w-full h-full rounded-lg"
@@ -75,10 +88,17 @@ export function MediaPoster({ media, id }: MediaPosterProps) {
 
       {media && role !== "viewer" && id && (
         <Button className="w-full" asChild>
-          <Link to="/movies/$id/torrents" params={{ id: id.toString() }}>
-            <MagnetIcon className="size-3 mr-2" />
-            <Trans>Torrents</Trans>
-          </Link>
+          {type === "tv" ? (
+            <Link to="/tv/$id/torrents" params={{ id: id.toString() }}>
+              <MagnetIcon className="size-3 mr-2" />
+              <Trans>Torrents</Trans>
+            </Link>
+          ) : (
+            <Link to="/movies/$id/torrents" params={{ id: id.toString() }}>
+              <MagnetIcon className="size-3 mr-2" />
+              <Trans>Torrents</Trans>
+            </Link>
+          )}
         </Button>
       )}
     </div>

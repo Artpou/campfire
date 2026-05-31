@@ -42,6 +42,14 @@ export function MediaCard({
   const [imgError, setImgError] = useState(false);
 
   const year = media.release_date ? new Date(media.release_date).getFullYear() : "";
+  const detailLinkProps =
+    media.type === "tv"
+      ? ({ to: "/tv/$id", params: { id: media.id.toString() } } as const)
+      : ({ to: "/movies/$id", params: { id: media.id.toString() } } as const);
+  const torrentsLinkProps =
+    media.type === "tv"
+      ? ({ to: "/tv/$id/torrents", params: { id: media.id.toString() } } as const)
+      : ({ to: "/movies/$id/torrents", params: { id: media.id.toString() } } as const);
 
   const handleToggleLike = (_e: React.MouseEvent) => {
     toggleLike.mutate(media);
@@ -65,7 +73,7 @@ export function MediaCard({
 
   return (
     <Card className={cn("overflow-hidden aspect-2/3 relative pt-0 pb-0 group", className)}>
-      <Link to="/movies/$id" params={{ id: media.id.toString() }}>
+      <Link {...detailLinkProps}>
         {!imgError && !!media.poster_path ? (
           <img
             src={getPosterUrl(media.poster_path, "w342")}
@@ -83,7 +91,7 @@ export function MediaCard({
       {!hideInfo && (
         <>
           <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-background via-background/95 to-background/60 transition-all duration-200 translate-y-full p-2 group-hover:translate-y-0">
-            <Link to="/movies/$id" params={{ id: media.id.toString() }}>
+            <Link {...detailLinkProps}>
               <p className="text-xs font-bold">{year}</p>
               <h3 className="font-semibold text-base">
                 {media.title?.slice(0, MAX_TITLE_LENGTH)}
@@ -95,7 +103,7 @@ export function MediaCard({
               </p>
             </Link>
             <Button className="w-full mt-1" asChild>
-              <Link to="/movies/$id/torrents" params={{ id: media.id.toString() }}>
+              <Link {...torrentsLinkProps}>
                 <MagnetIcon />
                 <Trans>Torrents</Trans>
               </Link>
