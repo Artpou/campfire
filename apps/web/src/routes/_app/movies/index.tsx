@@ -7,6 +7,8 @@ import { SortOption } from "tmdb-ts";
 import { PlaceholderEmpty } from "@/shared/components/seedarr-placeholder";
 import { Container } from "@/shared/ui/container";
 
+import { ContinueWatchingSection } from "@/features/media/components/continue-watching-section";
+import { HeroCarousel } from "@/features/media/components/hero-carousel";
 import { MediaCategoryCarousel } from "@/features/media/components/media-category-carousel";
 import { MediaGrid } from "@/features/media/components/media-grid";
 import { MediaSelected, MediaSortTabs } from "@/features/media/components/media-sort-tabs";
@@ -134,45 +136,50 @@ function MoviesPage() {
   };
 
   return (
-    <Container>
-      <MediaCategoryCarousel
-        type="movie"
-        onValueChange={(value) => handleSearchChange({ with_genres: value })}
-      />
+    <>
+      <HeroCarousel type="movie" />
+      <Container>
+        <ContinueWatchingSection type="movie" />
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <MediaSortTabs
-            value={search.selected}
-            onChange={(value) => handleSearchChange({ selected: value })}
-            type="movie"
-          />
-          <div className="flex items-center gap-2">
-            {search.selected !== "cinema" && (
-              <MovieProviderTabs
-                className="hidden xl:flex"
-                value={search.with_watch_providers}
-                onValueChange={(value) =>
-                  handleSearchChange({ with_watch_providers: value?.toString() })
-                }
-              />
-            )}
-            <MovieFiltersSheet value={filtersValue} onChange={handleFiltersChange} />
+        <MediaCategoryCarousel
+          type="movie"
+          onValueChange={(value) => handleSearchChange({ with_genres: value })}
+        />
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <MediaSortTabs
+              value={search.selected}
+              onChange={(value) => handleSearchChange({ selected: value })}
+              type="movie"
+            />
+            <div className="flex items-center gap-2">
+              {search.selected !== "cinema" && (
+                <MovieProviderTabs
+                  className="hidden xl:flex"
+                  value={search.with_watch_providers}
+                  onValueChange={(value) =>
+                    handleSearchChange({ with_watch_providers: value?.toString() })
+                  }
+                />
+              )}
+              <MovieFiltersSheet value={filtersValue} onChange={handleFiltersChange} />
+            </div>
           </div>
+          {!isLoading && results.length === 0 ? (
+            <PlaceholderEmpty
+              title={<Trans>No movies found</Trans>}
+              subtitle={<Trans>Try adjusting your filters or search criteria</Trans>}
+            />
+          ) : (
+            <MediaGrid
+              items={results}
+              isLoading={isLoading || isFetchingNextPage}
+              onLoadMore={handleLoadMore}
+            />
+          )}
         </div>
-        {!isLoading && results.length === 0 ? (
-          <PlaceholderEmpty
-            title={<Trans>No movies found</Trans>}
-            subtitle={<Trans>Try adjusting your filters or search criteria</Trans>}
-          />
-        ) : (
-          <MediaGrid
-            items={results}
-            isLoading={isLoading || isFetchingNextPage}
-            onLoadMore={handleLoadMore}
-          />
-        )}
-      </div>
-    </Container>
+      </Container>
+    </>
   );
 }

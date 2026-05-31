@@ -8,6 +8,7 @@ import {
   ClapperboardIcon,
   ClockIcon,
   MagnetIcon,
+  PlayIcon,
 } from "lucide-react";
 import type { TvShowDetails } from "tmdb-ts";
 
@@ -48,17 +49,17 @@ export function TvEpisodesSection({ tv }: TvEpisodesSectionProps) {
 
   const { data: downloads } = useTorrentDownloads();
 
-  const downloadedKeys = useMemo(() => {
-    const set = new Set<string>();
-    if (!downloads) return set;
+  const downloadMap = useMemo(() => {
+    const map = new Map<string, string>();
+    if (!downloads) return map;
     for (const dl of downloads) {
       if (dl.mediaId !== tv.id) continue;
       const matches = parseSeasonEpisode(dl.name);
       for (const m of matches) {
-        set.add(`${m.season}-${m.episode}`);
+        map.set(`${m.season}-${m.episode}`, dl.id);
       }
     }
-    return set;
+    return map;
   }, [downloads, tv.id]);
 
   if (validSeasons.length === 0) return null;
@@ -94,7 +95,8 @@ export function TvEpisodesSection({ tv }: TvEpisodesSectionProps) {
           </Card>
         ) : (
           episodes.map((episode) => {
-            const isDownloaded = downloadedKeys.has(`${seasonNumber}-${episode.episode_number}`);
+            const episodeDownloadId = downloadMap.get(`${seasonNumber}-${episode.episode_number}`);
+            const isDownloaded = !!episodeDownloadId;
             const endsAt =
               episode.runtime && episode.runtime > 0
                 ? new Date(Date.now() + episode.runtime * 60000).toLocaleTimeString([], {
@@ -130,6 +132,15 @@ export function TvEpisodesSection({ tv }: TvEpisodesSectionProps) {
                       <CheckCircle2Icon className="size-3 mr-1" />
                       <Trans>Downloaded</Trans>
                     </Badge>
+                  )}
+
+                  {episodeDownloadId && (
+                    <Button size="sm" variant="secondary" className="w-full" asChild>
+                      <Link to="/downloads/$id/play" params={{ id: episodeDownloadId }}>
+                        <PlayIcon className="size-3 mr-1 fill-current" />
+                        <Trans>Play</Trans>
+                      </Link>
+                    </Button>
                   )}
 
                   {role !== "viewer" && (

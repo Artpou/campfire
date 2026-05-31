@@ -38,18 +38,27 @@ export function MediaGrid({
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-6 gap-4">
-      {items.map((item, index) => (
-        <div
-          key={`${item.type}-${item.id}`}
-          ref={index === items.length - 1 ? lastItemRef : null}
-          className="hover:border-primary/50 border-2 border-transparent rounded-xl"
-        >
-          <MediaCard
-            media={{ ...item, ...statuses?.find((status) => status.id === item.id) }}
-            withType={withType}
-          />
-        </div>
-      ))}
+      {items.map((item, index) => {
+        const status = statuses?.find((s) => s.id === item.id);
+        return (
+          <div
+            key={`${item.type}-${item.id}`}
+            ref={index === items.length - 1 ? lastItemRef : null}
+            className="relative"
+          >
+            <MediaCard
+              media={{
+                ...item,
+                like: status?.like ?? item.like,
+                watchList: status?.watchList ?? item.watchList,
+                download: status?.download ?? item.download,
+                downloadId: status?.downloadId ?? item.downloadId,
+              }}
+              withType={withType}
+            />
+          </div>
+        );
+      })}
       {withLoading &&
         isLoading &&
         Array.from({ length: 20 }, (_, i) => (

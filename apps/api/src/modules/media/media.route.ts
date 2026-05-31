@@ -10,6 +10,7 @@ import {
   mediaInsertSchema,
   mediaSelectSchema,
   mediaUpdateSchema,
+  updateWatchProgressSchema,
 } from "./media.dto";
 import { MediaService } from "./media.service";
 
@@ -20,14 +21,33 @@ export const mediaRoutes = new Hono<{ Variables: HonoVariables }>()
       await MediaService.fromContext(c).list(c.req.valid("query"), paginationParams(c)),
     );
   })
+  .get("/continue-watching", async (c) => {
+    const type = c.req.query("type");
+    return c.json(
+      await MediaService.fromContext(c).listContinueWatching(
+        type === "movie" || type === "tv" ? type : undefined,
+      ),
+    );
+  })
   .delete("/history", async (c) => {
     return c.json(await MediaService.fromContext(c).clearHistory());
+  })
+  .get("/:id/progress", async (c) => {
+    return c.json(await MediaService.fromContext(c).getProgress(Number(c.req.param("id"))));
   })
   .get("/:id", async (c) => {
     return c.json(await MediaService.fromContext(c).get(Number(c.req.param("id"))));
   })
   .post("/", zValidator("json", mediaInsertSchema), async (c) => {
     return c.json(await MediaService.fromContext(c).upsert(c.req.valid("json")));
+  })
+  .patch("/:id/progress", zValidator("json", updateWatchProgressSchema), async (c) => {
+    return c.json(
+      await MediaService.fromContext(c).updateProgress(
+        Number(c.req.param("id")),
+        c.req.valid("json"),
+      ),
+    );
   })
   .patch("/:id", zValidator("json", mediaUpdateSchema), async (c) => {
     return c.json(

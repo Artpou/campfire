@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/shared/ui/dialog";
 
 import { useRole } from "@/features/auth/hooks/use-role";
 import { getPosterUrl } from "@/features/media/helpers/media.helper";
+import { useMedia } from "@/features/media/hooks/use-media";
 
 type MediaPosterMedia =
   | AppendToResponse<MovieDetails, "videos"[], "movie">
@@ -33,6 +34,9 @@ export function MediaPoster({ media, id, type = "movie" }: MediaPosterProps) {
 
   const [imgError, setImgError] = useState(false);
 
+  const { data: localMedia } = useMedia(id ?? 0, { enabled: !!id });
+  const downloadId = localMedia?.downloadId;
+
   const displayTitle = getDisplayTitle(media);
 
   const youtubeTrailer = useMemo(() => {
@@ -50,18 +54,32 @@ export function MediaPoster({ media, id, type = "movie" }: MediaPosterProps) {
 
   return (
     <div className="flex flex-col shrink-0 space-y-2 items-center max-w-[230px]">
-      {!imgError && !!media.poster_path ? (
-        <img
-          src={getPosterUrl(media.poster_path, "w500")}
-          alt={displayTitle}
-          className="w-[200px] sm:w-full aspect-2/3 rounded-md object-cover border border-secondary shadow-2xl"
-          onError={() => setImgError(true)}
-        />
-      ) : (
-        <div className="w-[200px] size-full aspect-2/3 rounded-md flex items-center justify-center border border-border">
-          <ClapperboardIcon className="size-10 text-muted-foreground" />
-        </div>
-      )}
+      <div className="relative">
+        {!imgError && !!media.poster_path ? (
+          <img
+            src={getPosterUrl(media.poster_path, "w500")}
+            alt={displayTitle}
+            className="w-[200px] sm:w-full aspect-2/3 rounded-md object-cover border border-secondary shadow-2xl"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div className="w-[200px] size-full aspect-2/3 rounded-md flex items-center justify-center border border-border">
+            <ClapperboardIcon className="size-10 text-muted-foreground" />
+          </div>
+        )}
+
+        {downloadId && (
+          <Link
+            to="/downloads/$id/play"
+            params={{ id: downloadId }}
+            className="absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity rounded-md"
+          >
+            <div className="size-16 rounded-full bg-primary flex items-center justify-center shadow-lg">
+              <Play className="size-8 fill-current text-primary-foreground ml-1" />
+            </div>
+          </Link>
+        )}
+      </div>
 
       {youtubeTrailer && (
         <Dialog>

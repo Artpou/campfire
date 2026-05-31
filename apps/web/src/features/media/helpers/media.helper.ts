@@ -39,10 +39,15 @@ interface TMDBMedia {
   original_language?: string;
   overview?: string | null;
   poster_path?: string | null;
+  backdrop_path?: string | null;
   vote_average?: number | null;
   release_date?: string | null;
   first_air_date?: string | null;
 }
+
+export type TrendingMedia = Media & {
+  backdrop_path?: string | null;
+};
 
 export function tmdbMovieToMedia(movie: TMDBMedia): Media {
   return {
@@ -62,6 +67,13 @@ export function tmdbMovieToMedia(movie: TMDBMedia): Media {
   };
 }
 
+export function tmdbMovieToTrendingMedia(movie: TMDBMedia): TrendingMedia {
+  return {
+    ...tmdbMovieToMedia(movie),
+    backdrop_path: movie.backdrop_path ?? null,
+  };
+}
+
 export function tmdbTVToMedia(tv: TMDBMedia): Media {
   return {
     id: Number(tv.id),
@@ -77,6 +89,13 @@ export function tmdbTVToMedia(tv: TMDBMedia): Media {
     download: false,
     like: false,
     watchList: false,
+  };
+}
+
+export function tmdbTVToTrendingMedia(tv: TMDBMedia): TrendingMedia {
+  return {
+    ...tmdbTVToMedia(tv),
+    backdrop_path: tv.backdrop_path ?? null,
   };
 }
 

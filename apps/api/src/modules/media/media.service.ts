@@ -1,13 +1,29 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gt, inArray } from "drizzle-orm";
 
 import { AuthenticatedService } from "@/classes/authenticated-service";
 import { db } from "@/db/db";
-import { media, torrentDownload, userLikes, userMedia, userWatchList } from "@/db/schema";
+import {
+  media,
+  torrentDownload,
+  userLikes,
+  userMedia,
+  userWatchList,
+  watchProgress,
+} from "@/db/schema";
 import { BadRequestError, NotFoundError } from "@/errors/error";
 import type { Paginate, PaginationParams } from "@/modules/pagination/pagination.dto";
 import { toPaginate } from "@/modules/pagination/pagination.helper";
 import { Ids } from "@/modules/shared/shared.dto";
-import type { ListMediaParams, Media, MediaInsert, MediaStatus, MediaUpdate } from "./media.dto";
+import type {
+  ContinueWatchingItem,
+  ListMediaParams,
+  Media,
+  MediaInsert,
+  MediaStatus,
+  MediaUpdate,
+  UpdateWatchProgressInput,
+  WatchProgress,
+} from "./media.dto";
 
 export class MediaService extends AuthenticatedService {
   select = db.select().from(media);
@@ -87,6 +103,86 @@ export class MediaService extends AuthenticatedService {
     return this.get(id);
   }
 
+  async updateProgress(mediaId: number, data: UpdateWatchProgressInput): Promise<WatchProgress> {
+    const completed = data.duration > 0 && data.position / data.duration >= 0.9;
+
+    await db
+      .insert(watchProgress)
+      .values({
+        userId: this.user.id,
+        mediaId,
+        downloadId: data.downloadId ?? null,
+        position: data.position,
+        duration: data.duration,
+        completed,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [watchProgress.userId, watchProgress.mediaId],
+        set: {
+          downloadId: data.downloadId ?? null,
+          position: data.position,
+          duration: data.duration,
+          completed,
+          updatedAt: new Date(),
+        },
+      });
+
+    const [result] = await db
+      .select()
+      .from(watchProgress)
+      .where(and(eq(watchProgress.userId, this.user.id), eq(watchProgress.mediaId, mediaId)))
+      .limit(1);
+
+    if (!result) throw new NotFoundError("Watch progress");
+    return result;
+  }
+
+  async getProgress(mediaId: number): Promise<WatchProgress | null> {
+    const [result] = await db
+      .select()
+      .from(watchProgress)
+      .where(and(eq(watchProgress.userId, this.user.id), eq(watchProgress.mediaId, mediaId)))
+      .limit(1);
+
+    return result ?? null;
+  }
+
+  async listContinueWatching(type?: Media["type"]): Promise<ContinueWatchingItem[]> {
+    const rows = await db
+      .select({ media, progress: watchProgress })
+      .from(watchProgress)
+      .innerJoin(media, eq(watchProgress.mediaId, media.id))
+      .where(
+        and(
+          eq(watchProgress.userId, this.user.id),
+          eq(watchProgress.completed, false),
+          gt(watchProgress.position, 0),
+          type ? eq(media.type, type) : undefined,
+        ),
+      )
+      .orderBy(desc(watchProgress.updatedAt))
+      .limit(20);
+
+    const withStatus = await this.addStatus(rows.map((row) => row.media));
+
+    return rows.map((row) => {
+      const mediaWithStatus = withStatus.find((item) => item.id === row.media.id) ?? row.media;
+      const progressPercent =
+        row.progress.duration > 0
+          ? Math.min(100, (row.progress.position / row.progress.duration) * 100)
+          : 0;
+
+      return {
+        ...mediaWithStatus,
+        position: row.progress.position,
+        duration: row.progress.duration,
+        downloadId: row.progress.downloadId,
+        progressPercent,
+      };
+    });
+  }
+
   async toggleLike(data: Media): Promise<Media> {
     let media = await this.get(data.id);
     if (!media) media = await this.upsert(data);
@@ -152,6 +248,7 @@ export class MediaService extends AuthenticatedService {
         like: status?.like,
         watchList: status?.watchList,
         download: status?.download,
+        downloadId: status?.downloadId,
       };
     });
   }
@@ -173,22 +270,33 @@ export class MediaService extends AuthenticatedService {
           and(eq(userWatchList.userId, this.user.id), inArray(userWatchList.mediaId, mediaIds)),
         ),
       db
-        .select({ mediaId: torrentDownload.mediaId })
+        .select({ mediaId: torrentDownload.mediaId, id: torrentDownload.id })
         .from(torrentDownload)
         .where(
-          and(eq(torrentDownload.userId, this.user.id), inArray(torrentDownload.mediaId, mediaIds)),
-        ),
+          and(
+            eq(torrentDownload.userId, this.user.id),
+            inArray(torrentDownload.mediaId, mediaIds),
+            eq(torrentDownload.status, "completed"),
+          ),
+        )
+        .orderBy(desc(torrentDownload.completedAt)),
     ]);
 
     const likedSet = new Set(likedRows.map((r) => r.mediaId));
     const watchListSet = new Set(watchListRows.map((r) => r.mediaId));
-    const downloadSet = new Set(downloadRows.map((r) => r.mediaId));
+    const downloadMap = new Map<number, string>();
+    for (const row of downloadRows) {
+      if (row.mediaId && !downloadMap.has(row.mediaId)) {
+        downloadMap.set(row.mediaId, row.id);
+      }
+    }
 
     return items.map((item) => ({
       ...item,
       like: likedSet.has(item.id),
       watchList: watchListSet.has(item.id),
-      download: downloadSet.has(item.id),
+      download: downloadMap.has(item.id),
+      downloadId: downloadMap.get(item.id),
     }));
   }
 }

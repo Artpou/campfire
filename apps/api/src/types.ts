@@ -23,10 +23,13 @@ export type {
 } from "./modules/indexer-manager/indexer-manager.dto";
 export type { IndexerManagerRoutesType } from "./modules/indexer-manager/indexer-manager.route";
 export type {
+  ContinueWatchingItem,
   ListMediaParams,
   Media,
   MediaFilter,
   MediaStatus,
+  UpdateWatchProgressInput,
+  WatchProgress,
 } from "./modules/media/media.dto";
 export type { MediaRoutesType } from "./modules/media/media.route";
 // Pagination types

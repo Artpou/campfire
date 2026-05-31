@@ -1,7 +1,7 @@
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
 import z from "zod";
 
-import { media, mediaTypeEnum } from "@/db/schema";
+import { media, mediaTypeEnum, watchProgress } from "@/db/schema";
 import { paginationSchema } from "@/modules/pagination/pagination.dto";
 
 // Database schemas
@@ -13,12 +13,31 @@ export const mediaStatusSchema = z.object({
   like: z.boolean().optional(),
   watchList: z.boolean().optional(),
   download: z.boolean().optional(),
+  downloadId: z.string().optional(),
 });
 export type MediaStatus = typeof mediaStatusSchema._input;
 
 export type Media = typeof mediaSelectSchema._output & MediaStatus;
 export type MediaInsert = typeof mediaInsertSchema._input;
 export type MediaUpdate = typeof mediaUpdateSchema._input;
+
+export const watchProgressSelectSchema = createSelectSchema(watchProgress);
+export type WatchProgress = typeof watchProgressSelectSchema._output;
+
+export const updateWatchProgressSchema = z.object({
+  position: z.number().int().min(0),
+  duration: z.number().int().min(0),
+  downloadId: z.string().optional(),
+});
+export type UpdateWatchProgressInput = z.infer<typeof updateWatchProgressSchema>;
+
+export const continueWatchingItemSchema = mediaSelectSchema.extend({
+  position: z.number(),
+  duration: z.number(),
+  downloadId: z.string().nullable(),
+  progressPercent: z.number(),
+});
+export type ContinueWatchingItem = z.infer<typeof continueWatchingItemSchema>;
 
 export const mediaFilterEnum = ["like", "watch-list", "recently-viewed"] as const;
 export type MediaFilter = (typeof mediaFilterEnum)[number];

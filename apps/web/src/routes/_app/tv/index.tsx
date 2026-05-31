@@ -7,6 +7,8 @@ import { SortOption } from "tmdb-ts";
 import { PlaceholderEmpty } from "@/shared/components/seedarr-placeholder";
 import { Container } from "@/shared/ui/container";
 
+import { ContinueWatchingSection } from "@/features/media/components/continue-watching-section";
+import { HeroCarousel } from "@/features/media/components/hero-carousel";
 import { MediaCategoryCarousel } from "@/features/media/components/media-category-carousel";
 import { MediaGrid } from "@/features/media/components/media-grid";
 import { MediaSelected, MediaSortTabs } from "@/features/media/components/media-sort-tabs";
@@ -137,41 +139,45 @@ function TVPage() {
   };
 
   return (
-    <Container>
-      <MediaCategoryCarousel
-        type="tv"
-        onValueChange={(value) => handleSearchChange({ with_genres: value })}
-      />
-      <div className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <MediaSortTabs
-            value={search.selected}
-            onChange={(value) => handleSearchChange({ selected: value })}
-            type="tv"
-          />
-          <div className="flex items-center gap-2">
-            {search.selected !== "cinema" && (
-              <TVProviderTabs
-                value={search.with_watch_providers}
-                onValueChange={(value) => handleSearchChange(value)}
-              />
-            )}
-            <TvFiltersSheet value={filtersValue} onChange={handleFiltersChange} />
+    <>
+      <HeroCarousel type="tv" />
+      <ContinueWatchingSection type="tv" />
+      <Container>
+        <MediaCategoryCarousel
+          type="tv"
+          onValueChange={(value) => handleSearchChange({ with_genres: value })}
+        />
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <MediaSortTabs
+              value={search.selected}
+              onChange={(value) => handleSearchChange({ selected: value })}
+              type="tv"
+            />
+            <div className="flex items-center gap-2">
+              {search.selected !== "cinema" && (
+                <TVProviderTabs
+                  value={search.with_watch_providers}
+                  onValueChange={(value) => handleSearchChange(value)}
+                />
+              )}
+              <TvFiltersSheet value={filtersValue} onChange={handleFiltersChange} />
+            </div>
           </div>
+          {!isLoading && tvShows.length === 0 ? (
+            <PlaceholderEmpty
+              title={<Trans>No TV shows found</Trans>}
+              subtitle={<Trans>Try adjusting your filters or search criteria</Trans>}
+            />
+          ) : (
+            <MediaGrid
+              items={tvShows}
+              isLoading={isLoading || isFetchingNextPage}
+              onLoadMore={handleLoadMore}
+            />
+          )}
         </div>
-        {!isLoading && tvShows.length === 0 ? (
-          <PlaceholderEmpty
-            title={<Trans>No TV shows found</Trans>}
-            subtitle={<Trans>Try adjusting your filters or search criteria</Trans>}
-          />
-        ) : (
-          <MediaGrid
-            items={tvShows}
-            isLoading={isLoading || isFetchingNextPage}
-            onLoadMore={handleLoadMore}
-          />
-        )}
-      </div>
-    </Container>
+      </Container>
+    </>
   );
 }

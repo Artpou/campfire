@@ -4,6 +4,7 @@ import { Plyr } from "plyr-react";
 import "plyr-react/plyr.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { SubtitlesIcon } from "lucide-react";
 
 import { getBaseUrl } from "@/lib/api";
@@ -14,10 +15,27 @@ import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
 
 import { useAuth } from "@/features/auth/auth-store";
+import { useWatchProgress } from "@/features/media/hooks/use-media";
 import { SubtitleSearchDialog } from "@/features/subtitles/components/subtitle-search-dialog";
 import { useExternalSubtitles } from "@/features/subtitles/hooks/use-subtitles";
 import { useTorrentDownload } from "@/features/torrent/hooks/use-torrent-download";
 import { useTorrentLink } from "@/features/torrent/hooks/use-torrent-link";
+
+const PROGRESS_SAVE_INTERVAL_MS = 10_000;
+
+function saveProgressToServer(
+  mediaId: number,
+  position: number,
+  duration: number,
+  downloadId?: string,
+) {
+  return fetch(`${getBaseUrl()}/media/${mediaId}/progress`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ position, duration, downloadId }),
+  }).catch(() => {});
+}
 
 export const Route = createFileRoute("/_app/downloads/$id/play")({
   component: VideoPlayerPage,
@@ -30,8 +48,20 @@ function VideoPlayerPage() {
   const { user } = useAuth();
   const { data: externalSubtitles } = useExternalSubtitles(id);
   const [subtitleDialogOpen, setSubtitleDialogOpen] = useState(false);
+  const mediaId = torrent?.mediaId ?? 0;
+  const { data: savedProgress } = useWatchProgress(mediaId, { enabled: mediaId > 0 });
 
-  const playerRef = useRef(null);
+  const queryClient = useQueryClient();
+  const playerContainerRef = useRef<HTMLDivElement | null>(null);
+  const hasSeekedRef = useRef(false);
+  const lastSavedAtRef = useRef(0);
+  const savedPositionRef = useRef(0);
+
+  useEffect(() => {
+    if (savedProgress?.position && !hasSeekedRef.current) {
+      savedPositionRef.current = savedProgress.position;
+    }
+  }, [savedProgress?.position]);
 
   useEffect(() => {
     const progress = torrent?.live?.progress;
@@ -42,7 +72,57 @@ function VideoPlayerPage() {
     }
   }, [torrent?.live?.progress]);
 
-  // Build subtitle tracks from torrent files + external (SUBDL) subtitles
+  useEffect(() => {
+    if (!mediaId) return;
+
+    let video: HTMLVideoElement | null = null;
+    let cleanup: (() => void) | undefined;
+
+    const attachListeners = () => {
+      video = playerContainerRef.current?.querySelector("video") ?? null;
+      if (!video) return;
+
+      const onLoadedMetadata = () => {
+        if (!video || hasSeekedRef.current) return;
+        const pos = savedPositionRef.current;
+        if (pos > 0 && pos < (video.duration || Number.POSITIVE_INFINITY)) {
+          video.currentTime = pos;
+        }
+        hasSeekedRef.current = true;
+      };
+
+      const onTimeUpdate = () => {
+        if (!video) return;
+        const now = Date.now();
+        if (now - lastSavedAtRef.current < PROGRESS_SAVE_INTERVAL_MS) return;
+        const dur = video.duration;
+        const pos = video.currentTime;
+        if (!dur || dur <= 0 || !pos || pos <= 0) return;
+        lastSavedAtRef.current = now;
+        saveProgressToServer(mediaId, Math.floor(pos), Math.floor(dur), id).then(() => {
+          queryClient.invalidateQueries({ queryKey: ["continue-watching"] });
+        });
+      };
+
+      video.addEventListener("loadedmetadata", onLoadedMetadata);
+      video.addEventListener("timeupdate", onTimeUpdate);
+
+      if (video.readyState >= 1) onLoadedMetadata();
+
+      cleanup = () => {
+        video?.removeEventListener("loadedmetadata", onLoadedMetadata);
+        video?.removeEventListener("timeupdate", onTimeUpdate);
+      };
+    };
+
+    const timeoutId = window.setTimeout(attachListeners, 200);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      cleanup?.();
+    };
+  }, [mediaId, id, queryClient]);
+
   const subtitleTracks = useMemo(() => {
     const tracks: {
       kind: "captions";
@@ -173,8 +253,8 @@ function VideoPlayerPage() {
           />
         )}
 
-        {/* Video Player */}
         <div
+          ref={playerContainerRef}
           className="w-full bg-black rounded-lg overflow-hidden"
           style={
             {
@@ -184,7 +264,6 @@ function VideoPlayerPage() {
           }
         >
           <Plyr
-            ref={playerRef}
             crossOrigin="anonymous"
             source={{
               type: "video",
@@ -219,7 +298,6 @@ function VideoPlayerPage() {
           />
         </div>
 
-        {/* Custom CSS to make Plyr subtitle menu scrollable */}
         <style>{`
           .plyr__menu__container {
             max-height: 300px;

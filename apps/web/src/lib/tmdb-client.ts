@@ -56,6 +56,10 @@ export interface TMDBClientType {
   genres: Pick<TMDB["genres"], "movies" | "tvShows">;
   collections: Pick<TMDB["collections"], "details">;
   watchProviders: Pick<TMDB["watchProviders"], "getMovieProviders" | "getTvProviders">;
+  trending: {
+    movies: () => Promise<{ results: Record<string, unknown>[] }>;
+    tv: () => Promise<{ results: Record<string, unknown>[] }>;
+  };
 }
 
 export const tmdbClient = ({
@@ -116,6 +120,10 @@ export const tmdbClient = ({
         request("/watch/providers/movie", toGenericOptions(options)),
       getTvProviders: async (options = {}) =>
         request("/watch/providers/tv", toGenericOptions(options)),
+    },
+    trending: {
+      movies: async () => request("/trending/movie/week"),
+      tv: async () => request("/trending/tv/week"),
     },
   };
 };

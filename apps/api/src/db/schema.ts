@@ -159,6 +159,29 @@ export const torrentDownload = sqliteTable("torrentDownload", {
   error: text("error"),
 });
 
+// WatchProgress table - Track playback position for continue watching
+export const watchProgress = sqliteTable(
+  "watchProgress",
+  {
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    mediaId: integer("mediaId")
+      .notNull()
+      .references(() => media.id, { onDelete: "cascade" }),
+    downloadId: text("downloadId").references(() => torrentDownload.id, {
+      onDelete: "set null",
+    }),
+    position: integer("position").notNull().default(0),
+    duration: integer("duration").notNull().default(0),
+    completed: integer("completed", { mode: "boolean" }).notNull().default(false),
+    updatedAt: integer("updatedAt", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.mediaId] })],
+);
+
 // PlexConfig table - Store Plex server configuration
 export const plexConfig = sqliteTable("plexConfig", {
   id: text("id").primaryKey(), // Usually "singleton"

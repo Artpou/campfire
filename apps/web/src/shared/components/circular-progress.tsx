@@ -48,7 +48,10 @@ const CircularProgress = React.forwardRef<HTMLDivElement, CircularProgressProps>
     return (
       <div
         ref={ref}
-        className={cn("dark relative flex items-center justify-center", className)}
+        className={cn(
+          "transition-all duration-200 dark relative flex items-center justify-center",
+          className,
+        )}
         style={{ width: size, height: size }}
         {...props}
       >

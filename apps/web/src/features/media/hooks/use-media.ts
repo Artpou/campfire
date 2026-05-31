@@ -10,8 +10,11 @@ import { useTMDB } from "@/shared/hooks/use-tmdb";
 import {
   FMDBResult,
   fmdbResultToMedia,
+  type TrendingMedia,
   tmdbMovieToMedia,
+  tmdbMovieToTrendingMedia,
   tmdbTVToMedia,
+  tmdbTVToTrendingMedia,
 } from "@/features/media/helpers/media.helper";
 
 export function useMedia(id: number, { enabled = true }: { enabled?: boolean } = {}) {
@@ -136,8 +139,139 @@ export function useMediaSearch(query: string) {
         );
       }
 
+      const ids = mediaResults.map((m) => m.id.toString());
+      if (ids.length > 0) {
+        try {
+          const statuses = await unwrap(api.media.status.$post({ json: ids }));
+          for (const media of mediaResults) {
+            const status = statuses.find((s) => s.id === media.id);
+            if (status) {
+              media.download = status.download ?? false;
+              media.downloadId = status.downloadId;
+            }
+          }
+          mediaResults.sort((a, b) => {
+            if (a.download && !b.download) return -1;
+            if (!a.download && b.download) return 1;
+            return 0;
+          });
+        } catch {}
+      }
+
       return mediaResults;
     },
     enabled: query.length > 0,
+  });
+}
+
+const TRENDING_LIMIT = 10;
+
+export function useTrendingMovies() {
+  const { tmdb, tmdbLocale } = useTMDB();
+  const queryClient = useQueryClient();
+
+  return useQuery({
+    queryKey: ["trending-movies", tmdbLocale],
+    queryFn: async (): Promise<TrendingMedia[]> => {
+      const data = await tmdb.discover.movie({
+        sort_by: "popularity.desc",
+        with_release_type: "4|5",
+      } as Record<string, unknown> as Parameters<typeof tmdb.discover.movie>[0]);
+      const results = (data.results as unknown as Record<string, unknown>[])
+        .slice(0, TRENDING_LIMIT)
+        .map((item) =>
+          tmdbMovieToTrendingMedia(
+            item as unknown as Parameters<typeof tmdbMovieToTrendingMedia>[0],
+          ),
+        );
+
+      const ids = results.map((item) => item.id.toString());
+      const localMedias =
+        ids.length > 0
+          ? (await unwrap(api.media.$get({ query: { type: "movie", ids: ids.join(",") } }))).results
+          : [];
+
+      return results.map((item) => {
+        const local = localMedias.find((media) => media.id === item.id);
+        const merged = { ...item, ...local };
+        queryClient.setQueryData(["media", merged.id], merged);
+        return merged;
+      });
+    },
+  });
+}
+
+export function useTrendingTV() {
+  const { tmdb, tmdbLocale } = useTMDB();
+  const queryClient = useQueryClient();
+
+  return useQuery({
+    queryKey: ["trending-tv", tmdbLocale],
+    queryFn: async (): Promise<TrendingMedia[]> => {
+      const data = await tmdb.trending.tv();
+      const results = data.results
+        .slice(0, TRENDING_LIMIT)
+        .map((item) =>
+          tmdbTVToTrendingMedia(item as unknown as Parameters<typeof tmdbTVToTrendingMedia>[0]),
+        );
+
+      const ids = results.map((item) => item.id.toString());
+      const localMedias =
+        ids.length > 0
+          ? (await unwrap(api.media.$get({ query: { type: "tv", ids: ids.join(",") } }))).results
+          : [];
+
+      return results.map((item) => {
+        const local = localMedias.find((media) => media.id === item.id);
+        const merged = { ...item, ...local };
+        queryClient.setQueryData(["media", merged.id], merged);
+        return merged;
+      });
+    },
+  });
+}
+
+export function useContinueWatching(type?: Media["type"]) {
+  return useQuery({
+    queryKey: ["continue-watching", type],
+    queryFn: () =>
+      unwrap(
+        api.media["continue-watching"].$get({
+          query: type ? { type } : {},
+        }),
+      ),
+  });
+}
+
+export function useWatchProgress(mediaId: number, { enabled = true }: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: ["watch-progress", mediaId],
+    queryFn: () => unwrap(api.media[":id"].progress.$get({ param: { id: mediaId.toString() } })),
+    enabled: enabled && mediaId > 0,
+  });
+}
+
+export function useUpdateWatchProgress() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      mediaId,
+      ...data
+    }: {
+      mediaId: number;
+      position: number;
+      duration: number;
+      downloadId?: string;
+    }) =>
+      unwrap(
+        api.media[":id"].progress.$patch({
+          param: { id: mediaId.toString() },
+          json: data,
+        }),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["continue-watching"] });
+    },
   });
 }
