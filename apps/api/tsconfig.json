@@ -23,5 +23,6 @@
     "emitDeclarationOnly": true,
     "outDir": "./dist"
   },
-  "include": ["**/*.ts"]
+  "include": ["**/*.ts"],
+  "exclude": ["dist"]
 }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
-import { ChevronDown, ChevronUp, File, Video } from "lucide-react";
+import { ChevronDownIcon, ChevronUpIcon, FileIcon, VideoIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Flag } from "@/shared/components/flag";
@@ -56,12 +56,7 @@ function sortFiles(files: FileItem[]): FileItem[] {
   });
 }
 
-export function DownloadFilesList({
-  className,
-  files,
-  title,
-  defaultExpanded = true,
-}: DownloadFilesListProps) {
+export function DownloadFilesList({ className, files, title, defaultExpanded = true }: DownloadFilesListProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   if (!files || files.length === 0) return null;
@@ -74,11 +69,11 @@ export function DownloadFilesList({
   function getFileIcon(type: FileType, fileName: string) {
     switch (type) {
       case "video":
-        return <Video className="size-4" />;
+        return <VideoIcon className="size-4" />;
       case "subtitle":
         return <Flag lang={fileName.split(".")?.[0]?.toLowerCase()} />;
       default:
-        return <File className="size-4" />;
+        return <FileIcon className="size-4" />;
     }
   }
 
@@ -105,7 +100,7 @@ export function DownloadFilesList({
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">{formatBytes(totalSize)}</span>
           <Button variant="ghost" size="icon-sm" onClick={() => setExpanded(!expanded)}>
-            {expanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+            {expanded ? <ChevronUpIcon className="size-4" /> : <ChevronDownIcon className="size-4" />}
           </Button>
         </div>
       </div>
@@ -119,9 +114,7 @@ export function DownloadFilesList({
             >
               {getFileIcon(fileType, file.name)}
               <span className="truncate flex-1 text-sm">{file.name}</span>
-              <span className="text-muted-foreground text-xs ml-4 shrink-0">
-                {formatBytes(file.length)}
-              </span>
+              <span className="text-muted-foreground text-xs ml-4 shrink-0">{formatBytes(file.length)}</span>
             </div>
           );
         })}

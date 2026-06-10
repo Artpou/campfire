@@ -1,9 +1,5 @@
-import { eq } from "drizzle-orm";
-
-import { db } from "@/db/db";
-import { torrentDownload } from "@/db/schema";
 import * as path from "node:path";
-import type { TorrentDownload } from "./download.dto";
+import type { Download } from "./download.dto";
 import { WebTorrentClient } from "./webtorrent.client";
 import { findLargestVideoFile } from "./webtorrent.helper";
 
@@ -14,19 +10,14 @@ export interface StreamResult {
   filePath?: string;
 }
 
-/**
- * Service for streaming video files from downloads
- * Handles both active torrents and completed files on disk
- */
 export class DownloadStreamService {
   constructor(private downloadPath: string) {}
 
-  async getStreamForDownload(id: string): Promise<StreamResult | null> {
-    // Check active torrents first (downloading/seeding)
-    const activeTorrent = WebTorrentClient.getActiveTorrent(id);
+  async getStreamForDownload(download: Download): Promise<StreamResult | undefined> {
+    const activeTorrent = WebTorrentClient.getActiveTorrent(download.id);
     if (activeTorrent) {
       const videoFile = findLargestVideoFile(activeTorrent);
-      if (!videoFile) return null;
+      if (!videoFile) return undefined;
 
       return {
         stream: videoFile.createReadStream(),
@@ -36,19 +27,11 @@ export class DownloadStreamService {
       };
     }
 
-    // Check downloads on disk
-    return this.getStreamFromDisk(id);
+    return this.getStreamFromDisk(download);
   }
 
-  private async getStreamFromDisk(id: string): Promise<StreamResult | null> {
-    const [download] = await db
-      .select()
-      .from(torrentDownload)
-      .where(eq(torrentDownload.id, id))
-      .limit(1);
-
-    if (!download) return null;
-    if (download.status === "failed") return null;
+  private async getStreamFromDisk(download: Download): Promise<StreamResult | undefined> {
+    if (download.status === "failed") return undefined;
 
     const fullPath = this.getFullPath(download);
     const fs = await import("node:fs/promises");
@@ -58,10 +41,9 @@ export class DownloadStreamService {
     try {
       const stats = await fs.stat(fullPath);
 
-      // Single file
       if (stats.isFile()) {
         const fileName = path.basename(fullPath);
-        if (!videoExtensions.test(fileName)) return null;
+        if (!videoExtensions.test(fileName)) return undefined;
         return {
           stream: fsSync.createReadStream(fullPath),
           size: stats.size,
@@ -70,7 +52,6 @@ export class DownloadStreamService {
         };
       }
 
-      // Directory - find largest video
       const files = await fs.readdir(fullPath, { recursive: true, withFileTypes: true });
       const videoFiles = await Promise.all(
         files
@@ -82,7 +63,7 @@ export class DownloadStreamService {
           }),
       );
 
-      if (videoFiles.length === 0) return null;
+      if (videoFiles.length === 0) return undefined;
       const largestVideo = videoFiles.sort((a, b) => b.size - a.size)[0];
       return {
         stream: fsSync.createReadStream(largestVideo.path),
@@ -91,11 +72,11 @@ export class DownloadStreamService {
         filePath: largestVideo.path,
       };
     } catch {
-      return null;
+      return undefined;
     }
   }
 
-  private getFullPath(download: TorrentDownload, relativePath?: string): string {
+  private getFullPath(download: Download, relativePath?: string): string {
     const basePath = path.join(this.downloadPath, download.savePath || download.name);
     return relativePath ? path.join(basePath, relativePath) : basePath;
   }

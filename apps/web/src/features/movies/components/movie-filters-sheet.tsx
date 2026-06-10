@@ -2,10 +2,8 @@ import { useEffect, useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import { useQuery } from "@tanstack/react-query";
 import { FilterIcon, RotateCcwIcon } from "lucide-react";
 
-import { useTMDB } from "@/shared/hooks/use-tmdb";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
@@ -21,6 +19,8 @@ import {
   SheetTrigger,
 } from "@/shared/ui/sheet";
 import { Slider } from "@/shared/ui/slider";
+
+import { useMediaKeywords } from "@/features/media/hooks/use-media";
 
 export interface MovieFiltersValue {
   release_date_gte?: string;
@@ -75,7 +75,6 @@ function countActive(value: MovieFiltersValue): number {
 
 export function MovieFiltersSheet({ value, onChange }: MovieFiltersSheetProps) {
   const { t } = useLingui();
-  const { tmdb } = useTMDB();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<MovieFiltersValue>(value);
   const [keywordQuery, setKeywordQuery] = useState(value.with_keywords_label ?? "");
@@ -87,14 +86,8 @@ export function MovieFiltersSheet({ value, onChange }: MovieFiltersSheetProps) {
     }
   }, [open, value]);
 
-  const { data: keywordResults = [], isFetching: isSearchingKeywords } = useQuery({
-    queryKey: ["tmdb-keywords-search", keywordQuery],
-    queryFn: async () => {
-      const res = await tmdb.search.keywords({ query: keywordQuery });
-      return res.results.slice(0, 8);
-    },
+  const { data: keywordResults = [], isFetching: isSearchingKeywords } = useMediaKeywords(keywordQuery, {
     enabled: open && keywordQuery.trim().length >= 2,
-    staleTime: 60_000,
   });
 
   const activeCount = countActive(value);
@@ -132,9 +125,7 @@ export function MovieFiltersSheet({ value, onChange }: MovieFiltersSheetProps) {
         <Button variant="secondary" size="icon-lg" className="relative">
           <FilterIcon />
           {activeCount > 0 && (
-            <Badge className="absolute -top-1 -right-1 size-5 rounded-full p-0 text-[10px]">
-              {activeCount}
-            </Badge>
+            <Badge className="absolute -top-1 -right-1 size-5 rounded-full p-0 text-[10px]">{activeCount}</Badge>
           )}
         </Button>
       </SheetTrigger>

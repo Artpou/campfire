@@ -1,13 +1,20 @@
-import type { Context, Next } from "hono";
+import { eq } from "drizzle-orm";
+import { type Context, type Next } from "hono";
 import { getCookie } from "hono/cookie";
 
 import { validateSession } from "@/auth/session.util";
+import { db } from "@/db/db";
 import { UnauthorizedError } from "../../errors/error";
-import { UserService } from "../user/user.service";
+import type { User } from "../user/user.dto";
+import { user } from "../user/user.schema";
 
 const SESSION_COOKIE_NAME = "session";
 
-export const authGuard = async (c: Context, next: Next) => {
+export type HonoAuthenticatedVariables = {
+  user: User;
+};
+
+export const authGuard = async (c: Context<{ Variables: HonoAuthenticatedVariables }>, next: Next) => {
   const sessionToken = getCookie(c, SESSION_COOKIE_NAME) || c.req.query("session");
 
   if (typeof sessionToken !== "string") {
@@ -17,7 +24,10 @@ export const authGuard = async (c: Context, next: Next) => {
   const userId = await validateSession(sessionToken);
   if (!userId) throw new UnauthorizedError();
 
-  const currentUser = await new UserService().getById(userId);
+  const currentUser = await db.query.user.findFirst({
+    where: eq(user.id, userId),
+    columns: { id: true, username: true, role: true, createdAt: true },
+  });
   if (!currentUser) throw new UnauthorizedError();
 
   c.set("user", currentUser);

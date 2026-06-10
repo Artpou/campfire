@@ -1,7 +1,8 @@
 import { ServiceUnavailableError } from "@/errors/error";
+import { logger } from "@/helpers/logger.helper";
 import { getLanguageFromTitle, getTorrentQuality } from "@/helpers/video.helper";
-import { IndexerType } from "../../../db/schema";
-import type { Torrent, TorrentIndexer } from "../torrent.dto";
+import type { IndexerType } from "@/modules/indexer-manager/indexer-manager.schema";
+import type { Torrent, TorrentIndexerQuery } from "../torrent.dto";
 import type { IndexerAdapter, IndexerConfig } from "./base.adapter";
 
 interface JackettSearchItem {
@@ -27,13 +28,13 @@ export class JackettAdapter implements IndexerAdapter {
     return cleanBase.includes("/api/v2.0") ? cleanBase : `${cleanBase}/api/v2.0`;
   }
 
-  async getIndexers(config: IndexerConfig): Promise<TorrentIndexer[]> {
+  async getIndexers(config: IndexerConfig): Promise<TorrentIndexerQuery[]> {
     const apiUrl = this.getApiUrl(config.baseUrl);
     const url = new URL(`${apiUrl}/indexers`);
     url.searchParams.set("apikey", config.apiKey);
     url.searchParams.set("configured", "true");
 
-    console.log(`[Jackett] GET ${url.toString()}`);
+    logger.debug("JACKETT", `GET ${url.toString()}`);
     const response = await fetch(url.toString());
     if (!response.ok) {
       throw new ServiceUnavailableError(`Jackett (${response.status} ${response.statusText})`);
@@ -69,7 +70,7 @@ export class JackettAdapter implements IndexerAdapter {
       url.searchParams.append("Tracker[]", query.indexerId);
     }
 
-    console.log(`[Jackett] GET ${url.toString()}`);
+    logger.debug("JACKETT", `GET ${url.toString()}`);
     const response = await fetch(url.toString());
     if (!response.ok) {
       throw new ServiceUnavailableError(

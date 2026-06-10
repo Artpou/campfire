@@ -3,8 +3,7 @@ import { useState } from "react";
 import { Trans } from "@lingui/react/macro";
 import { UserIcon } from "lucide-react";
 
-import { Badge } from "@/shared/ui/badge";
-import { Card, CardContent } from "@/shared/ui/card";
+import { cn } from "@/lib/utils";
 
 import { getPosterUrl } from "@/features/media/helpers/media.helper";
 
@@ -20,32 +19,39 @@ export function PersonCard({ name, profile_path, role, type }: PersonCardProps) 
   const [imgError, setImgError] = useState(false);
 
   return (
-    <Card className="group overflow-hidden border-0 py-0 pb-4 gap-4 flex-1">
-      {!imgError && !!profile_path ? (
-        <img
-          src={getPosterUrl(profile_path, "w185")}
-          alt={name}
-          className="aspect-square object-cover"
-          onError={() => setImgError(true)}
-        />
-      ) : (
-        <div className="size-full aspect-square flex items-center justify-center">
-          <UserIcon className="size-10 text-muted-foreground" />
+    <div className="group flex flex-col overflow-hidden rounded-lg bg-card">
+      <div className="relative aspect-3/4 overflow-hidden bg-muted">
+        {!imgError && !!profile_path ? (
+          <img
+            src={getPosterUrl(profile_path, "w185")}
+            alt={name}
+            className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <div className="flex size-full items-center justify-center">
+            <UserIcon className="size-10 text-muted-foreground" />
+          </div>
+        )}
+        <div
+          className={cn(
+            "absolute top-1.5 left-1.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold leading-tight",
+            type === "Director"
+              ? "bg-primary text-primary-foreground"
+              : "bg-background/80 text-foreground backdrop-blur-sm",
+          )}
+        >
+          <Trans>{type}</Trans>
         </div>
-      )}
-      <CardContent className="px-2 pb-2 space-y-1">
-        <p className="text-xs font-bold line-clamp-2" title={name}>
-          {name}
-        </p>
+      </div>
+      <div className="space-y-0.5 p-2">
+        <p className="text-xs font-semibold leading-tight line-clamp-2">{name}</p>
         {role && (
-          <p className="text-xs text-muted-foreground truncate" title={role}>
+          <p className="text-[11px] leading-tight text-muted-foreground truncate" title={role}>
             {role}
           </p>
         )}
-        <Badge variant={type === "Director" ? "default" : "secondary"} className="text-[10px]">
-          <Trans>{type}</Trans>
-        </Badge>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

@@ -2,11 +2,11 @@ import { useRef, useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
+import { api, unwrap } from "@seedarr/sdk";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { ArrowLeftIcon, ExternalLinkIcon } from "lucide-react";
 
-import { api, unwrap } from "@/lib/api";
 import { Button } from "@/shared/ui/button";
 
 import { useAuth } from "@/features/auth/auth-store";
@@ -28,14 +28,7 @@ function IndexerDashboardPage() {
 
   const { data: indexer, isLoading } = useQuery({
     queryKey: ["indexer-manager"],
-    queryFn: () => {
-      try {
-        return unwrap(api["indexer-manager"].$get());
-      } catch (error) {
-        console.error(error);
-        return null;
-      }
-    },
+    queryFn: () => unwrap(api["indexer-manager"].$get()),
   });
 
   const url = indexer?.indexerUrl;

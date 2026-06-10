@@ -1,21 +1,14 @@
 import { useEffect } from "react";
 
-import type { UserSerialized } from "@basement/api/types";
 import { Trans } from "@lingui/react/macro";
+import type { User } from "@seedarr/sdk";
+import { api, unwrap } from "@seedarr/sdk";
 import { useMutation } from "@tanstack/react-query";
-import { Crown, Glasses, ShieldCheck, UserCheck } from "lucide-react";
+import { CrownIcon, GlassesIcon, ShieldCheckIcon, UserCheckIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 
-import { api } from "@/lib/api";
 import { Button } from "@/shared/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/shared/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
@@ -32,24 +25,24 @@ interface UserFormData {
 interface UserFormModalProps {
   open: boolean;
   onClose: () => void;
-  user?: UserSerialized | null;
+  user?: User | null;
 }
 
 const roleConfig = {
   owner: {
-    icon: Crown,
+    icon: CrownIcon,
     color: "var(--role-owner)",
   },
   admin: {
-    icon: ShieldCheck,
+    icon: ShieldCheckIcon,
     color: "var(--role-admin)",
   },
   member: {
-    icon: UserCheck,
+    icon: UserCheckIcon,
     color: "var(--role-member)",
   },
   viewer: {
-    icon: Glasses,
+    icon: GlassesIcon,
     color: "var(--role-viewer)",
   },
 };
@@ -96,26 +89,17 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
   }, [user, reset]);
 
   const createMutation = useMutation({
-    mutationFn: async (data: {
-      username: string;
-      password: string;
-      role: "owner" | "admin" | "member" | "viewer";
-    }) => {
-      await api.users.$post({ json: data });
-    },
+    mutationFn: (data: { username: string; password: string; role: "owner" | "admin" | "member" | "viewer" }) =>
+      unwrap(api.users.$post({ json: data })),
     onSuccess: () => {
       onClose();
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (data: {
-      username?: string;
-      password?: string;
-      role?: "owner" | "admin" | "member" | "viewer";
-    }) => {
-      if (!user) return;
-      await api.users[":id"].$put({ param: { id: user.id }, json: data });
+    mutationFn: (data: { username?: string; password?: string; role?: "owner" | "admin" | "member" | "viewer" }) => {
+      if (!user) return Promise.resolve(null);
+      return unwrap(api.users[":id"].$put({ param: { id: user.id }, json: data }));
     },
     onSuccess: () => {
       onClose();
@@ -160,9 +144,7 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? <Trans>Edit User</Trans> : <Trans>Create User</Trans>}
-          </DialogTitle>
+          <DialogTitle>{isEditing ? <Trans>Edit User</Trans> : <Trans>Create User</Trans>}</DialogTitle>
           <DialogDescription>
             {isEditing ? (
               <Trans>Update user information and permissions</Trans>
@@ -184,17 +166,13 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
                 minLength: { value: 3, message: "Min 3 characters" },
               })}
             />
-            {errors.username && (
-              <p className="text-sm text-destructive">{errors.username.message}</p>
-            )}
+            {errors.username && <p className="text-sm text-destructive">{errors.username.message}</p>}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="password">
               <Trans>Password</Trans>
-              {isEditing && (
-                <span className="text-muted-foreground ml-2">(leave empty to keep current)</span>
-              )}
+              {isEditing && <span className="text-muted-foreground ml-2">(leave empty to keep current)</span>}
             </Label>
             <Input
               id="password"
@@ -204,9 +182,7 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
                 minLength: { value: 8, message: "Min 8 characters" },
               })}
             />
-            {errors.password && (
-              <p className="text-sm text-destructive">{errors.password.message}</p>
-            )}
+            {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
           </div>
 
           {!isEditing && (
@@ -222,9 +198,7 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
                   validate: (value) => value === password || "Passwords do not match",
                 })}
               />
-              {errors.confirmPassword && (
-                <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
-              )}
+              {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
             </div>
           )}
 
@@ -238,13 +212,10 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
                 type="password"
                 {...register("confirmPassword", {
                   required: watch("password") ? "Please confirm your password" : false,
-                  validate: (value) =>
-                    !watch("password") || value === password || "Passwords do not match",
+                  validate: (value) => !watch("password") || value === password || "Passwords do not match",
                 })}
               />
-              {errors.confirmPassword && (
-                <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
-              )}
+              {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
             </div>
           )}
 
@@ -254,17 +225,12 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
             </Label>
             <Select
               value={selectedRole}
-              onValueChange={(value) =>
-                setValue("role", value as "owner" | "admin" | "member" | "viewer")
-              }
+              onValueChange={(value) => setValue("role", value as "owner" | "admin" | "member" | "viewer")}
             >
               <SelectTrigger>
                 <SelectValue>
                   <div className="flex items-center gap-2">
-                    <SelectedRoleIcon
-                      className="size-4"
-                      style={{ color: roleConfig[selectedRole].color }}
-                    />
+                    <SelectedRoleIcon className="size-4" style={{ color: roleConfig[selectedRole].color }} />
                     {selectedRole}
                   </div>
                 </SelectValue>
@@ -275,10 +241,7 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
                   return (
                     <SelectItem key={roleOption} value={roleOption}>
                       <div className="flex items-center gap-2">
-                        <RoleIcon
-                          className="size-4"
-                          style={{ color: roleConfig[roleOption].color }}
-                        />
+                        <RoleIcon className="size-4" style={{ color: roleConfig[roleOption].color }} />
                         {roleOption}
                       </div>
                     </SelectItem>

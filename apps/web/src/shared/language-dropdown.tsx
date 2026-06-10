@@ -105,14 +105,9 @@ export function LanguageDropdown() {
 
   return (
     <Select value={currentCountry} onValueChange={handleChange}>
-      <SelectTrigger className="h-9 w-fit gap-2 py-5 px-2">
+      <SelectTrigger className="h-9 w-fit gap-2 px-2 border-none shadow-none">
         <SelectValue>
-          <div className="flex items-center gap-2">
-            <Flag lang={currentCountry} />
-            <span className="text-sm font-medium">
-              {locales.find((l) => l.country === currentCountry)?.displayName ?? currentCountry}
-            </span>
-          </div>
+          <Flag lang={currentCountry} />
         </SelectValue>
       </SelectTrigger>
       <SelectContent align="end">

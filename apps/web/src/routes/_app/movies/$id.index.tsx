@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { createFileRoute } from "@tanstack/react-router";
-import { ClockPlus, Heart, Info } from "lucide-react";
+import { ClockPlusIcon, HeartIcon, InfoIcon } from "lucide-react";
 
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { Button } from "@/shared/ui/button";
@@ -10,7 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/sh
 
 import { MediaPoster } from "@/features/media/components/media-poster";
 import { getBackdropUrl, getPosterUrl } from "@/features/media/helpers/media.helper";
-import { useMedia, useToggleLike, useToggleWatchList } from "@/features/media/hooks/use-media";
+import { useToggleLike, useToggleWatchList } from "@/features/media/hooks/use-media";
 import { MovieCast } from "@/features/movies/components/movie-cast";
 import { MovieDetails } from "@/features/movies/components/movie-details";
 import { MovieInfo } from "@/features/movies/components/movie-info";
@@ -27,7 +27,6 @@ function MoviePage() {
 
   const toggleLike = useToggleLike();
   const toggleWatchList = useToggleWatchList();
-  const { data: media } = useMedia(Number(params.id));
 
   const { data, isLoading } = useMovieDetails(params.id);
 
@@ -43,7 +42,7 @@ function MoviePage() {
     return null;
   }
 
-  const { movie, collection } = data;
+  const { movie, media, collection, related } = data;
 
   const handleToggleLike = () => {
     media && toggleLike.mutate(media);
@@ -55,9 +54,7 @@ function MoviePage() {
 
   return (
     <div className="pb-20">
-      {/* Hero Section with full-width background */}
       <div className="relative w-full pb-6 pt-6">
-        {/* Background - full width */}
         <div
           className="absolute inset-0 bg-cover bg-center -z-10 filter"
           style={{
@@ -68,19 +65,17 @@ function MoviePage() {
           <div className="absolute inset-0 bg-linear-to-b from-black/70 via-background/10 dark:to-background" />
         </div>
 
-        {/* Content */}
         <Container className="flex flex-col lg:flex-row gap-8 items-center lg:items-start relative">
-          {/* Mobile/Tablet Details Button - Absolute positioned */}
           <div className="xl:hidden fixed mt-20 top-0 right-4 lg:right-8 z-10">
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
               <SheetTrigger asChild>
                 <div className="flex flex-col gap-3">
                   <Button size="icon-lg" variant="outline" rounded>
-                    <Info />
+                    <InfoIcon />
                   </Button>
                   <Button
                     size="icon-lg"
-                    variant={media?.like ? "default" : "outline"}
+                    variant={media && media.likes > 0 ? "default" : "outline"}
                     rounded
                     onClick={(e) => {
                       e.preventDefault();
@@ -88,11 +83,11 @@ function MoviePage() {
                     }}
                     disabled={!media}
                   >
-                    <Heart fill={media?.like ? "currentColor" : "none"} />
+                    <HeartIcon fill={media && media.likes > 0 ? "currentColor" : "none"} />
                   </Button>
                   <Button
                     size="icon-lg"
-                    variant={media?.watchList ? "default" : "outline"}
+                    variant={media && media.watchList > 0 ? "default" : "outline"}
                     rounded
                     onClick={(e) => {
                       e.preventDefault();
@@ -100,7 +95,7 @@ function MoviePage() {
                     }}
                     disabled={!media}
                   >
-                    <ClockPlus fill={media?.watchList ? "currentColor" : "none"} />
+                    <ClockPlusIcon fill={media && media.watchList > 0 ? "currentColor" : "none"} />
                   </Button>
                 </div>
               </SheetTrigger>
@@ -111,8 +106,8 @@ function MoviePage() {
                 <div className="mx-4">
                   <MovieDetails
                     movie={movie}
-                    isLiked={media?.like}
-                    isInWatchList={media?.watchList}
+                    isLiked={media ? media.likes > 0 : undefined}
+                    isInWatchList={media ? media.watchList > 0 : undefined}
                     onToggleLike={handleToggleLike}
                     onToggleWatchList={handleToggleWatchList}
                   />
@@ -122,7 +117,7 @@ function MoviePage() {
           </div>
 
           <div className="lg:w-1/4 max-w-[250px] justify-items-center">
-            <MediaPoster media={movie} id={movie.id} />
+            <MediaPoster media={movie} downloadId={media?.download?.id} />
           </div>
           <div className="lg:w-3/4">
             <MovieInfo movie={movie} />
@@ -130,8 +125,8 @@ function MoviePage() {
           <div className="hidden xl:block w-[300px]">
             <MovieDetails
               movie={movie}
-              isLiked={media?.like}
-              isInWatchList={media?.watchList}
+              isLiked={media ? media.likes > 0 : undefined}
+              isInWatchList={media ? media.watchList > 0 : undefined}
               onToggleLike={handleToggleLike}
               onToggleWatchList={handleToggleWatchList}
             />
@@ -142,7 +137,11 @@ function MoviePage() {
       <Container className="flex gap-8 pt-6">
         <div className="w-full flex flex-col gap-8">
           <MovieCast movie={movie} />
-          <MovieRelated movie={movie} collection={collection} />
+          <MovieRelated
+            collection={collection}
+            collectionMedia={related.collection}
+            recommendedMovies={related.recommendations}
+          />
         </div>
       </Container>
     </div>

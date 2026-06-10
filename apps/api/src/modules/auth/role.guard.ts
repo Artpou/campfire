@@ -1,6 +1,6 @@
 import type { Context, MiddlewareHandler, Next } from "hono";
 
-import type { UserRole } from "@/db/schema";
+import type { UserRole } from "@/modules/user/user.schema";
 import { ForbiddenError, UnauthorizedError } from "../../errors/error";
 
 const roleHierarchy: Record<UserRole, number> = {

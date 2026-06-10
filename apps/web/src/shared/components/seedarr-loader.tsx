@@ -8,13 +8,7 @@ interface SeedarrLoaderProps {
 export function SeedarrLoader({ className, size = 100 }: SeedarrLoaderProps) {
   return (
     <div className={cn("flex flex-col items-center justify-center gap-3", className)}>
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 5960 5900"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-label="Loading"
-      >
+      <svg width={size} height={size} viewBox="0 0 5960 5900" xmlns="http://www.w3.org/2000/svg" aria-label="Loading">
         <title>Loading</title>
         {/* Play button (static) */}
         <g fill="rgb(102,155,71)">

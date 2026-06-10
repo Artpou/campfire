@@ -1,9 +1,9 @@
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
+import { api, unwrap } from "@seedarr/sdk";
 import { createFileRoute, Link, Outlet, redirect, useLocation } from "@tanstack/react-router";
-import { AlertTriangle, Film, Library, List, Settings, Tv } from "lucide-react";
+import { AlertTriangleIcon, FilmIcon, LibraryIcon, ListIcon, SettingsIcon, TvIcon } from "lucide-react";
 
-import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { AppTopbar } from "@/shared/app-topbar";
 
@@ -14,29 +14,29 @@ const navItems = [
   {
     title: msg`Movies`,
     url: "/movies",
-    icon: Film,
+    icon: FilmIcon,
   },
   {
     title: msg`TV Shows`,
     url: "/tv",
-    icon: Tv,
+    icon: TvIcon,
   },
   {
     title: msg`Library`,
     url: "/downloads",
-    icon: Library,
+    icon: LibraryIcon,
     minRole: "member" as const,
   },
   {
     title: msg`Lists`,
     url: "/lists/watch-list",
-    icon: List,
+    icon: ListIcon,
     matchPrefix: "/lists",
   },
   {
     title: msg`Settings`,
     url: "/settings",
-    icon: Settings,
+    icon: SettingsIcon,
     minRole: "admin" as const,
   },
 ];
@@ -44,13 +44,8 @@ const navItems = [
 export const Route = createFileRoute("/_app")({
   beforeLoad: async () => {
     try {
-      const response = await api.auth.me.$get();
-      if (response.ok) {
-        const data = await response.json();
-        useAuth.getState().setUser(data);
-      } else {
-        throw redirect({ to: "/login" });
-      }
+      const data = await unwrap(api.auth.me.$get());
+      useAuth.getState().setUser(data);
     } catch {
       throw redirect({ to: "/login" });
     }
@@ -80,12 +75,9 @@ function AuthenticatedLayout() {
           to="/settings"
           className="bg-warning/10 border-b border-warning/20 px-4 py-2 flex items-center gap-2 text-warning hover:bg-warning/20 transition-colors"
         >
-          <AlertTriangle className="size-4 shrink-0" />
+          <AlertTriangleIcon className="size-4 shrink-0" />
           <span className="text-sm">
-            <Trans>
-              Torrent indexer is not configured. Click here to set up your indexer (Prowlarr or
-              Jackett).
-            </Trans>
+            <Trans>Torrent indexer is not configured. Click here to set up your indexer (Prowlarr or Jackett).</Trans>
           </span>
         </Link>
       )}

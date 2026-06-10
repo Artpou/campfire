@@ -1,7 +1,3 @@
-import type { Media } from "@basement/api/types";
-
-import { toLatin } from "@/shared/helpers/string.helper";
-
 export type PosterFormat = "w92" | "w154" | "w185" | "w342" | "w500" | "w780" | "original";
 
 export function getPosterUrl(path?: string | null, format: PosterFormat = "w500"): string {
@@ -16,10 +12,7 @@ export function getPosterUrl(path?: string | null, format: PosterFormat = "w500"
 
 export type BackdropFormat = "w300" | "w780" | "w1280" | "original";
 
-export function getBackdropUrl(
-  path?: string | null,
-  format: BackdropFormat = "original",
-): string | undefined {
+export function getBackdropUrl(path?: string | null, format: BackdropFormat = "original"): string | undefined {
   if (!path) return undefined;
 
   if (path.includes("https")) {
@@ -27,105 +20,4 @@ export function getBackdropUrl(
   }
 
   return `https://image.tmdb.org/t/p/${format}${path}`;
-}
-
-interface TMDBMedia {
-  id: number | string;
-  title?: string;
-  us_title?: string;
-  name?: string;
-  original_title?: string;
-  original_name?: string;
-  original_language?: string;
-  overview?: string | null;
-  poster_path?: string | null;
-  backdrop_path?: string | null;
-  vote_average?: number | null;
-  release_date?: string | null;
-  first_air_date?: string | null;
-}
-
-export type TrendingMedia = Media & {
-  backdrop_path?: string | null;
-};
-
-export function tmdbMovieToMedia(movie: TMDBMedia): Media {
-  return {
-    id: Number(movie.id),
-    type: "movie",
-    title: movie.title ?? movie.original_title ?? "",
-    original_title: movie.original_title ?? null,
-    sanitize_title: toLatin(movie.original_title ?? "") ?? movie.us_title ?? movie.title ?? "",
-    original_language: movie.original_language ?? null,
-    overview: movie.overview ?? null,
-    poster_path: movie.poster_path ?? null,
-    vote_average: movie.vote_average ?? null,
-    release_date: movie.release_date ?? null,
-    download: false,
-    like: false,
-    watchList: false,
-  };
-}
-
-export function tmdbMovieToTrendingMedia(movie: TMDBMedia): TrendingMedia {
-  return {
-    ...tmdbMovieToMedia(movie),
-    backdrop_path: movie.backdrop_path ?? null,
-  };
-}
-
-export function tmdbTVToMedia(tv: TMDBMedia): Media {
-  return {
-    id: Number(tv.id),
-    type: "tv",
-    title: tv.name ?? tv.original_name ?? "",
-    original_title: tv.original_name ?? null,
-    sanitize_title: toLatin(tv.original_name ?? "") ?? tv.us_title ?? tv.name ?? "",
-    original_language: tv.original_language ?? null,
-    overview: tv.overview ?? null,
-    poster_path: tv.poster_path ?? null,
-    vote_average: tv.vote_average ?? null,
-    release_date: tv.first_air_date ?? null,
-    download: false,
-    like: false,
-    watchList: false,
-  };
-}
-
-export function tmdbTVToTrendingMedia(tv: TMDBMedia): TrendingMedia {
-  return {
-    ...tmdbTVToMedia(tv),
-    backdrop_path: tv.backdrop_path ?? null,
-  };
-}
-
-export interface FMDBResult {
-  id: string;
-  type: "MOVIE" | "SHOW";
-  url: string;
-  title: string;
-  year: number;
-  runtime: number;
-  photo_url: string[];
-  backdrops: string[];
-  tmdbId: string;
-  imdbId: string;
-  jwRating: number;
-  tomatoMeter: number;
-  tomatoCertifiedFresh: boolean;
-}
-
-export function fmdbResultToMedia(fmdbResult: FMDBResult): Media {
-  return {
-    id: Number(fmdbResult.tmdbId),
-    type: "movie",
-    title: fmdbResult.title,
-    original_title: null,
-    sanitize_title: null,
-    original_language: null,
-    overview: null,
-    poster_path: fmdbResult.photo_url[0],
-    vote_average: null,
-    release_date: fmdbResult.year.toString(),
-  };
 }

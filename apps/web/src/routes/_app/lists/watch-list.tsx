@@ -16,7 +16,6 @@ function WatchListPage() {
   const { _ } = useLingui();
 
   const { results, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useMedias({
-    type: "movie",
     filter: "watch-list",
   });
 

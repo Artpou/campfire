@@ -1,4 +1,4 @@
-import type { Media } from "@basement/api/types";
+import type { Media } from "@seedarr/sdk";
 import { useSearch } from "@tanstack/react-router";
 
 import { cn } from "@/lib/utils";
@@ -7,8 +7,7 @@ import { CarouselItem } from "@/shared/ui/carousel";
 import { CarouselWrapper } from "@/shared/ui/carousel-wrapper";
 import { Skeleton } from "@/shared/ui/skeleton";
 
-import { useMovieGenres } from "@/features/movies/hooks/use-movie";
-import { useTVGenres } from "@/features/tv/hook/use-tv";
+import { useGenres } from "@/features/media/hooks/use-genres";
 
 interface MediaCategoryCarouselProps {
   type: Media["type"];
@@ -16,16 +15,12 @@ interface MediaCategoryCarouselProps {
 }
 
 export function MediaCategoryCarousel({ type, onValueChange }: MediaCategoryCarouselProps) {
-  const { data: movieGenres = [], isLoading: isLoadingMovies } = useMovieGenres();
-  const { data: tvGenres = [], isLoading: isLoadingTV } = useTVGenres();
-  const search = useSearch({ from: type === "movie" ? "/_app/movies/" : "/_app/tv/" });
+  const { data: genres = [], isLoading } = useGenres(type);
+  const search = useSearch({ strict: false }) as { with_genres?: string };
 
-  const genres = type === "movie" ? movieGenres : tvGenres;
-  const isLoading = type === "movie" ? isLoadingMovies : isLoadingTV;
   const selectedGenreId = search.with_genres ? Number.parseInt(search.with_genres, 10) : undefined;
 
   const handleGenreClick = (genreId: number) => {
-    // Toggle: if clicking the same genre, deactivate it
     if (selectedGenreId === genreId) {
       onValueChange?.(undefined);
     } else {
@@ -50,14 +45,8 @@ export function MediaCategoryCarousel({ type, onValueChange }: MediaCategoryCaro
   return (
     <CarouselWrapper>
       {genres.map((genre) => (
-        <CarouselItem
-          className={cn(selectedGenreId === genre.id && "border-primary!")}
-          key={genre.id}
-        >
-          <Card
-            className="group h-24 py-0 cursor-pointer overflow-hidden"
-            onClick={() => handleGenreClick(genre.id)}
-          >
+        <CarouselItem className={cn(selectedGenreId === genre.id && "border-primary!")} key={genre.id}>
+          <Card className="group h-24 py-0 cursor-pointer overflow-hidden" onClick={() => handleGenreClick(genre.id)}>
             <CardContent className="relative h-full p-0">
               <img
                 src={`/${type}/category/${genre.id}.jpg`}
@@ -68,11 +57,11 @@ export function MediaCategoryCarousel({ type, onValueChange }: MediaCategoryCaro
                 )}
               />
               {selectedGenreId !== genre.id && (
-                <div className="absolute inset-0 bg-linear-to-r from-[oklch(0.22_0.004_240/0.9)] via-[oklch(0.22_0.004_240/0.25)] to-[oklch(0.22_0.004_240/0.9)]" />
+                <div className="absolute inset-0 bg-linear-to-r from-background via-background/50 to-background" />
               )}
 
               <div className="relative flex h-full items-center justify-center">
-                <h3 className="text-base font-bold text-white drop-shadow-lg">{genre.name}</h3>
+                <h3 className="text-base font-bold  drop-shadow-lg">{genre.name}</h3>
               </div>
             </CardContent>
           </Card>

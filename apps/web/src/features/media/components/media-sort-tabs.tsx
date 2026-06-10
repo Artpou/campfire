@@ -1,7 +1,7 @@
-import { Media } from "@basement/api/types";
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import { PopcornIcon, Radio, SofaIcon, Star } from "lucide-react";
+import type { Media } from "@seedarr/sdk";
+import { PopcornIcon, RadioIcon, SofaIcon, StarIcon } from "lucide-react";
 
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
@@ -28,6 +28,11 @@ export function MediaSortTabs({ value, type, onChange }: MediaSortTabsProps) {
       icon: <SofaIcon className="text-foreground" />,
       label: msg`At Home`,
     },
+    {
+      value: "top-rated",
+      icon: <StarIcon className="text-foreground" />,
+      label: msg`Top Rated`,
+    },
     ...(type === "movie"
       ? [
           {
@@ -38,13 +43,8 @@ export function MediaSortTabs({ value, type, onChange }: MediaSortTabsProps) {
         ]
       : []),
     {
-      value: "top-rated",
-      icon: <Star className="text-foreground" />,
-      label: msg`Top Rated`,
-    },
-    {
       value: "upcoming",
-      icon: <Radio className="text-foreground" />,
+      icon: <RadioIcon className="text-foreground" />,
       label: msg`Upcoming`,
     },
   ];

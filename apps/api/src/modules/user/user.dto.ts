@@ -1,14 +1,14 @@
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { user, userRoleEnum } from "@/db/schema";
+import { user, userRoleEnum } from "@/modules/user/user.schema";
 
 // Database schemas
 export const userSelectSchema = createSelectSchema(user);
 export const userInsertSchema = createInsertSchema(user);
 
-// Exported types (omit password from User)
-export type User = Omit<typeof userSelectSchema._output, "password">;
+type UserBase = Omit<typeof userSelectSchema._output, "password" | "createdAt">;
+export type User = UserBase & { createdAt: Date | string };
 export type NewUser = typeof userInsertSchema._input;
 
 // Request schemas

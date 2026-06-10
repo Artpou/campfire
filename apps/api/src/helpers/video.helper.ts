@@ -1,6 +1,6 @@
 import ffmpeg from "fluent-ffmpeg";
 
-import { TorrentLanguage, TorrentQuality } from "@/types";
+import type { TorrentLanguage, TorrentQuality } from "@/types";
 import { PassThrough, Readable } from "node:stream";
 
 /**
@@ -13,12 +13,7 @@ export function convertMkvToMp4Stream(inputStream: NodeJS.ReadableStream): NodeJ
 
   const command = ffmpeg(inputStream as Readable)
     .outputFormat("mp4")
-    .outputOptions([
-      "-c:v copy",
-      "-c:a copy",
-      "-movflags frag_keyframe+empty_moov+default_base_moof",
-      "-f mp4",
-    ])
+    .outputOptions(["-c:v copy", "-c:a copy", "-movflags frag_keyframe+empty_moov+default_base_moof", "-f mp4"])
     .on("error", (err) => {
       outputStream.destroy(err);
     });

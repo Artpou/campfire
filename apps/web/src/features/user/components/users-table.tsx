@@ -1,11 +1,11 @@
 import { useState } from "react";
 
-import type { UserSerialized } from "@basement/api/types";
 import { Trans } from "@lingui/react/macro";
+import type { User, UserRole } from "@seedarr/sdk";
+import { api, unwrap } from "@seedarr/sdk";
 import { useMutation } from "@tanstack/react-query";
-import { Crown, Glasses, Pencil, ShieldCheck, Trash2, UserCheck } from "lucide-react";
+import { CrownIcon, GlassesIcon, PencilIcon, ShieldCheckIcon, Trash2Icon, UserCheckIcon } from "lucide-react";
 
-import { api } from "@/lib/api";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,30 +23,37 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useRole } from "@/features/auth/hooks/use-role";
 
 interface UsersTableProps {
-  users: UserSerialized[];
+  users: User[];
   isLoading: boolean;
-  onEditUser: (user: UserSerialized) => void;
+  onEditUser: (user: User) => void;
   onRefetch: () => void;
 }
 
-const roleConfig = {
+const roleConfig: Record<
+  UserRole,
+  {
+    icon: typeof CrownIcon;
+    color: string;
+    bgColor: string;
+  }
+> = {
   owner: {
-    icon: Crown,
+    icon: CrownIcon,
     color: "var(--red)",
     bgColor: "oklch(from var(--red) l c h / 0.1)",
   },
   admin: {
-    icon: ShieldCheck,
+    icon: ShieldCheckIcon,
     color: "var(--purple)",
     bgColor: "oklch(from var(--purple) l c h / 0.1)",
   },
   member: {
-    icon: UserCheck,
+    icon: UserCheckIcon,
     color: "var(--primary)",
     bgColor: "oklch(from var(--primary) l c h / 0.1)",
   },
   viewer: {
-    icon: Glasses,
+    icon: GlassesIcon,
     color: "var(--blue)",
     bgColor: "oklch(from var(--blue) l c h / 0.1)",
   },
@@ -54,19 +61,17 @@ const roleConfig = {
 
 export function UsersTable({ users, isLoading, onEditUser, onRefetch }: UsersTableProps) {
   const { role } = useRole();
-  const [userToDelete, setUserToDelete] = useState<UserSerialized | null>(null);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   const deleteMutation = useMutation({
-    mutationFn: async (userId: string) => {
-      await api.users[":id"].$delete({ param: { id: userId } });
-    },
+    mutationFn: (userId: string) => unwrap(api.users[":id"].$delete({ param: { id: userId } })),
     onSuccess: () => {
       setUserToDelete(null);
       onRefetch();
     },
   });
 
-  const handleDeleteClick = (user: UserSerialized) => {
+  const handleDeleteClick = (user: User) => {
     setUserToDelete(user);
   };
 
@@ -80,13 +85,13 @@ export function UsersTable({ users, isLoading, onEditUser, onRefetch }: UsersTab
     setUserToDelete(null);
   };
 
-  const canEditUser = (targetUser: UserSerialized) => {
+  const canEditUser = (targetUser: User) => {
     if (role === "owner") return targetUser.role !== "owner";
     if (role === "admin") return targetUser.role !== "owner" && targetUser.role !== "admin";
     return false;
   };
 
-  const canDeleteUser = (targetUser: UserSerialized) => {
+  const canDeleteUser = (targetUser: User) => {
     return canEditUser(targetUser);
   };
 
@@ -154,13 +159,8 @@ export function UsersTable({ users, isLoading, onEditUser, onRefetch }: UsersTab
                     <TableCell>
                       <div className="flex justify-end gap-2 min-h-8 items-center">
                         {canEditUser(user) && (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => onEditUser(user)}
-                            className="h-8 gap-2"
-                          >
-                            <Pencil className="size-3.5" />
+                          <Button variant="secondary" size="sm" onClick={() => onEditUser(user)} className="h-8 gap-2">
+                            <PencilIcon className="size-3.5" />
                             <Trans>Edit</Trans>
                           </Button>
                         )}
@@ -171,7 +171,7 @@ export function UsersTable({ users, isLoading, onEditUser, onRefetch }: UsersTab
                             onClick={() => handleDeleteClick(user)}
                             className="h-8 gap-2"
                           >
-                            <Trash2 className="size-3.5" />
+                            <Trash2Icon className="size-3.5" />
                             <Trans>Delete</Trans>
                           </Button>
                         )}
@@ -193,8 +193,7 @@ export function UsersTable({ users, isLoading, onEditUser, onRefetch }: UsersTab
             </AlertDialogTitle>
             <AlertDialogDescription>
               <Trans>
-                Are you sure you want to delete user "{userToDelete?.username}"? This action cannot
-                be undone.
+                Are you sure you want to delete user "{userToDelete?.username}"? This action cannot be undone.
               </Trans>
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -1,57 +1,45 @@
-import { createInsertSchema, createSelectSchema, createUpdateSchema } from "drizzle-zod";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import z from "zod";
 
-import { media, mediaTypeEnum, watchProgress } from "@/db/schema";
-import { paginationSchema } from "@/modules/pagination/pagination.dto";
+import { paginationDto } from "@/shared/pagination.dto";
 
-// Database schemas
-export const mediaSelectSchema = createSelectSchema(media);
+import { torrentDownload } from "@/modules/download/download.schema";
+import { media, mediaTypeEnum, watchProgress } from "@/modules/media/media.schema";
+
 export const mediaInsertSchema = createInsertSchema(media);
-export const mediaUpdateSchema = createUpdateSchema(media).omit({ id: true });
-export const mediaStatusSchema = z.object({
-  id: z.number(),
-  like: z.boolean().optional(),
-  watchList: z.boolean().optional(),
-  download: z.boolean().optional(),
-  downloadId: z.string().optional(),
+export type MediaInsert = z.infer<typeof mediaInsertSchema>;
+
+export const mediaSelectSchema = createSelectSchema(media);
+export type MediaSelect = z.infer<typeof mediaSelectSchema>;
+
+export const mediaSchema = mediaSelectSchema.extend({
+  likes: z.number(),
+  watchList: z.number(),
+  download: createSelectSchema(torrentDownload)
+    .omit({
+      userId: true,
+      mediaId: true,
+    })
+    .optional(),
+  progress: createSelectSchema(watchProgress)
+    .pick({
+      position: true,
+      duration: true,
+      downloadId: true,
+    })
+    .optional(),
 });
-export type MediaStatus = typeof mediaStatusSchema._input;
+export type Media = z.infer<typeof mediaSchema>;
 
-export type Media = typeof mediaSelectSchema._output & MediaStatus;
-export type MediaInsert = typeof mediaInsertSchema._input;
-export type MediaUpdate = typeof mediaUpdateSchema._input;
-
-export const watchProgressSelectSchema = createSelectSchema(watchProgress);
-export type WatchProgress = typeof watchProgressSelectSchema._output;
-
-export const updateWatchProgressSchema = z.object({
+export const updateProgressDto = z.object({
   position: z.number().int().min(0),
   duration: z.number().int().min(0),
   downloadId: z.string().optional(),
 });
-export type UpdateWatchProgressInput = z.infer<typeof updateWatchProgressSchema>;
+export type UpdateProgressQuery = z.infer<typeof updateProgressDto>;
 
-export const continueWatchingItemSchema = mediaSelectSchema.extend({
-  position: z.number(),
-  duration: z.number(),
-  downloadId: z.string().nullable(),
-  progressPercent: z.number(),
-});
-export type ContinueWatchingItem = z.infer<typeof continueWatchingItemSchema>;
-
-export const mediaFilterEnum = ["like", "watch-list", "recently-viewed"] as const;
-export type MediaFilter = (typeof mediaFilterEnum)[number];
-
-export const listMediaParamsSchema = z.object({
+export const listMediaDto = paginationDto.extend({
   type: z.enum(mediaTypeEnum).optional(),
-  filter: z.enum(mediaFilterEnum).optional(),
-  ids: z
-    .string()
-    .transform((val) => val.split(","))
-    .optional(),
+  filter: z.enum(["like", "watch-list", "recently-viewed", "downloaded"]).optional(),
 });
-export type ListMediaParams = z.infer<typeof listMediaParamsSchema>;
-
-export const listMediaSchema = paginationSchema.extend(listMediaParamsSchema.shape);
-export type ListMedia = z.infer<typeof listMediaSchema>;
-export type ListMediaSchema = typeof listMediaSchema._input;
+export type ListMediaQuery = z.infer<typeof listMediaDto>;

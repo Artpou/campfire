@@ -6,8 +6,8 @@
 body {
   @apply m-0;
   font-family:
-    "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
-    "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+    "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans",
+    "Droid Sans", "Helvetica Neue", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -98,7 +98,7 @@ code {
 
 .dark {
   --background: oklch(0.22 0.004 240);
-  --foreground: oklch(0.92 0.01 140);
+  --foreground: oklch(1 0 0);
   --card: oklch(0.26 0.008 225);
   --card-foreground: oklch(0.92 0.01 140);
   --popover: oklch(0.26 0.012 225);

@@ -1,12 +1,12 @@
-import type { TorrentIndexer } from "@basement/api/types";
 import { Trans } from "@lingui/react/macro";
+import type { TorrentIndexerQuery } from "@seedarr/sdk";
 
 import { Badge } from "@/shared/ui/badge";
 import { Spinner } from "@/shared/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
 interface IndexerListProps {
-  indexers: TorrentIndexer[] | null | undefined;
+  indexers: TorrentIndexerQuery[] | null | undefined;
   isLoading?: boolean;
   isError?: boolean;
 }
@@ -55,9 +55,7 @@ export function IndexerList({ indexers, isLoading = false, isError = false }: In
             <TableRow key={indexer.id}>
               <TableCell className="font-medium text-sm">{indexer.name}</TableCell>
               <TableCell className="text-right">
-                <Badge variant={indexer.privacy === "private" ? "secondary" : "outline"}>
-                  {indexer.privacy}
-                </Badge>
+                <Badge variant={indexer.privacy === "private" ? "secondary" : "outline"}>{indexer.privacy}</Badge>
               </TableCell>
             </TableRow>
           ))}

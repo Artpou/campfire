@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { Pause } from "lucide-react";
+import { PauseIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -15,16 +15,7 @@ interface CircularProgressProps extends React.ComponentPropsWithoutRef<"div"> {
 
 const CircularProgress = React.forwardRef<HTMLDivElement, CircularProgressProps>(
   (
-    {
-      value,
-      size = 40,
-      strokeWidth = 4,
-      showValue = true,
-      noColor = false,
-      paused = false,
-      className,
-      ...props
-    },
+    { value, size = 40, strokeWidth = 4, showValue = true, noColor = false, paused = false, className, ...props },
     ref,
   ) => {
     const radius = (size - strokeWidth) / 2;
@@ -48,10 +39,7 @@ const CircularProgress = React.forwardRef<HTMLDivElement, CircularProgressProps>
     return (
       <div
         ref={ref}
-        className={cn(
-          "transition-all duration-200 dark relative flex items-center justify-center",
-          className,
-        )}
+        className={cn("transition-all duration-200 dark relative flex items-center justify-center", className)}
         style={{ width: size, height: size }}
         {...props}
       >
@@ -85,10 +73,7 @@ const CircularProgress = React.forwardRef<HTMLDivElement, CircularProgressProps>
         </svg>
         {showValue && !paused && (
           <div className="absolute text-white inset-0 flex items-center justify-center">
-            <span
-              className="font-bold tracking-tighter flex items-center"
-              style={{ fontSize: size * 0.38 }}
-            >
+            <span className="font-bold tracking-tighter flex items-center" style={{ fontSize: size * 0.38 }}>
               {Math.round(value)}
               <span className="ml-0.5 opacity-90" style={{ fontSize: size * 0.26 }}>
                 %
@@ -98,7 +83,7 @@ const CircularProgress = React.forwardRef<HTMLDivElement, CircularProgressProps>
         )}
         {paused && (
           <div className="absolute text-white inset-0 flex items-center justify-center">
-            <Pause className="size-4" />
+            <PauseIcon className="size-4" />
           </div>
         )}
       </div>

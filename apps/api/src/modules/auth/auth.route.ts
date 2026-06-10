@@ -5,10 +5,11 @@ import ms from "ms";
 
 import { hashPassword, verifyPassword } from "@/auth/password.util";
 import { createSession, deleteSession, validateSession } from "@/auth/session.util";
-import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError } from "@/errors/error";
+import { ForbiddenError, NotFoundError, UnauthorizedError } from "@/errors/error";
+import { authRateLimiter } from "@/middlewares/rate-limiter.middleware";
 import { IndexerManagerService } from "../indexer-manager/indexer-manager.service";
 import { UserService } from "../user/user.service";
-import { loginSchema, registerSchema } from "./auth.dto";
+import { loginDto, registerDto } from "./auth.dto";
 
 const SESSION_COOKIE_NAME = "session";
 
@@ -28,36 +29,20 @@ export const authRoutes = new Hono()
     const hasOwner = await userService.hasOwner();
     return c.json({ hasOwner });
   })
-  .post("/register", zValidator("json", registerSchema), async (c) => {
+  .post("/register", authRateLimiter, zValidator("json", registerDto), async (c) => {
     const { username, password } = c.req.valid("json");
     const userService = new UserService();
 
-    // Check if owner exists
     const hasOwner = await userService.hasOwner();
+    if (hasOwner) throw new ForbiddenError("Registration is closed. Contact an administrator.");
 
-    // If owner already exists, disable signup
-    if (hasOwner) {
-      throw new ForbiddenError("Registration is closed. Contact an administrator.");
-    }
-
-    const existingUser = await userService.getByUsername(username);
-    if (existingUser) throw new ConflictError("Username already exists");
-
-    // First user becomes owner
-    const newUser = await userService.create({
-      username,
-      password: hashPassword(password),
-      role: "owner",
-    });
-
-    if (!newUser) throw new ConflictError("Failed to create user");
+    const newUser = await userService.register(username, hashPassword(password));
     const sessionToken = await createSession(newUser.id);
 
     setCookie(c, SESSION_COOKIE_NAME, sessionToken, cookieOptions);
-
     return c.json(newUser);
   })
-  .post("/login", zValidator("json", loginSchema), async (c) => {
+  .post("/login", authRateLimiter, zValidator("json", loginDto), async (c) => {
     const { username, password } = c.req.valid("json");
 
     const userService = new UserService();
@@ -72,7 +57,7 @@ export const authRoutes = new Hono()
 
     setCookie(c, SESSION_COOKIE_NAME, sessionToken, cookieOptions);
 
-    const user = await userService.getById(existingUser.id);
+    const user = await userService.get(existingUser.id);
     return c.json(user);
   })
   .post("/logout", async (c) => {
@@ -94,7 +79,7 @@ export const authRoutes = new Hono()
     const userId = await validateSession(sessionToken);
     if (!userId) throw new UnauthorizedError("Invalid or expired session");
 
-    const currentUser = await new UserService().getById(userId);
+    const currentUser = await new UserService().get(userId);
     if (!currentUser) throw new NotFoundError("User");
 
     const selectedIndexer = await new IndexerManagerService(currentUser).get();
@@ -105,5 +90,3 @@ export const authRoutes = new Hono()
       selectedIndexer,
     });
   });
-
-export type AuthRoutesType = typeof authRoutes;

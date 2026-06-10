@@ -1,4 +1,4 @@
-import { getBaseUrl } from "@/lib/api";
+import { getBaseUrl } from "@seedarr/sdk";
 
 import { useAuth } from "@/features/auth/auth-store";
 

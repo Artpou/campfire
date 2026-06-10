@@ -1,4 +1,4 @@
-import type { Torrent, TorrentIndexer } from "@/modules/torrent/torrent.dto";
+import type { Torrent, TorrentIndexerQuery } from "@/modules/torrent/torrent.dto";
 
 export interface IndexerConfig {
   apiKey: string;
@@ -6,7 +6,7 @@ export interface IndexerConfig {
 }
 
 export interface IndexerAdapter {
-  getIndexers(config: IndexerConfig): Promise<TorrentIndexer[]>;
+  getIndexers(config: IndexerConfig): Promise<TorrentIndexerQuery[]>;
   search(
     query: { q: string; t: string; indexerId?: string; categories?: string[] },
     config: IndexerConfig,

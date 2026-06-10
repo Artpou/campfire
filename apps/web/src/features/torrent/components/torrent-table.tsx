@@ -1,16 +1,16 @@
 import { useMemo, useState } from "react";
 
-import type { Media, Torrent, TorrentQuality } from "@basement/api/types";
-import { Trans } from "@lingui/react/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
+import type { Media, Torrent, TorrentQuality } from "@seedarr/sdk";
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowDown, ArrowUp, Download, EarthIcon, Info } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, DownloadIcon, EarthIcon, InfoIcon } from "lucide-react";
+import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { Flag } from "@/shared/components/flag";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { Badge, badgeVariants } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
-import { Label } from "@/shared/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
@@ -24,6 +24,7 @@ interface TorrentTableProps {
 }
 
 export function TorrentTable({ torrents, media, isLoading = false }: TorrentTableProps) {
+  const { t } = useLingui();
   const startDownload = useStartDownload();
   const navigate = useNavigate();
 
@@ -36,15 +37,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
   const [selectedMagnetUri, setSelectedMagnetUri] = useState<string | null>(null);
 
   // Quality hierarchy (index-based for slider)
-  const qualityLevels: (TorrentQuality | "all")[] = [
-    "all",
-    "480p",
-    "720p",
-    "1080p",
-    "1440p",
-    "2160p",
-    "4K",
-  ];
+  const qualityLevels: (TorrentQuality | "all")[] = ["all", "480p", "720p", "1080p", "1440p", "2160p", "4K"];
 
   // Filter torrents based on selections
   const filteredTorrents = useMemo(() => {
@@ -96,26 +89,29 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
   const handleAddDownload = async (torrent: Torrent) => {
     const magnetUri = getTorrentUri(torrent);
 
-    await startDownload.mutateAsync({
-      magnetUri,
-      name: torrent.title,
-      mediaId: media.id,
-      origin: torrent.tracker,
-      quality: torrent.quality,
-      language: torrent.language,
-    });
-
-    // Redirect to downloads page
-    navigate({ to: "/downloads" });
+    try {
+      await startDownload.mutateAsync({
+        magnetUri,
+        name: torrent.title,
+        mediaId: media.id,
+        origin: torrent.tracker,
+        quality: torrent.quality,
+        language: torrent.language,
+      });
+      navigate({ to: "/downloads" });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t`Unknown error`;
+      toast.error(t`Download failed`, {
+        description: message,
+      });
+    }
   };
   return (
     <div className="w-full overflow-hidden space-y-2">
       {/* Filters */}
       <div className="flex flex-row gap-4 items-center">
-        <div className="flex flex-col gap-2 w-full md:w-auto">
-          <Label>
-            <Trans>Minimum Quality</Trans>
-          </Label>
+        <Badge variant="outline" className="flex gap-2 w-full md:w-auto py-2">
+          <Trans>Minimum Quality</Trans> :
           <div className="hidden md:flex flex-wrap gap-1.5">
             {qualityLevels.map((quality, index) => (
               <button
@@ -133,10 +129,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
               </button>
             ))}
           </div>
-          <Select
-            value={selectedQualityIndex.toString()}
-            onValueChange={(v) => setSelectedQualityIndex(Number(v))}
-          >
+          <Select value={selectedQualityIndex.toString()} onValueChange={(v) => setSelectedQualityIndex(Number(v))}>
             <SelectTrigger className="md:hidden w-full">
               <SelectValue />
             </SelectTrigger>
@@ -148,7 +141,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </Badge>
       </div>
 
       <Table>
@@ -217,18 +210,16 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
                   </div>
                 </TableCell>
                 <TableCell className="hidden sm:table-cell">
-                  <span className="font-medium text-muted-foreground">
-                    {(torrent.size / 1e9).toFixed(2)} GB
-                  </span>
+                  <span className="font-medium text-muted-foreground">{(torrent.size / 1e9).toFixed(2)} GB</span>
                 </TableCell>
                 <TableCell className="hidden sm:table-cell relative">
                   <div className="flex items-center justify-end gap-3 pr-4">
                     <div className="flex items-center gap-1 font-bold text-green-500">
-                      <ArrowUp className="size-3" />
+                      <ArrowUpIcon className="size-3" />
                       <span className="text-xs">{torrent.seeders}</span>
                     </div>
                     <div className="flex items-center gap-1 font-bold text-destructive">
-                      <ArrowDown className="size-3" />
+                      <ArrowDownIcon className="size-3" />
                       <span className="text-xs">{torrent.peers}</span>
                     </div>
                   </div>
@@ -241,7 +232,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
                         handleOpenInspectModal(torrent);
                       }}
                     >
-                      <Info className="size-4" />
+                      <InfoIcon className="size-4" />
                       <Trans>Details</Trans>
                     </Button>
                     <Button
@@ -251,7 +242,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
                         handleAddDownload(torrent);
                       }}
                     >
-                      <Download className="size-4" />
+                      <DownloadIcon className="size-4" />
                       <Trans>Download</Trans>
                     </Button>
                   </div>

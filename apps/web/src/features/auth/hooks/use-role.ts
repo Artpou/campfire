@@ -1,4 +1,4 @@
-import type { UserRole } from "@basement/api/types";
+import type { UserRole } from "@seedarr/sdk";
 
 import { useAuth } from "../auth-store";
 

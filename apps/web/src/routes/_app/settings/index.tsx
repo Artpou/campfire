@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 
-import type { IndexerType, UpsertIndexerManagerInput } from "@basement/api/types";
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
+import type { IndexerType, UpsertIndexerManagerInput } from "@seedarr/sdk";
+import { api, unwrap } from "@seedarr/sdk";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { LogOut, SaveIcon, SettingsIcon } from "lucide-react";
+import { LogOutIcon, SaveIcon, SettingsIcon } from "lucide-react";
 
-import { api, unwrap } from "@/lib/api";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
@@ -40,11 +40,7 @@ function SettingsPage() {
     queryFn: () => unwrap(api["indexer-manager"].$get()),
   });
 
-  const {
-    data: availableIndexers,
-    isFetching: isIndexersFetching,
-    isError: isIndexersError,
-  } = useIndexers();
+  const { data: availableIndexers, isFetching: isIndexersFetching, isError: isIndexersError } = useIndexers();
 
   const [indexerType, setIndexerType] = useState<IndexerType>("jackett");
   const [indexerUrl, setIndexerUrl] = useState("");
@@ -59,8 +55,7 @@ function SettingsPage() {
   }, [indexerConfig]);
 
   const upsertIndexer = useMutation({
-    mutationFn: (data: UpsertIndexerManagerInput) =>
-      unwrap(api["indexer-manager"].$post({ json: data })),
+    mutationFn: (data: UpsertIndexerManagerInput) => unwrap(api["indexer-manager"].$post({ json: data })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["indexer-manager"] });
       queryClient.invalidateQueries({ queryKey: ["torrent-indexers"] });
@@ -76,16 +71,17 @@ function SettingsPage() {
     });
   };
 
-  const handleLogout = async () => {
-    await api.auth.logout.$post();
-    logout();
-    navigate({ to: "/login" });
-  };
+  const logoutMutation = useMutation({
+    mutationFn: () => unwrap(api.auth.logout.$post()),
+    onSuccess: () => {
+      logout();
+      navigate({ to: "/login" });
+    },
+  });
 
-  const canOpenIndexerDashboard = useMemo(
-    () => Boolean(indexerConfig?.indexerUrl),
-    [indexerConfig],
-  );
+  const handleLogout = () => logoutMutation.mutate();
+
+  const canOpenIndexerDashboard = useMemo(() => Boolean(indexerConfig?.indexerUrl), [indexerConfig]);
 
   const isDirty =
     indexerConfig?.indexerType !== indexerType ||
@@ -104,9 +100,7 @@ function SettingsPage() {
               </CardTitle>
             </div>
             <CardDescription>
-              <Trans>
-                Configure your Jackett or Prowlarr instance to search and download torrents.
-              </Trans>
+              <Trans>Configure your Jackett or Prowlarr instance to search and download torrents.</Trans>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -171,11 +165,7 @@ function SettingsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <IndexerList
-                  indexers={availableIndexers}
-                  isLoading={isIndexersFetching}
-                  isError={isIndexersError}
-                />
+                <IndexerList indexers={availableIndexers} isLoading={isIndexersFetching} isError={isIndexersError} />
               </CardContent>
             </Card>
           </CardContent>
@@ -185,7 +175,7 @@ function SettingsPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <LogOut className="size-5" />
+            <LogOutIcon className="size-5" />
             <CardTitle>
               <Trans>Account</Trans>
             </CardTitle>
@@ -196,7 +186,7 @@ function SettingsPage() {
         </CardHeader>
         <CardContent>
           <Button variant="destructive" onClick={handleLogout} className="w-full">
-            <LogOut className="mr-2 size-4" />
+            <LogOutIcon className="mr-2 size-4" />
             <Trans>Sign Out</Trans>
           </Button>
         </CardContent>

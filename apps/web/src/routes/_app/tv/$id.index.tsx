@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { createFileRoute } from "@tanstack/react-router";
-import { ClockPlus, Heart, Info } from "lucide-react";
+import { ClockPlusIcon, HeartIcon, InfoIcon } from "lucide-react";
 
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { Button } from "@/shared/ui/button";
@@ -10,7 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/sh
 
 import { MediaPoster } from "@/features/media/components/media-poster";
 import { getBackdropUrl, getPosterUrl } from "@/features/media/helpers/media.helper";
-import { useMedia, useToggleLike, useToggleWatchList } from "@/features/media/hooks/use-media";
+import { useToggleLike, useToggleWatchList } from "@/features/media/hooks/use-media";
 import { TvCast } from "@/features/tv/components/tv-cast";
 import { TvDetails } from "@/features/tv/components/tv-details";
 import { TvEpisodesSection } from "@/features/tv/components/tv-episodes-section";
@@ -28,7 +28,6 @@ function TVPage() {
 
   const toggleLike = useToggleLike();
   const toggleWatchList = useToggleWatchList();
-  const { data: media } = useMedia(Number(params.id));
 
   const { data, isLoading } = useTVDetails(params.id);
 
@@ -44,7 +43,7 @@ function TVPage() {
     return null;
   }
 
-  const { tv } = data;
+  const { tv, media, related } = data;
 
   const handleToggleLike = () => {
     media && toggleLike.mutate(media);
@@ -56,7 +55,6 @@ function TVPage() {
 
   return (
     <div className="pb-20">
-      {/* Hero Section with full-width background */}
       <div className="relative w-full pb-6 pt-6">
         <div
           className="absolute inset-0 bg-cover bg-center -z-10 filter"
@@ -69,17 +67,16 @@ function TVPage() {
         </div>
 
         <Container className="flex flex-col lg:flex-row gap-8 items-center lg:items-start relative">
-          {/* Mobile/Tablet Details Button */}
           <div className="xl:hidden fixed mt-20 top-0 right-4 lg:right-8 z-10">
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
               <SheetTrigger asChild>
                 <div className="flex flex-col gap-3">
                   <Button size="icon-lg" variant="outline" rounded>
-                    <Info />
+                    <InfoIcon />
                   </Button>
                   <Button
                     size="icon-lg"
-                    variant={media?.like ? "default" : "outline"}
+                    variant={media && media.likes > 0 ? "default" : "outline"}
                     rounded
                     onClick={(e) => {
                       e.preventDefault();
@@ -87,11 +84,11 @@ function TVPage() {
                     }}
                     disabled={!media}
                   >
-                    <Heart fill={media?.like ? "currentColor" : "none"} />
+                    <HeartIcon fill={media && media.likes > 0 ? "currentColor" : "none"} />
                   </Button>
                   <Button
                     size="icon-lg"
-                    variant={media?.watchList ? "default" : "outline"}
+                    variant={media && media.watchList > 0 ? "default" : "outline"}
                     rounded
                     onClick={(e) => {
                       e.preventDefault();
@@ -99,7 +96,7 @@ function TVPage() {
                     }}
                     disabled={!media}
                   >
-                    <ClockPlus fill={media?.watchList ? "currentColor" : "none"} />
+                    <ClockPlusIcon fill={media && media.watchList > 0 ? "currentColor" : "none"} />
                   </Button>
                 </div>
               </SheetTrigger>
@@ -110,8 +107,8 @@ function TVPage() {
                 <div className="mx-4">
                   <TvDetails
                     tv={tv}
-                    isLiked={media?.like}
-                    isInWatchList={media?.watchList}
+                    isLiked={media ? media.likes > 0 : undefined}
+                    isInWatchList={media ? media.watchList > 0 : undefined}
                     onToggleLike={handleToggleLike}
                     onToggleWatchList={handleToggleWatchList}
                   />
@@ -121,7 +118,7 @@ function TVPage() {
           </div>
 
           <div className="lg:w-1/4 max-w-[250px] justify-items-center">
-            <MediaPoster media={tv} id={tv.id} type="tv" />
+            <MediaPoster media={tv} downloadId={media?.download?.id} type="tv" />
           </div>
           <div className="lg:w-3/4">
             <TvInfo tv={tv} />
@@ -129,8 +126,8 @@ function TVPage() {
           <div className="hidden xl:block w-[300px]">
             <TvDetails
               tv={tv}
-              isLiked={media?.like}
-              isInWatchList={media?.watchList}
+              isLiked={media ? media.likes > 0 : undefined}
+              isInWatchList={media ? media.watchList > 0 : undefined}
               onToggleLike={handleToggleLike}
               onToggleWatchList={handleToggleWatchList}
             />
@@ -140,9 +137,9 @@ function TVPage() {
 
       <Container className="flex gap-8 pt-6">
         <div className="w-full flex flex-col gap-8">
-          <TvEpisodesSection tv={tv} />
+          <TvEpisodesSection tv={tv} media={data.media} />
           <TvCast tv={tv} />
-          <TvRelated tv={tv} />
+          <TvRelated recommendedTV={related.recommendations} />
         </div>
       </Container>
     </div>

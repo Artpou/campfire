@@ -5,17 +5,15 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { SortOption } from "tmdb-ts";
 
 import { PlaceholderEmpty } from "@/shared/components/seedarr-placeholder";
+import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Container } from "@/shared/ui/container";
 
-import { ContinueWatchingSection } from "@/features/media/components/continue-watching-section";
+import { MediaLibrarySection } from "@/features/media/components/continue-watching-section";
 import { HeroCarousel } from "@/features/media/components/hero-carousel";
 import { MediaCategoryCarousel } from "@/features/media/components/media-category-carousel";
 import { MediaGrid } from "@/features/media/components/media-grid";
 import { MediaSelected, MediaSortTabs } from "@/features/media/components/media-sort-tabs";
-import {
-  MovieFiltersSheet,
-  type MovieFiltersValue,
-} from "@/features/movies/components/movie-filters-sheet";
+import { MovieFiltersSheet, type MovieFiltersValue } from "@/features/movies/components/movie-filters-sheet";
 import { MovieProviderTabs } from "@/features/movies/components/movie-provider-tabs";
 import { useMovieDiscover } from "@/features/movies/hooks/use-movie";
 
@@ -65,25 +63,24 @@ export const Route = createFileRoute("/_app/movies/")({
 function MoviesPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
+  const tmdbLocale = useTmdbLocale();
 
   const { sort_by, with_release_type, after_date } = useMemo(() => {
     return {
-      with_release_type:
-        search.selected === "home" ? "4|5" : search.selected === "cinema" ? "3" : undefined,
+      with_release_type: search.selected === "home" ? "4|5" : search.selected === "cinema" ? "3" : undefined,
       sort_by: (search.selected === "top-rated"
         ? "vote_average.desc"
         : search.selected === "upcoming"
           ? "popularity.desc"
           : undefined) satisfies SortOption | undefined,
-      before_date:
-        search.selected === "cinema" ? new Date().toISOString().split("T")[0] : undefined,
-      after_date:
-        search.selected === "upcoming" ? new Date().toISOString().split("T")[0] : undefined,
+      before_date: search.selected === "cinema" ? new Date().toISOString().split("T")[0] : undefined,
+      after_date: search.selected === "upcoming" ? new Date().toISOString().split("T")[0] : undefined,
     };
   }, [search]);
 
   const { results, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useMovieDiscover({
-    sort_by: sort_by as SortOption | undefined,
+    locale: tmdbLocale,
+    sort_by,
     with_release_type,
     with_genres: search.with_genres,
     with_watch_providers: search.with_watch_providers,
@@ -139,12 +136,9 @@ function MoviesPage() {
     <>
       <HeroCarousel type="movie" />
       <Container>
-        <ContinueWatchingSection type="movie" />
+        <MediaLibrarySection type="movie" />
 
-        <MediaCategoryCarousel
-          type="movie"
-          onValueChange={(value) => handleSearchChange({ with_genres: value })}
-        />
+        <MediaCategoryCarousel type="movie" onValueChange={(value) => handleSearchChange({ with_genres: value })} />
 
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-4">
@@ -158,9 +152,7 @@ function MoviesPage() {
                 <MovieProviderTabs
                   className="hidden xl:flex"
                   value={search.with_watch_providers}
-                  onValueChange={(value) =>
-                    handleSearchChange({ with_watch_providers: value?.toString() })
-                  }
+                  onValueChange={(value) => handleSearchChange({ with_watch_providers: value?.toString() })}
                 />
               )}
               <MovieFiltersSheet value={filtersValue} onChange={handleFiltersChange} />
@@ -172,11 +164,7 @@ function MoviesPage() {
               subtitle={<Trans>Try adjusting your filters or search criteria</Trans>}
             />
           ) : (
-            <MediaGrid
-              items={results}
-              isLoading={isLoading || isFetchingNextPage}
-              onLoadMore={handleLoadMore}
-            />
+            <MediaGrid items={results} isLoading={isLoading || isFetchingNextPage} onLoadMore={handleLoadMore} />
           )}
         </div>
       </Container>

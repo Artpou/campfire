@@ -1,5 +1,5 @@
-import type { Torrent } from "@basement/api/types";
 import { Trans } from "@lingui/react/macro";
+import type { Torrent } from "@seedarr/sdk";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
 import { Skeleton } from "@/shared/ui/skeleton";
@@ -32,12 +32,7 @@ function detectLanguage(name: string): string | null {
   return null;
 }
 
-export function TorrentInspectModal({
-  open,
-  onOpenChange,
-  torrent,
-  magnetUri,
-}: TorrentInspectModalProps) {
+export function TorrentInspectModal({ open, onOpenChange, torrent, magnetUri }: TorrentInspectModalProps) {
   const { data: inspectData, isLoading, error } = useTorrentInspect(magnetUri);
 
   const name = inspectData?.name || torrent?.title;
@@ -48,9 +43,7 @@ export function TorrentInspectModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 flex-wrap">
-            {name || <Trans>Loading...</Trans>}
-          </DialogTitle>
+          <DialogTitle className="flex items-center gap-2 flex-wrap">{name || <Trans>Loading...</Trans>}</DialogTitle>
         </DialogHeader>
 
         {isLoading && (

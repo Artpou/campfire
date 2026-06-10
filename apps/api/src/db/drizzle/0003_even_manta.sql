@@ -1,0 +1,1 @@
+ALTER TABLE `media` ADD `backdrop_path` text;

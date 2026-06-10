@@ -92,9 +92,7 @@ function DownloadDetailPage() {
   if (isLoading) {
     return (
       <Container>
-        <AppBreadcrumb
-          items={[{ name: "Downloads", link: "/downloads" }, { name: media?.title ?? "" }]}
-        />
+        <AppBreadcrumb items={[{ name: "Downloads", link: "/downloads" }, { name: media?.title ?? "" }]} />
         <SeedarrLoader className="mt-16" />
       </Container>
     );
@@ -106,9 +104,7 @@ function DownloadDetailPage() {
 
   return (
     <Container>
-      <AppBreadcrumb
-        items={[{ name: "Downloads", link: "/downloads" }, { name: media?.title || torrent.name }]}
-      />
+      <AppBreadcrumb items={[{ name: "Downloads", link: "/downloads" }, { name: media?.title || torrent.name }]} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left Column - Main Content (66%) */}
@@ -126,22 +122,14 @@ function DownloadDetailPage() {
 
                 <div className="flex items-center gap-2">
                   {media?.original_language && (
-                    <img
-                      src={getFlagUrl(media?.original_language)}
-                      alt={media?.original_language}
-                      className="size-4"
-                    />
+                    <img src={getFlagUrl(media?.original_language)} alt={media?.original_language} className="size-4" />
                   )}
                   <p className="text-sm text-muted-foreground">{media?.original_title}</p>
                 </div>
 
                 <p className="my-2 text-sm text-muted-foreground">{media?.overview}</p>
 
-                <DownloadMetadata
-                  origin={torrent.origin}
-                  quality={torrent.quality}
-                  language={torrent.language}
-                />
+                <DownloadMetadata origin={torrent.origin} quality={torrent.quality} language={torrent.language} />
               </div>
             </div>
 
@@ -177,20 +165,13 @@ function DownloadDetailPage() {
             <DownloadActionButtons id={id} onDelete={handleDelete} />
           </div>
 
-          {torrent.status !== "paused" && (
-            <DownloadNetworkChart data={networkHistory} status={torrent.status} />
-          )}
+          {torrent.status !== "paused" && <DownloadNetworkChart data={networkHistory} status={torrent.status} />}
 
           <div className="space-y-2">
-            {torrent.status !== "completed" && (
-              <DownloadNetworkCard type="download" value={downloadSpeed} />
-            )}
+            {torrent.status !== "completed" && <DownloadNetworkCard type="download" value={downloadSpeed} />}
             <DownloadNetworkCard type="upload" value={uploadSpeed} />
             <DownloadNetworkCard type="peers" value={numPeers} />
-            <DownloadNetworkCard
-              type="ratio"
-              value={(torrent.live?.uploaded ?? 0) / (torrent.live?.downloaded ?? 0)}
-            />
+            <DownloadNetworkCard type="ratio" value={(torrent.live?.uploaded ?? 0) / (torrent.live?.downloaded ?? 0)} />
           </div>
         </div>
       </div>

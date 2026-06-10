@@ -1,14 +1,13 @@
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { TanStackDevtools } from "@tanstack/react-devtools";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createRootRoute, Navigate, Outlet } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import ms from "ms";
+import { Toaster } from "sonner";
 
-import {
-  getI18nInstance,
-  getInitialCountry,
-  getLanguageFromCountry,
-} from "@/shared/helpers/i18n.helper";
+import { getI18nInstance, getInitialCountry, getLanguageFromCountry } from "@/shared/helpers/i18n.helper";
 import { LinguiClientProvider } from "@/shared/lingui-client-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 
@@ -17,9 +16,7 @@ export const Route = createRootRoute({
     <div className="min-h-screen flex items-center justify-center px-6">
       <Card className="max-w-2xl w-full text-center">
         <CardHeader>
-          <CardTitle className="text-4xl font-bold text-destructive">
-            Something went wrong!
-          </CardTitle>
+          <CardTitle className="text-4xl font-bold text-destructive">Something went wrong!</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="bg-destructive/10 border border-destructive  p-4 mb-6">
@@ -53,17 +50,34 @@ const queryClient = new QueryClient({
   },
 });
 
+const persister = createSyncStoragePersister({
+  storage: window.localStorage,
+  key: "campfire-query-cache",
+});
+
 function RootComponent() {
   const initialCountry = getInitialCountry();
   const uiLanguage = getLanguageFromCountry(initialCountry);
 
-  // Create i18n instance with UI language for messages, but use country as locale ID
   const i18n = getI18nInstance(uiLanguage);
 
   return (
     <LinguiClientProvider initialLocale={initialCountry} initialMessages={i18n.messages}>
-      <QueryClientProvider client={queryClient}>
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{
+          persister,
+          maxAge: ms("24h"),
+          dehydrateOptions: {
+            shouldDehydrateQuery: (query) => {
+              const key = query.queryKey[0];
+              return key === "genres" || key === "providers";
+            },
+          },
+        }}
+      >
         <Outlet />
+        <Toaster richColors position="bottom-right" />
         <TanStackDevtools
           config={{
             position: "bottom-right",
@@ -75,7 +89,7 @@ function RootComponent() {
             },
           ]}
         />
-      </QueryClientProvider>
+      </PersistQueryClientProvider>
     </LinguiClientProvider>
   );
 }

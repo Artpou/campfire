@@ -1,17 +1,6 @@
-import type {
-  DownloadTorrentInput,
-  TorrentDownloadSerialized,
-  TorrentLiveData,
-} from "@basement/api/types";
+import type { DownloadTorrentInput } from "@seedarr/sdk";
+import { api, unwrap } from "@seedarr/sdk";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-
-import { api, unwrap } from "@/lib/api";
-
-export type TorrentDownloadWithLive = TorrentDownloadSerialized & {
-  live?: TorrentLiveData;
-};
-
-export type TorrentDownload = TorrentDownloadWithLive;
 
 export function useStartDownload() {
   const queryClient = useQueryClient();
@@ -32,24 +21,25 @@ export function useStartDownload() {
 export function useTorrentDownloads() {
   return useQuery({
     queryKey: ["torrent-downloads"],
-    queryFn: () => unwrap<TorrentDownloadWithLive[]>(api.downloads.$get()),
+    queryFn: () => unwrap(api.downloads.$get()),
     refetchInterval: 2000,
   });
 }
 
 export function useTorrentDownload(
   id: string,
-  { refetchInterval = 0 }: { refetchInterval?: number } = {},
+  { refetchInterval = 0, enabled = true }: { refetchInterval?: number; enabled?: boolean } = {},
 ) {
   return useQuery({
     queryKey: ["torrent-download", id],
     queryFn: () =>
-      unwrap<TorrentDownloadWithLive>(
+      unwrap(
         api.downloads[":id"].$get({
           param: { id },
         }),
       ),
     refetchInterval,
+    enabled,
   });
 }
 

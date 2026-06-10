@@ -1,21 +1,18 @@
 import { zValidator } from "@hono/zod-validator";
-import { Hono } from "hono";
 import { stream } from "hono/streaming";
 
-import { NotFoundError } from "@/errors/error";
+import { BadRequestError, NotFoundError } from "@/errors/error";
 import { srt2webvtt } from "@/helpers/subtitle.helper";
 import { convertMkvToMp4Stream } from "@/helpers/video.helper";
-import { authGuard } from "@/modules/auth/auth.guard";
-import { requireRole } from "@/modules/auth/role.guard";
-import type { HonoVariables } from "@/types/hono";
 import type { Dirent } from "node:fs";
 import { Readable } from "node:stream";
-import { downloadTorrentSchema } from "./download.dto";
+import { downloadTorrentDto } from "./download.dto";
 import { requireDownloadOwnership } from "./download.guard";
 import { DownloadService } from "./download.service";
 import { DownloadStreamService } from "./download-stream.service";
 
-// Helper: Determine content type from file extension
+const DOWNLOAD_PATH = process.env.DOWNLOADS_PATH || "./downloads";
+
 function getContentType(fileName: string): string {
   const ext = fileName.toLowerCase();
   if (ext.endsWith(".webm")) return "video/webm";
@@ -25,26 +22,25 @@ function getContentType(fileName: string): string {
   return "video/mp4";
 }
 
-export const downloadRoutes = new Hono<{ Variables: HonoVariables }>()
-  .use("*", authGuard)
-  .use("*", requireRole("member"))
+export const downloadRoutes = DownloadService.createRouter()
   .get("/", async (c) => {
-    return c.json(await DownloadService.fromContext(c).list());
-  })
-  .post("/", zValidator("json", downloadTorrentSchema), async (c) => {
-    return c.json(await DownloadService.fromContext(c).start(c.req.valid("json")));
+    return c.json(await c.var.service.getMany());
   })
   .get("/:id", async (c) => {
-    const download = await DownloadService.fromContext(c).getById(c.req.param("id"));
+    const download = await c.var.service.get(c.req.param("id"));
     if (!download) throw new NotFoundError("Download");
     return c.json(download);
   })
-  .get("/:id/stream", async (c) => {
-    const downloadPath = process.env.DOWNLOADS_PATH || "./downloads";
-    const streamService = new DownloadStreamService(downloadPath);
-    const result = await streamService.getStreamForDownload(c.req.param("id"));
+  .post("/", zValidator("json", downloadTorrentDto), async (c) => {
+    return c.json(await c.var.service.start(c.req.valid("json")));
+  })
+  .get("/:id/stream", requireDownloadOwnership, async (c) => {
+    const download = await c.var.service.get(c.req.param("id"));
+    if (!download) throw new NotFoundError("Download");
 
-    if (!result) return c.json({ error: "No video file available" }, 404);
+    const streamService = new DownloadStreamService(DOWNLOAD_PATH);
+    const result = await streamService.getStreamForDownload(download);
+    if (!result) throw new NotFoundError("Video file");
 
     const { stream: nodeStream, fileName, size, filePath } = result;
     const isMkv = fileName.toLowerCase().endsWith(".mkv");
@@ -52,11 +48,10 @@ export const downloadRoutes = new Hono<{ Variables: HonoVariables }>()
 
     return stream(c, async (honoStream) => {
       honoStream.onAbort(() => {
-        // biome-ignore lint/suspicious/noExplicitAny: nodeStream is any
+        // biome-ignore lint/suspicious/noExplicitAny: nodeStream type varies
         (nodeStream as any).destroy?.();
       });
 
-      // Mkv no seeking
       if (isMkv && !filePath) {
         const convertedStream = convertMkvToMp4Stream(nodeStream);
         c.header("Content-Type", "video/mp4");
@@ -64,7 +59,6 @@ export const downloadRoutes = new Hono<{ Variables: HonoVariables }>()
         return;
       }
 
-      // File with range request (seeking possible)
       const rangeHeader = c.req.header("range");
       if (filePath && rangeHeader) {
         const parts = rangeHeader.replace(/bytes=/, "").split("-");
@@ -84,14 +78,12 @@ export const downloadRoutes = new Hono<{ Variables: HonoVariables }>()
         c.header("Content-Length", chunkSize.toString());
         c.header("Content-Type", contentType);
 
-        // Create a new disk stream for the specific range
         const fs = await import("node:fs");
         const rangeStream = fs.createReadStream(filePath, { start, end });
         await honoStream.pipe(Readable.toWeb(rangeStream));
         return;
       }
 
-      // File without range
       c.header("Content-Type", contentType);
       c.header("Content-Length", size.toString());
       c.header("Accept-Ranges", "bytes");
@@ -99,57 +91,42 @@ export const downloadRoutes = new Hono<{ Variables: HonoVariables }>()
     });
   })
   .get("/:id/file/:filePath", async (c) => {
-    const id = c.req.param("id");
+    const download = await c.var.service.get(c.req.param("id"));
+    if (!download) throw new NotFoundError("Download");
+
     const filePath = decodeURIComponent(c.req.param("filePath"));
-
-    const downloadPath = process.env.DOWNLOADS_PATH || "./downloads";
-    const download = await DownloadService.fromContext(c).getById(id);
-
-    if (!download) {
-      return c.json({ error: "Download not found" }, 404);
-    }
-
-    // Construct full path
     const path = await import("node:path");
     const fs = await import("node:fs");
-    const fullPath = path.join(downloadPath, download.savePath || download.name, filePath);
+    const baseDir = path.resolve(DOWNLOAD_PATH, download.savePath || download.name);
+    const fullPath = path.resolve(baseDir, filePath);
 
-    // Check if file exists
-    if (!fs.existsSync(fullPath)) {
-      return c.json({ error: "File not found" }, 404);
-    }
+    if (!fullPath.startsWith(baseDir)) throw new BadRequestError("Invalid file path");
+    if (!fs.existsSync(fullPath)) throw new NotFoundError("File");
 
-    // Determine content type
     let contentType = "application/octet-stream";
-    if (filePath.endsWith(".srt")) {
-      contentType = "text/plain; charset=utf-8";
-    } else if (filePath.endsWith(".vtt")) {
-      contentType = "text/vtt; charset=utf-8";
-    }
+    if (filePath.endsWith(".srt")) contentType = "text/plain; charset=utf-8";
+    else if (filePath.endsWith(".vtt")) contentType = "text/vtt; charset=utf-8";
 
-    const fileStream = fs.createReadStream(fullPath);
     const stats = fs.statSync(fullPath);
-
     c.header("Content-Type", contentType);
     c.header("Content-Length", stats.size.toString());
 
-    return c.body(Readable.toWeb(fileStream as Readable));
+    return c.body(Readable.toWeb(fs.createReadStream(fullPath) as Readable));
   })
   .get("/:id/external-subtitles", async (c) => {
-    const id = c.req.param("id");
-    const downloadPath = process.env.DOWNLOADS_PATH || "./downloads";
-    const download = await DownloadService.fromContext(c).getById(id);
-    if (!download) {
-      return c.json({ error: "Download not found" }, 404);
-    }
+    const download = await c.var.service.get(c.req.param("id"));
+    if (!download) throw new NotFoundError("Download");
+
     const path = await import("node:path");
     const fs = await import("node:fs/promises");
-    const folderPath = path.join(downloadPath, download.savePath || download.name);
+    const folderPath = path.join(DOWNLOAD_PATH, download.savePath || download.name);
+
     const torrentPaths = new Set(
       (download.live?.files ?? [])
         .filter((f) => /\.(srt|vtt)$/i.test(f.path))
         .map((f) => path.join(download.savePath || download.name, f.path).replace(/\\/g, "/")),
     );
+
     const collected: string[] = [];
     async function scan(dir: string): Promise<void> {
       let entries: Dirent[];
@@ -160,7 +137,7 @@ export const downloadRoutes = new Hono<{ Variables: HonoVariables }>()
       }
       for (const e of entries) {
         const full = path.join(dir, e.name);
-        const rel = path.relative(downloadPath, full).replace(/\\/g, "/");
+        const rel = path.relative(DOWNLOAD_PATH, full).replace(/\\/g, "/");
         if (e.isDirectory()) {
           await scan(full);
         } else if (/\.(srt|vtt)$/i.test(e.name) && !torrentPaths.has(rel)) {
@@ -168,58 +145,46 @@ export const downloadRoutes = new Hono<{ Variables: HonoVariables }>()
         }
       }
     }
+
     await scan(folderPath);
     return c.json({ paths: collected });
   })
   .get("/:id/subtitles/:filePath", async (c) => {
-    const id = c.req.param("id");
+    const download = await c.var.service.get(c.req.param("id"));
+    if (!download) throw new NotFoundError("Download");
+
     const filePath = decodeURIComponent(c.req.param("filePath"));
-
-    const downloadPath = process.env.DOWNLOADS_PATH || "./downloads";
-    const download = await DownloadService.fromContext(c).getById(id);
-
-    if (!download) {
-      return c.json({ error: "Download not found" }, 404);
+    const lower = filePath.toLowerCase();
+    if (!lower.endsWith(".srt") && !lower.endsWith(".vtt")) {
+      throw new BadRequestError("Only .srt and .vtt files are supported");
     }
 
-    // Construct full path
     const path = await import("node:path");
     const fs = await import("node:fs/promises");
-    const fullPath = path.join(downloadPath, filePath);
+    const resolvedBase = path.resolve(DOWNLOAD_PATH);
+    const fullPath = path.resolve(DOWNLOAD_PATH, filePath);
 
-    // Check if file exists
+    if (!fullPath.startsWith(resolvedBase)) throw new BadRequestError("Invalid file path");
+
     try {
       await fs.access(fullPath);
     } catch {
-      return c.json({ error: "Subtitle file not found" }, 404);
+      throw new NotFoundError("Subtitle file");
     }
 
-    // Only handle .srt files (convert to VTT)
-    const lower = filePath.toLowerCase();
-    if (!lower.endsWith(".srt") && !lower.endsWith(".vtt")) {
-      return c.json({ error: "Only .srt and .vtt files are supported" }, 400);
-    }
-
-    // Read file as buffer for encoding detection
     const iconv = await import("iconv-lite");
     const buffer = await fs.readFile(fullPath);
 
-    // Try UTF-8 first, fallback to Windows-1252 for French accents
     let content: string;
     try {
       content = iconv.default.decode(buffer, "utf-8");
-      // Check for common encoding artifacts
-      if (content.includes("�") || content.includes("\ufffd")) {
-        throw new Error("Invalid UTF-8");
-      }
+      if (content.includes("\ufffd")) throw new Error("Invalid UTF-8");
     } catch {
-      // Fallback to Windows-1252 (common for French subtitles)
       content = iconv.default.decode(buffer, "win1252");
     }
 
     const vttContent = lower.endsWith(".vtt") ? content : srt2webvtt(content);
 
-    // Set proper headers with CORS
     c.header("Content-Type", "text/vtt; charset=utf-8");
     c.header("Access-Control-Allow-Origin", "*");
     c.header("Access-Control-Allow-Methods", "GET");
@@ -227,18 +192,12 @@ export const downloadRoutes = new Hono<{ Variables: HonoVariables }>()
 
     return c.text(vttContent);
   })
-  // Protected routes
   .post("/:id/pause", requireDownloadOwnership, async (c) => {
-    await DownloadService.fromContext(c).pause(c.req.param("id"));
-    return c.json({ success: true });
+    return c.json(await c.var.service.pause(c.req.param("id")));
   })
   .post("/:id/resume", requireDownloadOwnership, async (c) => {
-    await DownloadService.fromContext(c).resume(c.req.param("id"));
-    return c.json({ success: true });
+    return c.json(await c.var.service.resume(c.req.param("id")));
   })
   .delete("/:id", requireDownloadOwnership, async (c) => {
-    await DownloadService.fromContext(c).delete(c.req.param("id"));
-    return c.json({ success: true });
+    return c.json(await c.var.service.delete(c.req.param("id")));
   });
-
-export type DownloadRoutesType = typeof downloadRoutes;

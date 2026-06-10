@@ -4,6 +4,17 @@ import { Trans } from "@lingui/react/macro";
 import { createFileRoute } from "@tanstack/react-router";
 import { Trash2Icon } from "lucide-react";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/shared/ui/alert-dialog";
 import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
 
@@ -19,7 +30,6 @@ function HistoryPage() {
   const clearHistory = useClearHistory();
 
   const { results, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useMedias({
-    type: "movie",
     filter: "recently-viewed",
   });
 
@@ -29,27 +39,41 @@ function HistoryPage() {
     }
   };
 
-  const handleClear = () => {
-    if (window.confirm(_(msg`Are you sure you want to clear your viewing history?`))) {
-      clearHistory.mutate();
-    }
-  };
-
   return (
     <Container>
       <div className="space-y-6">
         <div className="flex items-center justify-between gap-4">
           <h1 className="text-3xl font-bold">{_(msg`History`)}</h1>
           {results.length > 0 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleClear}
-              disabled={clearHistory.isPending}
-            >
-              <Trash2Icon className="size-4" />
-              <Trans>Clear history</Trans>
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" disabled={clearHistory.isPending}>
+                  <Trash2Icon className="size-4" />
+                  <Trans>Clear history</Trans>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    <Trans>Clear history</Trans>
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    <Trans>Are you sure you want to clear your viewing history? This action cannot be undone.</Trans>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>
+                    <Trans>Cancel</Trans>
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => clearHistory.mutate()}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    <Trans>Clear</Trans>
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </div>
 

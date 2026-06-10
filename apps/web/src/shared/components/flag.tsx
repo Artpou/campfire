@@ -20,12 +20,5 @@ export function Flag({ lang, className }: FlagProps) {
 
   if (error) return <GlobeIcon className="size-4" />;
 
-  return (
-    <img
-      src={getFlagUrl(lang)}
-      alt={lang}
-      className={cn("size-4", className)}
-      onError={() => setError(true)}
-    />
-  );
+  return <img src={getFlagUrl(lang)} alt={lang} className={cn("size-4", className)} onError={() => setError(true)} />;
 }

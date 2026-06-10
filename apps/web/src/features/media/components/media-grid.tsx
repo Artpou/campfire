@@ -1,11 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
-import type { Media } from "@basement/api/types";
+import type { Media } from "@seedarr/sdk";
 import { useIntersectionObserver } from "@uidotdev/usehooks";
 
 import { Skeleton } from "@/shared/ui/skeleton";
 
-import { useMediasStatus } from "@/features/media/hooks/use-media";
 import { MediaCard } from "./media-card";
 
 interface MediaGridProps {
@@ -23,42 +22,32 @@ export function MediaGrid({
   withLoading = true,
   onLoadMore,
 }: MediaGridProps) {
-  const { data: statuses } = useMediasStatus(items.map((item) => item.id.toString()));
   const [lastItemRef, entry] = useIntersectionObserver({
     threshold: 1.0,
   });
 
+  const onLoadMoreRef = useRef(onLoadMore);
+  onLoadMoreRef.current = onLoadMore;
+
   useEffect(() => {
-    if (entry?.isIntersecting && onLoadMore) {
-      onLoadMore();
+    if (entry?.isIntersecting && !isLoading && onLoadMoreRef.current) {
+      onLoadMoreRef.current();
     }
-  }, [entry, onLoadMore]);
+  }, [entry?.isIntersecting, isLoading]);
 
   if (!isLoading && (!items || !items.length)) return null;
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-6 gap-4">
-      {items.map((item, index) => {
-        const status = statuses?.find((s) => s.id === item.id);
-        return (
-          <div
-            key={`${item.type}-${item.id}`}
-            ref={index === items.length - 1 ? lastItemRef : null}
-            className="relative"
-          >
-            <MediaCard
-              media={{
-                ...item,
-                like: status?.like ?? item.like,
-                watchList: status?.watchList ?? item.watchList,
-                download: status?.download ?? item.download,
-                downloadId: status?.downloadId ?? item.downloadId,
-              }}
-              withType={withType}
-            />
-          </div>
-        );
-      })}
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(165px,1fr))] gap-4">
+      {items.map((item, index) => (
+        <div key={`${item.type}-${item.id}`} ref={index === items.length - 1 ? lastItemRef : null} className="relative">
+          <MediaCard
+            media={item}
+            backdropPath={"backdrop_path" in item ? item.backdrop_path : undefined}
+            withType={withType}
+          />
+        </div>
+      ))}
       {withLoading &&
         isLoading &&
         Array.from({ length: 20 }, (_, i) => (

@@ -1,11 +1,10 @@
-import type { Media, Torrent, TorrentIndexer, TorrentInspectResult } from "@basement/api/types";
+import type { Media, Torrent, TorrentIndexerQuery } from "@seedarr/sdk";
+import { api, unwrap } from "@seedarr/sdk";
 import { useQueries, useQuery } from "@tanstack/react-query";
-
-import { api, unwrap } from "@/lib/api";
 
 export function useTorrents(
   media: Media | null | undefined,
-  indexers: TorrentIndexer[],
+  indexers: TorrentIndexerQuery[],
   { season, episode }: { season?: number; episode?: number } = {},
 ) {
   return useQueries({
@@ -36,15 +35,9 @@ export function useTorrents(
 export function useTorrentInspect(magnetUri: string | null) {
   return useQuery({
     queryKey: ["torrent", "inspect", magnetUri],
-    queryFn: async () => {
+    queryFn: () => {
       if (!magnetUri) throw new Error("No magnet URI provided");
-
-      const response = await api.torrents.inspect.$get({
-        query: { magnet: magnetUri },
-      });
-
-      // biome-ignore lint/suspicious/noExplicitAny: TODO
-      return unwrap<TorrentInspectResult>(response as any);
+      return unwrap(api.torrents.inspect.$get({ query: { magnet: magnetUri } }));
     },
     enabled: !!magnetUri,
     staleTime: 0,

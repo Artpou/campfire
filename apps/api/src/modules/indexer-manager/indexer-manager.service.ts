@@ -1,29 +1,25 @@
 import { eq } from "drizzle-orm";
 
-import { AuthenticatedService } from "@/classes/authenticated-service";
 import { db } from "@/db/db";
-import { indexerManager } from "@/db/schema";
+import { IdentifiableService } from "@/modules/auth/auth.service";
+import { indexerManager } from "@/modules/indexer-manager/indexer-manager.schema";
 import type { IndexerManager, UpsertIndexerManagerInput } from "./indexer-manager.dto";
 
-export class IndexerManagerService extends AuthenticatedService {
-  async get(): Promise<IndexerManager | null> {
-    const [result] = await db.select().from(indexerManager).limit(1);
-    return result ?? null;
+// TODO: manage multiple indexers
+export class IndexerManagerService extends IdentifiableService<IndexerManager> {
+  async getMany(): Promise<IndexerManager[]> {
+    return db.query.indexerManager.findMany();
+  }
+
+  async get(): Promise<IndexerManager | undefined> {
+    return db.query.indexerManager.findFirst();
   }
 
   async upsert(data: UpsertIndexerManagerInput): Promise<IndexerManager> {
-    const existing = await this.get();
+    const existing = (await this.getMany())?.[0];
 
     if (existing) {
-      const [updated] = await db
-        .update(indexerManager)
-        .set({
-          indexerType: data.indexerType,
-          indexerUrl: data.indexerUrl,
-          indexerApiKey: data.indexerApiKey,
-        })
-        .where(eq(indexerManager.id, existing.id))
-        .returning();
+      const [updated] = await db.update(indexerManager).set(data).where(eq(indexerManager.id, existing.id)).returning();
       return updated;
     }
 
@@ -31,7 +27,8 @@ export class IndexerManagerService extends AuthenticatedService {
     return created;
   }
 
-  async delete(): Promise<void> {
+  async delete(): Promise<{ success: true }> {
     await db.delete(indexerManager);
+    return { success: true };
   }
 }

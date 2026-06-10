@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-import type { SubdlSubtitle } from "@basement/api/types";
 import { Trans } from "@lingui/react/macro";
+import type { SubdlSubtitle } from "@seedarr/sdk";
 import { DownloadIcon, SubtitlesIcon } from "lucide-react";
 
 import { Button } from "@/shared/ui/button";
@@ -110,9 +110,7 @@ export function SubtitleSearchDialog({
                         downloadId={downloadId}
                         language={language}
                         onDownload={downloadSubtitle.mutate}
-                        isDownloading={
-                          downloadSubtitle.isPending && downloadSubtitle.variables?.url === sub.url
-                        }
+                        isDownloading={downloadSubtitle.isPending && downloadSubtitle.variables?.url === sub.url}
                       />
                     ))
                   )}
@@ -138,12 +136,7 @@ function SubtitleRow({
   mediaTitle: string;
   downloadId: string;
   language: string;
-  onDownload: (input: {
-    downloadId: string;
-    url: string;
-    language: string;
-    mediaTitle: string;
-  }) => void;
+  onDownload: (input: { downloadId: string; url: string; language: string; mediaTitle: string }) => void;
   isDownloading: boolean;
 }) {
   return (

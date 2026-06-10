@@ -2,7 +2,8 @@ import { eq, lt } from "drizzle-orm";
 import ms from "ms";
 
 import { db } from "@/db/db";
-import { session } from "@/db/schema";
+import { logger } from "@/helpers/logger.helper";
+import { session } from "@/modules/auth/auth.schema";
 import { randomBytes } from "node:crypto";
 
 const SESSION_DURATION_MS = ms("7d");
@@ -67,6 +68,6 @@ export async function cleanupExpiredSessions(): Promise<void> {
 // Clean up expired sessions every hour
 setInterval(() => {
   cleanupExpiredSessions().catch((err) => {
-    console.error("Failed to cleanup expired sessions:", err);
+    logger.error("SESSION", "Failed to cleanup expired sessions:", err);
   });
 }, ms("1h"));

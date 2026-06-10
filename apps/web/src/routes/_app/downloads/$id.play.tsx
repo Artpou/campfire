@@ -4,10 +4,10 @@ import { Plyr } from "plyr-react";
 import "plyr-react/plyr.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { api, getBaseUrl, unwrap } from "@seedarr/sdk";
 import { useQueryClient } from "@tanstack/react-query";
 import { SubtitlesIcon } from "lucide-react";
 
-import { getBaseUrl } from "@/lib/api";
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { detectLanguage } from "@/shared/helpers/lang.helper";
@@ -15,7 +15,7 @@ import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
 
 import { useAuth } from "@/features/auth/auth-store";
-import { useWatchProgress } from "@/features/media/hooks/use-media";
+import { useMedia } from "@/features/media/hooks/use-media";
 import { SubtitleSearchDialog } from "@/features/subtitles/components/subtitle-search-dialog";
 import { useExternalSubtitles } from "@/features/subtitles/hooks/use-subtitles";
 import { useTorrentDownload } from "@/features/torrent/hooks/use-torrent-download";
@@ -23,18 +23,13 @@ import { useTorrentLink } from "@/features/torrent/hooks/use-torrent-link";
 
 const PROGRESS_SAVE_INTERVAL_MS = 10_000;
 
-function saveProgressToServer(
-  mediaId: number,
-  position: number,
-  duration: number,
-  downloadId?: string,
-) {
-  return fetch(`${getBaseUrl()}/media/${mediaId}/progress`, {
-    method: "PATCH",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ position, duration, downloadId }),
-  }).catch(() => {});
+function saveProgressToServer(mediaId: number, position: number, duration: number, downloadId?: string) {
+  return unwrap(
+    api.media[":id"].progress.$patch({
+      param: { id: mediaId.toString() },
+      json: { position, duration, downloadId },
+    }),
+  ).catch(() => {});
 }
 
 export const Route = createFileRoute("/_app/downloads/$id/play")({
@@ -49,7 +44,8 @@ function VideoPlayerPage() {
   const { data: externalSubtitles } = useExternalSubtitles(id);
   const [subtitleDialogOpen, setSubtitleDialogOpen] = useState(false);
   const mediaId = torrent?.mediaId ?? 0;
-  const { data: savedProgress } = useWatchProgress(mediaId, { enabled: mediaId > 0 });
+  const { data: mediaData } = useMedia(mediaId, { enabled: mediaId > 0 });
+  const savedProgress = mediaData?.progress;
 
   const queryClient = useQueryClient();
   const playerContainerRef = useRef<HTMLDivElement | null>(null);
@@ -100,7 +96,7 @@ function VideoPlayerPage() {
         if (!dur || dur <= 0 || !pos || pos <= 0) return;
         lastSavedAtRef.current = now;
         saveProgressToServer(mediaId, Math.floor(pos), Math.floor(dur), id).then(() => {
-          queryClient.invalidateQueries({ queryKey: ["continue-watching"] });
+          queryClient.invalidateQueries({ queryKey: ["media"] });
         });
       };
 
@@ -144,10 +140,7 @@ function VideoPlayerPage() {
           const fileName = file.name.toLowerCase();
           if (!fileName.endsWith(".srt") && !fileName.endsWith(".vtt")) return false;
           const fileBaseName = file.name.replace(/\.[^.]+$/, "");
-          return (
-            fileBaseName.startsWith(videoBaseName) ||
-            file.path.includes(largestVideo.path.split("/")[0])
-          );
+          return fileBaseName.startsWith(videoBaseName) || file.path.includes(largestVideo.path.split("/")[0]);
         });
 
         for (let index = 0; index < subtitleFiles.length; index++) {

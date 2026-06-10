@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import { Trans } from "@lingui/react/macro";
-import type { Cast, Crew, MovieDetails as TMDBMovieDetails } from "tmdb-ts";
+import type { TMDBMovieDetails } from "@seedarr/sdk";
 
 import { CarouselItem } from "@/shared/ui/carousel";
 import { CarouselWrapper } from "@/shared/ui/carousel-wrapper";
@@ -9,24 +9,17 @@ import { CarouselWrapper } from "@/shared/ui/carousel-wrapper";
 import { PersonCard } from "@/features/person/components/person-card";
 
 interface MovieCastProps {
-  movie: TMDBMovieDetails & {
-    credits?: {
-      cast?: Cast[];
-      crew?: Crew[];
-    };
-  };
+  movie: TMDBMovieDetails;
 }
 
 export function MovieCast({ movie }: MovieCastProps) {
   const castAndCrew = useMemo(() => {
     const directors =
       movie.credits?.crew
-        ?.filter((person: Crew) => person.job === "Director")
-        .map((d: Crew) => ({ ...d, role: "Director", type: "Director" as const })) || [];
+        ?.filter((person) => person.job === "Director")
+        .map((d) => ({ ...d, role: "Director", type: "Director" as const })) || [];
     const actors =
-      movie.credits?.cast
-        ?.slice(0, 20)
-        .map((a: Cast) => ({ ...a, role: a.character, type: "Actor" as const })) || [];
+      movie.credits?.cast?.slice(0, 20).map((a) => ({ ...a, role: a.character, type: "Actor" as const })) || [];
     return [...directors, ...actors];
   }, [movie.credits]);
 

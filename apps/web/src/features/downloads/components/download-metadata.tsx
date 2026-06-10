@@ -7,12 +7,7 @@ interface DownloadMetadataProps {
   className?: string;
 }
 
-export function DownloadMetadata({
-  origin,
-  quality,
-  language,
-  className = "",
-}: DownloadMetadataProps) {
+export function DownloadMetadata({ origin, quality, language, className = "" }: DownloadMetadataProps) {
   if (!origin && !quality && !language) {
     return null;
   }

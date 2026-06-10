@@ -2,20 +2,21 @@ import { useEffect, useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
+import { api, unwrap } from "@seedarr/sdk";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
-  ChevronDown,
-  ClockPlus,
-  Eye,
-  Film,
-  Heart,
+  ChevronDownIcon,
+  ClockPlusIcon,
+  EyeIcon,
+  FilmIcon,
+  HeartIcon,
   ListIcon,
   LogOutIcon,
   MonitorIcon,
   MoonIcon,
-  Settings,
+  SettingsIcon,
   SunIcon,
-  Tv,
+  TvIcon,
   UsersIcon,
   WrenchIcon,
 } from "lucide-react";
@@ -42,15 +43,15 @@ interface AppTopbarProps {
 }
 
 const navLinks = [
-  { title: msg`Movies`, url: "/movies", icon: Film },
-  { title: msg`TV Shows`, url: "/tv", icon: Tv },
+  { title: msg`Movies`, url: "/movies", icon: FilmIcon },
+  { title: msg`TV Shows`, url: "/tv", icon: TvIcon },
   { title: msg`Library`, url: "/downloads", icon: MonitorIcon },
 ];
 
 const listLinks = [
-  { title: msg`Watch List`, url: "/lists/watch-list", icon: ClockPlus },
-  { title: msg`Liked`, url: "/lists/like", icon: Heart },
-  { title: msg`History`, url: "/lists/history", icon: Eye },
+  { title: msg`Watch List`, url: "/lists/watch-list", icon: ClockPlusIcon },
+  { title: msg`Liked`, url: "/lists/like", icon: HeartIcon },
+  { title: msg`History`, url: "/lists/history", icon: EyeIcon },
 ];
 
 export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
@@ -80,7 +81,12 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
 
   const isListsActive = location.pathname.startsWith("/lists");
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    try {
+      await unwrap(api.auth.logout.$post());
+    } catch {
+      // continue even if server logout fails
+    }
     logout();
     navigate({ to: "/login" });
   };
@@ -97,9 +103,7 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
       <div className="container mx-auto flex h-14 items-center px-4 md:px-6 gap-4">
         {isAuthenticated ? (
           <>
-            <div
-              className={cn("flex items-center gap-6 min-w-0", searchExpanded && "hidden md:flex")}
-            >
+            <div className={cn("flex items-center gap-6 min-w-0", searchExpanded && "hidden md:flex")}>
               <Link to="/movies" className="flex items-center gap-2 shrink-0">
                 <img src="/logo192.png" alt="Seedarr" className="size-8" />
                 <span className="text-lg font-semibold hidden sm:inline">Seedarr</span>
@@ -129,14 +133,11 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      className={cn(
-                        "font-medium gap-1",
-                        isListsActive && "text-foreground bg-accent",
-                      )}
+                      className={cn("font-medium gap-1", isListsActive && "text-foreground bg-accent")}
                     >
                       <ListIcon className="size-4" />
                       {t(msg`Lists`)}
-                      <ChevronDown className="size-4" />
+                      <ChevronDownIcon className="size-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
@@ -161,69 +162,57 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
               />
 
               {!searchExpanded && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" aria-label={t(msg`Settings`)}>
-                      <Settings className="size-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>
-                      <Trans>Settings</Trans>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
+                <>
+                  <LanguageDropdown />
 
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.preventDefault();
-                        toggleTheme();
-                      }}
-                      className="cursor-pointer"
-                    >
-                      {theme === "dark" ? (
-                        <SunIcon className="size-4 mr-2" />
-                      ) : (
-                        <MoonIcon className="size-4 mr-2" />
-                      )}
-                      {theme === "dark" ? <Trans>Light mode</Trans> : <Trans>Dark mode</Trans>}
-                    </DropdownMenuItem>
-
-                    <div className="px-2 py-1.5">
-                      <LanguageDropdown />
-                    </div>
-
-                    {isAdmin && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem asChild>
-                          <Link to="/users" search={{}} className="flex items-center gap-2">
-                            <UsersIcon className="size-4" />
-                            <Trans>Manage users</Trans>
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link to="/settings" search={{}} className="flex items-center gap-2">
-                            <WrenchIcon className="size-4" />
-                            <Trans>Advanced options</Trans>
-                          </Link>
-                        </DropdownMenuItem>
-                      </>
-                    )}
-
-                    <DropdownMenuSeparator />
-                    <div className="px-2 py-1.5">
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="w-full"
-                        onClick={handleSignOut}
-                      >
-                        <LogOutIcon className="size-4" />
-                        <Trans>Sign out</Trans>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" aria-label={t(msg`Settings`)}>
+                        <SettingsIcon className="size-5" />
                       </Button>
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>
+                        <Trans>Settings</Trans>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.preventDefault();
+                          toggleTheme();
+                        }}
+                        className="cursor-pointer"
+                      >
+                        {theme === "dark" ? <SunIcon className="size-4 mr-2" /> : <MoonIcon className="size-4 mr-2" />}
+                        {theme === "dark" ? <Trans>Light mode</Trans> : <Trans>Dark mode</Trans>}
+                      </DropdownMenuItem>
+                      {isAdmin && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem asChild>
+                            <Link to="/users" search={{}} className="flex items-center gap-2">
+                              <UsersIcon className="size-4" />
+                              <Trans>Manage users</Trans>
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link to="/settings" search={{}} className="flex items-center gap-2">
+                              <WrenchIcon className="size-4" />
+                              <Trans>Advanced options</Trans>
+                            </Link>
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      <DropdownMenuSeparator />
+                      <div className="px-2 py-1.5">
+                        <Button variant="destructive" size="sm" className="w-full" onClick={handleSignOut}>
+                          <LogOutIcon className="size-4" />
+                          <Trans>Sign out</Trans>
+                        </Button>
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
               )}
             </div>
           </>

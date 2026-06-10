@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 
-import type { Torrent, TorrentIndexer } from "@basement/api/types";
 import { Trans } from "@lingui/react/macro";
+import type { Torrent, TorrentIndexerQuery } from "@seedarr/sdk";
 import type { UseQueryResult } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Eye, EyeOff, SettingsIcon } from "lucide-react";
+import { EyeIcon, EyeOffIcon, SettingsIcon } from "lucide-react";
 
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
@@ -12,16 +12,12 @@ import { Spinner } from "@/shared/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
 interface TorrentIndexersTableProps {
-  indexers: TorrentIndexer[];
+  indexers: TorrentIndexerQuery[];
   torrentQueries: UseQueryResult<Torrent[], Error>[];
   onVisibilityChange: (visibleIndexers: Set<string>) => void;
 }
 
-export function TorrentIndexersTable({
-  indexers,
-  torrentQueries,
-  onVisibilityChange,
-}: TorrentIndexersTableProps) {
+export function TorrentIndexersTable({ indexers, torrentQueries, onVisibilityChange }: TorrentIndexersTableProps) {
   const [visibleIndexers, setVisibleIndexers] = useState<Set<string>>(new Set());
 
   const indexerStats = useMemo(() => {
@@ -69,10 +65,7 @@ export function TorrentIndexersTable({
     switch (status) {
       case "loading":
         return (
-          <Badge
-            variant="secondary"
-            className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
-          >
+          <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
             <Trans>Loading</Trans>
           </Badge>
         );
@@ -84,10 +77,7 @@ export function TorrentIndexersTable({
         );
       case "success":
         return (
-          <Badge
-            variant="default"
-            className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-          >
+          <Badge variant="default" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
             <Trans>Success</Trans>
           </Badge>
         );
@@ -138,9 +128,9 @@ export function TorrentIndexersTable({
                         {stat.status === "loading" ? (
                           <Spinner />
                         ) : isVisible ? (
-                          <Eye className="h-3.5 w-3.5" />
+                          <EyeIcon className="h-3.5 w-3.5" />
                         ) : (
-                          <EyeOff className="h-3.5 w-3.5" />
+                          <EyeOffIcon className="h-3.5 w-3.5" />
                         )}
                       </Button>
                     </TableCell>

@@ -161,10 +161,7 @@ function TVTorrentsPage() {
           <Label>
             <Trans>Episode</Trans>
           </Label>
-          <Select
-            value={search.episode?.toString() ?? ALL_EPISODES}
-            onValueChange={handleEpisodeChange}
-          >
+          <Select value={search.episode?.toString() ?? ALL_EPISODES} onValueChange={handleEpisodeChange}>
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>

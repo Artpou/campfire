@@ -1,5 +1,5 @@
 import { Trans } from "@lingui/react/macro";
-import { ArrowDown, ArrowUp, ScaleIcon, Users } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, ScaleIcon, UsersIcon } from "lucide-react";
 
 import { formatBytes } from "@/shared/helpers/format.helper";
 import { Card } from "@/shared/ui/card";
@@ -15,7 +15,7 @@ export function DownloadNetworkCard({ type, value = 0 }: DownloadNetworkCardProp
       <Card className="p-3">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-primary/10">
-            <ArrowDown className="size-4 text-primary" />
+            <ArrowDownIcon className="size-4 text-primary" />
           </div>
           <div className="flex-1">
             <p className="text-xs text-muted-foreground">
@@ -33,7 +33,7 @@ export function DownloadNetworkCard({ type, value = 0 }: DownloadNetworkCardProp
       <Card className="p-3">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-blue/10">
-            <ArrowUp className="size-4 text-blue" />
+            <ArrowUpIcon className="size-4 text-blue" />
           </div>
           <div className="flex-1">
             <p className="text-xs text-muted-foreground">
@@ -69,7 +69,7 @@ export function DownloadNetworkCard({ type, value = 0 }: DownloadNetworkCardProp
     <Card className="p-3">
       <div className="flex items-center gap-2">
         <div className="p-1.5 rounded-lg bg-purple/10">
-          <Users className="size-4 text-purple" />
+          <UsersIcon className="size-4 text-purple" />
         </div>
         <div className="flex-1">
           <p className="text-xs text-muted-foreground">

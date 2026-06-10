@@ -1,4 +1,4 @@
-# Stage 1: Base image (Shared)
+# Stage 1: Base image
 FROM node:20-slim AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -11,10 +11,13 @@ RUN apt-get update && apt-get install -y python3 make g++ cmake && rm -rf /var/l
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/api/package.json ./apps/api/
 COPY apps/web/package.json ./apps/web/
+COPY packages/sdk/package.json ./packages/sdk/
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/ui/package.json ./packages/ui/
 ENV HUSKY=0
 RUN pnpm install --frozen-lockfile
 COPY . .
-RUN pnpm --filter @basement/api build
+RUN pnpm --filter @seedarr/api build
 RUN pnpm --filter web build
 
 # Stage 3: Runner
@@ -24,12 +27,16 @@ ENV NODE_ENV=production
 
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/api/package.json apps/api/tsconfig.json ./apps/api/
+COPY packages/sdk/package.json ./packages/sdk/
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/ui/package.json ./packages/ui/
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=builder /app/apps/api/drizzle.config.ts ./apps/api/drizzle.config.ts
 COPY --from=builder /app/apps/api/src ./apps/api/src
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/web/dist ./apps/web/dist
+COPY --from=builder /app/packages ./packages
 
 EXPOSE 3002
 

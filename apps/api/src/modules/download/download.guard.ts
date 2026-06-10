@@ -1,33 +1,22 @@
 import type { Context, Next } from "hono";
 
-import type { HonoVariables } from "@/types/hono";
+import { ForbiddenError, NotFoundError } from "@/errors/error";
+import { HonoAuthenticatedVariables } from "../auth/auth.guard";
 import { DownloadService } from "./download.service";
 
-/**
- * Middleware to check if the user has permission to access a download
- * Only the download owner or admin/owner roles can access
- */
 export async function requireDownloadOwnership(
-  c: Context<{ Variables: HonoVariables }>,
+  c: Context<{ Variables: HonoAuthenticatedVariables }>,
   next: Next,
-): Promise<Response | undefined> {
+): Promise<void> {
   const downloadId = c.req.param("id");
   const user = c.get("user");
 
-  // Get the download
-  const download = await DownloadService.fromContext(c).getById(downloadId);
+  const download = await new DownloadService(user).get(downloadId);
+  if (!download) throw new NotFoundError("Download");
 
-  if (!download) {
-    return c.json({ error: "Download not found" }, 404);
-  }
-
-  // Check if user is owner or has admin/owner role
   if (download.userId !== user.id && !["owner", "admin"].includes(user.role)) {
-    return c.json({ error: "Unauthorized" }, 403);
+    throw new ForbiddenError();
   }
-
-  // Store download in context for reuse in route handler
-  c.set("download", download);
 
   await next();
 }

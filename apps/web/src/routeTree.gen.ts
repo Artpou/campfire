@@ -16,7 +16,6 @@ import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AuthSignupRouteImport } from './routes/_auth/signup'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AppUsersRouteImport } from './routes/_app/users'
-import { Route as AppServerRouteImport } from './routes/_app/server'
 import { Route as AppSearchRouteImport } from './routes/_app/search'
 import { Route as AppTvIndexRouteImport } from './routes/_app/tv/index'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
@@ -64,11 +63,6 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
 const AppUsersRoute = AppUsersRouteImport.update({
   id: '/users',
   path: '/users',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppServerRoute = AppServerRouteImport.update({
-  id: '/server',
-  path: '/server',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSearchRoute = AppSearchRouteImport.update({
@@ -150,7 +144,6 @@ const AppDownloadsIdPlayRoute = AppDownloadsIdPlayRouteImport.update({
 export interface FileRoutesByFullPath {
   '/404': typeof R404Route
   '/search': typeof AppSearchRoute
-  '/server': typeof AppServerRoute
   '/users': typeof AppUsersRoute
   '/login': typeof AuthLoginRoute
   '/signup': typeof AuthSignupRoute
@@ -173,7 +166,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/404': typeof R404Route
   '/search': typeof AppSearchRoute
-  '/server': typeof AppServerRoute
   '/users': typeof AppUsersRoute
   '/login': typeof AuthLoginRoute
   '/signup': typeof AuthSignupRoute
@@ -199,7 +191,6 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
   '/_app/search': typeof AppSearchRoute
-  '/_app/server': typeof AppServerRoute
   '/_app/users': typeof AppUsersRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/signup': typeof AuthSignupRoute
@@ -224,7 +215,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/404'
     | '/search'
-    | '/server'
     | '/users'
     | '/login'
     | '/signup'
@@ -247,7 +237,6 @@ export interface FileRouteTypes {
   to:
     | '/404'
     | '/search'
-    | '/server'
     | '/users'
     | '/login'
     | '/signup'
@@ -272,7 +261,6 @@ export interface FileRouteTypes {
     | '/_app'
     | '/_auth'
     | '/_app/search'
-    | '/_app/server'
     | '/_app/users'
     | '/_auth/login'
     | '/_auth/signup'
@@ -348,13 +336,6 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof AppUsersRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/server': {
-      id: '/_app/server'
-      path: '/server'
-      fullPath: '/server'
-      preLoaderRoute: typeof AppServerRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/search': {
@@ -467,7 +448,6 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppSearchRoute: typeof AppSearchRoute
-  AppServerRoute: typeof AppServerRoute
   AppUsersRoute: typeof AppUsersRoute
   AppIndexRoute: typeof AppIndexRoute
   AppListsHistoryRoute: typeof AppListsHistoryRoute
@@ -488,7 +468,6 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppSearchRoute: AppSearchRoute,
-  AppServerRoute: AppServerRoute,
   AppUsersRoute: AppUsersRoute,
   AppIndexRoute: AppIndexRoute,
   AppListsHistoryRoute: AppListsHistoryRoute,

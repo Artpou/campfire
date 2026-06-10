@@ -1,4 +1,4 @@
-import { Clock, Pause, Play } from "lucide-react";
+import { ClockIcon, PauseIcon, PlayIcon } from "lucide-react";
 
 import { formatBytes, formatTime } from "@/shared/helpers/format.helper";
 import { Badge } from "@/shared/ui/badge";
@@ -31,7 +31,7 @@ export function DownloadProgress({
           <div className="flex items-center gap-3">
             <span className="text-xl font-bold">{(progress * 100).toFixed(1)}%</span>
             <Badge variant="secondary" className="flex items-center gap-1">
-              <Clock className="size-3" />
+              <ClockIcon className="size-3" />
               <span>{formatTime(timeRemaining)}</span>
             </Badge>
           </div>
@@ -43,7 +43,7 @@ export function DownloadProgress({
       <div className="flex gap-2 items-center">
         <Progress value={progress * 100} className="h-2 shadow-md shadow-primary/20" />
         <Button variant="outline" size="icon" onClick={onClick}>
-          {isPaused ? <Play className="size-4" /> : <Pause className="size-4" />}
+          {isPaused ? <PlayIcon className="size-4" /> : <PauseIcon className="size-4" />}
         </Button>
       </div>
     </div>

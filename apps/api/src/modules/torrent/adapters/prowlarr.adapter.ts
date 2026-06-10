@@ -1,7 +1,8 @@
 import { ServiceUnavailableError } from "@/errors/error";
+import { logger } from "@/helpers/logger.helper";
 import { getLanguageFromTitle, getTorrentQuality } from "@/helpers/video.helper";
-import { IndexerType } from "../../../db/schema";
-import type { Torrent, TorrentIndexer } from "../torrent.dto";
+import type { IndexerType } from "@/modules/indexer-manager/indexer-manager.schema";
+import type { Torrent, TorrentIndexerQuery } from "../torrent.dto";
 import type { IndexerAdapter, IndexerConfig } from "./base.adapter";
 
 interface ProwlarrSearchItem {
@@ -24,11 +25,11 @@ export class ProwlarrAdapter implements IndexerAdapter {
     return cleanBase.includes("/api/v1") ? cleanBase : `${cleanBase}/api/v1`;
   }
 
-  async getIndexers(config: IndexerConfig): Promise<TorrentIndexer[]> {
+  async getIndexers(config: IndexerConfig): Promise<TorrentIndexerQuery[]> {
     const apiUrl = this.getApiUrl(config.baseUrl);
     const url = `${apiUrl}/indexer`;
 
-    console.log(`[Prowlarr] GET ${url}`);
+    logger.debug("PROWLARR", `GET ${url}`);
     const response = await fetch(url, {
       headers: { "X-Api-Key": config.apiKey },
     });
@@ -43,8 +44,6 @@ export class ProwlarrAdapter implements IndexerAdapter {
       privacy: string;
       enable: boolean;
     }[];
-
-    console.log({ data });
 
     return data
       .filter((indexer) => !!indexer.enable)
@@ -75,7 +74,7 @@ export class ProwlarrAdapter implements IndexerAdapter {
       url.searchParams.set("indexerIds", query.indexerId);
     }
 
-    console.log(`[Prowlarr] GET ${url.toString()}`);
+    logger.debug("PROWLARR", `GET ${url.toString()}`);
     const response = await fetch(url.toString(), {
       headers: { "X-Api-Key": config.apiKey },
     });

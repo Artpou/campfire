@@ -2,9 +2,10 @@ import { eq, or } from "drizzle-orm";
 import type WebTorrent from "webtorrent";
 
 import { db } from "@/db/db";
-import { torrentDownload } from "@/db/schema";
 import { ServiceUnavailableError } from "@/errors/error";
-import { TorrentLiveData } from "@/types";
+import { logger } from "@/helpers/logger.helper";
+import { torrentDownload } from "@/modules/download/download.schema";
+import type { TorrentLiveData } from "@/types";
 import * as path from "node:path";
 
 /**
@@ -40,33 +41,32 @@ export class WebTorrentClient {
    */
   static async initialize(downloadPath: string): Promise<void> {
     if (this.isInitialized || this.isInitializing) {
-      console.log("[WEBTORRENT] Already initialized or initializing, skipping...");
+      logger.debug("WEBTORRENT", "Already initialized or initializing, skipping...");
       return;
     }
 
     this.isInitializing = true;
 
     try {
-      console.log("[WEBTORRENT] Initializing...");
+      logger.info("WEBTORRENT", "Initializing...");
       const WebTorrent = (await import("webtorrent")).default;
       this.client = new WebTorrent();
 
-      console.log("[WEBTORRENT] Client created");
+      logger.debug("WEBTORRENT", "Client created");
+
+      this.isInitialized = true;
+      this.isInitializing = false;
 
       if (process.env.RESUME_DOWNLOADS === "true") {
-        // Restore torrents in background - don't await
         this.restoreActiveTorrents(downloadPath).catch((error) => {
-          console.error("[WEBTORRENT] Failed to restore torrents:", error);
+          logger.error("WEBTORRENT", "Failed to restore torrents:", error);
         });
-
-        this.isInitialized = true;
-        this.isInitializing = false;
-        console.log("[WEBTORRENT] Initialization complete");
+        logger.info("WEBTORRENT", "Initialization complete (restoring downloads in background)");
       } else {
-        console.log("[WEBTORRENT] Resuming downloads disabled, skipping");
+        logger.info("WEBTORRENT", "Initialization complete (resume disabled)");
       }
     } catch (error) {
-      console.error("[WEBTORRENT] Failed to initialize:", error);
+      logger.error("WEBTORRENT", "Failed to initialize:", error);
       this.initError = error as Error;
       this.isInitializing = false;
     }
@@ -94,14 +94,10 @@ export class WebTorrentClient {
     this.activeTorrents.delete(id);
   }
 
-  static setupTorrentHandlers(
-    torrent: WebTorrent.Torrent,
-    downloadId: string,
-    downloadPath: string,
-  ): void {
+  static setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: string, downloadPath: string): void {
     torrent.on("ready", async () => {
       const savePath = path.relative(downloadPath, torrent.path);
-      console.log(`[WEBTORRENT] Ready: ${torrent.name}`);
+      logger.info("WEBTORRENT", `Ready: ${torrent.name}`);
       await db
         .update(torrentDownload)
         .set({
@@ -119,7 +115,7 @@ export class WebTorrentClient {
     });
 
     torrent.on("done", async () => {
-      console.log(`[WEBTORRENT] Completed: ${torrent.name}`);
+      logger.info("WEBTORRENT", `Completed: ${torrent.name}`);
       await db
         .update(torrentDownload)
         .set({
@@ -132,7 +128,11 @@ export class WebTorrentClient {
     (torrent as unknown as { on: (event: string, callback: (err: Error) => void) => void }).on(
       "error",
       async (err: Error) => {
-        console.error(`[WEBTORRENT] Error: ${torrent.name} - ${err.message}`);
+        logger.error(
+          "WEBTORRENT",
+          `Error on "${torrent.name || downloadId}": ${err.message}` +
+            ` (infoHash: ${torrent.infoHash || "unknown"}, magnetURI: ${(torrent.magnetURI || "").slice(0, 60)}...)`,
+        );
         await db
           .update(torrentDownload)
           .set({
@@ -158,7 +158,7 @@ export class WebTorrentClient {
       .all();
 
     if (downloads.length > 0) {
-      console.log(`[WEBTORRENT] Restoring ${downloads.length} torrent(s)...`);
+      logger.info("WEBTORRENT", `Restoring ${downloads.length} torrent(s)...`);
     }
 
     for (const download of downloads) {
@@ -167,11 +167,11 @@ export class WebTorrentClient {
       try {
         // Skip paused downloads - they will be restored when resumed
         if (download.status === "paused") {
-          console.log(`[WEBTORRENT] Skipped paused: ${download.name}`);
+          logger.debug("WEBTORRENT", `Skipped paused: ${download.name}`);
           continue;
         }
 
-        console.log(`[WEBTORRENT] Restoring: ${download.name} (${download.status})`);
+        logger.debug("WEBTORRENT", `Restoring: ${download.name} (${download.status})`);
         const restored = this.client.add(download.magnetUri, {
           path: downloadPath,
         });
@@ -184,7 +184,7 @@ export class WebTorrentClient {
 
         this.activeTorrents.set(download.id, restored);
       } catch (error) {
-        console.error(`[WEBTORRENT] Failed to restore: ${download.name}`, error);
+        logger.error("WEBTORRENT", `Failed to restore: ${download.name}`, error);
       }
     }
   }

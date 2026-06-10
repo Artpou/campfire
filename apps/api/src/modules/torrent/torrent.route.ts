@@ -1,35 +1,13 @@
 import { zValidator } from "@hono/zod-validator";
-import { Hono } from "hono";
-import { z } from "zod";
 
-import { authGuard } from "@/modules/auth/auth.guard";
-import { mediaSelectSchema } from "@/modules/media/media.dto";
-import type { HonoVariables } from "@/types/hono";
+import { torrentInspectDto, torrentSearchDto } from "@/modules/torrent/torrent.dto";
 import { TorrentService } from "./torrent.service";
 
-const searchSchema = z.object({
-  media: mediaSelectSchema,
-  indexerId: z.string(),
-  season: z.number().int().positive().optional(),
-  episode: z.number().int().positive().optional(),
-});
-
-const inspectSchema = z.object({
-  magnet: z.string().min(1),
-});
-
-export const torrentRoutes = new Hono<{ Variables: HonoVariables }>()
-  .use("*", authGuard)
-  .get("/indexers", async (c) => c.json(await TorrentService.fromContext(c).getIndexers()))
-  .post("/search", zValidator("json", searchSchema), async (c) => {
-    const { media, indexerId, season, episode } = c.req.valid("json");
-    return c.json(
-      await TorrentService.fromContext(c).searchTorrents(media, indexerId, { season, episode }),
-    );
+export const torrentRoutes = TorrentService.createRouter()
+  .get("/indexers", async (c) => c.json(await c.var.service.getIndexers()))
+  .post("/search", zValidator("json", torrentSearchDto), async (c) => {
+    return c.json(await c.var.service.searchTorrents(c.req.valid("json")));
   })
-  .get("/inspect", zValidator("query", inspectSchema), async (c) => {
-    const { magnet } = c.req.valid("query");
-    return c.json(await TorrentService.fromContext(c).inspectTorrent(magnet));
+  .get("/inspect", zValidator("query", torrentInspectDto), async (c) => {
+    return c.json(await c.var.service.inspectTorrent(c.req.valid("query")));
   });
-
-export type TorrentRoutesType = typeof torrentRoutes;

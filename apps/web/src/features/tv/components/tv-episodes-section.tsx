@@ -1,17 +1,11 @@
 import { useMemo, useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
+import type { Download, Media, TMDBTvDetails } from "@seedarr/sdk";
 import { Link } from "@tanstack/react-router";
-import {
-  CalendarIcon,
-  CheckCircle2Icon,
-  ClapperboardIcon,
-  ClockIcon,
-  MagnetIcon,
-  PlayIcon,
-} from "lucide-react";
-import type { TvShowDetails } from "tmdb-ts";
+import { CalendarIcon, ClapperboardIcon, ClockIcon, MagnetIcon, PlayIcon } from "lucide-react";
 
+import { CircularProgress } from "@/shared/components/circular-progress";
 import { formatRuntime } from "@/shared/helpers/date";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
@@ -21,24 +15,23 @@ import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { useRole } from "@/features/auth/hooks/use-role";
 import { getBackdropUrl } from "@/features/media/helpers/media.helper";
-import { useTorrentDownloads } from "@/features/torrent/hooks/use-torrent-download";
-import { formatSeasonEpisode, parseSeasonEpisode } from "@/features/tv/helpers/episode.helper";
+import { formatSeasonEpisode } from "@/features/tv/helpers/episode.helper";
 import { useTVSeasonDetails } from "@/features/tv/hook/use-tv";
 
 interface TvEpisodesSectionProps {
-  tv: TvShowDetails;
+  tv: TMDBTvDetails;
+  media?: Media;
 }
 
-export function TvEpisodesSection({ tv }: TvEpisodesSectionProps) {
-  const { role } = useRole();
-  const validSeasons = useMemo(
-    () => (tv.seasons ?? []).filter((s) => s.season_number > 0),
-    [tv.seasons],
-  );
+function getDownloadProgress(dl: Download): number {
+  return dl.live ? dl.live.progress : dl.status === "completed" ? 1 : 0;
+}
 
-  const [selectedSeason, setSelectedSeason] = useState<string>(
-    () => validSeasons[0]?.season_number?.toString() ?? "1",
-  );
+export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
+  const { role } = useRole();
+  const validSeasons = useMemo(() => (tv.seasons ?? []).filter((s) => s.season_number > 0), [tv.seasons]);
+
+  const [selectedSeason, setSelectedSeason] = useState<string>(() => validSeasons[0]?.season_number?.toString() ?? "1");
 
   const seasonNumber = Number(selectedSeason);
 
@@ -47,37 +40,16 @@ export function TvEpisodesSection({ tv }: TvEpisodesSectionProps) {
     { enabled: validSeasons.length > 0 },
   );
 
-  const { data: downloads } = useTorrentDownloads();
-
-  const downloadMap = useMemo(() => {
-    const map = new Map<string, string>();
-    if (!downloads) return map;
-    for (const dl of downloads) {
-      if (dl.mediaId !== tv.id) continue;
-      const matches = parseSeasonEpisode(dl.name);
-      for (const m of matches) {
-        map.set(`${m.season}-${m.episode}`, dl.id);
-      }
-    }
-    return map;
-  }, [downloads, tv.id]);
-
   if (validSeasons.length === 0) return null;
 
-  const episodes = (seasonDetails?.episodes ?? [])
-    .slice()
-    .sort((a, b) => a.episode_number - b.episode_number);
+  const episodes = (seasonDetails?.episodes ?? []).slice().sort((a, b) => a.episode_number - b.episode_number);
 
   return (
     <div className="space-y-4">
       <Tabs value={selectedSeason} onValueChange={setSelectedSeason}>
         <TabsList className="flex-wrap h-auto">
           {validSeasons.map((season) => (
-            <TabsTrigger
-              key={season.season_number}
-              value={season.season_number.toString()}
-              className="px-4 py-2"
-            >
+            <TabsTrigger key={season.season_number} value={season.season_number.toString()} className="px-4 py-2">
               <Trans>Season {season.season_number}</Trans>
             </TabsTrigger>
           ))}
@@ -90,13 +62,32 @@ export function TvEpisodesSection({ tv }: TvEpisodesSectionProps) {
             <Skeleton key={`ep-skel-${i.toString()}`} className="h-32 w-full rounded-lg" />
           ))
         ) : episodes.length === 0 ? (
-          <Card className="p-6 text-center text-muted-foreground">
+          <Card className="p-6 text-center text-popover-foreground">
             <Trans>No episodes available</Trans>
           </Card>
         ) : (
           episodes.map((episode) => {
-            const episodeDownloadId = downloadMap.get(`${seasonNumber}-${episode.episode_number}`);
-            const isDownloaded = !!episodeDownloadId;
+            // const episodeDownload = downloadMap.get(`${seasonNumber}-${episode.episode_number}`);
+            // TODO: fix this by storing in download season + episode number
+            const episodeDownload = {} as Download;
+            const episodeDownloadId = episodeDownload?.id;
+            const isDownloaded = episodeDownload?.status === "completed";
+            const isDownloading =
+              episodeDownload?.status === "downloading" ||
+              episodeDownload?.status === "queued" ||
+              episodeDownload?.status === "paused";
+            const downloadProgress = episodeDownload ? getDownloadProgress(episodeDownload) : 0;
+            const showDownloadProgress = isDownloading && downloadProgress < 0.95;
+            const isPaused = episodeDownload?.status === "paused";
+
+            const isProgressCompleted =
+              !!media?.progress?.duration && media.progress.position >= media.progress.duration * 0.95;
+            const hasStarted =
+              media?.progress &&
+              media.progress.position > 0 &&
+              !isProgressCompleted &&
+              media.progress.downloadId === episodeDownloadId;
+
             const endsAt =
               episode.runtime && episode.runtime > 0
                 ? new Date(Date.now() + episode.runtime * 60000).toLocaleTimeString([], {
@@ -108,18 +99,38 @@ export function TvEpisodesSection({ tv }: TvEpisodesSectionProps) {
             const seCode = formatSeasonEpisode(seasonNumber, episode.episode_number);
 
             return (
-              <Card
-                key={episode.id}
-                className="p-3 flex flex-col sm:flex-row gap-4 overflow-hidden"
-              >
+              <Card key={episode.id} className="p-3 flex flex-col sm:flex-row gap-4 overflow-hidden">
                 <div className="flex flex-col items-center gap-2">
                   {episode.still_path ? (
-                    <div className="relative  shrink-0 w-full sm:w-48 aspect-video rounded-md overflow-hidden bg-muted">
+                    <div className="relative shrink-0 w-full sm:w-48 aspect-video rounded-md overflow-hidden bg-muted">
                       <img
                         src={getBackdropUrl(episode.still_path, "w300")}
                         alt={episode.name}
                         className="size-full object-cover"
                       />
+                      {showDownloadProgress && (
+                        <div className="absolute top-2 left-2">
+                          <CircularProgress
+                            value={downloadProgress * 100}
+                            size={40}
+                            strokeWidth={3}
+                            showValue
+                            noColor
+                            paused={isPaused}
+                            className={isPaused ? "text-orange-500" : "text-primary"}
+                          />
+                        </div>
+                      )}
+                      {hasStarted && media.progress && media.progress.duration > 0 && !showDownloadProgress && (
+                        <div className="absolute inset-x-0 bottom-0 h-1 bg-muted/60">
+                          <div
+                            className="h-full bg-green-500"
+                            style={{
+                              width: `${Math.min(100, (media.progress.position / media.progress.duration) * 100)}%`,
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="size-full flex items-center justify-center">
@@ -127,23 +138,21 @@ export function TvEpisodesSection({ tv }: TvEpisodesSectionProps) {
                     </div>
                   )}
 
-                  {isDownloaded && (
-                    <Badge variant="default" className="absolute top-2 left-2">
-                      <CheckCircle2Icon className="size-3 mr-1" />
-                      <Trans>Downloaded</Trans>
-                    </Badge>
-                  )}
-
-                  {episodeDownloadId && (
-                    <Button size="sm" variant="secondary" className="w-full" asChild>
+                  {episodeDownloadId && (isDownloaded || isDownloading) && (
+                    <Button
+                      size="sm"
+                      variant={isDownloaded || isDownloading ? "default" : "secondary"}
+                      className="w-full"
+                      asChild
+                    >
                       <Link to="/downloads/$id/play" params={{ id: episodeDownloadId }}>
                         <PlayIcon className="size-3 mr-1 fill-current" />
-                        <Trans>Play</Trans>
+                        {hasStarted ? <Trans>Resume</Trans> : <Trans>Play</Trans>}
                       </Link>
                     </Button>
                   )}
 
-                  {role !== "viewer" && (
+                  {role !== "viewer" && !isDownloaded && !isDownloading && (
                     <Button size="sm" className="w-full" asChild>
                       <Link
                         to="/tv/$id/torrents"
@@ -167,18 +176,22 @@ export function TvEpisodesSection({ tv }: TvEpisodesSectionProps) {
                         <span className="text-muted-foreground mr-2">{seCode}</span>
                         {episode.name}
                       </h3>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
+                      <div className="flex items-center gap-3 mt-1 text-xs text-popover-foreground flex-wrap">
                         {episode.air_date && (
-                          <span className="flex items-center gap-1">
+                          <Badge variant="outline">
                             <CalendarIcon className="size-3" />
-                            {new Date(episode.air_date).toLocaleDateString()}
-                          </span>
+                            {new Date(episode.air_date).toLocaleDateString(undefined, {
+                              day: "2-digit",
+                              month: "long",
+                              year: "numeric",
+                            })}
+                          </Badge>
                         )}
-                        {episode.runtime > 0 && (
-                          <span className="flex items-center gap-1">
+                        {episode.runtime && episode.runtime > 0 && (
+                          <Badge variant="outline">
                             <ClockIcon className="size-3" />
                             {formatRuntime(episode.runtime)}
-                          </span>
+                          </Badge>
                         )}
                         {endsAt && (
                           <Badge variant="secondary">
@@ -189,7 +202,7 @@ export function TvEpisodesSection({ tv }: TvEpisodesSectionProps) {
                     </div>
                   </div>
                   {episode.overview && (
-                    <p className="text-sm text-muted-foreground line-clamp-3">{episode.overview}</p>
+                    <p className="text-sm text-popover-foreground line-clamp-3">{episode.overview}</p>
                   )}
                 </div>
               </Card>

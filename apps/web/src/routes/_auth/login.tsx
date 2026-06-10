@@ -1,26 +1,21 @@
 import React from "react";
 
 import { Trans } from "@lingui/react/macro";
+import { api, unwrap } from "@seedarr/sdk";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 
-import { api } from "@/lib/api";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
 
-import { useAuth } from "@/features/auth/auth-store";
-
 export const Route = createFileRoute("/_auth/login")({
   component: Login,
   beforeLoad: async () => {
-    const response = await api.auth["has-owner"].$get();
-    if (response.ok) {
-      const data = await response.json();
-      if (!data.hasOwner) {
-        throw redirect({ to: "/signup" });
-      }
+    const data = await unwrap(api.auth["has-owner"].$get());
+    if (!data.hasOwner) {
+      throw redirect({ to: "/signup" });
     }
   },
 });
@@ -32,7 +27,6 @@ interface LoginForm {
 
 function Login() {
   const navigate = useNavigate();
-  const setUser = useAuth((state) => state.setUser);
   const [error, setError] = React.useState<string>();
 
   const {
@@ -42,18 +36,9 @@ function Login() {
   } = useForm<LoginForm>();
 
   const { mutate: login, isPending } = useMutation({
-    mutationFn: async (data: LoginForm) => {
-      const response = await api.auth.login.$post({ json: data });
-      if (!response.ok) {
-        throw new Error("Login failed");
-      }
-      return await response.json();
-    },
-    onSuccess: (data) => {
-      if (data) {
-        setUser(data);
-        navigate({ to: "/", search: { tab: "movie" } });
-      }
+    mutationFn: (data: LoginForm) => unwrap(api.auth.login.$post({ json: data })),
+    onSuccess: () => {
+      navigate({ to: "/", search: { tab: "movie" } });
     },
     onError: (err: unknown) => {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -85,23 +70,15 @@ function Login() {
                 minLength: { value: 3, message: "Min 3 characters" },
               })}
             />
-            {errors.username && (
-              <p className="text-sm text-destructive">{errors.username.message}</p>
-            )}
+            {errors.username && <p className="text-sm text-destructive">{errors.username.message}</p>}
           </div>
 
           <div>
             <label htmlFor="password">
               <Trans>Password</Trans>
             </label>
-            <Input
-              id="password"
-              type="password"
-              {...register("password", { required: "Password is required" })}
-            />
-            {errors.password && (
-              <p className="text-sm text-destructive">{errors.password.message}</p>
-            )}
+            <Input id="password" type="password" {...register("password", { required: "Password is required" })} />
+            {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}

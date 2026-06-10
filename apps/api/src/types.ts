@@ -1,78 +1,13 @@
-// Export all route types for RPC
-
-// Export enums from schema (these are needed for type constraints)
-export type { IndexerType, MediaType, TorrentStatus, UserRole } from "./db/schema";
-// Export DTO types (TypeScript types only, not Zod schemas)
-export type { LoginInput, RegisterInput } from "./modules/auth/auth.dto";
-// Export route types
-export type { AuthRoutesType } from "./modules/auth/auth.route";
-// Download types
-export type {
-  DownloadTorrentInput,
-  NewTorrentDownload,
-  TorrentDownload,
-  TorrentLiveData,
-} from "./modules/download/download.dto";
-export type { DownloadRoutesType } from "./modules/download/download.route";
-export type { FreeboxFile, FreeboxFilesResponse } from "./modules/freebox/freebox.dto";
-export type { FreeboxRoutesType } from "./modules/freebox/freebox.route";
-export type {
-  IndexerManager,
-  NewIndexerManager,
-  UpsertIndexerManagerInput,
-} from "./modules/indexer-manager/indexer-manager.dto";
-export type { IndexerManagerRoutesType } from "./modules/indexer-manager/indexer-manager.route";
-export type {
-  ContinueWatchingItem,
-  ListMediaParams,
-  Media,
-  MediaFilter,
-  MediaStatus,
-  UpdateWatchProgressInput,
-  WatchProgress,
-} from "./modules/media/media.dto";
-export type { MediaRoutesType } from "./modules/media/media.route";
-// Pagination types
-export type { Paginate, PaginationParams } from "./modules/pagination/pagination.dto";
-// Shared types
-export type { Ids } from "./modules/shared/shared.dto";
-// Subtitle (SUBDL) types
-export type {
-  SubdlSearchResponse,
-  SubdlSubtitle,
-} from "./modules/subtitle/subtitle.dto";
-export type { SubtitleRoutesType } from "./modules/subtitle/subtitle.route";
-// Torrent search types
-export type {
-  Torrent,
-  TorrentIndexer,
-  TorrentInspectFile,
-  TorrentInspectResult,
-  TorrentLanguage,
-  TorrentQuality,
-} from "./modules/torrent/torrent.dto";
-export type { TorrentRoutesType } from "./modules/torrent/torrent.route";
-export type { CreateUserInput, NewUser, UpdateUserInput, User } from "./modules/user/user.dto";
-export type { UserRoutesType } from "./modules/user/user.route";
-// Export main app type
-export type { AppType } from "./server";
-
-// API-serialized types (Date -> string for JSON)
-import type { TorrentDownload as TorrentDownloadDTO } from "./modules/download/download.dto";
-import type { IndexerManager as IndexerManagerDTO } from "./modules/indexer-manager/indexer-manager.dto";
-import type { User as UserDTO } from "./modules/user/user.dto";
-
-export type UserSerialized = Omit<UserDTO, "createdAt"> & {
-  createdAt: string;
-  sessionToken?: string;
-  selectedIndexer?: IndexerManagerDTO | null;
-};
-
-export type TorrentDownloadSerialized = Omit<
-  TorrentDownloadDTO,
-  "createdAt" | "startedAt" | "completedAt"
-> & {
-  createdAt: string;
-  startedAt: string | null;
-  completedAt: string | null;
-};
+export * from "./modules/auth/auth.dto";
+export * from "./modules/download/download.dto";
+export * from "./modules/indexer-manager/indexer-manager.dto";
+export type { IndexerType } from "./modules/indexer-manager/indexer-manager.schema";
+export * from "./modules/media/media.dto";
+export * from "./modules/movie/movie.dto";
+export * from "./modules/subtitle/subtitle.dto";
+export * from "./modules/tmdb/tmdb.dto";
+export * from "./modules/torrent/torrent.dto";
+export * from "./modules/tv/tv.dto";
+export * from "./modules/user/user.dto";
+export type { UserRole } from "./modules/user/user.schema";
+export type { Paginate } from "./shared/pagination.dto";

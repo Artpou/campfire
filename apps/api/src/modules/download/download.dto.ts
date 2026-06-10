@@ -1,34 +1,21 @@
-import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { createSelectSchema } from "drizzle-zod";
 import WebTorrent from "webtorrent";
 import { z } from "zod";
 
-import { torrentDownload } from "@/db/schema";
+import { torrentDownload } from "@/modules/download/download.schema";
+import { MediaSelect } from "@/types";
 
-// Download schemas
-export const torrentDownloadSelectSchema = createSelectSchema(torrentDownload);
-export const torrentDownloadInsertSchema = createInsertSchema(torrentDownload);
+const downloadSelectSchema = createSelectSchema(torrentDownload);
+type DownloadSelect = z.infer<typeof downloadSelectSchema>;
 
-export type TorrentDownload = typeof torrentDownloadSelectSchema._output;
-export type NewTorrentDownload = typeof torrentDownloadInsertSchema._input;
-
-// Download input schema
-export const downloadTorrentSchema = z.object({
-  magnetUri: z.string(),
-  name: z.string(),
-  mediaId: z.number().optional(),
-  origin: z.string().optional(),
-  quality: z.string().optional(),
-  language: z.string().optional(),
-});
-
-export type DownloadTorrentInput = z.infer<typeof downloadTorrentSchema>;
-
-type DataPropertiesOnly<T> = {
+type ExcludeFunctions<T> = {
   // biome-ignore lint/complexity/noBannedTypes: we want to exclude functions
   [K in keyof T as T[K] extends Function ? never : K]: T[K];
 };
-export interface TorrentLiveData
-  extends DataPropertiesOnly<Omit<WebTorrent.Torrent, "files" | "pieces" | "torrentFile">> {
+type TorrentLiveBase = ExcludeFunctions<Omit<WebTorrent.Torrent, "files" | "pieces" | "torrentFile">>;
+
+export interface TorrentLiveData extends Omit<TorrentLiveBase, "created"> {
+  created: Date | string;
   files: {
     name: string;
     path: string;
@@ -37,3 +24,19 @@ export interface TorrentLiveData
     progress: number;
   }[];
 }
+
+export type Download = DownloadSelect & {
+  media?: MediaSelect;
+  live?: TorrentLiveData;
+};
+
+// Download input schema
+export const downloadTorrentDto = z.object({
+  magnetUri: z.string(),
+  name: z.string(),
+  mediaId: z.number().optional(),
+  origin: z.string().optional(),
+  quality: z.string().optional(),
+  language: z.string().optional(),
+});
+export type DownloadTorrentInput = z.infer<typeof downloadTorrentDto>;

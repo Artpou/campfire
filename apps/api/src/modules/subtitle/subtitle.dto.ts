@@ -1,21 +1,19 @@
 import { z } from "zod";
 
-export const searchSubtitlesSchema = z.object({
+export const substitlesSearchDto = z.object({
   tmdb_id: z.string(),
   languages: z.string(),
   type: z.enum(["movie", "tv"]).optional(),
 });
+export type SubstitlesSearchQuery = z.infer<typeof substitlesSearchDto>;
 
-export type SearchSubtitlesParams = z.infer<typeof searchSubtitlesSchema>;
-
-export const downloadSubtitleSchema = z.object({
+export const downloadSubtitleDto = z.object({
   downloadId: z.string(),
   url: z.string(),
   language: z.string(),
   mediaTitle: z.string(),
 });
-
-export type DownloadSubtitleInput = z.infer<typeof downloadSubtitleSchema>;
+export type DownloadSubtitleInput = z.infer<typeof downloadSubtitleDto>;
 
 // SUBDL API response types
 export interface SubdlSubtitle {

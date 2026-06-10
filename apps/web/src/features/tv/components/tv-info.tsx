@@ -2,8 +2,9 @@ import { useMemo } from "react";
 
 import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
-import { ClockIcon, ExternalLink, Plus } from "lucide-react";
-import type { AppendToResponse, Flatrate, TvShowDetails, WatchLocale } from "tmdb-ts";
+import type { TMDBTvDetails, TMDBWatchProvider } from "@seedarr/sdk";
+import { ClockIcon, ExternalLinkIcon, PlusIcon } from "lucide-react";
+import type { WatchLocale } from "tmdb-ts";
 
 import { cn } from "@/lib/utils";
 import { CircularProgress } from "@/shared/components/circular-progress";
@@ -24,7 +25,7 @@ import {
 import { getBackdropUrl } from "@/features/media/helpers/media.helper";
 
 interface TvInfoProps {
-  tv: AppendToResponse<TvShowDetails, "watch/providers"[], "tvShow">;
+  tv: TMDBTvDetails;
 }
 
 const ProviderIcon = ({
@@ -32,7 +33,7 @@ const ProviderIcon = ({
   tvName,
   fullButton = false,
 }: {
-  provider: Flatrate;
+  provider: TMDBWatchProvider;
   tvName: string;
   fullButton?: boolean;
 }) => {
@@ -63,7 +64,7 @@ const ProviderIcon = ({
   if (fullButton) {
     return (
       <Button variant="secondary" onClick={() => window.open(redirectUrl, "_blank")}>
-        <ExternalLink className="size-4 mr-1" />
+        <ExternalLinkIcon className="size-4 mr-1" />
         <Trans>Watch on</Trans> {provider.provider_name}
       </Button>
     );
@@ -94,23 +95,19 @@ export function TvInfo({ tv }: TvInfoProps) {
   const tmdbLocale = countryToTmdbLocale(i18n.locale);
 
   const uniqueProviders = useMemo(() => {
-    const countryProviders =
-      tv["watch/providers"]?.results?.[(tmdbLocale?.split("-")[1] || "US") as keyof WatchLocale];
+    const countryProviders = tv["watch/providers"]?.results?.[(tmdbLocale?.split("-")[1] || "US") as keyof WatchLocale];
     if (!countryProviders) return { flatrate: [], buyRent: [] };
 
     const flatrate =
       "flatrate" in countryProviders
-        ? countryProviders.flatrate?.filter(
-            (v, i, a) => a.findIndex((t) => t.provider_id === v.provider_id) === i,
-          )
+        ? (countryProviders.flatrate?.filter((v, i, a) => a.findIndex((t) => t.provider_id === v.provider_id) === i) ??
+          [])
         : [];
 
     const buy = "buy" in countryProviders ? countryProviders.buy || [] : [];
     const rent = "rent" in countryProviders ? countryProviders.rent || [] : [];
 
-    const buyRent = [...buy, ...rent].filter(
-      (v, i, a) => a.findIndex((t) => t.provider_id === v.provider_id) === i,
-    );
+    const buyRent = [...buy, ...rent].filter((v, i, a) => a.findIndex((t) => t.provider_id === v.provider_id) === i);
 
     return { flatrate, buyRent };
   }, [tv, tmdbLocale]);
@@ -130,7 +127,7 @@ export function TvInfo({ tv }: TvInfoProps) {
       <div>
         <h1 className="text-4xl md:text-5xl font-black tracking-tight">{tv.name}</h1>
         <div className="flex items-center mt-1 gap-2">
-          <Flag lang={tv.original_language} />
+          <Flag lang={tv.original_language ?? ""} />
           <p className="text-sm text-muted-foreground font-medium">{tv.original_name}</p>
         </div>
 
@@ -151,7 +148,7 @@ export function TvInfo({ tv }: TvInfoProps) {
               <span>{formatRuntime(episodeRuntime)}</span>
             </>
           ) : null}
-          {tv.number_of_seasons > 0 && (
+          {(tv.number_of_seasons ?? 0) > 0 && (
             <>
               <span className="opacity-30">•</span>
               <span>
@@ -184,7 +181,7 @@ export function TvInfo({ tv }: TvInfoProps) {
           </Badge>
         )}
         {nextEpisode?.air_date && (
-          <Badge variant="secondary">
+          <Badge variant="secondary" className="mt-2">
             <Trans>
               Next episode: S{nextEpisode.season_number}E{nextEpisode.episode_number} -{" "}
               {new Date(nextEpisode.air_date).toLocaleDateString()}
@@ -192,10 +189,14 @@ export function TvInfo({ tv }: TvInfoProps) {
           </Badge>
         )}
         {!nextEpisode && lastEpisode?.air_date && (
-          <Badge variant="outline">
+          <Badge variant="secondary" className="mt-2">
             <Trans>
               Last episode: S{lastEpisode.season_number}E{lastEpisode.episode_number} -{" "}
-              {new Date(lastEpisode.air_date).toLocaleDateString()}
+              {new Date(lastEpisode.air_date).toLocaleDateString(undefined, {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+              })}
             </Trans>
           </Badge>
         )}
@@ -213,10 +214,9 @@ export function TvInfo({ tv }: TvInfoProps) {
 
         <div className="flex items-center gap-1.5 border-l border-white/10 pl-4">
           {firstProviders.map((provider) => (
-            <ProviderIcon key={provider.provider_id} provider={provider} tvName={tv.name} />
+            <ProviderIcon key={provider.provider_id} provider={provider} tvName={tv.name ?? ""} />
           ))}
-          {firstProviders.length <
-            uniqueProviders.flatrate.length + uniqueProviders.buyRent.length && (
+          {firstProviders.length < uniqueProviders.flatrate.length + uniqueProviders.buyRent.length && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -224,7 +224,7 @@ export function TvInfo({ tv }: TvInfoProps) {
                   className="size-12 rounded-full border-2 border-border shadow-sm bg-background hover:border-primary/50 hover:scale-105 transition-all flex items-center justify-center cursor-pointer"
                   title={`See all (${uniqueProviders.flatrate.length + uniqueProviders.buyRent.length})`}
                 >
-                  <Plus className="size-5" />
+                  <PlusIcon className="size-5" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-80">
@@ -235,11 +235,7 @@ export function TvInfo({ tv }: TvInfoProps) {
                     </DropdownMenuLabel>
                     <div className="flex flex-wrap gap-2 p-2">
                       {uniqueProviders.flatrate.map((provider) => (
-                        <ProviderIcon
-                          key={provider.provider_id}
-                          provider={provider}
-                          tvName={tv.name}
-                        />
+                        <ProviderIcon key={provider.provider_id} provider={provider} tvName={tv.name ?? ""} />
                       ))}
                     </div>
                   </DropdownMenuGroup>
@@ -253,11 +249,7 @@ export function TvInfo({ tv }: TvInfoProps) {
                       </DropdownMenuLabel>
                       <div className="flex flex-wrap gap-2 p-2">
                         {uniqueProviders.buyRent.map((provider) => (
-                          <ProviderIcon
-                            key={provider.provider_id}
-                            provider={provider}
-                            tvName={tv.name}
-                          />
+                          <ProviderIcon key={provider.provider_id} provider={provider} tvName={tv.name ?? ""} />
                         ))}
                       </div>
                     </DropdownMenuGroup>
@@ -266,9 +258,7 @@ export function TvInfo({ tv }: TvInfoProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          {firstProviders.length > 0 && (
-            <ProviderIcon provider={firstProviders[0]} tvName={tv.name} fullButton />
-          )}
+          {firstProviders.length > 0 && <ProviderIcon provider={firstProviders[0]} tvName={tv.name ?? ""} fullButton />}
         </div>
       </div>
     </div>

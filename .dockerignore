@@ -19,7 +19,7 @@ apps/api/dist/
 *.db
 *.db-shm
 *.db-wal
-campfire.db
+seedarr.db
 dev.db
 
 # Downloads

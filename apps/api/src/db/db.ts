@@ -3,7 +3,7 @@ import "./env";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 
-import * as schema from "./schema";
+import { schema } from "./schema";
 
 const client = createClient({
   url: process.env.DATABASE_URL || "file:./dev.db",

@@ -1,10 +1,10 @@
-import type { UserSerialized } from "@basement/api/types";
+import { AuthUser } from "@seedarr/sdk";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 interface AuthStore {
-  user: UserSerialized | null;
-  setUser: (user: UserSerialized | null) => void;
+  user: AuthUser | null;
+  setUser: (user: AuthUser | null) => void;
   logout: () => void;
 }
 

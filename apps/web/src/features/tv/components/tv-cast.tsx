@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import { Trans } from "@lingui/react/macro";
-import type { Cast, Crew, TvShowDetails as TMDBTvShowDetails } from "tmdb-ts";
+import type { TMDBTvDetails } from "@seedarr/sdk";
 
 import { CarouselItem } from "@/shared/ui/carousel";
 import { CarouselWrapper } from "@/shared/ui/carousel-wrapper";
@@ -9,12 +9,7 @@ import { CarouselWrapper } from "@/shared/ui/carousel-wrapper";
 import { PersonCard } from "@/features/person/components/person-card";
 
 interface TvCastProps {
-  tv: TMDBTvShowDetails & {
-    credits?: {
-      cast?: Cast[];
-      crew?: Crew[];
-    };
-  };
+  tv: TMDBTvDetails;
 }
 
 export function TvCast({ tv }: TvCastProps) {
@@ -28,9 +23,7 @@ export function TvCast({ tv }: TvCastProps) {
         type: "Director" as const,
       })) || [];
     const actors =
-      tv.credits?.cast
-        ?.slice(0, 20)
-        .map((a: Cast) => ({ ...a, role: a.character, type: "Actor" as const })) || [];
+      tv.credits?.cast?.slice(0, 20).map((a) => ({ ...a, role: a.character, type: "Actor" as const })) || [];
     return [...creators, ...actors];
   }, [tv.created_by, tv.credits]);
 

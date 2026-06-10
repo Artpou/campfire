@@ -26,9 +26,7 @@ function Slider({
   );
 
   const [isDragging, setIsDragging] = React.useState(false);
-  const [tooltipOpen, setTooltipOpen] = React.useState<boolean[]>(
-    Array(_values.length).fill(false),
-  );
+  const [tooltipOpen, setTooltipOpen] = React.useState<boolean[]>(Array(_values.length).fill(false));
 
   const formatValue = React.useCallback(
     (val: number) => {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
-import type { Media } from "@basement/api/types";
 import { Trans } from "@lingui/react/macro";
+import type { Media } from "@seedarr/sdk";
 import { Link } from "@tanstack/react-router";
 import { MagnetIcon } from "lucide-react";
 
@@ -19,21 +19,17 @@ import {
 } from "@/shared/ui/carousel";
 
 import { useRole } from "@/features/auth/hooks/use-role";
-import {
-  getBackdropUrl,
-  getPosterUrl,
-  type TrendingMedia,
-} from "@/features/media/helpers/media.helper";
-import { useTrendingMovies, useTrendingTV } from "@/features/media/hooks/use-media";
+import { getBackdropUrl, getPosterUrl } from "@/features/media/helpers/media.helper";
+import { useTrending } from "@/features/media/hooks/use-media";
 
-const AUTO_ROTATE_MS = 8000;
+const AUTO_ROTATE_MS = 5000;
 const MAX_OVERVIEW_LENGTH = 200;
 
 interface HeroCarouselProps {
   type: Media["type"];
 }
 
-function HeroSlide({ media }: { media: TrendingMedia }) {
+function HeroSlide({ media }: { media: Media }) {
   const { role } = useRole();
   const year = media.release_date ? new Date(media.release_date).getFullYear() : "";
   const detailLinkProps =
@@ -45,8 +41,7 @@ function HeroSlide({ media }: { media: TrendingMedia }) {
       ? ({ to: "/tv/$id/torrents", params: { id: media.id.toString() } } as const)
       : ({ to: "/movies/$id/torrents", params: { id: media.id.toString() } } as const);
 
-  const backdropUrl =
-    getBackdropUrl(media.backdrop_path, "w1280") || getPosterUrl(media.poster_path, "w780");
+  const backdropUrl = getBackdropUrl(media.backdrop_path, "w1280") || getPosterUrl(media.poster_path, "w780");
 
   return (
     <Link {...detailLinkProps} className="block relative w-full h-[40vh] md:h-[50vh]">
@@ -68,13 +63,11 @@ function HeroSlide({ media }: { media: TrendingMedia }) {
         )}
 
         <div className="max-w-xl space-y-2 min-w-0">
-          <h2 className="text-2xl md:text-4xl font-black tracking-tight leading-tight">
-            {media.title}
-          </h2>
+          <h2 className="text-2xl md:text-4xl font-black tracking-tight leading-tight">{media.title}</h2>
           {year && <p className="text-sm text-muted-foreground font-medium">{year}</p>}
 
           {media.overview && (
-            <p className="text-xs md:text-sm text-muted-foreground leading-relaxed line-clamp-2 md:line-clamp-3">
+            <p className="text-xs md:text-sm text-popover-foreground leading-relaxed line-clamp-2 md:line-clamp-3">
               {media.overview.slice(0, MAX_OVERVIEW_LENGTH)}
               {media.overview.length > MAX_OVERVIEW_LENGTH ? "..." : ""}
             </p>
@@ -101,41 +94,39 @@ function HeroSlide({ media }: { media: TrendingMedia }) {
 }
 
 export function HeroCarousel({ type }: HeroCarouselProps) {
-  const moviesQuery = useTrendingMovies();
-  const tvQuery = useTrendingTV();
-  const { data, isLoading } = type === "movie" ? moviesQuery : tvQuery;
+  const { data, isLoading } = useTrending(type);
 
-  const [api, setApi] = useState<CarouselApi>();
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
   const onSelect = useCallback(() => {
-    if (!api) return;
-    setSelectedIndex(api.selectedScrollSnap());
-  }, [api]);
+    if (!carouselApi) return;
+    setSelectedIndex(carouselApi.selectedScrollSnap());
+  }, [carouselApi]);
 
   useEffect(() => {
-    if (!api) return;
+    if (!carouselApi) return;
     onSelect();
-    api.on("select", onSelect);
+    carouselApi.on("select", onSelect);
     return () => {
-      api.off("select", onSelect);
+      carouselApi.off("select", onSelect);
     };
-  }, [api, onSelect]);
+  }, [carouselApi, onSelect]);
 
   useEffect(() => {
-    if (!api || isHovered || !data?.length) return;
+    if (!carouselApi || isHovered || !data?.length) return;
 
     const interval = setInterval(() => {
-      if (api.canScrollNext()) {
-        api.scrollNext();
+      if (carouselApi.canScrollNext()) {
+        carouselApi.scrollNext();
       } else {
-        api.scrollTo(0);
+        carouselApi.scrollTo(0);
       }
     }, AUTO_ROTATE_MS);
 
     return () => clearInterval(interval);
-  }, [api, isHovered, data?.length]);
+  }, [carouselApi, isHovered, data?.length]);
 
   if (isLoading) {
     return (
@@ -154,7 +145,7 @@ export function HeroCarousel({ type }: HeroCarouselProps) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <Carousel setApi={setApi} opts={{ loop: true }} className="w-full overflow-hidden">
+      <Carousel setApi={setCarouselApi} opts={{ loop: true }} className="w-full overflow-hidden">
         <CarouselContent className="ml-0 gap-0">
           {data.map((item) => (
             <CarouselItem
@@ -165,8 +156,8 @@ export function HeroCarousel({ type }: HeroCarouselProps) {
             </CarouselItem>
           ))}
         </CarouselContent>
-        <CarouselPrevious className="left-4 hidden md:flex" />
-        <CarouselNext className="right-4 hidden md:flex" />
+        <CarouselPrevious className="left-30 hidden md:flex" />
+        <CarouselNext className="right-30 hidden md:flex" />
       </Carousel>
 
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
@@ -179,7 +170,7 @@ export function HeroCarousel({ type }: HeroCarouselProps) {
               "h-1 rounded-full transition-all",
               index === selectedIndex ? "bg-primary w-6" : "bg-muted-foreground/40 w-2",
             )}
-            onClick={() => api?.scrollTo(index)}
+            onClick={() => carouselApi?.scrollTo(index)}
           />
         ))}
       </div>

@@ -1,12 +1,12 @@
 import { useState } from "react";
 
-import type { UserSerialized } from "@basement/api/types";
 import { Trans } from "@lingui/react/macro";
+import type { User } from "@seedarr/sdk";
+import { api, unwrap } from "@seedarr/sdk";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { UserPlus } from "lucide-react";
+import { UserPlusIcon } from "lucide-react";
 
-import { api } from "@/lib/api";
 import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
 
@@ -27,7 +27,7 @@ export const Route = createFileRoute("/_app/users")({
 
 function UsersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserSerialized | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const { isAdmin } = useRole();
 
   const {
@@ -36,13 +36,7 @@ function UsersPage() {
     refetch,
   } = useQuery({
     queryKey: ["users"],
-    queryFn: async () => {
-      const response = await api.users.$get();
-      if (response.ok) {
-        return await response.json();
-      }
-      return [];
-    },
+    queryFn: () => unwrap(api.users.$get()),
   });
 
   const handleCreateUser = () => {
@@ -50,7 +44,7 @@ function UsersPage() {
     setIsModalOpen(true);
   };
 
-  const handleEditUser = (user: UserSerialized) => {
+  const handleEditUser = (user: User) => {
     setEditingUser(user);
     setIsModalOpen(true);
   };
@@ -75,18 +69,13 @@ function UsersPage() {
           </div>
           {isAdmin && (
             <Button onClick={handleCreateUser}>
-              <UserPlus className="size-4 mr-2" />
+              <UserPlusIcon className="size-4 mr-2" />
               <Trans>Create User</Trans>
             </Button>
           )}
         </div>
 
-        <UsersTable
-          users={users}
-          isLoading={isLoading}
-          onEditUser={handleEditUser}
-          onRefetch={refetch}
-        />
+        <UsersTable users={users ?? []} isLoading={isLoading} onEditUser={handleEditUser} onRefetch={refetch} />
 
         <UserFormModal open={isModalOpen} onClose={handleModalClose} user={editingUser} />
       </div>

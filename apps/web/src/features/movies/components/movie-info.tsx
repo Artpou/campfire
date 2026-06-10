@@ -2,8 +2,8 @@ import { useMemo } from "react";
 
 import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
-import { ClockIcon, ExternalLink, Plus } from "lucide-react";
-import type { AppendToResponse, Flatrate, MovieDetails, WatchLocale } from "tmdb-ts";
+import type { TMDBMovieDetails, TMDBWatchProvider } from "@seedarr/sdk";
+import { CalendarIcon, ClockIcon, ExternalLinkIcon, PlusIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { CircularProgress } from "@/shared/components/circular-progress";
@@ -24,7 +24,7 @@ import {
 import { getBackdropUrl } from "@/features/media/helpers/media.helper";
 
 interface MovieInfoProps {
-  movie: AppendToResponse<MovieDetails, "watch/providers"[], "movie">;
+  movie: TMDBMovieDetails;
 }
 
 const ProviderIcon = ({
@@ -32,7 +32,7 @@ const ProviderIcon = ({
   movieName,
   fullButton = false,
 }: {
-  provider: Flatrate;
+  provider: TMDBWatchProvider;
   movieName: string;
   fullButton?: boolean;
 }) => {
@@ -63,7 +63,7 @@ const ProviderIcon = ({
   if (fullButton) {
     return (
       <Button variant="secondary" onClick={() => window.open(redirectUrl, "_blank")}>
-        <ExternalLink className="size-4 mr-1" />
+        <ExternalLinkIcon className="size-4 mr-1" />
         <Trans>Watch on</Trans> {provider.provider_name}
       </Button>
     );
@@ -94,23 +94,19 @@ export function MovieInfo({ movie }: MovieInfoProps) {
   const tmdbLocale = countryToTmdbLocale(i18n.locale);
 
   const uniqueProviders = useMemo(() => {
-    const countryProviders =
-      movie["watch/providers"]?.results?.[(tmdbLocale?.split("-")[1] || "US") as keyof WatchLocale];
+    const countryProviders = movie["watch/providers"]?.results?.[tmdbLocale?.split("-")[1] || "US"];
     if (!countryProviders) return { flatrate: [], buyRent: [] };
 
     const flatrate =
       "flatrate" in countryProviders
-        ? countryProviders.flatrate?.filter(
-            (v, i, a) => a.findIndex((t) => t.provider_id === v.provider_id) === i,
-          )
+        ? (countryProviders.flatrate?.filter((v, i, a) => a.findIndex((t) => t.provider_id === v.provider_id) === i) ??
+          [])
         : [];
 
     const buy = "buy" in countryProviders ? countryProviders.buy || [] : [];
     const rent = "rent" in countryProviders ? countryProviders.rent || [] : [];
 
-    const buyRent = [...buy, ...rent].filter(
-      (v, i, a) => a.findIndex((t) => t.provider_id === v.provider_id) === i,
-    );
+    const buyRent = [...buy, ...rent].filter((v, i, a) => a.findIndex((t) => t.provider_id === v.provider_id) === i);
 
     return { flatrate, buyRent };
   }, [movie, tmdbLocale]);
@@ -126,53 +122,45 @@ export function MovieInfo({ movie }: MovieInfoProps) {
       <div>
         <h1 className="text-4xl md:text-5xl font-black tracking-tight">{movie.title}</h1>
         <div className="flex items-center mt-1 gap-2">
-          <Flag lang={movie.original_language} />
+          <Flag lang={movie.original_language ?? ""} />
           <p className="text-sm text-muted-foreground font-medium">{movie.original_title}</p>
         </div>
 
         <div className="flex items-center gap-2 text-sm font-medium mt-4">
           {movie.release_date && (
-            <span>
+            <Badge variant="outline">
+              <CalendarIcon className="size-3" />
               {new Date(movie.release_date).toLocaleDateString(undefined, {
                 day: "2-digit",
                 month: "long",
                 year: "numeric",
               })}
-            </span>
+            </Badge>
           )}
 
-          <span className="opacity-30">•</span>
-          {movie.runtime && <span>{formatRuntime(movie.runtime)}</span>}
-          <span className="opacity-30">•</span>
-          {movie.genres && movie.genres.length > 0 && (
-            <span className="max-w-[50%] truncate">
-              {movie.genres
-                .slice(0, 3)
-                .map((genre) => (typeof genre === "string" ? genre : genre.name))
-                .join(", ")}
-            </span>
+          {movie.runtime && (
+            <Badge variant="outline">
+              <ClockIcon className="size-3" />
+              {formatRuntime(movie.runtime)}
+            </Badge>
+          )}
+
+          {movie.runtime && movie.runtime > 0 && (
+            <Badge variant="secondary">
+              <Trans>Ends at</Trans>{" "}
+              {new Date(Date.now() + movie.runtime * 60000).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </Badge>
           )}
         </div>
-        {movie.runtime > 0 && (
-          <Badge variant="secondary" className="mt-2">
-            <ClockIcon className="size-4 mr-1" />
-            <Trans>Ends at</Trans>{" "}
-            {new Date(Date.now() + movie.runtime * 60000).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </Badge>
-        )}
       </div>
 
       {(movie.tagline || movie.overview) && (
         <div className="space-y-2">
-          {movie.tagline && (
-            <p className="text-muted-foreground italic font-bold">{movie.tagline}</p>
-          )}
-          {movie.overview && (
-            <p className="text-sm font-medium leading-relaxed">{movie.overview}</p>
-          )}
+          {movie.tagline && <p className="text-muted-foreground italic font-bold">{movie.tagline}</p>}
+          {movie.overview && <p className="text-sm font-medium leading-relaxed">{movie.overview}</p>}
         </div>
       )}
 
@@ -181,10 +169,9 @@ export function MovieInfo({ movie }: MovieInfoProps) {
 
         <div className="flex items-center gap-1.5 border-l border-white/10 pl-4">
           {firstProviders.map((provider) => (
-            <ProviderIcon key={provider.provider_id} provider={provider} movieName={movie.title} />
+            <ProviderIcon key={provider.provider_id} provider={provider} movieName={movie.title ?? ""} />
           ))}
-          {firstProviders.length <
-            uniqueProviders.flatrate.length + uniqueProviders.buyRent.length && (
+          {firstProviders.length < uniqueProviders.flatrate.length + uniqueProviders.buyRent.length && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -192,7 +179,7 @@ export function MovieInfo({ movie }: MovieInfoProps) {
                   className="size-12 rounded-full border-2 border-border shadow-sm bg-background hover:border-primary/50 hover:scale-105 transition-all flex items-center justify-center cursor-pointer"
                   title={`See all (${uniqueProviders.flatrate.length + uniqueProviders.buyRent.length})`}
                 >
-                  <Plus className="size-5" />
+                  <PlusIcon className="size-5" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-80">
@@ -203,11 +190,7 @@ export function MovieInfo({ movie }: MovieInfoProps) {
                     </DropdownMenuLabel>
                     <div className="flex flex-wrap gap-2 p-2">
                       {uniqueProviders.flatrate.map((provider) => (
-                        <ProviderIcon
-                          key={provider.provider_id}
-                          provider={provider}
-                          movieName={movie.title}
-                        />
+                        <ProviderIcon key={provider.provider_id} provider={provider} movieName={movie.title ?? ""} />
                       ))}
                     </div>
                   </DropdownMenuGroup>
@@ -221,11 +204,7 @@ export function MovieInfo({ movie }: MovieInfoProps) {
                       </DropdownMenuLabel>
                       <div className="flex flex-wrap gap-2 p-2">
                         {uniqueProviders.buyRent.map((provider) => (
-                          <ProviderIcon
-                            key={provider.provider_id}
-                            provider={provider}
-                            movieName={movie.title}
-                          />
+                          <ProviderIcon key={provider.provider_id} provider={provider} movieName={movie.title ?? ""} />
                         ))}
                       </div>
                     </DropdownMenuGroup>
@@ -235,7 +214,7 @@ export function MovieInfo({ movie }: MovieInfoProps) {
             </DropdownMenu>
           )}
           {firstProviders.length > 0 && (
-            <ProviderIcon provider={firstProviders[0]} movieName={movie.title} fullButton />
+            <ProviderIcon provider={firstProviders[0]} movieName={movie.title ?? ""} fullButton />
           )}
         </div>
       </div>

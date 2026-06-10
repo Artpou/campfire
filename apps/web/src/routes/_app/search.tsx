@@ -1,6 +1,6 @@
 import { Trans } from "@lingui/react/macro";
 import { createFileRoute } from "@tanstack/react-router";
-import { Search } from "lucide-react";
+import { SearchIcon } from "lucide-react";
 
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
@@ -39,7 +39,7 @@ function SearchPage() {
     <Container>
       {!q ? (
         <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-          <Search className="size-16 text-muted-foreground/20 mb-4" />
+          <SearchIcon className="size-16 text-muted-foreground/20 mb-4" />
           <h2 className="text-2xl font-bold mb-2">
             <Trans>Search for Movies and TV Shows</Trans>
           </h2>
@@ -54,7 +54,7 @@ function SearchPage() {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
-          <Search className="size-16 text-muted-foreground/20 mb-4" />
+          <SearchIcon className="size-16 text-muted-foreground/20 mb-4" />
           <h2 className="text-2xl font-bold mb-2">
             <Trans>No results found for "{q}"</Trans>
           </h2>

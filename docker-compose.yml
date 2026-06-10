@@ -7,7 +7,7 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=file:/data/campfire.db
+      - DATABASE_URL=file:/data/seedarr.db
       - DOWNLOADS_PATH=/downloads
       - API_PORT=3002
     volumes:

@@ -27,7 +27,7 @@ Torrent streaming app with real-time playback, media library management, and Ple
 
 - Strict mode enabled
 - **Never use `any`** - use `unknown` if type is truly unknown
-- Import types from `@basement/api/types` in frontend
+- Import types and API client from `@seedarr/sdk` in frontend
 - Infer types from Zod schemas: `z.infer<typeof schema>`
 - Explicit return types on all service methods
 
@@ -76,7 +76,11 @@ apps/
         │       └── [feature]-store.ts
         ├── shared/         # Shared UI + hooks
         ├── routes/         # TanStack Router file-based routes
-        └── lib/            # Core utilities (api.ts, utils.ts)
+        └── lib/            # Core utilities (utils.ts)
+packages/
+├── sdk/                    # @seedarr/sdk — API client, unwrap, types
+├── shared/                 # @seedarr/shared — Cross-app helpers (string, format)
+└── ui/                     # @seedarr/ui — Shared UI utilities (cn)
 ```
 
 ## Dev Workflow
@@ -133,12 +137,6 @@ Each module **must** have a `{module}.dto.ts` file containing:
 - **TypeScript types** inferred from schemas
 - **Database types** using drizzle-zod's `createSelectSchema` and `createInsertSchema`
 
-### Type Exports
-
-- **`schema.ts`**: Only export table definitions and enums (e.g., `IndexerType`, `UserRole`)
-- **`{module}.dto.ts`**: Export all types and schemas for the module
-- **`types.ts`**: Re-export only TypeScript types (not Zod schemas) for frontend consumption
-
 ### Service Pattern
 
 - Extend `AuthenticatedService` for services needing database/user access
@@ -194,12 +192,14 @@ export const mediaRoutes = new Hono<{ Variables: HonoVariables }>()
 - Use Hono RPC client: `hc<AppType>(baseUrl, options)`
 - Type-safe client from `AppType` export: `api.[module].[endpoint].$method()`
 - Methods: `$get()`, `$post()`, `$put()`, `$delete()`, `$patch()`
-- **Use `unwrap()` helper** from `lib/api.ts` for all API calls
+- **Use `unwrap()` helper** from `@seedarr/sdk` for all API calls
 - Pattern: `unwrap(api.endpoint.$method(params))`
 - Let React Query handle errors (don't use try-catch unless specific fallback needed)
+- **Always use `useMutation`** for POST/PATCH/DELETE — never manual `useState(isLoading)`
 
 ```typescript
-import { api, unwrap } from "@/lib/api";
+import { api, unwrap } from "@seedarr/sdk";
+import type { Media, Torrent } from "@seedarr/sdk";
 
 const { data } = useQuery({
   queryKey: ["media", id],
@@ -209,14 +209,10 @@ const { data } = useQuery({
 
 ### Type Imports
 
-- **Always** import types from `@basement/api/types`
+- **Always** import types from `@seedarr/sdk`
 - **Never** recreate types that exist in the API
 - **Never** define inline types for API data structures
-- **Use** existing DTO types for mutations and queries
-
-```typescript
-import type { Media, Torrent } from "@basement/api/types";
-```
+- **Never** import directly from `@seedarr/api/types` in the frontend
 
 ### Icons
 

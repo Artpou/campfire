@@ -1,6 +1,5 @@
+import { api, unwrap } from "@seedarr/sdk";
 import { useQuery } from "@tanstack/react-query";
-
-import { api, unwrap } from "@/lib/api";
 
 export function useIndexers() {
   return useQuery({

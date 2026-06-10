@@ -1,8 +1,3 @@
-import type { TorrentDownload, TorrentLiveData } from "@/modules/download/download.dto";
-import type { User } from "@/modules/user/user.dto";
+import type { HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
 
-// Define Hono context variables
-export type HonoVariables = {
-  user: User;
-  download?: TorrentDownload & { live?: TorrentLiveData };
-};
+export type HonoVariables = HonoAuthenticatedVariables;

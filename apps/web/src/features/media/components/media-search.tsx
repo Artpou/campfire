@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLingui } from "@lingui/react/macro";
 import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { useDebounce } from "@uidotdev/usehooks";
-import { Search, X } from "lucide-react";
+import { SearchIcon, XIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/shared/ui/button";
@@ -19,14 +19,14 @@ export function MediaSearch({ expanded, onExpandedChange, className }: MediaSear
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = useSearch({ strict: false }) as { q?: string };
-  const [query, setQuery] = useState(searchParams.q || "");
+  const [query, setQuery] = useState("");
   const [internalExpanded, setInternalExpanded] = useState(false);
   const debouncedQuery = useDebounce(query, 300);
-  const isTypingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { t } = useLingui();
 
   const isExpanded = expanded ?? internalExpanded;
+  const isSearchPage = location.pathname === "/search";
 
   const setExpanded = (value: boolean) => {
     if (onExpandedChange) {
@@ -43,30 +43,35 @@ export function MediaSearch({ expanded, onExpandedChange, className }: MediaSear
   }, [isExpanded]);
 
   useEffect(() => {
-    if (!isTypingRef.current) return;
+    if (isSearchPage) {
+      setQuery(searchParams.q || "");
+    } else {
+      setQuery("");
+    }
+  }, [isSearchPage, searchParams.q]);
+
+  useEffect(() => {
+    if (!isSearchPage && debouncedQuery) return;
 
     if (debouncedQuery) {
       navigate({
         to: "/search",
         search: { q: debouncedQuery },
-        replace: location.pathname === "/search",
+        replace: isSearchPage,
       });
-    } else if (searchParams.q) {
-      navigate({ to: "/" });
+    } else if (isSearchPage && searchParams.q) {
+      navigate({ to: "/movies" });
     }
-
-    isTypingRef.current = false;
-  }, [debouncedQuery, navigate, searchParams.q, location.pathname]);
+  }, [debouncedQuery, navigate, isSearchPage, searchParams.q]);
 
   const handleChange = (value: string) => {
-    isTypingRef.current = true;
     setQuery(value);
   };
 
   const handleClose = () => {
     setExpanded(false);
     setQuery("");
-    if (location.pathname === "/search") {
+    if (isSearchPage) {
       navigate({ to: "/movies" });
     }
   };
@@ -86,7 +91,7 @@ export function MediaSearch({ expanded, onExpandedChange, className }: MediaSear
         aria-label={t`Search`}
         onClick={() => setExpanded(true)}
       >
-        <Search className="size-5" />
+        <SearchIcon className="size-5" />
       </Button>
     );
   }
@@ -94,7 +99,7 @@ export function MediaSearch({ expanded, onExpandedChange, className }: MediaSear
   return (
     <div className={cn("relative flex items-center gap-2", className)}>
       <div className="relative flex-1 min-w-[200px] md:min-w-[280px]">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
         <Input
           ref={inputRef}
           type="text"
@@ -106,7 +111,7 @@ export function MediaSearch({ expanded, onExpandedChange, className }: MediaSear
         />
       </div>
       <Button variant="ghost" size="icon" aria-label={t`Close search`} onClick={handleClose}>
-        <X className="size-5" />
+        <XIcon className="size-5" />
       </Button>
     </div>
   );

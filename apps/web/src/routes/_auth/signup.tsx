@@ -1,25 +1,21 @@
 import React from "react";
 
 import { Trans } from "@lingui/react/macro";
+import { api, unwrap } from "@seedarr/sdk";
+import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 
-import { api } from "@/lib/api";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
 
-import { useAuth } from "@/features/auth/auth-store";
-
 export const Route = createFileRoute("/_auth/signup")({
   component: Signup,
   beforeLoad: async () => {
-    const response = await api.auth["has-owner"].$get();
-    if (response.ok) {
-      const data = await response.json();
-      if (data.hasOwner) {
-        throw redirect({ to: "/login" });
-      }
+    const data = await unwrap(api.auth["has-owner"].$get());
+    if (data.hasOwner) {
+      throw redirect({ to: "/login" });
     }
   },
 });
@@ -32,9 +28,7 @@ interface SignupForm {
 
 function Signup() {
   const navigate = useNavigate();
-  const setUser = useAuth((state) => state.setUser);
   const [error, setError] = React.useState<string | null>(null);
-  const [isLoading, setIsLoading] = React.useState(false);
 
   const {
     register,
@@ -45,36 +39,19 @@ function Signup() {
 
   const password = watch("password");
 
-  const onSubmit = async (data: SignupForm) => {
-    setError(null);
-    setIsLoading(true);
-
-    if (data.password !== data.confirmPassword) {
-      setError("Passwords do not match");
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const response = await api.auth.register.$post({
-        json: {
-          username: data.username,
-          password: data.password,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Registration failed");
-      }
-
-      const userData = await response.json();
-      setUser(userData);
+  const { mutate: signup, isPending } = useMutation({
+    mutationFn: (data: { username: string; password: string }) => unwrap(api.auth.register.$post({ json: data })),
+    onSuccess: () => {
       navigate({ to: "/", search: { tab: "movie" } });
-    } catch (err) {
+    },
+    onError: (err: unknown) => {
       setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setIsLoading(false);
-    }
+    },
+  });
+
+  const onSubmit = (data: SignupForm) => {
+    setError(null);
+    signup({ username: data.username, password: data.password });
   };
 
   return (
@@ -97,9 +74,7 @@ function Signup() {
                 minLength: { value: 3, message: "Min 3 characters" },
               })}
             />
-            {errors.username && (
-              <p className="text-sm text-destructive">{errors.username.message}</p>
-            )}
+            {errors.username && <p className="text-sm text-destructive">{errors.username.message}</p>}
           </div>
 
           <div>
@@ -114,9 +89,7 @@ function Signup() {
                 minLength: { value: 8, message: "Min 8 characters" },
               })}
             />
-            {errors.password && (
-              <p className="text-sm text-destructive">{errors.password.message}</p>
-            )}
+            {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
           </div>
 
           <div>
@@ -131,15 +104,13 @@ function Signup() {
                 validate: (value) => value === password || "Passwords do not match",
               })}
             />
-            {errors.confirmPassword && (
-              <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
-            )}
+            {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <Button type="submit" disabled={isLoading} className="w-full">
-            {isLoading ? <Trans>Creating account...</Trans> : <Trans>Sign Up</Trans>}
+          <Button type="submit" disabled={isPending} className="w-full">
+            {isPending ? <Trans>Creating account...</Trans> : <Trans>Sign Up</Trans>}
           </Button>
         </form>
       </CardContent>

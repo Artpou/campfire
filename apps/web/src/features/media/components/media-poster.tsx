@@ -1,24 +1,21 @@
 import { useMemo, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
+import type { TMDBMovieDetails, TMDBTvDetails } from "@seedarr/sdk";
 import { Link } from "@tanstack/react-router";
-import { ClapperboardIcon, MagnetIcon, Play } from "lucide-react";
-import type { AppendToResponse, MovieDetails, TvShowDetails } from "tmdb-ts";
+import { ClapperboardIcon, FilmIcon, MagnetIcon, PlayIcon } from "lucide-react";
 
 import { Button } from "@/shared/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/shared/ui/dialog";
 
 import { useRole } from "@/features/auth/hooks/use-role";
 import { getPosterUrl } from "@/features/media/helpers/media.helper";
-import { useMedia } from "@/features/media/hooks/use-media";
 
-type MediaPosterMedia =
-  | AppendToResponse<MovieDetails, "videos"[], "movie">
-  | AppendToResponse<TvShowDetails, "videos"[], "tvShow">;
+type MediaPosterMedia = TMDBMovieDetails | TMDBTvDetails;
 
 interface MediaPosterProps {
   media: MediaPosterMedia;
-  id?: number;
+  downloadId?: string;
   type?: "movie" | "tv";
 }
 
@@ -28,14 +25,11 @@ function getDisplayTitle(media: MediaPosterMedia): string {
   return "";
 }
 
-export function MediaPoster({ media, id, type = "movie" }: MediaPosterProps) {
+export function MediaPoster({ media, downloadId, type = "movie" }: MediaPosterProps) {
   const { role } = useRole();
   const { i18n } = useLingui();
 
   const [imgError, setImgError] = useState(false);
-
-  const { data: localMedia } = useMedia(id ?? 0, { enabled: !!id });
-  const downloadId = localMedia?.downloadId;
 
   const displayTitle = getDisplayTitle(media);
 
@@ -44,9 +38,7 @@ export function MediaPoster({ media, id, type = "movie" }: MediaPosterProps) {
     if (!videos) return null;
 
     return (
-      videos.find(
-        (v) => v.site === "YouTube" && v.type === "Trailer" && v.iso_3166_1 === i18n.locale,
-      ) ??
+      videos.find((v) => v.site === "YouTube" && v.type === "Trailer" && v.iso_3166_1 === i18n.locale) ??
       videos.find((v) => v.site === "YouTube" && v.type === "Trailer") ??
       videos.find((v) => v.site === "YouTube")
     );
@@ -75,7 +67,7 @@ export function MediaPoster({ media, id, type = "movie" }: MediaPosterProps) {
             className="absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity rounded-md"
           >
             <div className="size-16 rounded-full bg-primary flex items-center justify-center shadow-lg">
-              <Play className="size-8 fill-current text-primary-foreground ml-1" />
+              <PlayIcon className="size-8 fill-current text-primary-foreground ml-1" />
             </div>
           </Link>
         )}
@@ -85,14 +77,11 @@ export function MediaPoster({ media, id, type = "movie" }: MediaPosterProps) {
         <Dialog>
           <DialogTrigger className="cursor-pointer" asChild>
             <Button variant="secondary" className="w-full">
-              <Play className="size-3 fill-current mr-2" />
+              <FilmIcon className="size-3" />
               <Trans>Watch Trailer</Trans>
             </Button>
           </DialogTrigger>
-          <DialogContent
-            className="sm:max-w-[90vw] max-w-[95vw] p-0 border-none aspect-video"
-            showCloseButton={false}
-          >
+          <DialogContent className="sm:max-w-[90vw] max-w-[95vw] p-0 border-none aspect-video" showCloseButton={false}>
             <iframe
               src={`https://www.youtube.com/embed/${youtubeTrailer.key}?autoplay=1`}
               title={displayTitle}
@@ -104,16 +93,16 @@ export function MediaPoster({ media, id, type = "movie" }: MediaPosterProps) {
         </Dialog>
       )}
 
-      {media && role !== "viewer" && id && (
+      {media && role !== "viewer" && media.id && (
         <Button className="w-full" asChild>
           {type === "tv" ? (
-            <Link to="/tv/$id/torrents" params={{ id: id.toString() }}>
-              <MagnetIcon className="size-3 mr-2" />
+            <Link to="/tv/$id/torrents" params={{ id: media.id.toString() }}>
+              <MagnetIcon className="size-3" />
               <Trans>Torrents</Trans>
             </Link>
           ) : (
-            <Link to="/movies/$id/torrents" params={{ id: id.toString() }}>
-              <MagnetIcon className="size-3 mr-2" />
+            <Link to="/movies/$id/torrents" params={{ id: media.id.toString() }}>
+              <MagnetIcon className="size-3" />
               <Trans>Torrents</Trans>
             </Link>
           )}

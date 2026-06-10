@@ -1,302 +1,146 @@
-import { and, desc, eq, gt, inArray } from "drizzle-orm";
+import { and, desc, eq, exists, inArray } from "drizzle-orm";
 
-import { AuthenticatedService } from "@/classes/authenticated-service";
+import type { Paginate } from "@/shared/pagination.dto";
+import { paginate, toPaginate } from "@/shared/pagination.helper";
+
 import { db } from "@/db/db";
-import {
-  media,
-  torrentDownload,
-  userLikes,
-  userMedia,
-  userWatchList,
-  watchProgress,
-} from "@/db/schema";
 import { BadRequestError, NotFoundError } from "@/errors/error";
-import type { Paginate, PaginationParams } from "@/modules/pagination/pagination.dto";
-import { toPaginate } from "@/modules/pagination/pagination.helper";
-import { Ids } from "@/modules/shared/shared.dto";
-import type {
-  ContinueWatchingItem,
-  ListMediaParams,
-  Media,
-  MediaInsert,
-  MediaStatus,
-  MediaUpdate,
-  UpdateWatchProgressInput,
-  WatchProgress,
-} from "./media.dto";
+import { countSubquery } from "@/helpers/drizzle.helper";
+import { IdentifiableService } from "@/modules/auth/auth.service";
+import { torrentDownload } from "@/modules/download/download.schema";
+import { media, userLikes, userMedia, userWatchList, watchProgress } from "@/modules/media/media.schema";
+import type { ListMediaQuery, Media, MediaInsert, UpdateProgressQuery } from "./media.dto";
 
-export class MediaService extends AuthenticatedService {
-  select = db.select().from(media);
+export class MediaService extends IdentifiableService<Media> {
+  async getMany(pagination: Partial<ListMediaQuery>): Promise<Media[]> {
+    const paginationOpts = pagination.page && pagination.limit ? paginate(pagination) : {};
+    const rows = await db.query.media.findMany({
+      where: inArray(media.id, pagination.ids?.map(Number) ?? []),
+      with: {
+        downloads: {
+          where: and(eq(torrentDownload.userId, this.user.id)),
+          orderBy: desc(torrentDownload.completedAt),
+          limit: 1,
+        },
+        progress: { where: eq(watchProgress.userId, this.user.id), limit: 1 },
+      },
+      extras: (fields) => ({
+        likes: countSubquery(userLikes, userLikes.mediaId, fields.id, "likes"),
+        watchList: countSubquery(userWatchList, userWatchList.mediaId, fields.id, "watchList"),
+      }),
+      ...paginationOpts,
+    });
 
-  async get(id: number): Promise<Media | null> {
-    const [result] = await db.select().from(media).where(eq(media.id, id)).limit(1);
-    if (!result) return null;
-
-    const [withStatus] = await this.addStatus([result]);
-    return withStatus;
+    return rows.map((row) => {
+      const { downloads, progress, ...mediaItem } = row;
+      return {
+        ...mediaItem,
+        download: downloads[0] ?? undefined,
+        progress: progress[0] ?? undefined,
+      };
+    });
   }
 
-  async list(query: ListMediaParams, pagination: PaginationParams): Promise<Paginate<Media>> {
-    const { page, limit, offset } = pagination;
+  async list(query: ListMediaQuery): Promise<Paginate<Media>> {
     const { type, filter, ids } = query;
 
-    let results: Media[];
+    const conditions = [];
+    if (type) conditions.push(eq(media.type, type));
+    if (ids) conditions.push(inArray(media.id, ids.map(Number)));
 
-    if (!filter) {
-      results = await this.select
-        .where(
-          and(
-            type ? eq(media.type, type) : undefined,
-            ids ? inArray(media.id, ids.map(Number)) : undefined,
-          ),
-        )
-        .limit(limit + 1)
-        .offset(offset);
-    } else {
-      const table =
-        filter === "like" ? userLikes : filter === "watch-list" ? userWatchList : userMedia;
+    if (filter) {
+      const FILTER_TABLE_MAP = {
+        like: userLikes,
+        "watch-list": userWatchList,
+        "recently-viewed": userMedia,
+        downloaded: torrentDownload,
+      } as const;
 
-      const rows = await db
-        .select({ media })
-        .from(table)
-        .innerJoin(media, eq(table.mediaId, media.id))
-        .where(and(eq(table.userId, this.user.id), type ? eq(media.type, type) : undefined))
-        .orderBy(desc(table.createdAt))
-        .limit(limit + 1)
-        .offset(offset);
-      results = rows.map((r) => r.media);
+      const table = FILTER_TABLE_MAP[filter];
+      conditions.push(
+        exists(
+          db
+            .select()
+            .from(table)
+            .where(and(eq(table.userId, this.user.id), eq(table.mediaId, media.id))),
+        ),
+      );
     }
 
-    const withStatus = await this.addStatus(results);
-    return toPaginate(withStatus, page, limit);
+    const mediaIds = (
+      await db
+        .select({ id: media.id })
+        .from(media)
+        .where(and(...conditions))
+    ).map((m) => m.id.toString());
+
+    return toPaginate(await this.getMany({ ids: mediaIds, ...query }), query);
   }
 
   async upsert(data: MediaInsert): Promise<Media> {
-    const mediaId = data.id;
-    if (!mediaId) throw new BadRequestError("Media ID is required");
+    if (!data.id) throw new BadRequestError("Media ID is required");
 
-    await db.insert(media).values(data).onConflictDoUpdate({
-      target: media.id,
-      set: data,
-    });
-
-    // Track view
+    await db.insert(media).values(data).onConflictDoUpdate({ target: media.id, set: data });
     await db
       .insert(userMedia)
-      .values({
-        userId: this.user.id,
-        mediaId,
-        createdAt: new Date(),
-      })
+      .values({ userId: this.user.id, mediaId: data.id, createdAt: new Date() })
       .onConflictDoUpdate({
         target: [userMedia.userId, userMedia.mediaId],
         set: { createdAt: new Date() },
       });
 
-    const result = await this.get(mediaId);
+    const result = await this.get(data.id.toString());
     if (!result) throw new NotFoundError("Media");
     return result;
   }
 
-  async update(id: number, data: MediaUpdate): Promise<Media | null> {
-    await db.update(media).set(data).where(eq(media.id, id));
-    return this.get(id);
+  async toggleLike(mediaId: number): Promise<Media | undefined> {
+    const existing = await db.query.userLikes.findFirst({
+      columns: { userId: true },
+      where: and(eq(userLikes.userId, this.user.id), eq(userLikes.mediaId, mediaId)),
+    });
+
+    existing
+      ? await db.delete(userLikes).where(and(eq(userLikes.userId, this.user.id), eq(userLikes.mediaId, mediaId)))
+      : await db.insert(userLikes).values({ userId: this.user.id, mediaId });
+
+    return this.get(mediaId.toString());
   }
 
-  async updateProgress(mediaId: number, data: UpdateWatchProgressInput): Promise<WatchProgress> {
-    const completed = data.duration > 0 && data.position / data.duration >= 0.9;
+  async toggleWatchList(mediaId: number): Promise<Media | undefined> {
+    const existing = await db.query.userWatchList.findFirst({
+      columns: { userId: true },
+      where: and(eq(userWatchList.userId, this.user.id), eq(userWatchList.mediaId, mediaId)),
+    });
+
+    existing
+      ? await db
+          .delete(userWatchList)
+          .where(and(eq(userWatchList.userId, this.user.id), eq(userWatchList.mediaId, mediaId)))
+      : await db.insert(userWatchList).values({ userId: this.user.id, mediaId });
+
+    return this.get(mediaId.toString());
+  }
+
+  async updateProgress(mediaId: number, input: UpdateProgressQuery): Promise<Media | undefined> {
+    const update = {
+      userId: this.user.id,
+      downloadId: input.downloadId ?? null,
+      position: input.position,
+      duration: input.duration,
+      completed: input.duration > 0 && input.position / input.duration >= 0.9,
+    };
 
     await db
       .insert(watchProgress)
-      .values({
-        userId: this.user.id,
-        mediaId,
-        downloadId: data.downloadId ?? null,
-        position: data.position,
-        duration: data.duration,
-        completed,
-        updatedAt: new Date(),
-      })
-      .onConflictDoUpdate({
-        target: [watchProgress.userId, watchProgress.mediaId],
-        set: {
-          downloadId: data.downloadId ?? null,
-          position: data.position,
-          duration: data.duration,
-          completed,
-          updatedAt: new Date(),
-        },
-      });
+      .values({ ...update, mediaId })
+      .onConflictDoUpdate({ target: [watchProgress.userId, watchProgress.mediaId], set: update });
 
-    const [result] = await db
-      .select()
-      .from(watchProgress)
-      .where(and(eq(watchProgress.userId, this.user.id), eq(watchProgress.mediaId, mediaId)))
-      .limit(1);
-
-    if (!result) throw new NotFoundError("Watch progress");
-    return result;
-  }
-
-  async getProgress(mediaId: number): Promise<WatchProgress | null> {
-    const [result] = await db
-      .select()
-      .from(watchProgress)
-      .where(and(eq(watchProgress.userId, this.user.id), eq(watchProgress.mediaId, mediaId)))
-      .limit(1);
-
-    return result ?? null;
-  }
-
-  async listContinueWatching(type?: Media["type"]): Promise<ContinueWatchingItem[]> {
-    const rows = await db
-      .select({ media, progress: watchProgress })
-      .from(watchProgress)
-      .innerJoin(media, eq(watchProgress.mediaId, media.id))
-      .where(
-        and(
-          eq(watchProgress.userId, this.user.id),
-          eq(watchProgress.completed, false),
-          gt(watchProgress.position, 0),
-          type ? eq(media.type, type) : undefined,
-        ),
-      )
-      .orderBy(desc(watchProgress.updatedAt))
-      .limit(20);
-
-    const withStatus = await this.addStatus(rows.map((row) => row.media));
-
-    return rows.map((row) => {
-      const mediaWithStatus = withStatus.find((item) => item.id === row.media.id) ?? row.media;
-      const progressPercent =
-        row.progress.duration > 0
-          ? Math.min(100, (row.progress.position / row.progress.duration) * 100)
-          : 0;
-
-      return {
-        ...mediaWithStatus,
-        position: row.progress.position,
-        duration: row.progress.duration,
-        downloadId: row.progress.downloadId,
-        progressPercent,
-      };
-    });
-  }
-
-  async toggleLike(data: Media): Promise<Media> {
-    let media = await this.get(data.id);
-    if (!media) media = await this.upsert(data);
-
-    const [existing] = await db
-      .select()
-      .from(userLikes)
-      .where(and(eq(userLikes.userId, this.user.id), eq(userLikes.mediaId, data.id)))
-      .limit(1);
-
-    if (existing) {
-      await db
-        .delete(userLikes)
-        .where(and(eq(userLikes.userId, this.user.id), eq(userLikes.mediaId, data.id)));
-    } else {
-      await db.insert(userLikes).values({
-        userId: this.user.id,
-        mediaId: data.id,
-        createdAt: new Date(),
-      });
-    }
-
-    return { ...media, like: !media.like };
-  }
-
-  async toggleWatchList(data: Media): Promise<Media> {
-    let media = await this.get(data.id);
-    if (!media) media = await this.upsert(data);
-
-    const [existing] = await db
-      .select()
-      .from(userWatchList)
-      .where(and(eq(userWatchList.userId, this.user.id), eq(userWatchList.mediaId, data.id)))
-      .limit(1);
-
-    if (existing) {
-      await db
-        .delete(userWatchList)
-        .where(and(eq(userWatchList.userId, this.user.id), eq(userWatchList.mediaId, data.id)));
-    } else {
-      await db.insert(userWatchList).values({
-        userId: this.user.id,
-        mediaId: data.id,
-        createdAt: new Date(),
-      });
-    }
-
-    return { ...media, watchList: !media.watchList };
+    return this.get(mediaId.toString());
   }
 
   async clearHistory(): Promise<{ success: true }> {
     await db.delete(userMedia).where(eq(userMedia.userId, this.user.id));
     return { success: true };
-  }
-
-  async listStatus(ids: Ids): Promise<MediaStatus[]> {
-    const items = await this.list({ ids }, { limit: ids.length, page: 1, offset: 0 });
-
-    return ids.map((id) => {
-      const status = items.results.find((m) => m.id === Number(id));
-      return {
-        id: Number(id),
-        like: status?.like,
-        watchList: status?.watchList,
-        download: status?.download,
-        downloadId: status?.downloadId,
-      };
-    });
-  }
-
-  private async addStatus(items: Media[]): Promise<Media[]> {
-    if (items.length === 0) return [];
-
-    const mediaIds = items.map((m) => m.id);
-
-    const [likedRows, watchListRows, downloadRows] = await Promise.all([
-      db
-        .select({ mediaId: userLikes.mediaId })
-        .from(userLikes)
-        .where(and(eq(userLikes.userId, this.user.id), inArray(userLikes.mediaId, mediaIds))),
-      db
-        .select({ mediaId: userWatchList.mediaId })
-        .from(userWatchList)
-        .where(
-          and(eq(userWatchList.userId, this.user.id), inArray(userWatchList.mediaId, mediaIds)),
-        ),
-      db
-        .select({ mediaId: torrentDownload.mediaId, id: torrentDownload.id })
-        .from(torrentDownload)
-        .where(
-          and(
-            eq(torrentDownload.userId, this.user.id),
-            inArray(torrentDownload.mediaId, mediaIds),
-            eq(torrentDownload.status, "completed"),
-          ),
-        )
-        .orderBy(desc(torrentDownload.completedAt)),
-    ]);
-
-    const likedSet = new Set(likedRows.map((r) => r.mediaId));
-    const watchListSet = new Set(watchListRows.map((r) => r.mediaId));
-    const downloadMap = new Map<number, string>();
-    for (const row of downloadRows) {
-      if (row.mediaId && !downloadMap.has(row.mediaId)) {
-        downloadMap.set(row.mediaId, row.id);
-      }
-    }
-
-    return items.map((item) => ({
-      ...item,
-      like: likedSet.has(item.id),
-      watchList: watchListSet.has(item.id),
-      download: downloadMap.has(item.id),
-      downloadId: downloadMap.get(item.id),
-    }));
   }
 }

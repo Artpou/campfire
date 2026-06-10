@@ -1,7 +1,6 @@
-import type { SubdlSearchResponse } from "@basement/api/types";
+import type { SubdlSearchResponse } from "@seedarr/sdk";
+import { api, unwrap } from "@seedarr/sdk";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-
-import { api, unwrap } from "@/lib/api";
 
 export function useSearchSubtitles(tmdbId: string, languages: string, type?: "movie" | "tv") {
   return useQuery({
@@ -20,12 +19,8 @@ export function useDownloadSubtitle() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: {
-      downloadId: string;
-      url: string;
-      language: string;
-      mediaTitle: string;
-    }) => unwrap<{ relativePath: string }>(api.subtitles.download.$post({ json: input })),
+    mutationFn: (input: { downloadId: string; url: string; language: string; mediaTitle: string }) =>
+      unwrap<{ relativePath: string }>(api.subtitles.download.$post({ json: input })),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: ["torrent-download", variables.downloadId],

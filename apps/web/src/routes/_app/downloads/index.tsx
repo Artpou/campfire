@@ -1,6 +1,3 @@
-import { useMemo, useState } from "react";
-
-import type { Media } from "@basement/api/types";
 import { Trans } from "@lingui/react/macro";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
@@ -9,20 +6,8 @@ import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
 
 import { useAuth } from "@/features/auth/auth-store";
-import { DownloadCard } from "@/features/downloads/components/download-card";
-import {
-  type DisplayMode,
-  DownloadDisplayTabs,
-} from "@/features/downloads/components/download-display-tabs";
-import {
-  DownloadStatusTabs,
-  type StatusFilter,
-} from "@/features/downloads/components/download-status-tabs";
-import { DownloadsGrid } from "@/features/downloads/components/downloads-grid";
-import { DownloadsSeriesGroupCard } from "@/features/downloads/components/downloads-series-group-card";
-import { groupDownloads } from "@/features/downloads/helpers/download-grouping";
-import { useMediasByIds } from "@/features/media/hooks/use-media";
-import { useTorrentDownloads } from "@/features/torrent/hooks/use-torrent-download";
+import { MediaCard } from "@/features/media/components/media-card";
+import { useMedias } from "@/features/media/hooks/use-media";
 
 export const Route = createFileRoute("/_app/downloads/")({
   component: DownloadsPage,
@@ -33,75 +18,21 @@ export const Route = createFileRoute("/_app/downloads/")({
     }
   },
 });
-
 function DownloadsPage() {
-  const { isLoading, data: allTorrents } = useTorrentDownloads();
-  const [displayMode, setDisplayMode] = useState<DisplayMode>("grid");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const { results, isLoading } = useMedias({ filter: "downloaded" });
 
-  const torrents = useMemo(() => {
-    if (!allTorrents) return [];
-    if (statusFilter === "all") return allTorrents;
-    if (statusFilter === "ready") return allTorrents.filter((t) => t.status === "completed");
-    return allTorrents.filter((t) => t.status === "downloading" || t.status === "queued");
-  }, [allTorrents, statusFilter]);
-
-  const mediaIds = useMemo(() => {
-    const set = new Set<number>();
-    for (const t of torrents) {
-      if (t.mediaId) set.add(t.mediaId);
-    }
-    return Array.from(set);
-  }, [torrents]);
-
-  const { data: medias } = useMediasByIds(mediaIds);
-
-  const groupedItems = useMemo(() => {
-    const mediasByTvId = new Map<number, Media>();
-    if (medias) {
-      for (const m of medias) {
-        mediasByTvId.set(m.id, m);
-      }
-    }
-    return groupDownloads(torrents, mediasByTvId);
-  }, [torrents, medias]);
-
-  if (isLoading) {
-    return (
-      <Container>
-        <SeedarrLoader />
-      </Container>
-    );
-  }
-
-  if (!allTorrents) return null;
+  if (isLoading) return <SeedarrLoader />;
 
   return (
     <Container>
-      <div className="flex justify-between items-center mb-6">
-        <DownloadStatusTabs value={statusFilter} onValueChange={setStatusFilter} />
-        <DownloadDisplayTabs value={displayMode} onValueChange={setDisplayMode} />
-      </div>
+      {results.length > 0 ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-6 gap-4">
+          {results.map((media) => {
+            if (!media.download) return null;
 
-      {groupedItems.length > 0 ? (
-        displayMode === "grid" ? (
-          <DownloadsGrid items={groupedItems} isLoading={isLoading} />
-        ) : (
-          <div className="space-y-4">
-            {groupedItems.map((item) => {
-              if (item.kind === "tv-group") {
-                return (
-                  <DownloadsSeriesGroupCard
-                    key={`group-${item.mediaId}`}
-                    mediaId={item.mediaId}
-                    downloads={item.downloads}
-                  />
-                );
-              }
-              return <DownloadCard key={item.download.id} torrent={item.download} />;
-            })}
-          </div>
-        )
+            return <MediaCard key={media.download.id} media={media} />;
+          })}
+        </div>
       ) : (
         <Card>
           <div className="py-10 text-center">

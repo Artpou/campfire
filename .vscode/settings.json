@@ -28,5 +28,6 @@
     "source.fixAll.biome": "explicit"
   },
   "typescript.preferences.importModuleSpecifier": "non-relative",
-  "javascript.preferences.importModuleSpecifier": "non-relative"
+  "javascript.preferences.importModuleSpecifier": "non-relative",
+  "a-file-icon-vscode.activeIconPacks": ["angular2", "react"]
 }

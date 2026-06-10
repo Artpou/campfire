@@ -7,7 +7,7 @@ import { SortOption } from "tmdb-ts";
 import { PlaceholderEmpty } from "@/shared/components/seedarr-placeholder";
 import { Container } from "@/shared/ui/container";
 
-import { ContinueWatchingSection } from "@/features/media/components/continue-watching-section";
+import { MediaLibrarySection } from "@/features/media/components/continue-watching-section";
 import { HeroCarousel } from "@/features/media/components/hero-carousel";
 import { MediaCategoryCarousel } from "@/features/media/components/media-category-carousel";
 import { MediaGrid } from "@/features/media/components/media-grid";
@@ -46,8 +46,7 @@ export const Route = createFileRoute("/_app/tv/")({
     return {
       with_genres: optionalString(search.with_genres),
       with_watch_providers: optionalString(search.with_watch_providers),
-      selected:
-        typeof search.selected === "string" ? (search.selected as MediaSelected) : undefined,
+      selected: typeof search.selected === "string" ? (search.selected as MediaSelected) : undefined,
       first_air_date_gte: optionalString(search.first_air_date_gte),
       first_air_date_lte: optionalString(search.first_air_date_lte),
       with_original_language: optionalString(search.with_original_language),
@@ -74,8 +73,7 @@ function TVPage() {
 
   const { after_date } = useMemo(() => {
     return {
-      after_date:
-        search.selected === "upcoming" ? new Date().toISOString().split("T")[0] : undefined,
+      after_date: search.selected === "upcoming" ? new Date().toISOString().split("T")[0] : undefined,
     };
   }, [search]);
 
@@ -141,12 +139,9 @@ function TVPage() {
   return (
     <>
       <HeroCarousel type="tv" />
-      <ContinueWatchingSection type="tv" />
       <Container>
-        <MediaCategoryCarousel
-          type="tv"
-          onValueChange={(value) => handleSearchChange({ with_genres: value })}
-        />
+        <MediaLibrarySection type="tv" />
+        <MediaCategoryCarousel type="tv" onValueChange={(value) => handleSearchChange({ with_genres: value })} />
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-4">
             <MediaSortTabs
@@ -170,11 +165,7 @@ function TVPage() {
               subtitle={<Trans>Try adjusting your filters or search criteria</Trans>}
             />
           ) : (
-            <MediaGrid
-              items={tvShows}
-              isLoading={isLoading || isFetchingNextPage}
-              onLoadMore={handleLoadMore}
-            />
+            <MediaGrid items={tvShows} isLoading={isLoading || isFetchingNextPage} onLoadMore={handleLoadMore} />
           )}
         </div>
       </Container>

@@ -1,12 +1,6 @@
 export function SeedarrLogoSad({ size = 100 }: { size?: number }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 5960 5900"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-label="Loading"
-    >
+    <svg width={size} height={size} viewBox="0 0 5960 5900" xmlns="http://www.w3.org/2000/svg" aria-label="Loading">
       <title>Loading</title>
       {/* Circle (static) */}
       <g fill="rgb(102,155,71)">
@@ -38,13 +32,7 @@ export function SeedarrLogoSad({ size = 100 }: { size?: number }) {
 
 export function SeedarrLogo({ size = 100 }: { size?: number }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 5960 5900"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-label="Loading"
-    >
+    <svg width={size} height={size} viewBox="0 0 5960 5900" xmlns="http://www.w3.org/2000/svg" aria-label="Loading">
       <title>Loading</title>
       {/* Play button (static) */}
       <g fill="rgb(102,155,71)">

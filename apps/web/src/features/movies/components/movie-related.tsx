@@ -1,36 +1,22 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
-import type { AppendToResponse, CollectionDetails, MovieDetails } from "tmdb-ts";
+import type { Media, Movie } from "@seedarr/sdk";
 
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { MediaCarousel } from "@/features/media/components/media-carousel";
-import { tmdbMovieToMedia } from "@/features/media/helpers/media.helper";
 
 interface MovieRelatedProps {
-  movie: AppendToResponse<MovieDetails, "recommendations"[], "movie">;
-  collection: CollectionDetails | null;
+  collection: Movie["collection"];
+  collectionMedia: Media[];
+  recommendedMovies: Media[];
 }
 
-export function MovieRelated({ movie, collection }: MovieRelatedProps) {
+export function MovieRelated({ collection, collectionMedia, recommendedMovies }: MovieRelatedProps) {
   const [activeTab, setActiveTab] = useState<"collection" | "recommendations">("collection");
 
-  const collectionMovies = useMemo(() => {
-    if (!collection?.parts || collection.parts.length <= 1) return [];
-    return collection.parts
-      .filter((part) => part.id !== movie.id)
-      .map(tmdbMovieToMedia)
-      .sort((a, b) => a.release_date?.localeCompare(b.release_date || "") || 0);
-  }, [collection, movie.id]);
-
-  const recommendedMovies = useMemo(() => {
-    const recommendations = movie.recommendations?.results || [];
-    if (recommendations.length === 0) return [];
-    return recommendations.map(tmdbMovieToMedia);
-  }, [movie.recommendations]);
-
-  const hasCollection = collectionMovies.length > 0;
+  const hasCollection = collectionMedia.length > 0;
   const hasRecommendations = recommendedMovies.length > 0;
 
   if (!hasCollection && !hasRecommendations) return null;
@@ -39,13 +25,10 @@ export function MovieRelated({ movie, collection }: MovieRelatedProps) {
     <MediaCarousel
       title={
         hasCollection ? (
-          <Tabs
-            value={activeTab}
-            onValueChange={(value) => setActiveTab(value as "collection" | "recommendations")}
-          >
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "collection" | "recommendations")}>
             <TabsList>
               <TabsTrigger value="collection">
-                <Trans>{collection?.name}</Trans> ({collectionMovies.length})
+                <Trans>{typeof collection?.name === "string" ? collection.name : ""}</Trans> ({collectionMedia.length})
               </TabsTrigger>
               <TabsTrigger value="recommendations">
                 <Trans>Recommended</Trans> ({recommendedMovies.length})
@@ -56,9 +39,7 @@ export function MovieRelated({ movie, collection }: MovieRelatedProps) {
           <Trans>Related</Trans>
         )
       }
-      data={
-        activeTab === "recommendations" || !hasCollection ? recommendedMovies : collectionMovies
-      }
+      data={activeTab === "recommendations" || !hasCollection ? recommendedMovies : collectionMedia}
     />
   );
 }
