@@ -1,6 +1,6 @@
 import * as path from "node:path";
 import type { Download } from "./download.dto";
-import { WebTorrentClient } from "./webtorrent.client";
+import { torrentClient } from "./webtorrent.client";
 import { findLargestVideoFile } from "./webtorrent.helper";
 
 export interface StreamResult {
@@ -14,7 +14,7 @@ export class DownloadStreamService {
   constructor(private downloadPath: string) {}
 
   async getStreamForDownload(download: Download): Promise<StreamResult | undefined> {
-    const activeTorrent = WebTorrentClient.getActiveTorrent(download.id);
+    const activeTorrent = torrentClient.getActiveTorrent(download.id);
     if (activeTorrent) {
       const videoFile = findLargestVideoFile(activeTorrent);
       if (!videoFile) return undefined;
@@ -31,7 +31,7 @@ export class DownloadStreamService {
   }
 
   private async getStreamFromDisk(download: Download): Promise<StreamResult | undefined> {
-    if (download.status === "failed") return undefined;
+    if (download.error) return undefined;
 
     const fullPath = this.getFullPath(download);
     const fs = await import("node:fs/promises");
@@ -77,7 +77,7 @@ export class DownloadStreamService {
   }
 
   private getFullPath(download: Download, relativePath?: string): string {
-    const basePath = path.join(this.downloadPath, download.savePath || download.name);
+    const basePath = path.join(this.downloadPath, download.torrent?.name ?? "");
     return relativePath ? path.join(basePath, relativePath) : basePath;
   }
 }

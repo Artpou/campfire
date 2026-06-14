@@ -1,19 +1,4 @@
-import type { Context } from "hono";
-
 import type { Paginate, PaginationQuery } from "./pagination.dto";
-
-export function paginationParams(c: Context): PaginationQuery {
-  const page = c.req.query("page");
-  const limit = c.req.query("limit");
-
-  const parsedPage = page ? Number(page) : 1;
-  const parsedLimit = limit ? Number(limit) : 20;
-
-  return {
-    page: parsedPage,
-    limit: parsedLimit,
-  };
-}
 
 export const paginate = (query?: Partial<PaginationQuery>) => {
   if (!query?.page || !query?.limit)

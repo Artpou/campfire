@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
 
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
@@ -9,13 +10,11 @@ import { Container } from "@/shared/ui/container";
 import { Label } from "@/shared/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 
-import { useAuth } from "@/features/auth/auth-store";
-import { useMedia } from "@/features/media/hooks/use-media";
 import { TorrentIndexersTable } from "@/features/torrent/components/torrent-indexers-table";
 import { TorrentTable } from "@/features/torrent/components/torrent-table";
-import { useIndexers } from "@/features/torrent/hooks/use-indexers";
-import { useTorrents } from "@/features/torrent/hooks/use-torrent";
-import { useTVDetails, useTVSeasonDetails } from "@/features/tv/hook/use-tv";
+import { indexerQueries } from "@/features/torrent/hooks/indexer.queries";
+import { useTorrents } from "@/features/torrent/hooks/torrent.queries";
+import { tvQueries } from "@/features/tv/hooks/tv.queries";
 
 export interface TvTorrentsSearch {
   season?: number;
@@ -33,12 +32,17 @@ const optionalPositiveInt = (v: unknown): number | undefined => {
 
 export const Route = createFileRoute("/_app/tv/$id/torrents")({
   component: TVTorrentsPage,
-  beforeLoad: () => {
-    const user = useAuth.getState().user;
-    if (user?.role === "viewer") {
-      throw redirect({ to: "/404" });
-    }
-  },
+  loader: ({ context, params }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(tvQueries.details(params.id, context.language)),
+      context.queryClient.ensureQueryData(indexerQueries.list()),
+    ]),
+  pendingComponent: () => (
+    <div className="flex items-center justify-center size-full">
+      <SeedarrLoader />
+    </div>
+  ),
+  errorComponent: () => <Navigate to="/404" replace />,
   validateSearch: (search: Record<string, unknown>): TvTorrentsSearch => {
     return {
       season: optionalPositiveInt(search.season),
@@ -51,55 +55,44 @@ const ALL_EPISODES = "all";
 
 function TVTorrentsPage() {
   const params = Route.useParams();
+  const context = Route.useRouteContext();
   const search = Route.useSearch();
   const navigate = useNavigate();
 
-  const { data: tvData } = useTVDetails(params.id);
-  const { data: media, isLoading: isMediaLoading } = useMedia(Number(params.id), {
-    enabled: !!tvData,
-  });
-  const { data: indexers, isLoading: isIndexersLoading } = useIndexers();
-  const torrentQueries = useTorrents(media, indexers || [], {
+  const { data: tvData } = useSuspenseQuery(tvQueries.details(params.id, context.language));
+  const { data: indexers } = useSuspenseQuery(indexerQueries.list());
+  const {
+    torrents,
+    indexerStats,
+    isLoading: isAnyTorrentLoading,
+  } = useTorrents(tvData.media, indexers, {
     season: search.season,
     episode: search.episode,
   });
 
   const [visibleIndexers, setVisibleIndexers] = useState<Set<string>>(new Set());
 
-  const tv = tvData?.tv;
+  const { tv, media } = tvData;
   const validSeasons = useMemo(() => (tv?.seasons ?? []).filter((s) => s.season_number > 0), [tv]);
 
   const selectedSeason = search.season ?? validSeasons[0]?.season_number;
 
-  const { data: seasonDetails } = useTVSeasonDetails(
-    { tvShowID: Number(params.id), seasonNumber: selectedSeason ?? 1 },
-    { enabled: !!selectedSeason },
-  );
-
-  const allTorrents = useMemo(() => {
-    if (!indexers) return [];
-    const torrents = torrentQueries.flatMap((query, index) => {
-      if (!query.data) return [];
-      const indexerId = indexers[index]?.id;
-      return query.data.map((torrent) => ({ ...torrent, indexerId }));
-    });
-
-    return torrents.sort((a, b) => b.seeders - a.seeders);
-  }, [torrentQueries, indexers]);
+  const { data: seasonDetails } = useQuery({
+    ...tvQueries.season(Number(params.id), selectedSeason ?? 1, context.language),
+    enabled: !!selectedSeason,
+  });
 
   const filteredTorrents = useMemo(() => {
-    if (visibleIndexers.size === 0) return allTorrents;
-    return allTorrents.filter((t) => t.indexerId && visibleIndexers.has(t.indexerId));
-  }, [allTorrents, visibleIndexers]);
-
-  const isLoading = isMediaLoading || isIndexersLoading;
-  const isAnyTorrentLoading = torrentQueries.some((query) => query.isLoading);
+    if (visibleIndexers.size === 0) return torrents;
+    return torrents.filter((t) => t.indexerId && visibleIndexers.has(t.indexerId));
+  }, [torrents, visibleIndexers]);
 
   const handleSeasonChange = (value: string) => {
     navigate({
       to: "/tv/$id/torrents",
       params,
       search: { season: Number(value), episode: undefined },
+      resetScroll: false,
     });
   };
 
@@ -111,18 +104,9 @@ function TVTorrentsPage() {
         season: selectedSeason,
         episode: value === ALL_EPISODES ? undefined : Number(value),
       },
+      resetScroll: false,
     });
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center size-full">
-        <SeedarrLoader />
-      </div>
-    );
-  }
-
-  if (!media || !tv) return null;
 
   return (
     <Container>
@@ -189,7 +173,7 @@ function TVTorrentsPage() {
         <div className="hidden xl:block xl:col-span-2">
           <TorrentIndexersTable
             indexers={indexers || []}
-            torrentQueries={torrentQueries}
+            indexerQueries={indexerStats}
             onVisibilityChange={setVisibleIndexers}
           />
         </div>

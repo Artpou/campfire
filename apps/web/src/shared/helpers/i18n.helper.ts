@@ -6,16 +6,11 @@ import { messages as enMessages } from "../../locales/en/messages.mjs";
 // @ts-expect-error - Compiled message files don't have type definitions
 import { messages as frMessages } from "../../locales/fr/messages.mjs";
 
-export const LOCALE_STORAGE_KEY = "locale";
-
-export const LANGUAGE_TO_FULL_LOCALE = {
-  en: "en-US",
-  fr: "fr-FR",
-} as const;
+const LOCALE_STORAGE_KEY = "locale";
 
 export const UI_LOCALES = ["en", "fr"] as const;
 
-export function getStoredCountry(): string | null {
+function getStoredCountry(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(LOCALE_STORAGE_KEY);
 }

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { torrentDownload } from "@/modules/download/download.schema";
+import type { TorrentLiveData } from "@/modules/download/download.schema";
+import { download } from "@/modules/download/download.schema";
 import { user } from "@/modules/user/user.schema";
 import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
 
@@ -9,6 +10,35 @@ const { fakeUser, testDbRef } = vi.hoisted(() => {
   const testDbRef = { current: null as TestDb | null };
   return { fakeUser, testDbRef };
 });
+
+const sampleTorrent = (overrides: Partial<TorrentLiveData> = {}): TorrentLiveData =>
+  ({
+    infoHash: "abc",
+    magnetURI: "magnet:?xt=urn:btih:abc",
+    announce: [],
+    "announce-list": [],
+    timeRemaining: 0,
+    received: 0,
+    downloaded: 0,
+    uploaded: 0,
+    downloadSpeed: 0,
+    uploadSpeed: 0,
+    progress: 0.5,
+    ratio: 0,
+    length: 1000,
+    pieceLength: 524288,
+    lastPieceLength: 0,
+    numPeers: 0,
+    path: "./downloads",
+    ready: true,
+    paused: false,
+    done: false,
+    name: "Test",
+    created: new Date(),
+    maxWebConns: 4,
+    files: [],
+    ...overrides,
+  }) as TorrentLiveData;
 
 vi.mock("@/db/db", () => ({
   get db() {
@@ -22,25 +52,42 @@ vi.mock("@/modules/auth/auth.guard", () => ({
   },
 }));
 vi.mock("@/modules/download/webtorrent.client", () => {
-  const makeFakeTorrent = () => {
-    const listeners: Record<string, ((...args: unknown[]) => void)[]> = {};
-    return {
-      on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
-        listeners[event] = listeners[event] || [];
-        listeners[event].push(cb);
-        if (event === "ready") setTimeout(() => cb(), 0);
-      }),
-      destroy: vi.fn(),
-      infoHash: "fakehash",
-      magnetURI: "magnet:?xt=urn:btih:fake",
-      name: "FakeTorrent",
-      length: 1000,
-      path: "/tmp",
-    };
-  };
+  const makeFakeTorrent = () => ({
+    on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
+      if (event === "ready") setTimeout(() => cb(), 0);
+    }),
+    destroy: vi.fn((_opts?: unknown, cb?: () => void) => cb?.()),
+    infoHash: "fakehash",
+    magnetURI: "magnet:?xt=urn:btih:fake",
+    torrentFileBlobURL: undefined,
+    announce: [],
+    "announce-list": [],
+    timeRemaining: 0,
+    received: 0,
+    downloaded: 0,
+    uploaded: 0,
+    downloadSpeed: 0,
+    uploadSpeed: 0,
+    progress: 0,
+    ratio: 0,
+    length: 1000,
+    pieceLength: 524288,
+    lastPieceLength: 0,
+    numPeers: 0,
+    path: "/tmp",
+    ready: true,
+    paused: false,
+    done: false,
+    name: "FakeTorrent",
+    created: new Date(),
+    createdBy: undefined,
+    comment: undefined,
+    maxWebConns: 4,
+    files: [],
+  });
 
   return {
-    WebTorrentClient: {
+    torrentClient: {
       getClient: () => ({ add: vi.fn(() => makeFakeTorrent()) }),
       getActiveTorrent: vi.fn(() => null),
       getPausedData: vi.fn(() => undefined),
@@ -49,11 +96,36 @@ vi.mock("@/modules/download/webtorrent.client", () => {
       clearPausedData: vi.fn(),
       setActiveTorrent: vi.fn(),
       setupTorrentHandlers: vi.fn(),
+      markDestroying: vi.fn(),
+      unmarkDestroying: vi.fn(),
+      findByInfoHash: vi.fn(() => null),
+      safeAdd: vi.fn(() => makeFakeTorrent()),
     },
   };
 });
 
 const { downloadRoutes } = await import("./download.route");
+
+const testMedia = {
+  id: 42,
+  type: "movie" as const,
+  title: "New Movie",
+  original_title: null,
+  sanitize_title: null,
+  original_language: null,
+  overview: null,
+  poster_path: null,
+  vote_average: null,
+  release_date: null,
+  duration: null,
+  seasons_number: null,
+  backdrop_path: null,
+  categories: null,
+};
+
+function startDownloadPayload(magnetUri: string, name: string) {
+  return { magnetUri, name, media: testMedia };
+}
 
 describe("Download Routes", () => {
   beforeEach(() => {
@@ -71,21 +143,18 @@ describe("Download Routes", () => {
 
     it("returns downloads", async () => {
       testDbRef.current
-        ?.insert(torrentDownload)
+        ?.insert(download)
         .values({
           id: "dl-1",
           userId: fakeUser.id,
-          magnetUri: "magnet:?xt=urn:btih:abc",
-          infoHash: "abc",
-          name: "Test",
-          status: "downloading",
+          torrent: sampleTorrent({ name: "Test", paused: true }),
           createdAt: new Date(),
         })
         .run();
 
       const body = await bodyOf(await downloadRoutes.request("/"));
       expect(body).toHaveLength(1);
-      expect(body[0].name).toBe("Test");
+      expect(body[0].torrent.name).toBe("Test");
     });
   });
 
@@ -96,69 +165,65 @@ describe("Download Routes", () => {
 
     it("returns download details", async () => {
       testDbRef.current
-        ?.insert(torrentDownload)
+        ?.insert(download)
         .values({
           id: "dl-1",
           userId: fakeUser.id,
-          magnetUri: "magnet:?xt=urn:btih:abc",
-          infoHash: "abc",
-          name: "Movie",
-          status: "completed",
+          torrent: sampleTorrent({ name: "Movie", done: true }),
           createdAt: new Date(),
         })
         .run();
 
       const body = await bodyOf(await downloadRoutes.request("/dl-1"));
-      expect(body).toMatchObject({ id: "dl-1", name: "Movie", status: "completed" });
+      expect(body).toMatchObject({ id: "dl-1", torrent: { name: "Movie", done: true } });
     });
   });
 
   describe("POST / - start download", () => {
     it("creates a new download", async () => {
       const body = await bodyOf(
-        await downloadRoutes.request(
-          "/",
-          json("POST", { magnetUri: "magnet:?xt=urn:btih:new", name: "New Movie", size: 1000000 }),
-        ),
+        await downloadRoutes.request("/", json("POST", startDownloadPayload("magnet:?xt=urn:btih:new", "New Movie"))),
       );
-      expect(body).toMatchObject({ name: "New Movie", status: "downloading", userId: fakeUser.id });
+      expect(body).toMatchObject({
+        torrent: { name: "FakeTorrent" },
+        userId: fakeUser.id,
+        mediaId: testMedia.id,
+      });
     });
 
-    it("returns existing if magnet already exists", async () => {
+    it("creates a new download even if magnet already exists", async () => {
       testDbRef.current
-        ?.insert(torrentDownload)
+        ?.insert(download)
         .values({
           id: "existing",
           userId: fakeUser.id,
-          magnetUri: "magnet:?xt=urn:btih:dup",
-          infoHash: "dup",
-          name: "Dup",
-          status: "completed",
+          mediaId: testMedia.id,
+          torrent: sampleTorrent({ infoHash: "dup", magnetURI: "magnet:?xt=urn:btih:dup", name: "Dup", done: true }),
           createdAt: new Date(),
         })
         .run();
 
       const body = await bodyOf(
-        await downloadRoutes.request(
-          "/",
-          json("POST", { magnetUri: "magnet:?xt=urn:btih:dup", name: "Dup", size: 100 }),
-        ),
+        await downloadRoutes.request("/", json("POST", startDownloadPayload("magnet:?xt=urn:btih:dup", "Dup"))),
       );
-      expect(body.id).toBe("existing");
+      expect(body.id).not.toBe("existing");
+      expect(body.torrent.name).toBe("FakeTorrent");
     });
   });
 
   describe("DELETE /:id", () => {
     it("deletes a download", async () => {
       testDbRef.current
-        ?.insert(torrentDownload)
+        ?.insert(download)
         .values({
           id: "dl-del",
           userId: fakeUser.id,
-          magnetUri: "magnet:?xt=urn:btih:del",
-          infoHash: "del",
-          name: "Del",
-          status: "completed",
+          torrent: sampleTorrent({
+            infoHash: "del",
+            magnetURI: "magnet:?xt=urn:btih:del",
+            name: "Del",
+            done: true,
+          }),
           createdAt: new Date(),
         })
         .run();

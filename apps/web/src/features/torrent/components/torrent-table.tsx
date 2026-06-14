@@ -14,7 +14,7 @@ import { Button } from "@/shared/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
-import { useStartDownload } from "@/features/torrent/hooks/use-torrent-download";
+import { useStartDownload } from "@/features/torrent/hooks/download.queries";
 import { TorrentInspectModal } from "./torrent-inspect-modal";
 
 interface TorrentTableProps {
@@ -28,18 +28,14 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
   const startDownload = useStartDownload();
   const navigate = useNavigate();
 
-  // Filter states
   const [selectedQualityIndex, setSelectedQualityIndex] = useState<number>(0);
 
-  // Modal states
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTorrent, setSelectedTorrent] = useState<Torrent | null>(null);
   const [selectedMagnetUri, setSelectedMagnetUri] = useState<string | null>(null);
 
-  // Quality hierarchy (index-based for slider)
   const qualityLevels: (TorrentQuality | "all")[] = ["all", "480p", "720p", "1080p", "1440p", "2160p", "4K"];
 
-  // Filter torrents based on selections
   const filteredTorrents = useMemo(() => {
     return torrents.filter((torrent) => {
       // Quality filter (minimum-quality semantics)
@@ -93,7 +89,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
       await startDownload.mutateAsync({
         magnetUri,
         name: torrent.title,
-        mediaId: media.id,
+        media,
         origin: torrent.tracker,
         quality: torrent.quality,
         language: torrent.language,
@@ -106,11 +102,14 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
       });
     }
   };
+  const showLoader = isLoading && filteredTorrents.length === 0;
+  const showEmpty = !isLoading && filteredTorrents.length === 0;
+
   return (
-    <div className="w-full overflow-hidden space-y-2">
+    <div className="w-full overflow-hidden">
       {/* Filters */}
       <div className="flex flex-row gap-4 items-center">
-        <Badge variant="outline" className="flex gap-2 w-full md:w-auto py-2">
+        <Badge variant="outline" className="flex gap-2 w-full md:w-auto py-2 bg-card border-b-0 rounded-b-none">
           <Trans>Minimum Quality</Trans> :
           <div className="hidden md:flex flex-wrap gap-1.5">
             {qualityLevels.map((quality, index) => (
@@ -130,7 +129,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
             ))}
           </div>
           <Select value={selectedQualityIndex.toString()} onValueChange={(v) => setSelectedQualityIndex(Number(v))}>
-            <SelectTrigger className="md:hidden w-full">
+            <SelectTrigger className="md:hidden w-full rounded-none">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -144,7 +143,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
         </Badge>
       </div>
 
-      <Table>
+      <Table classNameContainer="rounded-tl-none">
         <TableHeader className="bg-muted/50">
           <TableRow className="hover:bg-transparent">
             <TableHead className="w-full">
@@ -159,29 +158,28 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
           </TableRow>
         </TableHeader>
         <TableBody>
-          {isLoading && (
+          {showLoader && (
             <TableRow>
               <TableCell colSpan={3} className="py-10 text-center">
                 <SeedarrLoader />
               </TableCell>
             </TableRow>
           )}
-          {!isLoading && filteredTorrents.length === 0 && (
+          {showEmpty && (
             <TableRow>
               <TableCell colSpan={3} className="py-10 text-center">
                 <div className="p-10 border border-dashed rounded-sm bg-muted border-border">
-                  <p className="font-bold uppercase text-muted-foreground">
+                  <p className="font-bold uppercase text-popover-foreground">
                     <Trans>No torrents found</Trans>
                   </p>
-                  <p className="mt-1 text-xs uppercase text-muted-foreground/50">
+                  <p className="mt-1 text-xs uppercase text-popover-foreground/50">
                     <Trans>Try adjusting your search query</Trans>
                   </p>
                 </div>
               </TableCell>
             </TableRow>
           )}
-          {!isLoading &&
-            filteredTorrents.length > 0 &&
+          {filteredTorrents.length > 0 &&
             filteredTorrents.map((torrent) => (
               <TableRow key={torrent.guid || torrent.link} className="relative group">
                 <TableCell className="w-full max-w-0">
@@ -190,7 +188,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
                       href={torrent.detailsUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block w-full font-medium truncate text-muted-foreground"
+                      className="block w-full font-medium truncate text-popover-foreground"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {torrent.title}

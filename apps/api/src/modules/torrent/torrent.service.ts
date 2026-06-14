@@ -2,7 +2,7 @@ import type WebTorrent from "webtorrent";
 
 import { BadRequestError, ServiceUnavailableError } from "@/errors/error";
 import { AuthenticatedService } from "@/modules/auth/auth.service";
-import { WebTorrentClient } from "@/modules/download/webtorrent.client";
+import { torrentClient } from "@/modules/download/webtorrent.client";
 import type { IndexerType } from "@/modules/indexer-manager/indexer-manager.schema";
 import { IndexerManagerService } from "@/modules/indexer-manager/indexer-manager.service";
 import type { IndexerAdapter } from "./adapters/base.adapter";
@@ -93,7 +93,7 @@ export class TorrentService extends AuthenticatedService {
 
   async inspectTorrent(query: torrentInspectQuery): Promise<TorrentInspectResult> {
     const { magnet } = query;
-    const client = WebTorrentClient.getClient();
+    const client = torrentClient.getClient();
 
     return new Promise((resolve, reject) => {
       let torrent: WebTorrent.Torrent | null = null;

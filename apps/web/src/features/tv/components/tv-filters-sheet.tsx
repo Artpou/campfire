@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
+import { useQuery } from "@tanstack/react-query";
 import { FilterIcon, RotateCcwIcon } from "lucide-react";
 
 import { Badge } from "@/shared/ui/badge";
@@ -20,7 +21,7 @@ import {
 } from "@/shared/ui/sheet";
 import { Slider } from "@/shared/ui/slider";
 
-import { useMediaKeywords } from "@/features/media/hooks/use-media";
+import { mediaQueries } from "@/features/media/hooks/media.queries";
 
 export interface TvFiltersValue {
   first_air_date_gte?: string;
@@ -86,7 +87,8 @@ export function TvFiltersSheet({ value, onChange }: TvFiltersSheetProps) {
     }
   }, [open, value]);
 
-  const { data: keywordResults = [], isFetching: isSearchingKeywords } = useMediaKeywords(keywordQuery, {
+  const { data: keywordResults = [], isFetching: isSearchingKeywords } = useQuery({
+    ...mediaQueries.keywords(keywordQuery),
     enabled: open && keywordQuery.trim().length >= 2,
   });
 

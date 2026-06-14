@@ -1,7 +1,7 @@
 import { BadRequestError } from "@/errors/error";
 import type { Media } from "@/modules/media/media.dto";
 import { TMDBItem, TMDBMovieDetails } from "@/modules/tmdb/tmdb.dto";
-import { tmdbMovieToMedia, tmdbMovieToMediaInsert } from "@/modules/tmdb/tmdb.helper";
+import { tmdbMovieToMedia } from "@/modules/tmdb/tmdb.helper";
 import { TMDBService } from "@/modules/tmdb/tmdb.service";
 import { User } from "@/types";
 import type { Movie } from "./movie.dto";
@@ -21,12 +21,10 @@ export class MovieService extends TMDBService<Movie> {
       appendToResponse: "watch/providers,videos,credits,recommendations,external_ids,release_dates,alternative_titles",
     });
 
-    const usTitle =
+    movieData.title =
       movieData.alternative_titles?.titles?.find((t) => t.iso_3166_1 === "US" && t.type === "")?.title ||
       movieData.alternative_titles?.titles?.find((t) => t.iso_3166_1 === "US")?.title ||
       movieData.alternative_titles?.titles?.find((t) => t.type === "(English)")?.title;
-
-    const mediaItem = await this.mediaService.upsert(tmdbMovieToMediaInsert({ ...movieData, us_title: usTitle }));
 
     let collection: (Record<string, unknown> & { parts?: TMDBItem[] }) | null = null;
     if (movieData.belongs_to_collection?.id) {
@@ -48,7 +46,7 @@ export class MovieService extends TMDBService<Movie> {
     return {
       id,
       movie: movieData,
-      media: mediaItem,
+      media: tmdbMovieToMedia(movieData),
       collection,
       related: {
         collection: withMediaStatus(allRelated.filter((m) => collectionIds.has(m.id))).sort((a, b) =>

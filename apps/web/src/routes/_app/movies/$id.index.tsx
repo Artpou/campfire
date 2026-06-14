@@ -1,56 +1,41 @@
 import { useState } from "react";
 
-import { createFileRoute } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { ClockPlusIcon, HeartIcon, InfoIcon } from "lucide-react";
 
-import { SeedarrLoader } from "@/shared/components/seedarr-loader";
+import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
 import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/shared/ui/sheet";
 
 import { MediaPoster } from "@/features/media/components/media-poster";
 import { getBackdropUrl, getPosterUrl } from "@/features/media/helpers/media.helper";
-import { useToggleLike, useToggleWatchList } from "@/features/media/hooks/use-media";
+import { useToggleLike, useToggleWatchList } from "@/features/media/hooks/media.queries";
 import { MovieCast } from "@/features/movies/components/movie-cast";
 import { MovieDetails } from "@/features/movies/components/movie-details";
 import { MovieInfo } from "@/features/movies/components/movie-info";
 import { MovieRelated } from "@/features/movies/components/movie-related";
-import { useMovieDetails } from "@/features/movies/hooks/use-movie";
+import { movieQueries } from "@/features/movies/hooks/movie.queries";
 
 export const Route = createFileRoute("/_app/movies/$id/")({
+  loader: ({ context, params }) =>
+    context.queryClient.ensureQueryData(movieQueries.details(params.id, context.language)),
   component: MoviePage,
+  pendingComponent: () => <SeedarrLoaderContainer />,
+  errorComponent: () => <Navigate to="/404" replace />,
 });
 
 function MoviePage() {
   const params = Route.useParams();
+  const context = Route.useRouteContext();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const { data } = useSuspenseQuery(movieQueries.details(params.id, context.language));
 
   const toggleLike = useToggleLike();
   const toggleWatchList = useToggleWatchList();
 
-  const { data, isLoading } = useMovieDetails(params.id);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center size-full">
-        <SeedarrLoader />
-      </div>
-    );
-  }
-
-  if (!data?.movie) {
-    return null;
-  }
-
-  const { movie, media, collection, related } = data;
-
-  const handleToggleLike = () => {
-    media && toggleLike.mutate(media);
-  };
-
-  const handleToggleWatchList = () => {
-    media && toggleWatchList.mutate(media);
-  };
+  const { media, movie } = data;
 
   return (
     <div className="pb-20">
@@ -79,7 +64,7 @@ function MoviePage() {
                     rounded
                     onClick={(e) => {
                       e.preventDefault();
-                      handleToggleLike();
+                      toggleLike.mutate(media);
                     }}
                     disabled={!media}
                   >
@@ -91,7 +76,7 @@ function MoviePage() {
                     rounded
                     onClick={(e) => {
                       e.preventDefault();
-                      handleToggleWatchList();
+                      toggleWatchList.mutate(media);
                     }}
                     disabled={!media}
                   >
@@ -108,8 +93,8 @@ function MoviePage() {
                     movie={movie}
                     isLiked={media ? media.likes > 0 : undefined}
                     isInWatchList={media ? media.watchList > 0 : undefined}
-                    onToggleLike={handleToggleLike}
-                    onToggleWatchList={handleToggleWatchList}
+                    onToggleLike={() => toggleLike.mutate(media)}
+                    onToggleWatchList={() => toggleWatchList.mutate(media)}
                   />
                 </div>
               </SheetContent>
@@ -117,7 +102,7 @@ function MoviePage() {
           </div>
 
           <div className="lg:w-1/4 max-w-[250px] justify-items-center">
-            <MediaPoster media={movie} downloadId={media?.download?.id} />
+            <MediaPoster data={data} downloadId={media?.download?.id} />
           </div>
           <div className="lg:w-3/4">
             <MovieInfo movie={movie} />
@@ -127,8 +112,8 @@ function MoviePage() {
               movie={movie}
               isLiked={media ? media.likes > 0 : undefined}
               isInWatchList={media ? media.watchList > 0 : undefined}
-              onToggleLike={handleToggleLike}
-              onToggleWatchList={handleToggleWatchList}
+              onToggleLike={() => toggleLike.mutate(media)}
+              onToggleWatchList={() => toggleWatchList.mutate(media)}
             />
           </div>
         </Container>
@@ -138,9 +123,9 @@ function MoviePage() {
         <div className="w-full flex flex-col gap-8">
           <MovieCast movie={movie} />
           <MovieRelated
-            collection={collection}
-            collectionMedia={related.collection}
-            recommendedMovies={related.recommendations}
+            collection={data.collection}
+            collectionMedia={data.related.collection}
+            recommendedMovies={data.related.recommendations}
           />
         </div>
       </Container>

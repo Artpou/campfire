@@ -23,7 +23,7 @@ export function MediaCarousel({ title, data, seeMoreTo }: MediaCarouselProps) {
     <CarouselWrapper title={title} seeMoreTo={seeMoreTo}>
       {displayedData.map((item, index) => (
         <CarouselItem key={item.id || index}>
-          <MediaCard media={item} backdropPath={"backdrop_path" in item ? item.backdrop_path : undefined} />
+          <MediaCard media={item} mode="preview" />
         </CarouselItem>
       ))}
     </CarouselWrapper>

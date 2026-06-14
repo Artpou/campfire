@@ -10,9 +10,14 @@ import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
 
+import { useAuth } from "@/features/auth/auth-store";
+
 export const Route = createFileRoute("/_auth/signup")({
   component: Signup,
   beforeLoad: async () => {
+    const isAuthenticated = useAuth.getState().user;
+    if (isAuthenticated) throw redirect({ to: "/" });
+
     const data = await unwrap(api.auth["has-owner"].$get());
     if (data.hasOwner) {
       throw redirect({ to: "/login" });
@@ -40,10 +45,8 @@ function Signup() {
   const password = watch("password");
 
   const { mutate: signup, isPending } = useMutation({
-    mutationFn: (data: { username: string; password: string }) => unwrap(api.auth.register.$post({ json: data })),
-    onSuccess: () => {
-      navigate({ to: "/", search: { tab: "movie" } });
-    },
+    mutationFn: (data: { username: string; password: string }) => api.auth.register.$post({ json: data }),
+    onSuccess: () => navigate({ to: "/" }),
     onError: (err: unknown) => {
       setError(err instanceof Error ? err.message : "An error occurred");
     },

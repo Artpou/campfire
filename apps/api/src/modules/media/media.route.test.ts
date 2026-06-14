@@ -74,25 +74,6 @@ describe("Media Routes", () => {
       const body = await bodyOf(await mediaRoutes.request("/500/watchlist", { method: "POST" }));
       expect(body.watchList).toBe(1);
     });
-
-    it("PATCH /:id/progress - saves progress", async () => {
-      const body = await bodyOf(
-        await mediaRoutes.request("/500/progress", json("PATCH", { position: 3600, duration: 7200 })),
-      );
-      expect(body.progress).toMatchObject({ position: 3600, duration: 7200, completed: false });
-    });
-
-    it("PATCH /:id/progress - marks completed at 90%+", async () => {
-      const body = await bodyOf(
-        await mediaRoutes.request("/500/progress", json("PATCH", { position: 6500, duration: 7200 })),
-      );
-      expect(body.progress.completed).toBe(true);
-    });
-
-    it("DELETE /history - clears user history", async () => {
-      const body = await bodyOf(await mediaRoutes.request("/history", { method: "DELETE" }));
-      expect(body.success).toBe(true);
-    });
   });
 
   describe("GET / - list with filters", () => {

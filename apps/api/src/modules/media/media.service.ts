@@ -7,19 +7,28 @@ import { db } from "@/db/db";
 import { BadRequestError, NotFoundError } from "@/errors/error";
 import { countSubquery } from "@/helpers/drizzle.helper";
 import { IdentifiableService } from "@/modules/auth/auth.service";
-import { torrentDownload } from "@/modules/download/download.schema";
-import { media, userLikes, userMedia, userWatchList, watchProgress } from "@/modules/media/media.schema";
+import { download } from "@/modules/download/download.schema";
+import { DownloadService } from "@/modules/download/download.service";
+import { media, userLikes, userWatchList, watchProgress } from "@/modules/media/media.schema";
+import { User } from "@/modules/user/user.dto";
 import type { ListMediaQuery, Media, MediaInsert, UpdateProgressQuery } from "./media.dto";
 
 export class MediaService extends IdentifiableService<Media> {
+  private readonly downloadService: DownloadService;
+
+  constructor(user: User) {
+    super(user);
+    this.downloadService = new DownloadService(user);
+  }
+
   async getMany(pagination: Partial<ListMediaQuery>): Promise<Media[]> {
     const paginationOpts = pagination.page && pagination.limit ? paginate(pagination) : {};
     const rows = await db.query.media.findMany({
-      where: inArray(media.id, pagination.ids?.map(Number) ?? []),
+      where: pagination.ids ? inArray(media.id, pagination.ids?.map(Number) ?? []) : undefined,
       with: {
         downloads: {
-          where: and(eq(torrentDownload.userId, this.user.id)),
-          orderBy: desc(torrentDownload.completedAt),
+          where: and(eq(download.userId, this.user.id)),
+          orderBy: desc(download.createdAt),
           limit: 1,
         },
         progress: { where: eq(watchProgress.userId, this.user.id), limit: 1 },
@@ -31,14 +40,18 @@ export class MediaService extends IdentifiableService<Media> {
       ...paginationOpts,
     });
 
-    return rows.map((row) => {
-      const { downloads, progress, ...mediaItem } = row;
-      return {
-        ...mediaItem,
-        download: downloads[0] ?? undefined,
-        progress: progress[0] ?? undefined,
-      };
-    });
+    return await Promise.all(
+      rows.map(async (row) => {
+        const { downloads, progress, ...mediaItem } = row;
+        const download = downloads[0] ? await this.downloadService.updateTorrent(downloads[0]) : undefined;
+
+        return {
+          ...mediaItem,
+          download: download,
+          progress: progress[0] ?? undefined,
+        };
+      }),
+    );
   }
 
   async list(query: ListMediaQuery): Promise<Paginate<Media>> {
@@ -52,8 +65,7 @@ export class MediaService extends IdentifiableService<Media> {
       const FILTER_TABLE_MAP = {
         like: userLikes,
         "watch-list": userWatchList,
-        "recently-viewed": userMedia,
-        downloaded: torrentDownload,
+        downloaded: download,
       } as const;
 
       const table = FILTER_TABLE_MAP[filter];
@@ -81,13 +93,6 @@ export class MediaService extends IdentifiableService<Media> {
     if (!data.id) throw new BadRequestError("Media ID is required");
 
     await db.insert(media).values(data).onConflictDoUpdate({ target: media.id, set: data });
-    await db
-      .insert(userMedia)
-      .values({ userId: this.user.id, mediaId: data.id, createdAt: new Date() })
-      .onConflictDoUpdate({
-        target: [userMedia.userId, userMedia.mediaId],
-        set: { createdAt: new Date() },
-      });
 
     const result = await this.get(data.id.toString());
     if (!result) throw new NotFoundError("Media");
@@ -122,25 +127,19 @@ export class MediaService extends IdentifiableService<Media> {
     return this.get(mediaId.toString());
   }
 
-  async updateProgress(mediaId: number, input: UpdateProgressQuery): Promise<Media | undefined> {
+  async updateProgress(mediaId: number, input: UpdateProgressQuery): Promise<void> {
     const update = {
       userId: this.user.id,
       downloadId: input.downloadId ?? null,
       position: input.position,
       duration: input.duration,
       completed: input.duration > 0 && input.position / input.duration >= 0.9,
+      mediaId,
     };
 
     await db
       .insert(watchProgress)
-      .values({ ...update, mediaId })
+      .values(update)
       .onConflictDoUpdate({ target: [watchProgress.userId, watchProgress.mediaId], set: update });
-
-    return this.get(mediaId.toString());
-  }
-
-  async clearHistory(): Promise<{ success: true }> {
-    await db.delete(userMedia).where(eq(userMedia.userId, this.user.id));
-    return { success: true };
   }
 }

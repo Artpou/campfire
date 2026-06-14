@@ -28,7 +28,7 @@ type FileType = "video" | "subtitle" | "other";
 const VIDEO_EXTENSIONS = ["mp4", "mkv", "avi", "mov", "wmv", "flv", "webm", "m4v", "mpg", "mpeg"];
 const SUBTITLE_EXTENSIONS = ["srt", "vtt", "ass", "ssa", "sub", "idx"];
 
-export function getFileType(fileName: string): FileType {
+function getFileType(fileName: string): FileType {
   const ext = fileName.toLowerCase().split(".").pop() || "";
 
   if (VIDEO_EXTENSIONS.includes(ext)) return "video";
@@ -36,7 +36,7 @@ export function getFileType(fileName: string): FileType {
   return "other";
 }
 
-export function getVideoType(files: FileItem[]): string {
+function getVideoType(files: FileItem[]): string {
   for (const file of files) {
     const ext = file.name.split(".").pop()?.toLowerCase();
     if (ext && VIDEO_EXTENSIONS.includes(ext)) {

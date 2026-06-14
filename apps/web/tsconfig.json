@@ -18,8 +18,6 @@
       "@/*": ["./src/*"],
       "api": ["../../apps/api/dist/src/server.d.ts"]
     },
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "allowImportingTsExtensions": true,

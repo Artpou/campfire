@@ -1,7 +1,10 @@
+import { useQuery } from "@tanstack/react-query";
 import { XIcon } from "lucide-react";
 
+import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
+
 import { getBackdropUrl } from "@/features/media/helpers/media.helper";
-import { useProviders } from "@/features/media/hooks/use-providers";
+import { providerQueries } from "@/features/media/hooks/provider.queries";
 
 interface TVProviderTabsProps {
   value?: string;
@@ -9,7 +12,8 @@ interface TVProviderTabsProps {
 }
 
 export function TVProviderTabs({ value, onValueChange }: TVProviderTabsProps) {
-  const { data: providers = [], isLoading } = useProviders("tv");
+  const locale = useTmdbLocale();
+  const { data: providers = [], isLoading } = useQuery(providerQueries.list("tv", locale));
 
   if (isLoading || providers.length === 0) {
     return null;
@@ -17,7 +21,6 @@ export function TVProviderTabs({ value, onValueChange }: TVProviderTabsProps) {
 
   const handleProviderChange = (providerId: string) => {
     if (providerId === value) {
-      // Deselect if clicking the same provider
       onValueChange({ with_watch_providers: undefined });
     } else {
       onValueChange({ with_watch_providers: providerId });

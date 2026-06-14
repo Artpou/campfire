@@ -9,6 +9,7 @@ export const indexerManagerRoutes = IndexerManagerService.createRouter()
   .get("/", async (c) => {
     return c.json((await c.var.service.get()) ?? null);
   })
+  .use("*", requireRole("admin"))
   .post("/", zValidator("json", upsertIndexerManagerDto), async (c) => {
     const body = c.req.valid("json");
     return c.json(await c.var.service.upsert(body));

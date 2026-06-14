@@ -4,29 +4,59 @@
 
 ## Project Vision
 
-Torrent streaming app with real-time playback, media library management, and Plex integration.
+**Seedarr** — a self-hosted media manager inspired by Stremio/Overseerr. Browse TMDB catalog, search torrents via Jackett/Prowlarr, download and stream movies/TV shows in real-time with subtitle support.
+
+## Domain Model
+
+```
+User (owner|admin|member|viewer)
+ ├── Session (7-day token, httpOnly cookie)
+ ├── likes → Media[]
+ ├── watchList → Media[]
+ ├── watchProgress → { mediaId, position, duration, completed, downloadId }
+ └── downloads → Download[]
+
+Media (PK = TMDB id)
+ ├── type: movie | tv
+ ├── metadata: title, poster, backdrop, release_date, duration, categories...
+ └── enriched at read time: likes count, watchlist count, latest download, progress
+
+Download
+ ├── userId FK → User
+ ├── mediaId FK → Media (set on creation via TMDB upsert)
+ ├── torrent: JSON blob (TorrentLiveData — progress, speed, files, peers...)
+ ├── origin, quality, language (from torrent search metadata)
+ └── error: string | null
+
+IndexerManager → single Jackett/Prowlarr config per instance
+```
+
+**Flow:** Browse TMDB → Search torrents → Start download (upserts Media + creates Download) → WebTorrent streams to disk → Play via `/downloads/:id/stream` (range requests, MKV→MP4 transcode).
 
 ## Tech Stack
 
-- **Package Manager**: pnpm v9.0.0+
+- **Package Manager**: pnpm v9+ (workspaces + catalog)
+- **Monorepo**: Turbo
 - **Runtime**: Node.js v18+ (tsx for API)
 - **API**: Hono with TypeScript (port 3002)
 - **Web**: React 19 + TanStack Router + Vite (port 3000)
-- **Database**: SQLite with Drizzle ORM
+- **Database**: SQLite — libsql (prod), better-sqlite3 (tests)
+- **ORM**: Drizzle ORM + drizzle-zod
 - **Validation**: Zod with `@hono/zod-validator`
-- **Styling**: Tailwind CSS v4 + Radix UI
-- **State**: Zustand (persist middleware) + TanStack Query
-- **Torrent**: WebTorrent for downloads and streaming
-- **Video Player**: Plyr
+- **Styling**: Tailwind CSS v4 + Radix UI primitives (shadcn pattern)
+- **State**: TanStack Query (server) + Zustand (auth only)
+- **Torrent**: WebTorrent
+- **Video Player**: Plyr (plyr-react)
 - **Linting**: Biome (not ESLint/Prettier)
-- **i18n**: Lingui
+- **i18n**: Lingui v5 (en, fr)
+- **Testing**: Vitest (API route tests only)
 
 ## Coding Standards
 
 ### TypeScript
 
 - Strict mode enabled
-- **Never use `any`** - use `unknown` if type is truly unknown
+- **Never use `any`** — use `unknown` if type is truly unknown
 - Import types and API client from `@seedarr/sdk` in frontend
 - Infer types from Zod schemas: `z.infer<typeof schema>`
 - Explicit return types on all service methods
@@ -34,7 +64,7 @@ Torrent streaming app with real-time playback, media library management, and Ple
 ### Code Style (Biome)
 
 - 2 space indentation
-- 100 character line width
+- 120 character line width
 - No semicolons
 - Double quotes for strings
 
@@ -50,8 +80,7 @@ Torrent streaming app with real-time playback, media library management, and Ple
 
 - Functional components with hooks
 - Tailwind-first styling (no inline styles)
-- Small, focused components
-- Extract reusable logic into hooks
+- Small, focused components — extract reusable logic into hooks
 - Use `cn()` for conditional classes
 
 ## Project Structure
@@ -60,161 +89,106 @@ Torrent streaming app with real-time playback, media library management, and Ple
 apps/
 ├── api/                    # Hono backend
 │   └── src/
-│       ├── modules/        # Feature modules (auth, media, torrent, download)
+│       ├── modules/        # Feature modules
 │       │   └── [module]/
-│       │       ├── [module].dto.ts      # Zod schemas + types
+│       │       ├── [module].schema.ts   # Drizzle table + types
+│       │       ├── [module].dto.ts      # Zod schemas + inferred types
 │       │       ├── [module].route.ts    # Route definitions
-│       │       └── [module].service.ts  # Business logic
+│       │       ├── [module].service.ts  # Business logic
+│       │       └── [module].route.test.ts
 │       ├── helpers/        # Shared utilities
-│       └── db/             # Drizzle schema + migrations
+│       ├── errors/         # HTTPException subclasses (401/403/404/400/409/503)
+│       ├── middlewares/    # Logger, rate limiter
+│       ├── auth/           # Password (scrypt) + session utils
+│       └── db/             # Drizzle config, schema aggregation, migrations
 └── web/                    # React frontend
     └── src/
-        ├── features/       # Feature modules
+        ├── features/       # Feature modules (media, movies, tv, torrent, downloads, subtitles, playback, user)
         │   └── [feature]/
         │       ├── components/
-        │       ├── hooks/
+        │       ├── hooks/          # *.queries.ts (queryOptions + mutations)
         │       └── [feature]-store.ts
-        ├── shared/         # Shared UI + hooks
+        ├── shared/         # UI primitives (shadcn), app-topbar, hooks, helpers
         ├── routes/         # TanStack Router file-based routes
         └── lib/            # Core utilities (utils.ts)
 packages/
-├── sdk/                    # @seedarr/sdk — API client, unwrap, types
-├── shared/                 # @seedarr/shared — Cross-app helpers (string, format)
-└── ui/                     # @seedarr/ui — Shared UI utilities (cn)
+├── sdk/                    # @seedarr/sdk — Hono RPC client, unwrap, types re-export
+├── shared/                 # @seedarr/shared — formatBytes, formatTime, slugify, toLatin
+└── ui/                     # @seedarr/ui — cn() only
 ```
 
 ## Dev Workflow
 
-### Commands
-
 ```bash
-pnpm dev          # Start both API and web
+pnpm dev          # Start both API + web (+ Drizzle Studio)
 pnpm dev:api      # API only (port 3002)
 pnpm dev:web      # Web only (port 3000)
-pnpm check        # Full validation (lint:fix + type-check + lint)
-pnpm lint         # Check linting
-pnpm lint:fix     # Auto-fix linting
-pnpm type-check   # TypeScript validation
-pnpm format       # Format with Biome
-```
-
-### Database
-
-```bash
-pnpm db:generate  # Generate migrations
+pnpm check        # Full validation: lint:fix + tsc + lint + test + knip
+pnpm lint:fix     # Auto-fix with Biome
+pnpm db:generate  # Generate Drizzle migrations
 pnpm db:migrate   # Apply migrations
-pnpm db:push      # Push schema (dev only)
+pnpm db:push      # Push schema directly (dev only)
 pnpm db:studio    # Open Drizzle Studio
 ```
 
-### i18n
-
-```bash
-cd apps/web
-pnpm lingui:extract   # Extract messages
-pnpm lingui:compile   # Compile messages
-```
-
-## Pre-Commit Checklist
-
 **Always run `pnpm check` before committing.**
-
-- [ ] No TypeScript errors
-- [ ] Linting passes
-- [ ] No `console.log` in production code
-- [ ] No `any` types
-- [ ] Sensitive data not exposed
-- [ ] `crossOrigin="anonymous"` on video elements
-- [ ] Subtitles served as VTT format
 
 ## API Patterns
 
+### Service Hierarchy
+
+```
+AuthenticatedService        → user in context, createRouter() factory
+├── IdentifiableService<T>  → get/getMany/list with pagination
+│   ├── DownloadService, MediaService, UserService, IndexerManagerService
+│   └── TMDBService<S>      → MovieService, TVService
+└── TorrentService, SubtitleService
+```
+
+`createRouter()` applies `authGuard` + injects `c.var.service` automatically.
+
 ### DTO Pattern
 
-Each module **must** have a `{module}.dto.ts` file containing:
-
-- **Zod schemas** for validation (request/response)
-- **TypeScript types** inferred from schemas
-- **Database types** using drizzle-zod's `createSelectSchema` and `createInsertSchema`
-
-### Service Pattern
-
-- Extend `AuthenticatedService` for services needing database/user access
-- Use dependency injection via context
-- Keep services focused on business logic
-- Handle errors appropriately
-- Import types from DTOs, not from schema
-- **Always add explicit return types to all service methods**
-
-```typescript
-export class MediaService extends AuthenticatedService {
-  async getById(id: number): Promise<Media | null> {
-    return await this.db.select().from(media).where(eq(media.id, id)).get();
-  }
-}
-```
-
-### Route Definition
-
-```typescript
-export const mediaRoutes = new Hono<{ Variables: HonoVariables }>()
-  .use("*", authGuard)
-  .get("/", zValidator("query", listSchema), async (c) => {
-    return c.json(await Service.fromContext(c).list(c.req.valid("query")));
-  });
-```
+Each module has `{module}.dto.ts`: Zod schemas for validation, TypeScript types inferred from schemas, DB types via `createSelectSchema`.
 
 ### Route Conventions
 
-- Use RESTful conventions:
-  - `GET /resource` - List resources
-  - `GET /resource/:id` - Get single resource
-  - `POST /resource` - Create resource
-  - `PATCH /resource/:id` - Update resource
-  - `DELETE /resource/:id` - Delete resource
-- Group related routes in modules
-- Apply middleware at appropriate levels
-- Return appropriate HTTP status codes
-- Use the centralized pagination module for consistent paginated responses
+- RESTful: `GET /`, `GET /:id`, `POST /`, `PATCH /:id`, `DELETE /:id`
+- Guards: `authGuard` (session), `requireRole(min)`, `requireDownloadOwnership`
+- Validation: `zValidator("json" | "query" | "param", schema)`
+
+### Auth
+
+- First registration creates **owner**; subsequent registrations are forbidden
+- Session cookie (httpOnly, 7 days) + `?session=` query fallback for `<video>` elements
+- Role hierarchy: owner(4) > admin(3) > member(2) > viewer(1)
+
+### Streaming
+
+- `GET /downloads/:id/stream` — byte-range support, MKV→MP4 ffmpeg transcode
+- Active torrents stream from WebTorrent; completed downloads read from disk
+- Subtitles auto-converted SRT→VTT with encoding detection
 
 ## Frontend Patterns
 
-### Routing (TanStack Router)
+### Routing
 
-- File-based routes in `src/routes/`
-- Route groups: `_app.*` (authenticated), `_auth.*` (public)
-- Use `beforeLoad` for auth checks and redirects
-- Protected routes check auth via `api.auth.me.$get()`
-- Wrap route content in `<Container>` component for consistent layout and spacing
+- File-based: `_app.*` (authenticated), `_auth.*` (public)
+- Auth check in `_app.tsx` `beforeLoad` → redirect `/login`
+- Wrap route content in `<Container>`
 
-### API Client (Hono RPC)
+### Data Layer
 
-- Use Hono RPC client: `hc<AppType>(baseUrl, options)`
-- Type-safe client from `AppType` export: `api.[module].[endpoint].$method()`
-- Methods: `$get()`, `$post()`, `$put()`, `$delete()`, `$patch()`
-- **Use `unwrap()` helper** from `@seedarr/sdk` for all API calls
-- Pattern: `unwrap(api.endpoint.$method(params))`
-- Let React Query handle errors (don't use try-catch unless specific fallback needed)
-- **Always use `useMutation`** for POST/PATCH/DELETE — never manual `useState(isLoading)`
-
-```typescript
-import { api, unwrap } from "@seedarr/sdk";
-import type { Media, Torrent } from "@seedarr/sdk";
-
-const { data } = useQuery({
-  queryKey: ["media", id],
-  queryFn: () => unwrap(api.media[":id"].$get({ param: { id } })),
-});
-```
+- `unwrap(api.endpoint.$method(params))` for all API calls
+- Colocated `*.queries.ts` per feature (queryOptions + mutations)
+- `QUERY_KEY.MEDIA` / `QUERY_KEY.DOWNLOAD` for cache invalidation
+- Zustand only for auth user (persisted)
 
 ### Type Imports
 
 - **Always** import types from `@seedarr/sdk`
-- **Never** recreate types that exist in the API
-- **Never** define inline types for API data structures
-- **Never** import directly from `@seedarr/api/types` in the frontend
+- **Never** recreate API types or import from `@seedarr/api` directly
 
 ### Icons
 
-- Use **Lucide React** for icons
-- Use `Icon` suffix for icons: `HomeIcon`, `SettingsIcon`, `UserIcon`
+- **Lucide React** with `Icon` suffix: `HomeIcon`, `SettingsIcon`

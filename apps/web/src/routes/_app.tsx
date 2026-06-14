@@ -2,7 +2,7 @@ import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
 import { createFileRoute, Link, Outlet, redirect, useLocation } from "@tanstack/react-router";
-import { AlertTriangleIcon, FilmIcon, LibraryIcon, ListIcon, SettingsIcon, TvIcon } from "lucide-react";
+import { AlertTriangleIcon, FilmIcon, LibraryIcon, ListIcon, TvIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { AppTopbar } from "@/shared/app-topbar";
@@ -29,15 +29,9 @@ const navItems = [
   },
   {
     title: msg`Lists`,
-    url: "/lists/watch-list",
+    url: "/lists",
     icon: ListIcon,
     matchPrefix: "/lists",
-  },
-  {
-    title: msg`Settings`,
-    url: "/settings",
-    icon: SettingsIcon,
-    minRole: "admin" as const,
   },
 ];
 
@@ -69,7 +63,7 @@ function AuthenticatedLayout() {
   });
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden min-w-0">
+    <div className="flex flex-col min-w-0">
       {isIndexerMisconfigured && (
         <Link
           to="/settings"
@@ -82,7 +76,7 @@ function AuthenticatedLayout() {
         </Link>
       )}
       <AppTopbar isAuthenticated={true} />
-      <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
+      <main className="flex-1 pb-16 md:pb-0">
         <Outlet />
       </main>
 

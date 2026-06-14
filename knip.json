@@ -1,0 +1,16 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignore": [".github/**", "scripts/*", "**/lingui.config.js"],
+  "tags": ["-lintignore"],
+  "workspaces": {
+    ".": {},
+    "apps/web": {
+      "entry": "apps/web/src/main.tsx",
+      "ignore": ["src/shared/ui/*.tsx", "lingui.config.ts"]
+    },
+    "apps/api": {
+      "entry": "apps/api/src/server.ts",
+      "ignore": ["src/db/**/*"]
+    }
+  }
+}

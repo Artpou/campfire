@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { torrentDownload } from "@/modules/download/download.schema";
+import { download, type TorrentLiveData } from "@/modules/download/download.schema";
 import { user } from "@/modules/user/user.schema";
 import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
 
@@ -65,15 +65,36 @@ describe("Subtitle Routes", () => {
   describe("POST /download", () => {
     it("downloads subtitle for user's download", async () => {
       testDbRef.current
-        ?.insert(torrentDownload)
+        ?.insert(download)
         .values({
           id: "dl-1",
           userId: fakeUser.id,
-          magnetUri: "magnet:?xt=urn:btih:abc",
-          infoHash: "abc",
-          name: "Movie",
-          status: "completed",
-          savePath: "Movie",
+          torrent: {
+            infoHash: "abc",
+            magnetURI: "magnet:?xt=urn:btih:abc",
+            announce: [],
+            "announce-list": [],
+            timeRemaining: 0,
+            received: 0,
+            downloaded: 0,
+            uploaded: 0,
+            downloadSpeed: 0,
+            uploadSpeed: 0,
+            progress: 1,
+            ratio: 0,
+            length: 1000,
+            pieceLength: 524288,
+            lastPieceLength: 0,
+            numPeers: 0,
+            path: "./downloads",
+            ready: true,
+            paused: false,
+            done: true,
+            name: "Movie",
+            created: new Date(),
+            maxWebConns: 4,
+            files: [],
+          } as unknown as TorrentLiveData,
           createdAt: new Date(),
         })
         .run();

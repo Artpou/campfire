@@ -21,7 +21,4 @@ export const mediaRoutes = MediaService.createRouter()
   })
   .patch("/:id/progress", zValidator("json", updateProgressDto), async (c) => {
     return c.json(await c.var.service.updateProgress(Number(c.req.param("id")), c.req.valid("json")));
-  })
-  .delete("/history", async (c) => {
-    return c.json(await c.var.service.clearHistory());
   });

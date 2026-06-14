@@ -22,7 +22,7 @@ vi.mock("@/modules/auth/auth.guard", () => ({
   },
 }));
 vi.mock("@/modules/download/webtorrent.client", () => ({
-  WebTorrentClient: { getClient: () => ({ add: vi.fn() }), getActiveTorrent: vi.fn(() => null) },
+  torrentClient: { getClient: () => ({ add: vi.fn() }), getActiveTorrent: vi.fn(() => null) },
 }));
 vi.mock("./adapters/jackett.adapter", () => ({
   JackettAdapter: class {

@@ -1,71 +1,94 @@
 import { and, eq, inArray } from "drizzle-orm";
 import type WebTorrent from "webtorrent";
 
-import type { PaginationQuery } from "@/shared/pagination.dto";
-import { paginate } from "@/shared/pagination.helper";
-
 import { db } from "@/db/db";
 import { BadRequestError, NotFoundError, ServiceUnavailableError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
 import { IdentifiableService } from "@/modules/auth/auth.service";
-import { torrentDownload } from "@/modules/download/download.schema";
-import type { Download, DownloadTorrentInput } from "./download.dto";
-import { WebTorrentClient } from "./webtorrent.client";
+import { download } from "@/modules/download/download.schema";
+import { media } from "@/modules/media/media.schema";
+import type { Download, DownloadStats, DownloadTorrentInput, TorrentLiveData } from "./download.dto";
+import { torrentClient } from "./webtorrent.client";
 import { extractTorrentLiveData } from "./webtorrent.helper";
 
 const DOWNLOAD_PATH = process.env.DOWNLOADS_PATH || "./downloads";
 const TORRENT_READY_TIMEOUT_MS = 15_000;
 
-function withLiveData(item: Download): Download {
-  const activeTorrent = WebTorrentClient.getActiveTorrent(item.id);
-  return {
-    ...item,
-    live:
-      item.status === "paused" || !activeTorrent
-        ? WebTorrentClient.getPausedData(item.id)
-        : extractTorrentLiveData(activeTorrent),
-  };
+function destroyTorrent(torrent: WebTorrent.Torrent, opts: { destroyStore: boolean }): Promise<void> {
+  return new Promise<void>((resolve) => {
+    try {
+      torrent.destroy(opts, () => resolve());
+    } catch {
+      resolve();
+    }
+  });
 }
 
 export class DownloadService extends IdentifiableService<Download> {
-  async getMany(query?: Partial<PaginationQuery>): Promise<Download[]> {
-    const conditions = [];
+  async updateTorrent(item: Download): Promise<Download> {
+    const activeTorrent = torrentClient.getActiveTorrent(item.id);
+    let torrentData: TorrentLiveData | undefined;
 
-    if (!this.isPrivileged) {
-      conditions.push(eq(torrentDownload.userId, this.user.id));
+    if (activeTorrent && !activeTorrent.paused) {
+      torrentData = extractTorrentLiveData(activeTorrent);
+    } else {
+      torrentData = torrentClient.getPausedData(item.id) ?? (item.torrent as TorrentLiveData | null) ?? undefined;
     }
 
-    if (query?.ids) {
-      conditions.push(inArray(torrentDownload.id, query.ids));
+    if (!torrentData) return item;
+
+    const [newDownload] = await db
+      .update(download)
+      .set({ torrent: torrentData })
+      .where(eq(download.id, item.id))
+      .returning();
+
+    return newDownload ?? item;
+  }
+
+  async getMany({ ids }: { ids?: string[] }): Promise<Download[]> {
+    const downloads = await db.query.download.findMany({
+      where: and(eq(download.userId, this.user.id), ids ? inArray(download.id, ids) : undefined),
+    });
+
+    return await Promise.all(downloads.map(this.updateTorrent));
+  }
+
+  async getStats(): Promise<DownloadStats> {
+    const downloads = await db.query.download.findMany({
+      where: eq(download.userId, this.user.id),
+    });
+
+    let totalSize = 0;
+    let downloadSpeed = 0;
+    let uploadSpeed = 0;
+    let peers = 0;
+
+    for (const dl of downloads) {
+      totalSize += dl.torrent?.length ?? 0;
+      const activeTorrent = torrentClient.getActiveTorrent(dl.id);
+      if (activeTorrent && !activeTorrent.paused) {
+        downloadSpeed += activeTorrent.downloadSpeed ?? 0;
+        uploadSpeed += activeTorrent.uploadSpeed ?? 0;
+        peers += activeTorrent.numPeers ?? 0;
+      }
     }
 
-    const where = conditions.length > 1 ? and(...conditions) : conditions[0];
-    const paginationOpts = query?.page && query?.limit ? paginate(query) : {};
-
-    return (await db.query.torrentDownload.findMany({ where, ...paginationOpts })).map(withLiveData);
+    return { count: downloads.length, totalSize, downloadSpeed, uploadSpeed, peers };
   }
 
   async start(input: DownloadTorrentInput): Promise<Download> {
-    const existing = await db.query.torrentDownload.findFirst({
-      where: and(eq(torrentDownload.magnetUri, input.magnetUri), eq(torrentDownload.userId, this.user.id)),
-    });
-
-    if (existing) {
-      if (existing.status === "completed" && !WebTorrentClient.getActiveTorrent(existing.id)) {
-        const restored = WebTorrentClient.getClient().add(existing.magnetUri, { path: DOWNLOAD_PATH });
-        WebTorrentClient.setupTorrentHandlers(restored, existing.id, DOWNLOAD_PATH);
-        logger.debug("DOWNLOAD", `Re-added for seeding: ${existing.name}`);
-      }
-      return existing;
-    }
-
     const torrentSource = await this.resolveTorrentSource(input.magnetUri);
-    const torrent = WebTorrentClient.getClient().add(torrentSource, { path: DOWNLOAD_PATH });
+    const torrent = torrentClient.safeAdd(typeof torrentSource === "string" ? torrentSource : input.magnetUri, {
+      path: DOWNLOAD_PATH,
+    });
 
     try {
       await this.waitForTorrentReady(torrent);
     } catch (error) {
-      torrent.destroy();
+      try {
+        torrent.destroy();
+      } catch {}
       const reason = error instanceof Error ? error.message : "Unknown error";
       const uriPreview = input.magnetUri.startsWith("magnet:")
         ? input.magnetUri.slice(0, 60)
@@ -74,36 +97,33 @@ export class DownloadService extends IdentifiableService<Download> {
       throw new BadRequestError(`Torrent unreachable: ${reason}`);
     }
 
+    const [newMedia] = await db
+      .insert(media)
+      .values(input.media)
+      .onConflictDoUpdate({ target: media.id, set: input.media })
+      .returning();
+
+    if (!newMedia) throw new ServiceUnavailableError("Media creation");
+
     const [newDownload] = await db
-      .insert(torrentDownload)
-      .values({
-        ...input,
-        userId: this.user.id,
-        infoHash: torrent.infoHash,
-        status: "downloading",
-        startedAt: new Date(),
-      })
+      .insert(download)
+      .values({ ...input, userId: this.user.id, mediaId: newMedia.id, torrent: extractTorrentLiveData(torrent) })
       .returning();
 
     if (!newDownload) {
-      torrent.destroy();
+      try {
+        torrent.destroy();
+      } catch {}
       throw new ServiceUnavailableError("Download creation");
     }
 
-    WebTorrentClient.setupTorrentHandlers(torrent, newDownload.id, DOWNLOAD_PATH);
-    WebTorrentClient.setActiveTorrent(newDownload.id, torrent);
+    torrentClient.setupTorrentHandlers(torrent, newDownload.id, DOWNLOAD_PATH);
+    torrentClient.setActiveTorrent(newDownload.id, torrent);
 
     logger.info("DOWNLOAD", `Started: ${torrent.name}`);
     return newDownload;
   }
 
-  /**
-   * If the URI is an HTTP(s) URL (e.g. Prowlarr/Jackett download endpoint),
-   * pre-fetch the .torrent file and return its Buffer so WebTorrent doesn't
-   * have to handle the HTTP request itself (which often fails).
-   * Handles redirects to magnet: URIs (common with public indexers).
-   * Magnet URIs are returned as-is.
-   */
   private async resolveTorrentSource(uri: string): Promise<string | Buffer> {
     if (uri.startsWith("magnet:")) return uri;
 
@@ -124,6 +144,8 @@ export class DownloadService extends IdentifiableService<Download> {
   }
 
   private waitForTorrentReady(torrent: WebTorrent.Torrent): Promise<void> {
+    if (torrent.ready) return Promise.resolve();
+
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         reject(new Error("Timeout waiting for torrent metadata"));
@@ -142,49 +164,104 @@ export class DownloadService extends IdentifiableService<Download> {
   }
 
   async pause(id: string): Promise<{ success: true }> {
-    const activeTorrent = WebTorrentClient.getActiveTorrent(id);
-    if (!activeTorrent) {
-      const download = await db.query.torrentDownload.findFirst({ where: eq(torrentDownload.id, id) });
-      if (!download) throw new NotFoundError("Download");
-      throw new BadRequestError(`Download is not active. Current status: ${download.status}`);
-    }
+    const item = await this.get(id);
+    if (!item) throw new NotFoundError("Download");
 
-    WebTorrentClient.setPausedData(id, extractTorrentLiveData(activeTorrent));
-    activeTorrent.destroy({ destroyStore: false });
-    WebTorrentClient.deleteActiveTorrent(id);
+    const activeTorrent = torrentClient.getActiveTorrent(id);
+    if (!activeTorrent) throw new NotFoundError("Torrent does not exist");
 
-    await db.update(torrentDownload).set({ status: "paused" }).where(eq(torrentDownload.id, id));
+    torrentClient.markDestroying(id);
+    const pausedData = { ...extractTorrentLiveData(activeTorrent), paused: true };
+    torrentClient.setPausedData(id, pausedData);
+    await destroyTorrent(activeTorrent, { destroyStore: false });
+    torrentClient.deleteActiveTorrent(id);
+
+    await db.update(download).set({ torrent: pausedData }).where(eq(download.id, id));
+
     logger.info("DOWNLOAD", `Paused: ${activeTorrent.name}`);
+
+    setTimeout(() => torrentClient.unmarkDestroying(id), 5000);
     return { success: true };
   }
 
   async resume(id: string): Promise<{ success: true }> {
-    const download = await db.query.torrentDownload.findFirst({ where: eq(torrentDownload.id, id) });
-    if (!download) throw new NotFoundError("Download");
-    if (download.status !== "paused")
-      throw new BadRequestError(`Cannot resume download with status: ${download.status}`);
+    const item = await this.get(id);
+    if (!item) throw new NotFoundError("Download");
+    if (!item.torrent?.paused) throw new BadRequestError("Torrent is not paused");
 
-    WebTorrentClient.clearPausedData(id);
+    const magnetURI = item.torrent.magnetURI;
+    if (!magnetURI) throw new BadRequestError("No magnet URI found");
 
-    const torrent = WebTorrentClient.getClient().add(download.magnetUri, { path: DOWNLOAD_PATH });
-    WebTorrentClient.setupTorrentHandlers(torrent, id, DOWNLOAD_PATH);
+    torrentClient.clearPausedData(id);
 
-    await new Promise<void>((resolve) => torrent.on("ready", resolve));
-    WebTorrentClient.setActiveTorrent(id, torrent);
+    const torrent = torrentClient.safeAdd(magnetURI, { path: DOWNLOAD_PATH });
+    torrentClient.setupTorrentHandlers(torrent, id, DOWNLOAD_PATH);
 
-    await db.update(torrentDownload).set({ status: "downloading" }).where(eq(torrentDownload.id, id));
+    if (!torrent.ready) {
+      await this.waitForTorrentReady(torrent);
+    }
+    torrentClient.setActiveTorrent(id, torrent);
+
+    await db
+      .update(download)
+      .set({ torrent: { ...extractTorrentLiveData(torrent), paused: false } })
+      .where(eq(download.id, id));
     logger.info("DOWNLOAD", `Resumed: ${torrent.name}`);
     return { success: true };
   }
 
   async delete(id: string): Promise<{ success: true }> {
-    const activeTorrent = WebTorrentClient.getActiveTorrent(id);
-    if (activeTorrent) {
-      activeTorrent.destroy();
-      WebTorrentClient.deleteActiveTorrent(id);
+    const item = await this.get(id);
+    if (!item) throw new NotFoundError("Download");
+
+    let torrent: WebTorrent.Torrent | undefined = torrentClient.getActiveTorrent(id);
+
+    if (!torrent && item.torrent?.infoHash) {
+      torrent = torrentClient.findByInfoHash(item.torrent.infoHash);
     }
 
-    await db.delete(torrentDownload).where(eq(torrentDownload.id, id));
+    const torrentName = item.torrent?.name ?? id;
+    const magnetURI = item.torrent?.magnetURI;
+
+    if (torrent) {
+      torrentClient.markDestroying(id);
+      await destroyTorrent(torrent, { destroyStore: true });
+      torrentClient.deleteActiveTorrent(id);
+      setTimeout(() => torrentClient.unmarkDestroying(id), 5000);
+      logger.info("DOWNLOAD", `Destroyed torrent with files: ${torrentName}`);
+    } else if (magnetURI) {
+      try {
+        const uri =
+          magnetURI.startsWith("magnet:") || !item.torrent?.infoHash
+            ? magnetURI
+            : `magnet:?xt=urn:btih:${item.torrent.infoHash}`;
+
+        const tempTorrent = torrentClient.safeAdd(uri, { path: DOWNLOAD_PATH });
+
+        await new Promise<void>((resolve) => {
+          const timeout = setTimeout(() => resolve(), 10_000);
+          if (tempTorrent.ready) {
+            clearTimeout(timeout);
+            resolve();
+          } else {
+            tempTorrent.on("ready", () => {
+              clearTimeout(timeout);
+              resolve();
+            });
+          }
+        });
+
+        torrentClient.markDestroying(id);
+        await destroyTorrent(tempTorrent, { destroyStore: true });
+        setTimeout(() => torrentClient.unmarkDestroying(id), 5000);
+        logger.info("DOWNLOAD", `Re-added and destroyed with files: ${torrentName}`);
+      } catch (err) {
+        logger.error("DOWNLOAD", `Failed to re-add for cleanup: ${torrentName}`, err);
+      }
+    }
+
+    torrentClient.clearPausedData(id);
+    await db.delete(download).where(eq(download.id, id));
     return { success: true };
   }
 }

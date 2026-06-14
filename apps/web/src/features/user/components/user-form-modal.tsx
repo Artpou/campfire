@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { User } from "@seedarr/sdk";
-import { api, unwrap } from "@seedarr/sdk";
+import { api } from "@seedarr/sdk";
 import { useMutation } from "@tanstack/react-query";
 import { CrownIcon, GlassesIcon, ShieldCheckIcon, UserCheckIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -90,7 +90,7 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
 
   const createMutation = useMutation({
     mutationFn: (data: { username: string; password: string; role: "owner" | "admin" | "member" | "viewer" }) =>
-      unwrap(api.users.$post({ json: data })),
+      api.users.$post({ json: data }),
     onSuccess: () => {
       onClose();
     },
@@ -99,7 +99,7 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
   const updateMutation = useMutation({
     mutationFn: (data: { username?: string; password?: string; role?: "owner" | "admin" | "member" | "viewer" }) => {
       if (!user) return Promise.resolve(null);
-      return unwrap(api.users[":id"].$put({ param: { id: user.id }, json: data }));
+      return api.users[":id"].$put({ param: { id: user.id }, json: data });
     },
     onSuccess: () => {
       onClose();

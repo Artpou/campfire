@@ -1,6 +1,8 @@
 import { zValidator } from "@hono/zod-validator";
 import { stream } from "hono/streaming";
 
+import { paginationDto } from "@/shared/pagination.dto";
+
 import { BadRequestError, NotFoundError } from "@/errors/error";
 import { srt2webvtt } from "@/helpers/subtitle.helper";
 import { convertMkvToMp4Stream } from "@/helpers/video.helper";
@@ -8,6 +10,7 @@ import type { Dirent } from "node:fs";
 import { Readable } from "node:stream";
 import { downloadTorrentDto } from "./download.dto";
 import { requireDownloadOwnership } from "./download.guard";
+import type { TorrentLiveData } from "./download.schema";
 import { DownloadService } from "./download.service";
 import { DownloadStreamService } from "./download-stream.service";
 
@@ -23,8 +26,11 @@ function getContentType(fileName: string): string {
 }
 
 export const downloadRoutes = DownloadService.createRouter()
-  .get("/", async (c) => {
-    return c.json(await c.var.service.getMany());
+  .get("/", zValidator("query", paginationDto), async (c) => {
+    return c.json(await c.var.service.getMany(c.req.valid("query")));
+  })
+  .get("/stats", async (c) => {
+    return c.json(await c.var.service.getStats());
   })
   .get("/:id", async (c) => {
     const download = await c.var.service.get(c.req.param("id"));
@@ -97,7 +103,7 @@ export const downloadRoutes = DownloadService.createRouter()
     const filePath = decodeURIComponent(c.req.param("filePath"));
     const path = await import("node:path");
     const fs = await import("node:fs");
-    const baseDir = path.resolve(DOWNLOAD_PATH, download.savePath || download.name);
+    const baseDir = path.resolve(DOWNLOAD_PATH, download.torrent?.name ?? "");
     const fullPath = path.resolve(baseDir, filePath);
 
     if (!fullPath.startsWith(baseDir)) throw new BadRequestError("Invalid file path");
@@ -119,12 +125,13 @@ export const downloadRoutes = DownloadService.createRouter()
 
     const path = await import("node:path");
     const fs = await import("node:fs/promises");
-    const folderPath = path.join(DOWNLOAD_PATH, download.savePath || download.name);
+    const folderPath = path.join(DOWNLOAD_PATH, download.torrent?.name ?? "");
 
+    const torrentFiles = (download.torrent?.files ?? []) as TorrentLiveData["files"];
     const torrentPaths = new Set(
-      (download.live?.files ?? [])
+      torrentFiles
         .filter((f) => /\.(srt|vtt)$/i.test(f.path))
-        .map((f) => path.join(download.savePath || download.name, f.path).replace(/\\/g, "/")),
+        .map((f) => path.join(download.torrent?.name ?? "", f.path).replace(/\\/g, "/")),
     );
 
     const collected: string[] = [];

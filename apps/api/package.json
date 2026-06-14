@@ -40,7 +40,6 @@
     "hono-rate-limiter": "^0.5.3",
     "iconv-lite": "^0.7.1",
     "ms": "catalog:",
-    "tmdb-ts": "catalog:",
     "unzipper": "^0.12.3",
     "webtorrent": "2.8.5",
     "zod": "catalog:"

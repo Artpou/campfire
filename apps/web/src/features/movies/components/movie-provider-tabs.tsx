@@ -1,9 +1,11 @@
+import { useQuery } from "@tanstack/react-query";
 import { XIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 
 import { getBackdropUrl } from "@/features/media/helpers/media.helper";
-import { useProviders } from "@/features/media/hooks/use-providers";
+import { providerQueries } from "@/features/media/hooks/provider.queries";
 
 interface MovieProviderTabsProps {
   value?: string;
@@ -12,7 +14,8 @@ interface MovieProviderTabsProps {
 }
 
 export function MovieProviderTabs({ value, onValueChange, className }: MovieProviderTabsProps) {
-  const { data: providers = [], isLoading } = useProviders("movie");
+  const locale = useTmdbLocale();
+  const { data: providers = [], isLoading } = useQuery(providerQueries.list("movie", locale));
 
   if (isLoading || providers.length === 0) {
     return null;

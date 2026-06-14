@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { SubdlSubtitle } from "@seedarr/sdk";
+import { useQuery } from "@tanstack/react-query";
 import { DownloadIcon, SubtitlesIcon } from "lucide-react";
 
 import { Button } from "@/shared/ui/button";
@@ -11,7 +12,7 @@ import { ScrollArea } from "@/shared/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Skeleton } from "@/shared/ui/skeleton";
 
-import { useDownloadSubtitle, useSearchSubtitles } from "../hooks/use-subtitles";
+import { subtitleQueries, useDownloadSubtitle } from "../hooks/subtitle.queries";
 
 const SUBDL_LANGUAGES = [
   { code: "EN", label: "English" },
@@ -43,7 +44,7 @@ export function SubtitleSearchDialog({
   mediaTitle,
 }: SubtitleSearchDialogProps) {
   const [language, setLanguage] = useState("EN");
-  const { data, isLoading, error } = useSearchSubtitles(tmdbId, language);
+  const { data, isLoading, error } = useQuery(subtitleQueries.search(tmdbId, language));
   const downloadSubtitle = useDownloadSubtitle();
 
   const subtitles = data?.subtitles ?? [];

@@ -1,123 +1,90 @@
 import { Trans } from "@lingui/react/macro";
-import { createFileRoute } from "@tanstack/react-router";
-import { Plyr } from "plyr-react";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { APITypes, Plyr } from "plyr-react";
 import "plyr-react/plyr.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { api, getBaseUrl, unwrap } from "@seedarr/sdk";
-import { useQueryClient } from "@tanstack/react-query";
+import { api, getBaseUrl, unwrap, withSessionParam } from "@seedarr/sdk";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { SubtitlesIcon } from "lucide-react";
+import ms from "ms";
 
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
-import { SeedarrLoader } from "@/shared/components/seedarr-loader";
+import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
 import { detectLanguage } from "@/shared/helpers/lang.helper";
+import { mediaSessionQueries } from "@/shared/hooks/media-session.queries";
 import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
 
-import { useAuth } from "@/features/auth/auth-store";
-import { useMedia } from "@/features/media/hooks/use-media";
 import { SubtitleSearchDialog } from "@/features/subtitles/components/subtitle-search-dialog";
-import { useExternalSubtitles } from "@/features/subtitles/hooks/use-subtitles";
-import { useTorrentDownload } from "@/features/torrent/hooks/use-torrent-download";
-import { useTorrentLink } from "@/features/torrent/hooks/use-torrent-link";
-
-const PROGRESS_SAVE_INTERVAL_MS = 10_000;
-
-function saveProgressToServer(mediaId: number, position: number, duration: number, downloadId?: string) {
-  return unwrap(
-    api.media[":id"].progress.$patch({
-      param: { id: mediaId.toString() },
-      json: { position, duration, downloadId },
-    }),
-  ).catch(() => {});
-}
+import { subtitleQueries } from "@/features/subtitles/hooks/subtitle.queries";
+import { downloadQueries } from "@/features/torrent/hooks/download.queries";
 
 export const Route = createFileRoute("/_app/downloads/$id/play")({
+  loader: ({ context, params }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(downloadQueries.details(params.id)),
+      context.queryClient.ensureQueryData(subtitleQueries.external(params.id)),
+      context.queryClient.ensureQueryData(mediaSessionQueries.get()),
+    ]),
+  pendingComponent: () => <SeedarrLoaderContainer />,
+  errorComponent: () => <Navigate to="/404" replace />,
   component: VideoPlayerPage,
 });
 
 function VideoPlayerPage() {
   const { id } = Route.useParams();
-  const { data: torrent, isLoading } = useTorrentDownload(id);
-  const videoUrl = useTorrentLink(id);
-  const { user } = useAuth();
-  const { data: externalSubtitles } = useExternalSubtitles(id);
+  const { data: download } = useSuspenseQuery({ ...downloadQueries.details(id), refetchInterval: ms("1s") });
+  const { data: externalSubtitles } = useSuspenseQuery(subtitleQueries.external(id));
+  const { data: mediaSession } = useSuspenseQuery(mediaSessionQueries.get());
+
+  const videoRef = useRef<APITypes>(null);
+  const videoUrl = withSessionParam(`${getBaseUrl()}/downloads/${id}/stream`, mediaSession?.session);
+
   const [subtitleDialogOpen, setSubtitleDialogOpen] = useState(false);
-  const mediaId = torrent?.mediaId ?? 0;
-  const { data: mediaData } = useMedia(mediaId, { enabled: mediaId > 0 });
-  const savedProgress = mediaData?.progress;
-
-  const queryClient = useQueryClient();
-  const playerContainerRef = useRef<HTMLDivElement | null>(null);
-  const hasSeekedRef = useRef(false);
-  const lastSavedAtRef = useRef(0);
-  const savedPositionRef = useRef(0);
+  const hasInitialSeeked = useRef(false);
 
   useEffect(() => {
-    if (savedProgress?.position && !hasSeekedRef.current) {
-      savedPositionRef.current = savedProgress.position;
-    }
-  }, [savedProgress?.position]);
-
-  useEffect(() => {
-    const progress = torrent?.live?.progress;
+    const progress = download?.torrent?.progress;
     const bufferBar = document.querySelector(".plyr__progress--buffer") as HTMLElement;
 
     if (bufferBar && typeof progress === "number") {
       bufferBar.style.width = `${progress * 100}%`;
     }
-  }, [torrent?.live?.progress]);
+  }, [download?.torrent?.progress]);
 
   useEffect(() => {
-    if (!mediaId) return;
+    if (!download?.mediaId) return;
 
-    let video: HTMLVideoElement | null = null;
-    let cleanup: (() => void) | undefined;
+    const patchInterval = setInterval(async () => {
+      const plyr = videoRef.current?.plyr;
+      if (!plyr || plyr.paused) return;
 
-    const attachListeners = () => {
-      video = playerContainerRef.current?.querySelector("video") ?? null;
-      if (!video) return;
-
-      const onLoadedMetadata = () => {
-        if (!video || hasSeekedRef.current) return;
-        const pos = savedPositionRef.current;
-        if (pos > 0 && pos < (video.duration || Number.POSITIVE_INFINITY)) {
-          video.currentTime = pos;
-        }
-        hasSeekedRef.current = true;
-      };
-
-      const onTimeUpdate = () => {
-        if (!video) return;
-        const now = Date.now();
-        if (now - lastSavedAtRef.current < PROGRESS_SAVE_INTERVAL_MS) return;
-        const dur = video.duration;
-        const pos = video.currentTime;
-        if (!dur || dur <= 0 || !pos || pos <= 0) return;
-        lastSavedAtRef.current = now;
-        saveProgressToServer(mediaId, Math.floor(pos), Math.floor(dur), id).then(() => {
-          queryClient.invalidateQueries({ queryKey: ["media"] });
-        });
-      };
-
-      video.addEventListener("loadedmetadata", onLoadedMetadata);
-      video.addEventListener("timeupdate", onTimeUpdate);
-
-      if (video.readyState >= 1) onLoadedMetadata();
-
-      cleanup = () => {
-        video?.removeEventListener("loadedmetadata", onLoadedMetadata);
-        video?.removeEventListener("timeupdate", onTimeUpdate);
-      };
-    };
-
-    const timeoutId = window.setTimeout(attachListeners, 200);
+      await api.media[":id"].progress.$patch({
+        param: { id: download?.mediaId?.toString() ?? "" },
+        json: { position: Math.floor(plyr.currentTime), duration: Math.floor(plyr.duration), downloadId: id },
+      });
+    }, 1000);
 
     return () => {
-      window.clearTimeout(timeoutId);
-      cleanup?.();
+      clearInterval(patchInterval);
     };
-  }, [mediaId, id, queryClient]);
+  }, [download?.mediaId, id]);
+
+  const handleVideoReady = async () => {
+    if (hasInitialSeeked.current || !download?.mediaId) return;
+
+    const plyr = videoRef.current?.plyr;
+    if (!plyr || typeof plyr.currentTime !== "number") return;
+
+    hasInitialSeeked.current = true;
+
+    const media = await unwrap(api.media[":id"].$get({ param: { id: download.mediaId.toString() } }));
+    setTimeout(() => {
+      if (!media.progress?.position) return;
+      plyr.currentTime = media.progress.position;
+    }, 500);
+  };
 
   const subtitleTracks = useMemo(() => {
     const tracks: {
@@ -127,16 +94,20 @@ function VideoPlayerPage() {
       src: string;
       default: boolean;
     }[] = [];
-    const session = user?.sessionToken;
 
-    if (torrent?.live?.files) {
+    if (download?.torrent?.files) {
       const videoExtensions = /\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v)$/i;
-      const videoFiles = torrent.live.files.filter((file) => videoExtensions.test(file.name));
+      const torrentFiles = (download.torrent.files ?? []) as unknown as Array<{
+        name: string;
+        path: string;
+        length: number;
+      }>;
+      const videoFiles = torrentFiles.filter((file) => videoExtensions.test(file.name));
       if (videoFiles.length > 0) {
         const largestVideo = videoFiles.sort((a, b) => b.length - a.length)[0];
         const videoBaseName = largestVideo.name.replace(/\.[^.]+$/, "");
 
-        const subtitleFiles = torrent.live.files.filter((file) => {
+        const subtitleFiles = torrentFiles.filter((file) => {
           const fileName = file.name.toLowerCase();
           if (!fileName.endsWith(".srt") && !fileName.endsWith(".vtt")) return false;
           const fileBaseName = file.name.replace(/\.[^.]+$/, "");
@@ -165,7 +136,10 @@ function VideoPlayerPage() {
             kind: "captions",
             label: label.slice(0, 20),
             srclang,
-            src: `${getBaseUrl()}/downloads/${id}/subtitles/${encodeURIComponent(file.path)}?session=${session}`,
+            src: withSessionParam(
+              `${getBaseUrl()}/downloads/${id}/subtitles/${encodeURIComponent(file.path)}`,
+              mediaSession?.session,
+            ),
             default: index === 0 && tracks.length === 0,
           });
         }
@@ -186,7 +160,10 @@ function VideoPlayerPage() {
         kind: "captions",
         label: label.slice(0, 20),
         srclang: `ext-${i}`,
-        src: `${getBaseUrl()}/downloads/${id}/subtitles/${encodeURIComponent(filePath)}?session=${session}`,
+        src: withSessionParam(
+          `${getBaseUrl()}/downloads/${id}/subtitles/${encodeURIComponent(filePath)}`,
+          mediaSession?.session,
+        ),
         default: tracks.length === 0,
       });
     }
@@ -195,27 +172,7 @@ function VideoPlayerPage() {
       tracks[0].default = true;
     }
     return tracks;
-  }, [torrent, id, user?.sessionToken, externalSubtitles?.paths]);
-
-  if (isLoading) {
-    return (
-      <Container>
-        <SeedarrLoader />
-      </Container>
-    );
-  }
-
-  if (!torrent) {
-    return (
-      <Container>
-        <div className="text-center py-10">
-          <p className="text-muted-foreground">
-            <Trans>Download not found</Trans>
-          </p>
-        </div>
-      </Container>
-    );
-  }
+  }, [download, id, externalSubtitles?.paths, mediaSession?.session]);
 
   return (
     <Container className="max-w-7xl">
@@ -224,11 +181,11 @@ function VideoPlayerPage() {
           <AppBreadcrumb
             items={[
               { name: "Downloads", link: "/downloads" },
-              { name: torrent.name, link: `/downloads/${id}` },
+              { name: download.torrent?.name ?? "", link: `/downloads/${id}` },
               { name: "Play" },
             ]}
           />
-          {torrent.mediaId != null && (
+          {download.mediaId != null && (
             <Button variant="outline" size="sm" onClick={() => setSubtitleDialogOpen(true)}>
               <SubtitlesIcon className="size-4" />
               <Trans>Add subtitles</Trans>
@@ -240,24 +197,25 @@ function VideoPlayerPage() {
           <SubtitleSearchDialog
             open={subtitleDialogOpen}
             onOpenChange={setSubtitleDialogOpen}
-            tmdbId={String(torrent.mediaId ?? "")}
+            tmdbId={String(download.mediaId ?? "")}
             downloadId={id}
-            mediaTitle={torrent.name}
+            mediaTitle={download.torrent?.name ?? ""}
           />
         )}
 
         <div
-          ref={playerContainerRef}
           className="w-full bg-black rounded-lg overflow-hidden"
           style={
             {
               "--plyr-color-main": "var(--primary)",
-              "--torrent-progress": `${torrent?.live?.progress === 1 ? 0 : (torrent?.live?.progress || 0) * 100 + 2}%`,
+              "--torrent-progress": `${download.torrent?.progress === 1 ? 0 : (download.torrent?.progress || 0) * 100 + 2}%`,
             } as React.CSSProperties
           }
         >
           <Plyr
             crossOrigin="anonymous"
+            ref={videoRef}
+            onCanPlay={handleVideoReady}
             source={{
               type: "video",
               sources: [

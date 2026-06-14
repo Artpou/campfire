@@ -2,9 +2,16 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+function Table({
+  className,
+  classNameContainer,
+  ...props
+}: React.ComponentProps<"table"> & { classNameContainer?: string }) {
   return (
-    <div data-slot="table-container" className="relative w-full overflow-x-auto bg-card rounded-lg">
+    <div
+      data-slot="table-container"
+      className={cn("relative w-full overflow-x-auto bg-card rounded-lg border border-border", classNameContainer)}
+    >
       <table data-slot="table" className={cn("w-full caption-bottom text-sm", className)} {...props} />
     </div>
   );

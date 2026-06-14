@@ -7,7 +7,6 @@ import { ClockIcon, ExternalLinkIcon, PlusIcon } from "lucide-react";
 import type { WatchLocale } from "tmdb-ts";
 
 import { cn } from "@/lib/utils";
-import { CircularProgress } from "@/shared/components/circular-progress";
 import { Flag } from "@/shared/components/flag";
 import { formatRuntime } from "@/shared/helpers/date";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
@@ -22,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu";
 
+import { MediaRating } from "@/features/media/components/media-rating";
 import { getBackdropUrl } from "@/features/media/helpers/media.helper";
 
 interface TvInfoProps {
@@ -210,7 +210,7 @@ export function TvInfo({ tv }: TvInfoProps) {
       )}
 
       <div className="flex items-center gap-4">
-        <CircularProgress value={(tv.vote_average || 0) * 10} size={52} strokeWidth={5} />
+        <MediaRating media={tv} size={52} strokeWidth={5} />
 
         <div className="flex items-center gap-1.5 border-l border-white/10 pl-4">
           {firstProviders.map((provider) => (

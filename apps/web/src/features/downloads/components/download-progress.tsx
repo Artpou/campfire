@@ -1,49 +1,48 @@
-import { ClockIcon, PauseIcon, PlayIcon } from "lucide-react";
+import { Trans } from "@lingui/react/macro";
+import type { Download } from "@seedarr/sdk";
+import { ClockIcon, DownloadIcon, PauseIcon } from "lucide-react";
 
 import { formatBytes, formatTime } from "@/shared/helpers/format.helper";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Progress } from "@/shared/ui/progress";
 
+import { getDownloadStatus } from "@/features/downloads/helpers/downloads.helper";
+
 interface DownloadProgressProps {
-  progress: number;
-  downloaded: number;
-  size: number;
-  timeRemaining?: number;
+  download: Download;
   onClick: () => void;
-  isPaused: boolean;
 }
 
-export function DownloadProgress({
-  progress,
-  downloaded,
-  size,
-  timeRemaining,
-  onClick,
-  isPaused,
-}: DownloadProgressProps) {
+export function DownloadProgress({ download, onClick }: DownloadProgressProps) {
+  const status = getDownloadStatus(download);
+  const size = download.torrent?.length ?? 0;
+  const downloaded = download.torrent?.downloaded ?? 0;
+  const progress = downloaded / size;
+
   return (
     <div>
-      {isPaused ? (
-        <span className="text-xl font-bold text-muted-foreground">Paused</span>
-      ) : (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-xl font-bold">{(progress * 100).toFixed(1)}%</span>
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <ClockIcon className="size-3" />
-              <span>{formatTime(timeRemaining)}</span>
-            </Badge>
-          </div>
-          <span className="text-xs text-muted-foreground">
-            {formatBytes(downloaded)} / {formatBytes(size)}
-          </span>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-xl font-bold">{(progress * 100).toFixed(1)}%</span>
+          <Badge variant="secondary" className="flex items-center gap-1">
+            {status === "downloading" ? <ClockIcon className="size-3" /> : <PauseIcon className="size-3" />}
+            {status === "downloading" ? (
+              <span>{formatTime(download.torrent?.timeRemaining)}</span>
+            ) : (
+              <Trans>Paused</Trans>
+            )}
+          </Badge>
         </div>
-      )}
+        <span className="text-xs text-muted-foreground">
+          {formatBytes(downloaded)} / {formatBytes(size)}
+        </span>
+      </div>
       <div className="flex gap-2 items-center">
-        <Progress value={progress * 100} className="h-2 shadow-md shadow-primary/20" />
-        <Button variant="outline" size="icon" onClick={onClick}>
-          {isPaused ? <PlayIcon className="size-4" /> : <PauseIcon className="size-4" />}
+        <Progress value={progress * 100} variant={status === "paused" ? "paused" : "default"} />
+        <Button onClick={onClick}>
+          {status === "paused" ? <DownloadIcon className="size-4" /> : <PauseIcon className="size-4" />}
+          <span>{status === "paused" ? <Trans>Resume</Trans> : <Trans>Pause</Trans>}</span>
         </Button>
       </div>
     </div>

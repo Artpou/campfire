@@ -10,7 +10,7 @@ import {
   BreadcrumbSeparator,
 } from "@/shared/ui/breadcrumb";
 
-export interface AppBreadcrumbItem {
+interface AppBreadcrumbItem {
   name: string;
   link?: string;
 }

@@ -1,40 +1,42 @@
 import { useMemo, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { TMDBMovieDetails, TMDBTvDetails } from "@seedarr/sdk";
+import type { Movie, TV } from "@seedarr/sdk";
 import { Link } from "@tanstack/react-router";
 import { ClapperboardIcon, FilmIcon, MagnetIcon, PlayIcon } from "lucide-react";
 
 import { Button } from "@/shared/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/shared/ui/dialog";
+import { Progress } from "@/shared/ui/progress";
 
 import { useRole } from "@/features/auth/hooks/use-role";
 import { getPosterUrl } from "@/features/media/helpers/media.helper";
 
-type MediaPosterMedia = TMDBMovieDetails | TMDBTvDetails;
-
 interface MediaPosterProps {
-  media: MediaPosterMedia;
+  data: Movie | TV;
   downloadId?: string;
   type?: "movie" | "tv";
 }
 
-function getDisplayTitle(media: MediaPosterMedia): string {
-  if ("title" in media && media.title) return media.title;
-  if ("name" in media && media.name) return media.name;
+function getDisplayTitle(data: Movie | TV): string {
+  const item = "movie" in data ? data.movie : data.tv;
+  if ("title" in item && item.title) return item.title;
+  if ("name" in item && item.name) return item.name;
   return "";
 }
 
-export function MediaPoster({ media, downloadId, type = "movie" }: MediaPosterProps) {
+export function MediaPoster({ data, downloadId, type = "movie" }: MediaPosterProps) {
   const { role } = useRole();
   const { i18n } = useLingui();
 
   const [imgError, setImgError] = useState(false);
 
-  const displayTitle = getDisplayTitle(media);
+  const displayTitle = getDisplayTitle(data);
+  const { media } = data;
+  const item = "movie" in data ? data.movie : data.tv;
 
   const youtubeTrailer = useMemo(() => {
-    const videos = media?.videos?.results;
+    const videos = item?.videos?.results;
     if (!videos) return null;
 
     return (
@@ -42,7 +44,7 @@ export function MediaPoster({ media, downloadId, type = "movie" }: MediaPosterPr
       videos.find((v) => v.site === "YouTube" && v.type === "Trailer") ??
       videos.find((v) => v.site === "YouTube")
     );
-  }, [media?.videos, i18n.locale]);
+  }, [item?.videos, i18n.locale]);
 
   return (
     <div className="flex flex-col shrink-0 space-y-2 items-center max-w-[230px]">
@@ -58,6 +60,14 @@ export function MediaPoster({ media, downloadId, type = "movie" }: MediaPosterPr
           <div className="w-[200px] size-full aspect-2/3 rounded-md flex items-center justify-center border border-border">
             <ClapperboardIcon className="size-10 text-muted-foreground" />
           </div>
+        )}
+
+        {media.progress && media.progress.position > 0 && (
+          <Progress
+            value={(media?.progress?.position / media?.progress?.duration) * 100}
+            variant="white"
+            className="absolute z-10 bottom-2 left-2 right-2 w-auto"
+          />
         )}
 
         {downloadId && (

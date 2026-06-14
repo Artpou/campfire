@@ -5,11 +5,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
-  ChevronDownIcon,
-  ClockPlusIcon,
-  EyeIcon,
   FilmIcon,
-  HeartIcon,
   ListIcon,
   LogOutIcon,
   MonitorIcon,
@@ -48,15 +44,8 @@ const navLinks = [
   { title: msg`Library`, url: "/downloads", icon: MonitorIcon },
 ];
 
-const listLinks = [
-  { title: msg`Watch List`, url: "/lists/watch-list", icon: ClockPlusIcon },
-  { title: msg`Liked`, url: "/lists/like", icon: HeartIcon },
-  { title: msg`History`, url: "/lists/history", icon: EyeIcon },
-];
-
 export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [searchExpanded, setSearchExpanded] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useLingui();
@@ -66,17 +55,11 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
 
   useEffect(() => {
     const handleScroll = () => {
-      const mainElement = document.querySelector("main");
-      if (mainElement) {
-        setIsScrolled(mainElement.scrollTop > 0);
-      }
+      setIsScrolled(window.scrollY > 0);
     };
 
-    const mainElement = document.querySelector("main");
-    if (mainElement) {
-      mainElement.addEventListener("scroll", handleScroll);
-      return () => mainElement.removeEventListener("scroll", handleScroll);
-    }
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const isListsActive = location.pathname.startsWith("/lists");
@@ -96,14 +79,14 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
       className={cn(
         "sticky top-0 z-50 w-full transition-all duration-200",
         isScrolled
-          ? "border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80"
-          : "border-b border-transparent bg-linear-to-b from-background/90 to-transparent",
+          ? "bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80"
+          : "bg-linear-to-b from-background/90 to-transparent",
       )}
     >
       <div className="container mx-auto flex h-14 items-center px-4 md:px-6 gap-4">
         {isAuthenticated ? (
           <>
-            <div className={cn("flex items-center gap-6 min-w-0", searchExpanded && "hidden md:flex")}>
+            <div className="flex items-center gap-6 min-w-0">
               <Link to="/movies" className="flex items-center gap-2 shrink-0">
                 <img src="/logo192.png" alt="Seedarr" className="size-8" />
                 <span className="text-lg font-semibold hidden sm:inline">Seedarr</span>
@@ -129,91 +112,70 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
                   );
                 })}
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className={cn("font-medium gap-1", isListsActive && "text-foreground bg-accent")}
-                    >
-                      <ListIcon className="size-4" />
-                      {t(msg`Lists`)}
-                      <ChevronDownIcon className="size-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    {listLinks.map((item) => (
-                      <DropdownMenuItem key={item.url} asChild>
-                        <Link to={item.url} className="flex items-center gap-2">
-                          <item.icon className="size-4" />
-                          {t(item.title)}
-                        </Link>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <Button
+                  variant="ghost"
+                  asChild
+                  className={cn("font-medium", isListsActive && "text-foreground bg-accent")}
+                >
+                  <Link to="/lists" search={{ tab: "watch-list" }}>
+                    <ListIcon className="size-4" />
+                    {t(msg`Lists`)}
+                  </Link>
+                </Button>
               </nav>
             </div>
 
             <div className="flex-1 flex justify-end items-center gap-2">
-              <MediaSearch
-                expanded={searchExpanded}
-                onExpandedChange={setSearchExpanded}
-                className={searchExpanded ? "flex-1 justify-end" : undefined}
-              />
+              <MediaSearch />
+              <LanguageDropdown />
 
-              {!searchExpanded && (
-                <>
-                  <LanguageDropdown />
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" aria-label={t(msg`Settings`)}>
-                        <SettingsIcon className="size-5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuLabel>
-                        <Trans>Settings</Trans>
-                      </DropdownMenuLabel>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" aria-label={t(msg`Settings`)}>
+                    <SettingsIcon className="size-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <Trans>Settings</Trans>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.preventDefault();
+                      toggleTheme();
+                    }}
+                    className="cursor-pointer"
+                  >
+                    {theme === "dark" ? <SunIcon className="size-4 mr-2" /> : <MoonIcon className="size-4 mr-2" />}
+                    {theme === "dark" ? <Trans>Light mode</Trans> : <Trans>Dark mode</Trans>}
+                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.preventDefault();
-                          toggleTheme();
-                        }}
-                        className="cursor-pointer"
-                      >
-                        {theme === "dark" ? <SunIcon className="size-4 mr-2" /> : <MoonIcon className="size-4 mr-2" />}
-                        {theme === "dark" ? <Trans>Light mode</Trans> : <Trans>Dark mode</Trans>}
+                      <DropdownMenuItem asChild>
+                        <Link to="/users" search={{}} className="flex items-center gap-2">
+                          <UsersIcon className="size-4" />
+                          <Trans>Manage users</Trans>
+                        </Link>
                       </DropdownMenuItem>
-                      {isAdmin && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem asChild>
-                            <Link to="/users" search={{}} className="flex items-center gap-2">
-                              <UsersIcon className="size-4" />
-                              <Trans>Manage users</Trans>
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link to="/settings" search={{}} className="flex items-center gap-2">
-                              <WrenchIcon className="size-4" />
-                              <Trans>Advanced options</Trans>
-                            </Link>
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                      <DropdownMenuSeparator />
-                      <div className="px-2 py-1.5">
-                        <Button variant="destructive" size="sm" className="w-full" onClick={handleSignOut}>
-                          <LogOutIcon className="size-4" />
-                          <Trans>Sign out</Trans>
-                        </Button>
-                      </div>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </>
-              )}
+                      <DropdownMenuItem asChild>
+                        <Link to="/settings" search={{}} className="flex items-center gap-2">
+                          <WrenchIcon className="size-4" />
+                          <Trans>Advanced options</Trans>
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuSeparator />
+                  <div className="px-2 py-1.5">
+                    <Button variant="destructive" size="sm" className="w-full" onClick={handleSignOut}>
+                      <LogOutIcon className="size-4" />
+                      <Trans>Sign out</Trans>
+                    </Button>
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </>
         ) : (

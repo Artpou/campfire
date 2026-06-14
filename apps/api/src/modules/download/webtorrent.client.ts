@@ -1,45 +1,45 @@
-import { eq, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type WebTorrent from "webtorrent";
 
 import { db } from "@/db/db";
 import { ServiceUnavailableError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
-import { torrentDownload } from "@/modules/download/download.schema";
-import type { TorrentLiveData } from "@/types";
-import * as path from "node:path";
+import type { TorrentLiveData } from "@/modules/download/download.schema";
+import { download } from "@/modules/download/download.schema";
+import type { EventEmitter } from "node:events";
+import { extractTorrentLiveData } from "./webtorrent.helper";
 
-/**
- * Singleton WebTorrent client manager
- * Handles initialization, lifecycle, and active torrent tracking
- */
+class WebTorrentManager {
+  private client: WebTorrent.Instance | null = null;
+  private activeTorrents = new Map<string, WebTorrent.Torrent>();
+  private initError: Error | null = null;
+  private isInitialized = false;
+  private isInitializing = false;
 
-// biome-ignore lint/complexity/noStaticOnlyClass: we want to keep the class static
-export class WebTorrentClient {
-  private static client: WebTorrent.Instance | null = null;
-  private static activeTorrents = new Map<string, WebTorrent.Torrent>();
-  private static initError: Error | null = null;
-  private static isInitialized = false;
-  private static isInitializing = false;
+  private pauseCache = new Map<string, TorrentLiveData>();
+  private destroyingIds = new Set<string>();
 
-  private static pauseCache = new Map<string, TorrentLiveData>();
+  markDestroying(id: string): void {
+    this.destroyingIds.add(id);
+  }
 
-  static setPausedData(id: string, data: TorrentLiveData) {
+  unmarkDestroying(id: string): void {
+    this.destroyingIds.delete(id);
+  }
+
+  setPausedData(id: string, data: TorrentLiveData) {
     this.pauseCache.set(id, { ...data, uploadSpeed: 0, downloadSpeed: 0 });
   }
 
-  static getPausedData(id: string) {
+  getPausedData(id: string) {
     return this.pauseCache.get(id);
   }
 
-  static clearPausedData(id: string) {
+  clearPausedData(id: string) {
     this.pauseCache.delete(id);
   }
 
-  /**
-   * Initialize WebTorrent client and restore active torrents (non-blocking)
-   * Should be called once at server startup without await
-   */
-  static async initialize(downloadPath: string): Promise<void> {
+  async initialize(downloadPath: string): Promise<void> {
     if (this.isInitialized || this.isInitializing) {
       logger.debug("WEBTORRENT", "Already initialized or initializing, skipping...");
       return;
@@ -49,8 +49,20 @@ export class WebTorrentClient {
 
     try {
       logger.info("WEBTORRENT", "Initializing...");
-      const WebTorrent = (await import("webtorrent")).default;
-      this.client = new WebTorrent();
+      const WebTorrentModule = (await import("webtorrent")).default;
+      this.client = new WebTorrentModule();
+
+      this.client.on("error", (err) => {
+        const message = err instanceof Error ? err.message : String(err);
+        logger.error("WEBTORRENT", `Client error (non-fatal): ${message}`);
+      });
+
+      process.on("uncaughtException", (err) => {
+        if (err.message?.includes("_debugId") || err.stack?.includes("webtorrent")) {
+          logger.error("WEBTORRENT", `Caught internal WebTorrent exception (non-fatal): ${err.message}`);
+          return;
+        }
+      });
 
       logger.debug("WEBTORRENT", "Client created");
 
@@ -72,7 +84,7 @@ export class WebTorrentClient {
     }
   }
 
-  static getClient(): WebTorrent.Instance {
+  getClient(): WebTorrent.Instance {
     if (this.initError) {
       throw new ServiceUnavailableError(`WebTorrent (init failed: ${this.initError.message})`);
     }
@@ -82,34 +94,43 @@ export class WebTorrentClient {
     return this.client;
   }
 
-  static getActiveTorrent(id: string): WebTorrent.Torrent | undefined {
+  getAllTorrents(): WebTorrent.Torrent[] {
+    return this.client?.torrents || [];
+  }
+
+  getActiveTorrent(id: string): WebTorrent.Torrent | undefined {
     return this.activeTorrents.get(id);
   }
 
-  static setActiveTorrent(id: string, torrent: WebTorrent.Torrent): void {
+  findByInfoHash(infoHash: string): WebTorrent.Torrent | undefined {
+    if (!this.client) return undefined;
+    return this.client.torrents.find((t) => t.infoHash === infoHash);
+  }
+
+  setActiveTorrent(id: string, torrent: WebTorrent.Torrent): void {
     this.activeTorrents.set(id, torrent);
   }
 
-  static deleteActiveTorrent(id: string): void {
+  deleteActiveTorrent(id: string): void {
     this.activeTorrents.delete(id);
+    this.pauseCache.delete(id);
   }
 
-  static setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: string, downloadPath: string): void {
+  safeAdd(uri: string, opts: { path: string }): WebTorrent.Torrent {
+    const client = this.getClient();
+    const existing = client.torrents.find((t) => t.magnetURI === uri || (t.infoHash && uri.includes(t.infoHash)));
+    if (existing) return existing;
+
+    return client.add(uri, opts);
+  }
+
+  setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: string, _downloadPath: string): void {
     torrent.on("ready", async () => {
-      const savePath = path.relative(downloadPath, torrent.path);
       logger.info("WEBTORRENT", `Ready: ${torrent.name}`);
       await db
-        .update(torrentDownload)
-        .set({
-          infoHash: torrent.infoHash,
-          magnetUri: torrent.magnetURI,
-          name: torrent.name,
-          size: torrent.length,
-          status: "downloading",
-          startedAt: new Date(),
-          savePath,
-        })
-        .where(eq(torrentDownload.id, downloadId));
+        .update(download)
+        .set({ torrent: extractTorrentLiveData(torrent) })
+        .where(eq(download.id, downloadId));
 
       this.activeTorrents.set(downloadId, torrent);
     });
@@ -117,75 +138,47 @@ export class WebTorrentClient {
     torrent.on("done", async () => {
       logger.info("WEBTORRENT", `Completed: ${torrent.name}`);
       await db
-        .update(torrentDownload)
-        .set({
-          status: "completed",
-          completedAt: new Date(),
-        })
-        .where(eq(torrentDownload.id, downloadId));
+        .update(download)
+        .set({ torrent: { ...extractTorrentLiveData(torrent), done: true } })
+        .where(eq(download.id, downloadId));
     });
 
-    (torrent as unknown as { on: (event: string, callback: (err: Error) => void) => void }).on(
-      "error",
-      async (err: Error) => {
-        logger.error(
-          "WEBTORRENT",
-          `Error on "${torrent.name || downloadId}": ${err.message}` +
-            ` (infoHash: ${torrent.infoHash || "unknown"}, magnetURI: ${(torrent.magnetURI || "").slice(0, 60)}...)`,
-        );
-        await db
-          .update(torrentDownload)
-          .set({
-            status: "failed",
-            error: err.message,
-          })
-          .where(eq(torrentDownload.id, downloadId));
-      },
-    );
+    (torrent as unknown as EventEmitter).on("error", async (err: Error) => {
+      if (this.destroyingIds.has(downloadId)) return;
+
+      logger.error(
+        "WEBTORRENT",
+        `Error on "${torrent.name || downloadId}": ${err.message}` +
+          ` (infoHash: ${torrent.infoHash || "unknown"}, magnetURI: ${(torrent.magnetURI || "").slice(0, 60)}...)`,
+      );
+      await db.update(download).set({ error: err.message }).where(eq(download.id, downloadId));
+    });
   }
 
-  private static async restoreActiveTorrents(downloadPath: string): Promise<void> {
-    const downloads = await db
-      .select()
-      .from(torrentDownload)
-      .where(
-        or(
-          eq(torrentDownload.status, "downloading"),
-          eq(torrentDownload.status, "paused"),
-          eq(torrentDownload.status, "completed"),
-        ),
-      )
-      .all();
+  private async restoreActiveTorrents(downloadPath: string): Promise<void> {
+    const downloads = await db.select().from(download).all();
+    const activeDownloads = downloads.filter(
+      (item) => item.torrent && !item.torrent.done && !item.torrent.paused && item.torrent.magnetURI,
+    );
 
-    if (downloads.length > 0) {
-      logger.info("WEBTORRENT", `Restoring ${downloads.length} torrent(s)...`);
+    if (activeDownloads.length > 0) {
+      logger.info("WEBTORRENT", `Restoring ${activeDownloads.length} torrent(s)...`);
     }
 
-    for (const download of downloads) {
-      if (!download.magnetUri || !this.client) continue;
+    for (const item of activeDownloads) {
+      if (!item.torrent?.magnetURI || !this.client) continue;
 
       try {
-        // Skip paused downloads - they will be restored when resumed
-        if (download.status === "paused") {
-          logger.debug("WEBTORRENT", `Skipped paused: ${download.name}`);
-          continue;
-        }
+        logger.debug("WEBTORRENT", `Restoring: ${item.torrent.name}`);
+        const restored = this.safeAdd(item.torrent.magnetURI, { path: downloadPath });
+        this.setupTorrentHandlers(restored, item.id, downloadPath);
 
-        logger.debug("WEBTORRENT", `Restoring: ${download.name} (${download.status})`);
-        const restored = this.client.add(download.magnetUri, {
-          path: downloadPath,
-        });
-        this.setupTorrentHandlers(restored, download.id, downloadPath);
-
-        // Wait for torrent to be ready before adding to active map
-        await new Promise<void>((resolve) => {
-          restored.on("ready", () => resolve());
-        });
-
-        this.activeTorrents.set(download.id, restored);
+        this.activeTorrents.set(item.id, restored);
       } catch (error) {
-        logger.error("WEBTORRENT", `Failed to restore: ${download.name}`, error);
+        logger.error("WEBTORRENT", `Failed to restore: ${item.torrent?.name}`, error);
       }
     }
   }
 }
+
+export const torrentClient = new WebTorrentManager();

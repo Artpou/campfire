@@ -71,6 +71,11 @@ export const authRoutes = new Hono()
 
     return c.json({ success: true });
   })
+  .get("/media-session", async (c) => {
+    const sessionToken = getCookie(c, SESSION_COOKIE_NAME);
+    if (typeof sessionToken !== "string") throw new UnauthorizedError("Not authenticated");
+    return c.json({ session: sessionToken });
+  })
   .get("/me", async (c) => {
     const sessionToken = getCookie(c, SESSION_COOKIE_NAME);
 
@@ -86,7 +91,6 @@ export const authRoutes = new Hono()
 
     return c.json({
       ...currentUser,
-      sessionToken,
       selectedIndexer,
     });
   });

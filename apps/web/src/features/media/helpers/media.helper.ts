@@ -1,3 +1,5 @@
+import { Media } from "@seedarr/sdk";
+
 export type PosterFormat = "w92" | "w154" | "w185" | "w342" | "w500" | "w780" | "original";
 
 export function getPosterUrl(path?: string | null, format: PosterFormat = "w500"): string {
@@ -20,4 +22,11 @@ export function getBackdropUrl(path?: string | null, format: BackdropFormat = "o
   }
 
   return `https://image.tmdb.org/t/p/${format}${path}`;
+}
+
+export function getMediaType(type?: unknown): Media["type"] | undefined {
+  if (!type || typeof type !== "string") return undefined;
+  if (type === "tv") return "tv";
+  if (type === "movie") return "movie";
+  return undefined;
 }

@@ -1,13 +1,15 @@
 import type { Media } from "@seedarr/sdk";
+import { useQuery } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
 
 import { cn } from "@/lib/utils";
+import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Card, CardContent } from "@/shared/ui/card";
 import { CarouselItem } from "@/shared/ui/carousel";
 import { CarouselWrapper } from "@/shared/ui/carousel-wrapper";
 import { Skeleton } from "@/shared/ui/skeleton";
 
-import { useGenres } from "@/features/media/hooks/use-genres";
+import { genreQueries } from "@/features/media/hooks/genre.queries";
 
 interface MediaCategoryCarouselProps {
   type: Media["type"];
@@ -15,7 +17,8 @@ interface MediaCategoryCarouselProps {
 }
 
 export function MediaCategoryCarousel({ type, onValueChange }: MediaCategoryCarouselProps) {
-  const { data: genres = [], isLoading } = useGenres(type);
+  const locale = useTmdbLocale();
+  const { data: genres = [], isLoading } = useQuery(genreQueries.list(type, locale));
   const search = useSearch({ strict: false }) as { with_genres?: string };
 
   const selectedGenreId = search.with_genres ? Number.parseInt(search.with_genres, 10) : undefined;
@@ -45,7 +48,10 @@ export function MediaCategoryCarousel({ type, onValueChange }: MediaCategoryCaro
   return (
     <CarouselWrapper>
       {genres.map((genre) => (
-        <CarouselItem className={cn(selectedGenreId === genre.id && "border-primary!")} key={genre.id}>
+        <CarouselItem
+          className={cn(" hover:border-primary", selectedGenreId === genre.id && "border-primary!")}
+          key={genre.id}
+        >
           <Card className="group h-24 py-0 cursor-pointer overflow-hidden" onClick={() => handleGenreClick(genre.id)}>
             <CardContent className="relative h-full p-0">
               <img

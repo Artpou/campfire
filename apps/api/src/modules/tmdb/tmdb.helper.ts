@@ -1,12 +1,8 @@
 import { toLatin } from "@/helpers/string.helper";
-import type { Media, MediaInsert } from "@/modules/media/media.dto";
+import type { Media } from "@/modules/media/media.dto";
 import type { TMDBGenre, TMDBItem } from "./tmdb.dto";
 
-export function formatCategories(
-  genres?: TMDBGenre[],
-  genreIds?: number[],
-  genreMap?: Map<number, string>,
-): string | null {
+function formatCategories(genres?: TMDBGenre[], genreIds?: number[], genreMap?: Map<number, string>): string | null {
   if (genres && genres.length > 0) {
     return genres.map((g) => g.name).join(", ");
   }
@@ -23,32 +19,7 @@ interface MediaExtraFields {
   categories?: string | null;
 }
 
-function toMedia(item: TMDBItem, type: "movie" | "tv", extra: MediaExtraFields = {}): Media {
-  const title = type === "movie" ? (item.title ?? item.original_title ?? "") : (item.name ?? item.original_name ?? "");
-  const originalTitle = type === "movie" ? (item.original_title ?? null) : (item.original_name ?? null);
-  const releaseDate = type === "movie" ? (item.release_date ?? null) : (item.first_air_date ?? null);
-
-  return {
-    id: Number(item.id),
-    type,
-    title,
-    original_title: originalTitle,
-    sanitize_title: toLatin(originalTitle ?? "") ?? title,
-    original_language: item.original_language ?? null,
-    overview: item.overview ?? null,
-    poster_path: item.poster_path ?? null,
-    vote_average: item.vote_average ?? null,
-    release_date: releaseDate,
-    duration: extra.duration ?? null,
-    seasons_number: extra.seasons_number ?? null,
-    categories: extra.categories ?? null,
-    backdrop_path: item.backdrop_path ?? null,
-    likes: 0,
-    watchList: 0,
-  };
-}
-
-function toMediaInsert(
+function toMedia(
   item: TMDBItem & {
     us_title?: string;
     runtime?: number | null;
@@ -57,7 +28,7 @@ function toMediaInsert(
   },
   type: "movie" | "tv",
   extra: MediaExtraFields = {},
-): MediaInsert {
+): Media {
   const title = type === "movie" ? (item.title ?? item.original_title ?? "") : (item.name ?? item.original_name ?? "");
   const originalTitle = type === "movie" ? (item.original_title ?? null) : (item.original_name ?? null);
   const releaseDate = type === "movie" ? (item.release_date ?? null) : (item.first_air_date ?? null);
@@ -71,7 +42,7 @@ function toMediaInsert(
     type,
     title,
     original_title: originalTitle,
-    sanitize_title: toLatin(originalTitle ?? "") ?? item.us_title ?? title,
+    sanitize_title: toLatin(originalTitle ?? "") ?? title,
     original_language: item.original_language ?? null,
     overview: item.overview ?? null,
     poster_path: item.poster_path ?? null,
@@ -80,6 +51,9 @@ function toMediaInsert(
     duration,
     seasons_number: seasonsNumber,
     categories,
+    backdrop_path: item.backdrop_path ?? null,
+    likes: 0,
+    watchList: 0,
   };
 }
 
@@ -89,28 +63,10 @@ export function tmdbMovieToMedia(item: TMDBItem, genreMap?: Map<number, string>)
   });
 }
 
-export function tmdbMovieToMediaInsert(
-  item: TMDBItem & { us_title?: string; runtime?: number | null; genres?: TMDBGenre[] },
-): MediaInsert {
-  return toMediaInsert(item, "movie");
-}
-
 export function tmdbTVToMedia(item: TMDBItem, genreMap?: Map<number, string>): Media {
   return toMedia(item, "tv", {
     categories: formatCategories(undefined, item.genre_ids, genreMap),
   });
-}
-
-export function tmdbTVToMediaInsert(
-  item: TMDBItem & {
-    us_title?: string;
-    number_of_seasons?: number | null;
-    genres?: TMDBGenre[];
-    episode_run_time?: number[];
-  },
-): MediaInsert {
-  const duration = item.episode_run_time?.[0] ?? null;
-  return toMediaInsert(item, "tv", { duration, seasons_number: item.number_of_seasons ?? null });
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: fmdbResult is any

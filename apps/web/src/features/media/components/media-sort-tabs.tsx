@@ -3,6 +3,7 @@ import { useLingui } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
 import { PopcornIcon, RadioIcon, SofaIcon, StarIcon } from "lucide-react";
 
+import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 export type MediaSelected = "home" | "cinema" | "top-rated" | "upcoming";
@@ -15,6 +16,7 @@ interface MediaSortTabsProps {
 
 export function MediaSortTabs({ value, type, onChange }: MediaSortTabsProps) {
   const { t } = useLingui();
+  const isMobile = useIsMobile();
 
   const activeValue = value || "home";
 
@@ -33,7 +35,7 @@ export function MediaSortTabs({ value, type, onChange }: MediaSortTabsProps) {
       icon: <StarIcon className="text-foreground" />,
       label: msg`Top Rated`,
     },
-    ...(type === "movie"
+    ...(type === "movie" && !isMobile
       ? [
           {
             value: "cinema",
@@ -42,11 +44,15 @@ export function MediaSortTabs({ value, type, onChange }: MediaSortTabsProps) {
           },
         ]
       : []),
-    {
-      value: "upcoming",
-      icon: <RadioIcon className="text-foreground" />,
-      label: msg`Upcoming`,
-    },
+    ...(!isMobile
+      ? [
+          {
+            value: "upcoming",
+            icon: <RadioIcon className="text-foreground" />,
+            label: msg`Upcoming`,
+          },
+        ]
+      : []),
   ];
 
   return (

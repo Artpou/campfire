@@ -1,177 +1,134 @@
-import { useEffect, useState } from "react";
-
 import { Trans } from "@lingui/react/macro";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
+import { InfoIcon } from "lucide-react";
 import ms from "ms";
 
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
-import { SeedarrLoader } from "@/shared/components/seedarr-loader";
+import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
 import { getFlagUrl } from "@/shared/helpers/lang.helper";
+import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
 
 import { DownloadActionButtons } from "@/features/downloads/components/download-action-buttons";
-import { DownloadFilesList } from "@/features/downloads/components/download-files-list";
+import { DownloadFilesList, type FileItem } from "@/features/downloads/components/download-files-list";
 import { DownloadMetadata } from "@/features/downloads/components/download-metadata";
 import { DownloadNetworkCard } from "@/features/downloads/components/download-network-card";
 import { DownloadNetworkChart } from "@/features/downloads/components/download-network-chart";
 import { DownloadProgress } from "@/features/downloads/components/download-progress";
+import { getDownloadStatus } from "@/features/downloads/helpers/downloads.helper";
 import { MediaCard } from "@/features/media/components/media-card";
-import { useMedia } from "@/features/media/hooks/use-media";
+import { mediaQueries } from "@/features/media/hooks/media.queries";
 import {
-  useDeleteTorrent,
-  usePauseTorrent,
-  useResumeTorrent,
-  useTorrentDownload,
-} from "@/features/torrent/hooks/use-torrent-download";
+  downloadQueries,
+  useDownloadDelete,
+  useDownloadPause,
+  useDownloadResume,
+} from "@/features/torrent/hooks/download.queries";
 
 export const Route = createFileRoute("/_app/downloads/$id/")({
   component: DownloadDetailPage,
+  loader: async ({ context, params }) => {
+    const download = await context.queryClient.ensureQueryData(downloadQueries.details(params.id));
+    if (!download?.mediaId) throw new Error("Media ID not found");
+
+    await context.queryClient.ensureQueryData(mediaQueries.details(download.mediaId));
+  },
+  pendingComponent: () => <SeedarrLoaderContainer />,
+  errorComponent: () => <Navigate to="/404" replace />,
 });
-
-interface NetworkDataPoint {
-  time: string;
-  download: number;
-  upload: number;
-}
-
 function DownloadDetailPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
-  const { data: torrent, isLoading } = useTorrentDownload(id, { refetchInterval: ms("1s") });
-  const { data: media } = useMedia(torrent?.mediaId ?? 0);
-  const deleteTorrent = useDeleteTorrent();
-  const pauseTorrent = usePauseTorrent();
-  const resumeTorrent = useResumeTorrent();
 
-  const [networkHistory, setNetworkHistory] = useState<NetworkDataPoint[]>([]);
+  const { data: download } = useSuspenseQuery({ ...downloadQueries.details(id), refetchInterval: ms("1s") });
 
-  useEffect(() => {
-    if (torrent?.live) {
-      const now = new Date();
-      const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
+  // biome-ignore lint/style/noNonNullAssertion: mediaId is guaranteed to be not null
+  const { data: media } = useSuspenseQuery(mediaQueries.details(download.mediaId!));
+  const deleteTorrent = useDownloadDelete();
+  const pauseTorrent = useDownloadPause();
+  const resumeTorrent = useDownloadResume();
 
-      setNetworkHistory((prev) => {
-        const newData = [
-          ...prev,
-          {
-            time: timeStr,
-            download: (torrent.live?.downloadSpeed ?? 0) / 1024 / 1024, // Convert to MB/s
-            upload: (torrent.live?.uploadSpeed ?? 0) / 1024 / 1024, // Convert to MB/s
-          },
-        ];
-        // Keep only last 30 data points
-        return newData.slice(-30);
-      });
-    }
-  }, [torrent?.live]);
+  const status = getDownloadStatus(download);
+  const { downloadSpeed, uploadSpeed, numPeers } = download.torrent ?? {};
 
   const handleDelete = async () => {
     await deleteTorrent.mutateAsync(id);
     navigate({ to: "/downloads" });
   };
-
-  const handlePause = async () => {
-    await pauseTorrent.mutateAsync(id);
-  };
-
-  const handleResume = async () => {
-    await resumeTorrent.mutateAsync(id);
-  };
-
-  if (!torrent) {
-    return (
-      <Container>
-        <div className="text-center py-10">
-          <Trans>Download not found</Trans>
-        </div>
-      </Container>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <Container>
-        <AppBreadcrumb items={[{ name: "Downloads", link: "/downloads" }, { name: media?.title ?? "" }]} />
-        <SeedarrLoader className="mt-16" />
-      </Container>
-    );
-  }
-
-  const { downloadSpeed, uploadSpeed, numPeers, downloaded, timeRemaining } = torrent?.live || {};
-  const progress = torrent.live ? torrent.live.progress : torrent.status === "completed" ? 1 : 0;
-  const size = torrent.live?.length ?? torrent.size;
+  const handlePause = async () => await pauseTorrent.mutateAsync(id);
+  const handleResume = async () => await resumeTorrent.mutateAsync(id);
 
   return (
     <Container>
-      <AppBreadcrumb items={[{ name: "Downloads", link: "/downloads" }, { name: media?.title || torrent.name }]} />
+      <AppBreadcrumb items={[{ name: "Downloads", link: "/downloads" }, { name: media.title }]} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Left Column - Main Content (66%) */}
         <div className="lg:col-span-2 overflow-y-auto">
           <Card className="p-5 space-y-4">
             <div className="flex flex-col lg:flex-row gap-4 items-center lg:items-start">
-              {media && (
-                <div className="w-32 shrink-0">
-                  <MediaCard media={media} hideInfo />
-                </div>
-              )}
+              <div className="w-32 shrink-0 space-y-1">
+                <MediaCard media={media} mode="minimal" />
+                <Button variant="outline" size="sm" asChild className="w-full">
+                  <Link to={media.type === "tv" ? "/tv/$id" : "/movies/$id"} params={{ id: media.id.toString() }}>
+                    <InfoIcon className="size-4" />
+                    <Trans>details</Trans>
+                  </Link>
+                </Button>
+              </div>
 
               <div className="flex flex-col">
-                <h2>{media?.title || torrent.name}</h2>
+                <h2>{media.title}</h2>
 
                 <div className="flex items-center gap-2">
-                  {media?.original_language && (
-                    <img src={getFlagUrl(media?.original_language)} alt={media?.original_language} className="size-4" />
+                  {media.original_language && (
+                    <img src={getFlagUrl(media.original_language)} alt={media.original_language} className="size-4" />
                   )}
-                  <p className="text-sm text-muted-foreground">{media?.original_title}</p>
+                  <p className="text-sm text-muted-foreground">{media.original_title}</p>
                 </div>
 
-                <p className="my-2 text-sm text-muted-foreground">{media?.overview}</p>
+                <p className="my-2 text-sm text-popover-foreground">{media.overview}</p>
 
-                <DownloadMetadata origin={torrent.origin} quality={torrent.quality} language={torrent.language} />
+                <DownloadMetadata origin={download.origin} quality={download.quality} language={download.language} />
               </div>
             </div>
 
-            {/* Actions - Mobile Only */}
             <div className="lg:hidden">
-              <DownloadActionButtons id={id} onDelete={handleDelete} isMobile={true} />
+              <DownloadActionButtons download={download} onDelete={handleDelete} isMobile={true} />
             </div>
 
-            {torrent.status !== "completed" && (
-              <DownloadProgress
-                progress={progress}
-                downloaded={downloaded ?? 0}
-                size={size}
-                timeRemaining={timeRemaining}
-                onClick={torrent.status === "paused" ? handleResume : handlePause}
-                isPaused={torrent.status === "paused"}
-              />
+            {status !== "completed" && (
+              <DownloadProgress download={download} onClick={status === "paused" ? handleResume : handlePause} />
             )}
 
-            {torrent.error && (
+            {download.error && (
               <div className="p-4 bg-destructive/10 border border-destructive rounded-lg">
-                <p className="text-sm text-destructive">{torrent.error}</p>
+                <p className="text-sm text-destructive">{download.error}</p>
               </div>
             )}
 
-            {torrent.live?.files && <DownloadFilesList files={torrent.live.files} />}
+            {download.torrent?.files && (
+              <DownloadFilesList files={(download.torrent.files ?? []) as unknown as FileItem[]} />
+            )}
           </Card>
         </div>
 
-        {/* Right Column - Network Stats (33%) - Desktop Only */}
         <div className="block space-y-4 overflow-y-auto">
           <div className="hidden lg:block">
-            <DownloadActionButtons id={id} onDelete={handleDelete} />
+            <DownloadActionButtons download={download} onDelete={handleDelete} />
           </div>
 
-          {torrent.status !== "paused" && <DownloadNetworkChart data={networkHistory} status={torrent.status} />}
+          <DownloadNetworkChart download={download} />
 
           <div className="space-y-2">
-            {torrent.status !== "completed" && <DownloadNetworkCard type="download" value={downloadSpeed} />}
+            {status !== "completed" && <DownloadNetworkCard type="download" value={downloadSpeed} />}
             <DownloadNetworkCard type="upload" value={uploadSpeed} />
             <DownloadNetworkCard type="peers" value={numPeers} />
-            <DownloadNetworkCard type="ratio" value={(torrent.live?.uploaded ?? 0) / (torrent.live?.downloaded ?? 0)} />
+            <DownloadNetworkCard
+              type="ratio"
+              value={(download.torrent?.uploaded ?? 0) / (download.torrent?.downloaded ?? 0)}
+            />
           </div>
         </div>
       </div>

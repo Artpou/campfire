@@ -1,15 +1,13 @@
 import { serve } from "@hono/node-server";
-import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import { errorHandler, requestLogger } from "@/middlewares/logger.middleware";
 import * as fs from "node:fs/promises";
-import * as path from "node:path";
 import { logger, startupLogger } from "./helpers/logger.helper";
 import { authRoutes } from "./modules/auth/auth.route";
 import { downloadRoutes } from "./modules/download/download.route";
-import { WebTorrentClient } from "./modules/download/webtorrent.client";
+import { torrentClient } from "./modules/download/webtorrent.client";
 import { indexerManagerRoutes } from "./modules/indexer-manager/indexer-manager.route";
 import { mediaRoutes } from "./modules/media/media.route";
 import { movieRoutes } from "./modules/movie/movie.route";
@@ -20,8 +18,7 @@ import { userRoutes } from "./modules/user/user.route";
 import type { HonoVariables } from "./types/hono";
 
 const startTime = Date.now();
-
-// Store request start times
+if (!process.env.WEB_URL) throw new Error("WEB_URL is not set");
 
 export const app = new Hono<{ Variables: HonoVariables }>()
   .use("*", requestLogger)
@@ -29,7 +26,7 @@ export const app = new Hono<{ Variables: HonoVariables }>()
   .use(
     "*",
     cors({
-      origin: process.env.NODE_ENV === "production" ? "*" : "http://localhost:3000",
+      origin: process.env.WEB_URL,
       credentials: true,
       allowHeaders: ["Content-Type", "Authorization", "Cookie"],
       allowMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -46,24 +43,7 @@ export const app = new Hono<{ Variables: HonoVariables }>()
   .route("/torrents", torrentRoutes)
   .route("/downloads", downloadRoutes)
   .route("/subtitles", subtitleRoutes)
-  .get("/health", (c) => c.json({ status: "healthy", timestamp: new Date().toISOString() }))
-  .use(
-    "/*",
-    serveStatic({
-      root: path.join(process.cwd(), "../web/dist"),
-      rewriteRequestPath: (reqPath) => reqPath.replace(/^\//, ""),
-    }),
-  )
-  .get("/*", async (c) => {
-    // Catch-all for SPA routing - serve index.html for non-API routes
-    const indexPath = path.join(process.cwd(), "../web/dist/index.html");
-    try {
-      const indexContent = await fs.readFile(indexPath, "utf-8");
-      return c.html(indexContent);
-    } catch {
-      return c.notFound();
-    }
-  });
+  .get("/health", (c) => c.json({ status: "healthy", timestamp: new Date().toISOString() }));
 
 export type AppType = typeof app;
 
@@ -73,7 +53,7 @@ const start = async () => {
   await fs.mkdir(downloadsPath, { recursive: true });
   logger.info("STARTUP", `Downloads directory: ${downloadsPath}`);
 
-  WebTorrentClient.initialize(downloadsPath).catch((error) => {
+  torrentClient.initialize(downloadsPath).catch((error) => {
     logger.error("STARTUP", "WebTorrent initialization failed:", error);
   });
 

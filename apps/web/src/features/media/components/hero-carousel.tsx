@@ -2,12 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { MagnetIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { CircularProgress } from "@/shared/components/circular-progress";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
+import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Button } from "@/shared/ui/button";
 import {
   Carousel,
@@ -19,8 +20,9 @@ import {
 } from "@/shared/ui/carousel";
 
 import { useRole } from "@/features/auth/hooks/use-role";
+import { MediaRating } from "@/features/media/components/media-rating";
 import { getBackdropUrl, getPosterUrl } from "@/features/media/helpers/media.helper";
-import { useTrending } from "@/features/media/hooks/use-media";
+import { mediaQueries } from "@/features/media/hooks/media.queries";
 
 const AUTO_ROTATE_MS = 5000;
 const MAX_OVERVIEW_LENGTH = 200;
@@ -75,7 +77,7 @@ function HeroSlide({ media }: { media: Media }) {
 
           <div className="flex items-center gap-3 pt-1">
             {media.vote_average != null && media.vote_average > 0 && (
-              <CircularProgress value={media.vote_average * 10} size={44} strokeWidth={4} />
+              <MediaRating media={media} size={44} strokeWidth={4} />
             )}
 
             {role !== "viewer" && (
@@ -94,7 +96,8 @@ function HeroSlide({ media }: { media: Media }) {
 }
 
 export function HeroCarousel({ type }: HeroCarouselProps) {
-  const { data, isLoading } = useTrending(type);
+  const locale = useTmdbLocale();
+  const { data, isLoading } = useQuery(mediaQueries.trending(type, locale));
 
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const [selectedIndex, setSelectedIndex] = useState(0);

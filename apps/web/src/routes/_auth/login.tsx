@@ -10,9 +10,14 @@ import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
 
+import { useAuth } from "@/features/auth/auth-store";
+
 export const Route = createFileRoute("/_auth/login")({
   component: Login,
   beforeLoad: async () => {
+    const isAuthenticated = useAuth.getState().user;
+    if (isAuthenticated) throw redirect({ to: "/" });
+
     const data = await unwrap(api.auth["has-owner"].$get());
     if (!data.hasOwner) {
       throw redirect({ to: "/signup" });
@@ -36,10 +41,8 @@ function Login() {
   } = useForm<LoginForm>();
 
   const { mutate: login, isPending } = useMutation({
-    mutationFn: (data: LoginForm) => unwrap(api.auth.login.$post({ json: data })),
-    onSuccess: () => {
-      navigate({ to: "/", search: { tab: "movie" } });
-    },
+    mutationFn: (data: LoginForm) => api.auth.login.$post({ json: data }),
+    onSuccess: () => navigate({ to: "/" }),
     onError: (err: unknown) => {
       setError(err instanceof Error ? err.message : "An error occurred");
     },

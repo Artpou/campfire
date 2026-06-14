@@ -24,8 +24,6 @@ import type {
 } from "./tmdb.dto";
 
 const TMDB_API_URL = "https://api.themoviedb.org/3";
-// this is intentionally not a secret, it's a public API key
-const TMDB_API_KEY = "29f788393063cd24bfb885d7d6ee9ae4";
 
 const FMDB_URL = "https://imdb.iamidiotareyoutoo.com/";
 const NUMBER_OF_PROVIDERS = 5;
@@ -33,7 +31,9 @@ const TRENDING_LIMIT = 10;
 
 function buildUrl(url: string, language: string | undefined, options?: FetchOptions): string {
   const fullUrl = new URL(`${TMDB_API_URL}${url}`);
-  fullUrl.searchParams.set("api_key", TMDB_API_KEY);
+  if (!process.env.TMDB_API_KEY) throw new ServiceUnavailableError("TMDB (missing API key)");
+
+  fullUrl.searchParams.set("api_key", process.env.TMDB_API_KEY);
   if (language) fullUrl.searchParams.set("language", language);
 
   if (options) {
@@ -132,7 +132,7 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
 
     return items.map((item) => {
       const base = this.toMedia(item, genreMap);
-      return { ...(mediaMap.find((m) => m.id === base.id) ?? base), backdrop_path: item.backdrop_path ?? null };
+      return { ...mediaMap.find((m) => m.id === base.id), ...base, backdrop_path: item.backdrop_path ?? null };
     });
   }
 

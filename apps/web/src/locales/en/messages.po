@@ -13,19 +13,20 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#. placeholder {0}: collection?.name
-#. placeholder {0}: config.description
-#. placeholder {0}: config.label
-#: src/features/movies/components/movie-related.tsx:48
-#: src/routes/_app.settings.tsx:110
-#: src/routes/_app.settings.tsx:134
+#. placeholder {0}: typeof collection?.name === "string" ? collection.name : ""
+#: src/features/movies/components/movie-related.tsx:31
 msgid "{0}"
 msgstr "{0}"
 
-#. placeholder {0}: config.label
 #: src/routes/_app.settings.tsx:124
-msgid "{0} API Key"
-msgstr "{0} API Key"
+#~ msgid "{0} API Key"
+#~ msgstr "{0} API Key"
+
+#. placeholder {0}: tv.number_of_seasons
+#. placeholder {1}: tv.number_of_episodes
+#: src/features/tv/components/tv-info.tsx:155
+msgid "{0} seasons · {1} episodes"
+msgstr "{0} seasons · {1} episodes"
 
 #: src/features/media/components/media-list-dropdown.tsx:47
 #~ msgid "{label}"
@@ -35,105 +36,197 @@ msgstr "{0} API Key"
 #~ msgid "{title}"
 #~ msgstr "{title}"
 
-#: src/features/person/components/person-card.tsx:34
+#: src/features/person/components/person-card.tsx:44
 msgid "{type}"
 msgstr "{type}"
 
-#: src/routes/_app.settings.tsx:150
+#: src/routes/_app/settings/index.tsx:184
 msgid "Account"
 msgstr "Account"
 
-#: src/features/user/components/users-table.tsx:123
+#: src/features/user/components/users-table.tsx:128
 msgid "Actions"
 msgstr "Actions"
 
-#: src/features/torrent/components/torrent-table.tsx:75
+#: src/features/subtitles/components/subtitle-search-dialog.tsx:172
 msgid "Add"
 msgstr "Add"
 
+#: src/routes/_app/downloads/$id.play.tsx:191
+msgid "Add subtitles"
+msgstr "Add subtitles"
+
 #: src/features/media/components/media-card.tsx:85
-msgid "Add to watch list"
-msgstr "Add to watch list"
+#~ msgid "Add to watch list"
+#~ msgstr "Add to watch list"
+
+#: src/features/subtitles/components/subtitle-search-dialog.tsx:172
+msgid "Adding…"
+msgstr "Adding…"
+
+#: src/shared/app-topbar.tsx:165
+msgid "Advanced options"
+msgstr "Advanced options"
 
 #: src/features/media/components/media-list-dropdown.tsx:45
 #~ msgid "Airing Today"
 #~ msgstr "Airing Today"
 
+#: src/features/media/media-type-tabs.tsx:16
+#: src/features/torrent/components/torrent-table.tsx:127
+msgid "All"
+msgstr "All"
+
+#: src/routes/_app/tv/$id.torrents.tsx:154
+msgid "All episodes (full season)"
+msgstr "All episodes (full season)"
+
+#: src/features/torrent/components/torrent-table.tsx:138
+msgid "All qualities"
+msgstr "All qualities"
+
 #: src/routes/_auth.signup.tsx:136
 #~ msgid "Already have an account?"
 #~ msgstr "Already have an account?"
 
-#: src/routes/settings.tsx:112
-#~ msgid "API Key"
-#~ msgstr "API Key"
+#: src/features/movies/components/movie-filters-sheet.tsx:48
+#: src/features/tv/components/tv-filters-sheet.tsx:48
+msgid "Any language"
+msgstr "Any language"
+
+#: src/routes/_app/settings/index.tsx:143
+msgid "API Key"
+msgstr "API Key"
+
+#: src/features/movies/components/movie-filters-sheet.tsx:308
+#: src/features/tv/components/tv-filters-sheet.tsx:308
+msgid "Apply"
+msgstr "Apply"
+
+#: src/features/movies/components/movie-filters-sheet.tsx:60
+#: src/features/tv/components/tv-filters-sheet.tsx:60
+msgid "Arabic"
+msgstr "Arabic"
 
 #. placeholder {0}: userToDelete?.username
 #: src/features/user/components/users-table.tsx:195
 msgid "Are you sure you want to delete user \"{0}\"? This action cannot be undone."
 msgstr "Are you sure you want to delete user \"{0}\"? This action cannot be undone."
 
-#: src/features/media/components/media-sort-tabs.tsx:19
+#: src/features/media/components/media-sort-tabs.tsx:31
 msgid "At Home"
 msgstr "At Home"
 
-#: src/features/movies/components/movie-details.tsx:73
+#: src/routes/_app/settings/index.tsx:168
+msgid "Available Indexers"
+msgstr "Available Indexers"
+
+#: src/features/subtitles/components/subtitle-search-dialog.tsx:97
+msgid "Available subtitles"
+msgstr "Available subtitles"
+
+#: src/routes/_app/settings/indexer.tsx:60
+msgid "Back"
+msgstr "Back"
+
+#: src/routes/_app/settings/indexer.tsx:47
+msgid "Back to settings"
+msgstr "Back to settings"
+
+#: src/features/movies/components/movie-details.tsx:57
 msgid "Budget"
 msgstr "Budget"
 
-#: src/features/movies/components/movie-info.tsx:177
+#: src/features/movies/components/movie-info.tsx:203
+#: src/features/tv/components/tv-info.tsx:248
 msgid "Buy / Rent"
 msgstr "Buy / Rent"
 
-#: src/features/user/components/user-form-modal.tsx:293
-#: src/features/user/components/users-table.tsx:203
+#: src/features/user/components/user-form-modal.tsx:256
+#: src/features/user/components/users-table.tsx:202
 msgid "Cancel"
 msgstr "Cancel"
 
-#: src/features/movies/components/movie-cast.tsx:36
+#: src/features/movies/components/movie-cast.tsx:29
+#: src/features/tv/components/tv-cast.tsx:33
 msgid "Cast & Crew"
 msgstr "Cast & Crew"
+
+#: src/features/movies/components/movie-filters-sheet.tsx:56
+#: src/features/tv/components/tv-filters-sheet.tsx:56
+msgid "Chinese"
+msgstr "Chinese"
+
+#: src/features/downloads/components/downloads-stats-panel.tsx:49
+msgid "Collecting data..."
+msgstr "Collecting data..."
+
+#: src/routes/_app/settings/index.tsx:160
+msgid "Configure"
+msgstr "Configure"
+
+#: src/features/torrent/components/torrent-indexers-table.tsx:155
+msgid "Configure indexers"
+msgstr "Configure indexers"
+
+#: src/routes/_app/settings/index.tsx:107
+msgid "Configure your Jackett or Prowlarr instance to search and download torrents."
+msgstr "Configure your Jackett or Prowlarr instance to search and download torrents."
 
 #: src/routes/index.tsx:79
 #~ msgid "Configure your TMDB API Key in settings to get started."
 #~ msgstr "Configure your TMDB API Key in settings to get started."
 
 #: src/routes/_app.settings.tsx:97
-msgid "Configure your torrent indexer to search and download torrents."
-msgstr "Configure your torrent indexer to search and download torrents."
+#~ msgid "Configure your torrent indexer to search and download torrents."
+#~ msgstr "Configure your torrent indexer to search and download torrents."
 
-#: src/features/user/components/user-form-modal.tsx:215
-#: src/features/user/components/user-form-modal.tsx:234
-#: src/routes/_auth.signup.tsx:120
+#: src/features/user/components/user-form-modal.tsx:191
+#: src/features/user/components/user-form-modal.tsx:208
+#: src/routes/_auth/signup.tsx:100
 msgid "Confirm Password"
 msgstr "Confirm Password"
 
-#: src/features/user/components/user-form-modal.tsx:296
+#: src/features/downloads/components/download-network-card.tsx:76
+msgid "Connected Peers"
+msgstr "Connected Peers"
+
+#: src/features/user/components/user-form-modal.tsx:259
 msgid "Create"
 msgstr "Create"
 
-#: src/features/user/components/user-form-modal.tsx:170
+#: src/features/user/components/user-form-modal.tsx:152
 msgid "Create a new user account with specified role"
 msgstr "Create a new user account with specified role"
 
-#: src/routes/_auth.signup.tsx:80
+#: src/routes/_auth/signup.tsx:64
 msgid "Create Owner Account"
 msgstr "Create Owner Account"
 
-#: src/features/user/components/user-form-modal.tsx:164
-#: src/routes/_app.users.tsx:76
+#: src/features/user/components/user-form-modal.tsx:147
+#: src/routes/_app/users.tsx:73
 msgid "Create User"
 msgstr "Create User"
 
-#: src/features/user/components/users-table.tsx:120
+#: src/features/user/components/users-table.tsx:125
 msgid "Created At"
 msgstr "Created At"
 
-#: src/routes/_auth.signup.tsx:138
+#: src/features/tv/components/tv-details.tsx:57
+msgid "Created by"
+msgstr "Created by"
+
+#: src/routes/_auth/signup.tsx:116
 msgid "Creating account..."
 msgstr "Creating account..."
 
+#: src/shared/app-topbar.tsx:151
+msgid "Dark mode"
+msgstr "Dark mode"
+
+#: src/features/downloads/components/download-action-buttons.tsx:21
 #: src/features/user/components/users-table.tsx:175
-#: src/features/user/components/users-table.tsx:209
+#: src/features/user/components/users-table.tsx:208
 msgid "Delete"
 msgstr "Delete"
 
@@ -141,70 +234,177 @@ msgstr "Delete"
 msgid "Delete User"
 msgstr "Delete User"
 
+#: src/routes/_app/downloads/$id.index.tsx:75
+msgid "details"
+msgstr "details"
+
+#: src/features/torrent/components/torrent-table.tsx:234
+msgid "Details"
+msgstr "Details"
+
 #: src/routes/_auth.login.tsx:105
 #~ msgid "Don't have an account?"
 #~ msgstr "Don't have an account?"
 
-#: src/features/torrent/components/torrent-table.tsx:71
+#: src/features/torrent/components/torrent-table.tsx:244
 msgid "Download"
 msgstr "Download"
+
+#: src/features/torrent/components/torrent-table.tsx:100
+msgid "Download failed"
+msgstr "Download failed"
+
+#: src/features/downloads/components/download-network-card.tsx:22
+msgid "Download Speed"
+msgstr "Download Speed"
+
+#: src/features/downloads/components/downloads-stats-panel.tsx:118
+msgid "Download Statistics"
+msgstr "Download Statistics"
+
+#: src/features/subtitles/components/subtitle-search-dialog.tsx:58
+msgid "Download subtitles"
+msgstr "Download subtitles"
+
+#: src/features/media/components/media-card.tsx:92
+msgid "Downloaded"
+msgstr "Downloaded"
 
 #: src/features/user/components/users-table.tsx:164
 msgid "Edit"
 msgstr "Edit"
 
-#: src/features/user/components/user-form-modal.tsx:164
+#: src/features/user/components/user-form-modal.tsx:147
 msgid "Edit User"
 msgstr "Edit User"
+
+#: src/features/media/components/media-card-preview.tsx:93
+#: src/features/movies/components/movie-info.tsx:150
+#: src/features/tv/components/tv-episodes-section.tsx:194
+#: src/features/tv/components/tv-info.tsx:176
+msgid "Ends at"
+msgstr "Ends at"
+
+#: src/features/movies/components/movie-filters-sheet.tsx:49
+#: src/features/tv/components/tv-filters-sheet.tsx:49
+msgid "English"
+msgstr "English"
+
+#: src/routes/_app/settings/index.tsx:144
+msgid "Enter your API key..."
+msgstr "Enter your API key..."
 
 #: src/routes/settings.tsx:104
 #~ msgid "Enter your TMDB API key to enable personalized search and detailed movie information."
 #~ msgstr "Enter your TMDB API key to enable personalized search and detailed movie information."
 
-#: src/features/torrent/components/torrent-indexers-table.tsx:82
+#: src/routes/_app/tv/$id.torrents.tsx:146
+msgid "Episode"
+msgstr "Episode"
+
+#: src/features/tv/components/tv-filters-sheet.tsx:257
+msgid "Episode runtime (minutes)"
+msgstr "Episode runtime (minutes)"
+
+#: src/features/torrent/components/torrent-indexers-table.tsx:72
 msgid "Error"
 msgstr "Error"
+
+#: src/features/torrent/components/torrent-inspect-modal.tsx:60
+msgid "Failed to fetch torrent metadata"
+msgstr "Failed to fetch torrent metadata"
 
 #: src/components/torrent/torrent-table.tsx:209
 #~ msgid "Failed to load indexers"
 #~ msgstr "Failed to load indexers"
 
-#: src/features/torrent/components/torrent-indexers-table.tsx:120
+#: src/features/torrent/components/indexer-list.tsx:27
+msgid "Failed to load indexers. Check the indexer configuration."
+msgstr "Failed to load indexers. Check the indexer configuration."
+
+#: src/features/subtitles/components/subtitle-search-dialog.tsx:90
+msgid "Failed to load subtitles"
+msgstr "Failed to load subtitles"
+
+#: src/features/downloads/components/download-files-list.tsx:85
+msgid "Files"
+msgstr "Files"
+
+#: src/features/movies/components/movie-filters-sheet.tsx:137
+#: src/features/tv/components/tv-filters-sheet.tsx:137
+msgid "Filters"
+msgstr "Filters"
+
+#: src/features/tv/components/tv-filters-sheet.tsx:147
+msgid "First air date"
+msgstr "First air date"
+
+#: src/features/torrent/components/torrent-indexers-table.tsx:107
 msgid "Found"
 msgstr "Found"
+
+#: src/features/movies/components/movie-filters-sheet.tsx:50
+#: src/features/tv/components/tv-filters-sheet.tsx:50
+msgid "French"
+msgstr "French"
+
+#: src/features/movies/components/movie-filters-sheet.tsx:152
+#: src/features/tv/components/tv-filters-sheet.tsx:152
+msgid "From"
+msgstr "From"
+
+#: src/features/movies/components/movie-filters-sheet.tsx:52
+#: src/features/tv/components/tv-filters-sheet.tsx:52
+msgid "German"
+msgstr "German"
 
 #: src/routes/404.tsx:33
 msgid "Go Back"
 msgstr "Go Back"
 
-#: src/features/torrent/components/torrent-table.tsx:27
+#: src/features/torrent/components/torrent-table.tsx:156
 msgid "Health"
 msgstr "Health"
 
+#: src/features/movies/components/movie-filters-sheet.tsx:59
+#: src/features/tv/components/tv-filters-sheet.tsx:59
+msgid "Hindi"
+msgstr "Hindi"
+
 #: src/routes/_app.lists.history.tsx:43
 #: src/shared/app-sidebar.tsx:64
-msgid "History"
-msgstr "History"
+#~ msgid "History"
+#~ msgstr "History"
 
 #: src/components/app-topbar.tsx:37
 #~ msgid "Home"
 #~ msgstr "Home"
 
-#: src/features/torrent/components/torrent-indexers-table.tsx:97
+#: src/features/torrent/components/torrent-indexers-table.tsx:84
 msgid "Idle"
 msgstr "Idle"
 
-#: src/features/movies/components/movie-details.tsx:107
+#: src/features/movies/components/movie-details.tsx:89
+#: src/features/tv/components/tv-details.tsx:76
 msgid "IMDb"
 msgstr "IMDb"
 
-#: src/features/media/components/media-sort-tabs.tsx:13
+#: src/features/media/components/media-sort-tabs.tsx:43
 msgid "In Cinema"
 msgstr "In Cinema"
 
-#: src/features/torrent/components/torrent-indexers-table.tsx:106
+#: src/routes/_app/settings/indexer.tsx:90
+msgid "Indexer dashboard"
+msgstr "Indexer dashboard"
+
+#: src/features/torrent/components/torrent-indexers-table.tsx:93
 msgid "Indexers"
 msgstr "Indexers"
+
+#: src/features/movies/components/movie-filters-sheet.tsx:53
+#: src/features/tv/components/tv-filters-sheet.tsx:53
+msgid "Italian"
+msgstr "Italian"
 
 #: src/routes/settings.tsx:57
 #~ msgid "Jackett"
@@ -214,88 +414,204 @@ msgstr "Indexers"
 #~ msgid "Jackett API Key"
 #~ msgstr "Jackett API Key"
 
-#: src/features/media/components/media-card.tsx:70
-msgid "Like"
-msgstr "Like"
+#: src/features/movies/components/movie-filters-sheet.tsx:54
+#: src/features/tv/components/tv-filters-sheet.tsx:54
+msgid "Japanese"
+msgstr "Japanese"
 
-#: src/routes/_app.lists.like.tsx:43
-#: src/shared/app-sidebar.tsx:59
+#: src/features/movies/components/movie-filters-sheet.tsx:205
+#: src/features/tv/components/tv-filters-sheet.tsx:205
+msgid "Keyword"
+msgstr "Keyword"
+
+#: src/features/movies/components/movie-filters-sheet.tsx:55
+#: src/features/tv/components/tv-filters-sheet.tsx:55
+msgid "Korean"
+msgstr "Korean"
+
+#: src/features/subtitles/components/subtitle-search-dialog.tsx:65
+msgid "Language"
+msgstr "Language"
+
+#. placeholder {0}: lastEpisode.season_number
+#. placeholder {1}: lastEpisode.episode_number
+#. placeholder {2}: new Date(lastEpisode.air_date).toLocaleDateString(undefined, { day: "2-digit", month: "long", year: "numeric", })
+#: src/features/tv/components/tv-info.tsx:193
+msgid "Last episode: S{0}E{1} - {2}"
+msgstr "Last episode: S{0}E{1} - {2}"
+
+#: src/routes/_app.tsx:25
+#: src/shared/app-topbar.tsx:44
+msgid "Library"
+msgstr "Library"
+
+#: src/shared/app-topbar.tsx:151
+msgid "Light mode"
+msgstr "Light mode"
+
+#: src/features/media/components/media-card.tsx:70
+#~ msgid "Like"
+#~ msgstr "Like"
+
+#: src/routes/_app/lists/index.tsx:35
 msgid "Liked"
 msgstr "Liked"
 
-#: src/shared/app-sidebar.tsx:125
+#: src/routes/_app.tsx:31
+#: src/shared/app-topbar.tsx:122
 msgid "Lists"
 msgstr "Lists"
 
-#: src/features/torrent/components/torrent-indexers-table.tsx:76
+#: src/features/torrent/components/torrent-indexers-table.tsx:66
 msgid "Loading"
 msgstr "Loading"
 
-#: src/routes/_auth.login.tsx:107
+#: src/features/torrent/components/indexer-list.tsx:19
+msgid "Loading indexers..."
+msgstr "Loading indexers..."
+
+#: src/features/torrent/components/torrent-inspect-modal.tsx:47
+#: src/routes/_auth/login.tsx:90
 msgid "Loading..."
 msgstr "Loading..."
 
-#: src/routes/_auth.login.tsx:69
-#: src/routes/_auth.login.tsx:107
+#: src/routes/_auth/login.tsx:60
+#: src/routes/_auth/login.tsx:90
 msgid "Login"
 msgstr "Login"
 
-#: src/routes/_app.users.tsx:70
+#: src/routes/_app/users.tsx:67
 msgid "Manage user accounts and permissions"
 msgstr "Manage user accounts and permissions"
 
-#: src/routes/_app.settings.tsx:154
+#: src/shared/app-topbar.tsx:159
+msgid "Manage users"
+msgstr "Manage users"
+
+#: src/routes/_app/settings/index.tsx:188
 msgid "Manage your account settings and sign out."
 msgstr "Manage your account settings and sign out."
 
 #: src/routes/_app.settings.tsx:83
-msgid "Manage your application preferences and API integrations."
-msgstr "Manage your application preferences and API integrations."
+#~ msgid "Manage your application preferences and API integrations."
+#~ msgstr "Manage your application preferences and API integrations."
+
+#: src/features/downloads/components/downloads-stats-panel.tsx:129
+#: src/routes/_app/downloads/index.tsx:83
+msgid "Medias"
+msgstr "Medias"
+
+#: src/features/torrent/components/torrent-table.tsx:113
+msgid "Minimum Quality"
+msgstr "Minimum Quality"
+
+#: src/features/movies/components/movie-filters-sheet.tsx:282
+#: src/features/tv/components/tv-filters-sheet.tsx:282
+msgid "Minimum rating"
+msgstr "Minimum rating"
+
+#: src/routes/_app/downloads/index.tsx:108
+msgid "More infos"
+msgstr "More infos"
 
 #: src/routes/movies.$movieId.tsx:90
 #~ msgid "Movie not found"
 #~ msgstr "Movie not found"
 
-#: src/routes/_app.tsx:16
-#: src/shared/app-sidebar.tsx:41
+#: src/features/media/media-type-tabs.tsx:17
+#: src/routes/_app.tsx:15
+#: src/shared/app-topbar.tsx:42
 msgid "Movies"
 msgstr "Movies"
 
-#: src/features/torrent/components/torrent-indexers-table.tsx:114
+#: src/features/media/components/media-carousel-library.tsx:43
+msgid "My Library"
+msgstr "My Library"
+
+#: src/features/torrent/components/indexer-list.tsx:46
+#: src/features/torrent/components/torrent-indexers-table.tsx:101
 msgid "Name"
 msgstr "Name"
 
-#: src/features/torrent/components/torrent-indexers-table.tsx:157
+#: src/features/tv/components/tv-details.tsx:48
+msgid "Networks"
+msgstr "Networks"
+
+#. placeholder {0}: nextEpisode.season_number
+#. placeholder {1}: nextEpisode.episode_number
+#. placeholder {2}: new Date(nextEpisode.air_date).toLocaleDateString()
+#: src/features/tv/components/tv-info.tsx:185
+msgid "Next episode: S{0}E{1} - {2}"
+msgstr "Next episode: S{0}E{1} - {2}"
+
+#: src/routes/_app/downloads/index.tsx:124
+msgid "No downloads yet"
+msgstr "No downloads yet"
+
+#: src/features/tv/components/tv-episodes-section.tsx:66
+msgid "No episodes available"
+msgstr "No episodes available"
+
+#: src/routes/_app/settings/indexer.tsx:43
+msgid "No indexer configured."
+msgstr "No indexer configured."
+
+#: src/features/torrent/components/indexer-list.tsx:35
+msgid "No indexers available."
+msgstr "No indexers available."
+
+#: src/features/torrent/components/torrent-indexers-table.tsx:144
 msgid "No indexers configured"
 msgstr "No indexers configured"
 
 #: src/routes/_app.lists.watch-list.tsx:48
-msgid "No items in your watch list yet."
-msgstr "No items in your watch list yet."
+#~ msgid "No items in your watch list yet."
+#~ msgstr "No items in your watch list yet."
+
+#: src/routes/_app/lists/index.tsx:77
+msgid "No items yet."
+msgstr "No items yet."
+
+#: src/features/movies/components/movie-filters-sheet.tsx:233
+#: src/features/tv/components/tv-filters-sheet.tsx:233
+msgid "No keyword found."
+msgstr "No keyword found."
 
 #: src/routes/_app.lists.like.tsx:48
-msgid "No liked items yet."
-msgstr "No liked items yet."
+#~ msgid "No liked items yet."
+#~ msgstr "No liked items yet."
 
-#: src/routes/_app.movies.index.tsx:117
+#: src/routes/_app/movies/index.tsx:173
 msgid "No movies found"
 msgstr "No movies found"
 
-#: src/routes/_app.search.tsx:66
+#: src/routes/_app/search.tsx:98
 msgid "No results found for \"{q}\""
 msgstr "No results found for \"{q}\""
 
-#: src/features/torrent/components/torrent-table.tsx:86
+#: src/routes/_app/downloads/index.tsx:124
+msgid "No results found for \"{search}\""
+msgstr "No results found for \"{search}\""
+
+#: src/features/subtitles/components/subtitle-search-dialog.tsx:103
+msgid "No subtitles found for this language."
+msgstr "No subtitles found for this language."
+
+#: src/features/torrent/components/torrent-table.tsx:173
 msgid "No torrents found"
 msgstr "No torrents found"
 
-#: src/features/user/components/users-table.tsx:131
+#: src/routes/_app/tv/index.tsx:168
+msgid "No TV shows found"
+msgstr "No TV shows found"
+
+#: src/features/user/components/users-table.tsx:136
 msgid "No users found"
 msgstr "No users found"
 
 #: src/routes/_app.lists.history.tsx:48
-msgid "No viewing history yet."
-msgstr "No viewing history yet."
+#~ msgid "No viewing history yet."
+#~ msgstr "No viewing history yet."
 
 #: src/routes/index.tsx:110
 #~ msgid "Now Playing"
@@ -305,15 +621,42 @@ msgstr "No viewing history yet."
 #~ msgid "On The Air"
 #~ msgstr "On The Air"
 
+#: src/routes/_app/settings/indexer.tsx:67
+msgid "Open in new tab"
+msgstr "Open in new tab"
+
+#: src/routes/_app/settings/indexer.tsx:82
+msgid "Open indexer dashboard"
+msgstr "Open indexer dashboard"
+
+#: src/features/movies/components/movie-filters-sheet.tsx:179
+#: src/features/tv/components/tv-filters-sheet.tsx:179
+msgid "Original language"
+msgstr "Original language"
+
 #: src/features/torrent/components/torrent-table.tsx:185
 #~ msgid "Others"
 #~ msgstr "Others"
 
-#: src/features/user/components/user-form-modal.tsx:194
-#: src/routes/_auth.login.tsx:92
-#: src/routes/_auth.signup.tsx:103
+#: src/features/user/components/user-form-modal.tsx:174
+#: src/routes/_auth/login.tsx:81
+#: src/routes/_auth/signup.tsx:85
 msgid "Password"
 msgstr "Password"
+
+#: src/features/downloads/components/download-progress.tsx:45
+msgid "Pause"
+msgstr "Pause"
+
+#: src/features/downloads/components/download-progress.tsx:33
+msgid "Paused"
+msgstr "Paused"
+
+#: src/features/downloads/components/download-action-buttons.tsx:28
+#: src/features/media/components/media-card.tsx:118
+#: src/features/tv/components/tv-episodes-section.tsx:146
+msgid "Play"
+msgstr "Play"
 
 #: src/components/torrent/torrent-table.tsx:219
 #~ msgid "Please check your API key and make sure {indexerType} is running."
@@ -323,15 +666,25 @@ msgstr "Password"
 #~ msgid "Popular"
 #~ msgstr "Popular"
 
-#: src/routes/index.tsx:106
-#~ msgid "Popular Movies"
-#~ msgstr "Popular Movies"
+#: src/routes/_app/search.tsx:85
+msgid "Popular Movies"
+msgstr "Popular Movies"
 
-#: src/routes/index.tsx:121
-#~ msgid "Popular TV Shows"
-#~ msgstr "Popular TV Shows"
+#: src/routes/_app/search.tsx:86
+msgid "Popular TV Shows"
+msgstr "Popular TV Shows"
 
-#: src/features/movies/components/movie-details.tsx:91
+#: src/features/movies/components/movie-filters-sheet.tsx:57
+#: src/features/tv/components/tv-filters-sheet.tsx:57
+msgid "Portuguese"
+msgstr "Portuguese"
+
+#: src/features/torrent/components/indexer-list.tsx:49
+msgid "Privacy"
+msgstr "Privacy"
+
+#: src/features/movies/components/movie-details.tsx:75
+#: src/features/tv/components/tv-details.tsx:66
 msgid "Production"
 msgstr "Production"
 
@@ -343,11 +696,20 @@ msgstr "Production"
 #~ msgid "Prowlarr API Key"
 #~ msgstr "Prowlarr API Key"
 
-#: src/routes/_app.tv.tsx:102
-msgid "Recently Viewed"
-msgstr "Recently Viewed"
+#: src/features/downloads/components/download-network-card.tsx:58
+msgid "Ratio"
+msgstr "Ratio"
 
-#: src/features/movies/components/movie-related.tsx:51
+#: src/features/downloads/components/downloads-stats-panel.tsx:121
+msgid "Real-time network activity and library overview"
+msgstr "Real-time network activity and library overview"
+
+#: src/routes/_app.tv.tsx:102
+#~ msgid "Recently Viewed"
+#~ msgstr "Recently Viewed"
+
+#: src/features/movies/components/movie-related.tsx:34
+#: src/features/tv/components/tv-related.tsx:13
 msgid "Recommended"
 msgstr "Recommended"
 
@@ -355,22 +717,71 @@ msgstr "Recommended"
 #~ msgid "Recommended Torrents"
 #~ msgstr "Recommended Torrents"
 
-#: src/features/movies/components/movie-related.tsx:56
+#: src/features/movies/components/movie-filters-sheet.tsx:140
+msgid "Refine the list of movies by combining several criteria."
+msgstr "Refine the list of movies by combining several criteria."
+
+#: src/features/tv/components/tv-filters-sheet.tsx:140
+msgid "Refine the list of TV shows by combining several criteria."
+msgstr "Refine the list of TV shows by combining several criteria."
+
+#: src/features/movies/components/movie-related.tsx:39
 msgid "Related"
 msgstr "Related"
 
-#: src/features/media/components/media-card.tsx:83
-msgid "Remove from watch list"
-msgstr "Remove from watch list"
+#: src/features/movies/components/movie-filters-sheet.tsx:147
+msgid "Release date"
+msgstr "Release date"
 
-#: src/features/movies/components/movie-details.tsx:82
+#: src/features/movies/components/movie-filters-sheet.tsx:214
+#: src/features/tv/components/tv-filters-sheet.tsx:214
+msgid "Remove"
+msgstr "Remove"
+
+#: src/features/media/components/media-card.tsx:83
+#~ msgid "Remove from watch list"
+#~ msgstr "Remove from watch list"
+
+#: src/features/movies/components/movie-filters-sheet.tsx:305
+#: src/features/tv/components/tv-filters-sheet.tsx:305
+msgid "Reset"
+msgstr "Reset"
+
+#: src/features/downloads/components/download-progress.tsx:45
+#: src/features/tv/components/tv-episodes-section.tsx:146
+msgid "Resume"
+msgstr "Resume"
+
+#: src/features/movies/components/movie-details.tsx:66
 msgid "Revenue"
 msgstr "Revenue"
 
-#: src/features/user/components/user-form-modal.tsx:253
-#: src/features/user/components/users-table.tsx:117
+#: src/features/user/components/user-form-modal.tsx:224
+#: src/features/user/components/users-table.tsx:122
 msgid "Role"
 msgstr "Role"
+
+#: src/features/movies/components/movie-filters-sheet.tsx:257
+msgid "Runtime (minutes)"
+msgstr "Runtime (minutes)"
+
+#: src/features/movies/components/movie-filters-sheet.tsx:58
+#: src/features/tv/components/tv-filters-sheet.tsx:58
+msgid "Russian"
+msgstr "Russian"
+
+#: src/routes/_app/settings/index.tsx:155
+msgid "Save"
+msgstr "Save"
+
+#: src/features/media/components/media-search.tsx:20
+msgid "Search"
+msgstr "Search"
+
+#: src/features/movies/components/movie-filters-sheet.tsx:221
+#: src/features/tv/components/tv-filters-sheet.tsx:221
+msgid "Search a keyword..."
+msgstr "Search a keyword..."
 
 #: src/routes/index.tsx:81
 #: src/routes/index.tsx:103
@@ -378,41 +789,66 @@ msgstr "Role"
 #~ msgstr "Search a movie or a TV show"
 
 #: src/routes/_app.search.tsx:44
-msgid "Search for Movies and TV Shows"
-msgstr "Search for Movies and TV Shows"
+#~ msgid "Search for Movies and TV Shows"
+#~ msgstr "Search for Movies and TV Shows"
+
+#: src/routes/_app/downloads/index.tsx:71
+msgid "Search in your library..."
+msgstr "Search in your library..."
 
 #: src/components/movies/search-movie.tsx:76
 #~ msgid "Search movies"
 #~ msgstr "Search movies"
 
-#: src/features/media/components/media-search.tsx:46
+#: src/routes/_app/search.tsx:75
 msgid "Search movies and TV shows..."
 msgstr "Search movies and TV shows..."
 
 #: src/routes/_app.search.tsx:57
-msgid "Search Results for \"{q}\""
-msgstr "Search Results for \"{q}\""
+#~ msgid "Search Results for \"{q}\""
+#~ msgstr "Search Results for \"{q}\""
 
 #: src/features/media/components/media-poster.tsx:64
-msgid "Search Torrent"
-msgstr "Search Torrent"
+#~ msgid "Search Torrent"
+#~ msgstr "Search Torrent"
 
-#. placeholder {0}: media.title
 #: src/routes/_app.movies.$movieId.torrents.tsx:72
-msgid "Search torrents for \"{0}\""
-msgstr "Search torrents for \"{0}\""
+#~ msgid "Search torrents for \"{0}\""
+#~ msgstr "Search torrents for \"{0}\""
+
+#: src/features/movies/components/movie-filters-sheet.tsx:229
+#: src/features/tv/components/tv-filters-sheet.tsx:229
+msgid "Searching..."
+msgstr "Searching..."
+
+#: src/routes/_app/tv/$id.torrents.tsx:124
+msgid "Season"
+msgstr "Season"
+
+#. placeholder {0}: season.season_number
+#: src/features/tv/components/tv-episodes-section.tsx:53
+#: src/routes/_app/tv/$id.torrents.tsx:137
+msgid "Season {0}"
+msgstr "Season {0}"
+
+#: src/features/media/components/media-card-preview.tsx:100
+msgid "season(s)"
+msgstr "season(s)"
 
 #: src/features/movies/components/movie-info.tsx:110
 #~ msgid "See all ({0})"
 #~ msgstr "See all ({0})"
 
+#: src/shared/ui/carousel-wrapper.tsx:34
+msgid "See more"
+msgstr "See more"
+
 #: src/components/app-topbar.tsx:52
 #~ msgid "Server"
 #~ msgstr "Server"
 
-#: src/routes/_app.settings.tsx:80
-#: src/routes/_app.tsx:26
-#: src/shared/app-sidebar.tsx:173
+#: src/shared/app-topbar.tsx:134
+#: src/shared/app-topbar.tsx:140
 msgid "Settings"
 msgstr "Settings"
 
@@ -420,7 +856,11 @@ msgstr "Settings"
 #~ msgid "Sign in"
 #~ msgstr "Sign in"
 
-#: src/routes/_app.settings.tsx:160
+#: src/shared/app-topbar.tsx:174
+msgid "Sign out"
+msgstr "Sign out"
+
+#: src/routes/_app/settings/index.tsx:194
 msgid "Sign Out"
 msgstr "Sign Out"
 
@@ -428,7 +868,7 @@ msgstr "Sign Out"
 #~ msgid "Sign up"
 #~ msgstr "Sign up"
 
-#: src/routes/_auth.signup.tsx:138
+#: src/routes/_auth/signup.tsx:116
 msgid "Sign Up"
 msgstr "Sign Up"
 
@@ -436,20 +876,29 @@ msgstr "Sign Up"
 #~ msgid "Similar Movies"
 #~ msgstr "Similar Movies"
 
-#: src/features/torrent/components/torrent-table.tsx:24
+#: src/features/torrent/components/torrent-table.tsx:153
 msgid "Size"
 msgstr "Size"
 
-#: src/features/movies/components/movie-details.tsx:64
-#: src/features/torrent/components/torrent-indexers-table.tsx:117
+#: src/features/movies/components/movie-filters-sheet.tsx:51
+#: src/features/tv/components/tv-filters-sheet.tsx:51
+msgid "Spanish"
+msgstr "Spanish"
+
+#: src/features/movies/components/movie-details.tsx:48
+#: src/features/torrent/components/torrent-indexers-table.tsx:104
+#: src/features/tv/components/tv-details.tsx:39
 msgid "Status"
 msgstr "Status"
 
-#: src/features/movies/components/movie-info.tsx:159
+#: src/features/downloads/components/download-action-buttons.tsx:28
+#: src/features/media/components/media-card.tsx:118
+#: src/features/movies/components/movie-info.tsx:189
+#: src/features/tv/components/tv-info.tsx:234
 msgid "Streaming"
 msgstr "Streaming"
 
-#: src/features/torrent/components/torrent-indexers-table.tsx:91
+#: src/features/torrent/components/torrent-indexers-table.tsx:78
 msgid "Success"
 msgstr "Success"
 
@@ -457,7 +906,12 @@ msgstr "Success"
 msgid "The page you're looking for doesn't exist."
 msgstr "The page you're looking for doesn't exist."
 
-#: src/features/movies/components/movie-details.tsx:120
+#: src/routes/_app/settings/indexer.tsx:76
+msgid "This indexer cannot be embedded in an iframe (security restrictions). Open it in a new tab instead."
+msgstr "This indexer cannot be embedded in an iframe (security restrictions). Open it in a new tab instead."
+
+#: src/features/movies/components/movie-details.tsx:98
+#: src/features/tv/components/tv-details.tsx:85
 msgid "TMDB"
 msgstr "TMDB"
 
@@ -465,84 +919,128 @@ msgstr "TMDB"
 #~ msgid "TMDB API"
 #~ msgstr "TMDB API"
 
-#: src/features/media/components/media-sort-tabs.tsx:25
+#: src/features/movies/components/movie-filters-sheet.tsx:164
+#: src/features/tv/components/tv-filters-sheet.tsx:164
+msgid "To"
+msgstr "To"
+
+#: src/features/media/components/media-sort-tabs.tsx:36
 msgid "Top Rated"
 msgstr "Top Rated"
 
-#: src/routes/_app.settings.tsx:93
+#: src/routes/_app/settings/index.tsx:103
 msgid "Torrent Indexer"
 msgstr "Torrent Indexer"
+
+#: src/routes/_app.tsx:74
+msgid "Torrent indexer is not configured. Click here to set up your indexer (Prowlarr or Jackett)."
+msgstr "Torrent indexer is not configured. Click here to set up your indexer (Prowlarr or Jackett)."
 
 #: src/features/torrent/components/torrent-table.tsx:199
 #~ msgid "Torrent Indexers"
 #~ msgstr "Torrent Indexers"
 
-#: src/features/torrent/components/torrent-table.tsx:21
+#: src/features/torrent/components/torrent-table.tsx:150
 msgid "Torrent Name"
 msgstr "Torrent Name"
 
-#: src/routes/_app.search.tsx:69
+#: src/features/media/components/hero-carousel.tsx:87
+#: src/features/media/components/media-card-preview.tsx:120
+#: src/features/media/components/media-poster.tsx:111
+#: src/features/media/components/media-poster.tsx:116
+#: src/features/tv/components/tv-episodes-section.tsx:162
+msgid "Torrents"
+msgstr "Torrents"
+
+#: src/features/downloads/components/downloads-stats-panel.tsx:135
+#: src/routes/_app/downloads/index.tsx:90
+msgid "Total Size"
+msgstr "Total Size"
+
+#: src/routes/_app/search.tsx:101
 msgid "Try a different search term"
 msgstr "Try a different search term"
 
-#: src/routes/_app.movies.index.tsx:118
+#: src/routes/_app/movies/index.tsx:174
+#: src/routes/_app/tv/index.tsx:169
 msgid "Try adjusting your filters or search criteria"
 msgstr "Try adjusting your filters or search criteria"
 
-#: src/features/torrent/components/torrent-table.tsx:89
+#: src/features/torrent/components/torrent-table.tsx:176
 msgid "Try adjusting your search query"
 msgstr "Try adjusting your search query"
 
-#: src/routes/_app.tsx:21
-#: src/shared/app-sidebar.tsx:46
+#: src/features/media/media-type-tabs.tsx:18
+#: src/routes/_app.tsx:20
+#: src/shared/app-topbar.tsx:43
 msgid "TV Shows"
 msgstr "TV Shows"
+
+#: src/routes/_app/settings/index.tsx:113
+msgid "Type"
+msgstr "Type"
+
+#: src/features/torrent/components/torrent-table.tsx:99
+msgid "Unknown error"
+msgstr "Unknown error"
 
 #: src/components/torrent/torrent-table.tsx:215
 #~ msgid "Unknown error occurred"
 #~ msgstr "Unknown error occurred"
 
 #: src/features/media/components/media-card.tsx:70
-msgid "Unlike"
-msgstr "Unlike"
+#~ msgid "Unlike"
+#~ msgstr "Unlike"
 
-#: src/features/media/components/media-sort-tabs.tsx:31
+#: src/features/media/components/media-sort-tabs.tsx:52
 msgid "Upcoming"
 msgstr "Upcoming"
 
-#: src/features/user/components/user-form-modal.tsx:296
+#: src/features/user/components/user-form-modal.tsx:259
 msgid "Update"
 msgstr "Update"
 
-#: src/features/user/components/user-form-modal.tsx:168
+#: src/features/user/components/user-form-modal.tsx:150
 msgid "Update user information and permissions"
 msgstr "Update user information and permissions"
 
-#: src/routes/_app.search.tsx:47
-msgid "Use the search box in the sidebar to get started"
-msgstr "Use the search box in the sidebar to get started"
+#: src/features/downloads/components/download-network-card.tsx:40
+msgid "Upload Speed"
+msgstr "Upload Speed"
 
-#: src/routes/_app.users.tsx:67
+#: src/routes/_app/settings/index.tsx:135
+msgid "URL"
+msgstr "URL"
+
+#: src/routes/_app.search.tsx:47
+#~ msgid "Use the search box in the sidebar to get started"
+#~ msgstr "Use the search box in the sidebar to get started"
+
+#: src/routes/_app/users.tsx:64
 msgid "User Management"
 msgstr "User Management"
 
-#: src/features/user/components/user-form-modal.tsx:178
-#: src/features/user/components/users-table.tsx:114
-#: src/routes/_auth.login.tsx:76
-#: src/routes/_auth.signup.tsx:87
+#: src/features/user/components/user-form-modal.tsx:160
+#: src/features/user/components/users-table.tsx:119
+#: src/routes/_auth/login.tsx:67
+#: src/routes/_auth/signup.tsx:71
 msgid "Username"
 msgstr "Username"
 
 #: src/shared/app-sidebar.tsx:159
-msgid "Users"
-msgstr "Users"
+#~ msgid "Users"
+#~ msgstr "Users"
 
-#: src/routes/_app.lists.watch-list.tsx:43
-#: src/shared/app-sidebar.tsx:54
+#: src/routes/_app/lists/index.tsx:34
 msgid "Watch List"
 msgstr "Watch List"
 
-#: src/features/media/components/media-poster.tsx:42
+#: src/features/movies/components/movie-info.tsx:67
+#: src/features/tv/components/tv-info.tsx:68
+msgid "Watch on"
+msgstr "Watch on"
+
+#: src/features/media/components/media-poster.tsx:91
 msgid "Watch Trailer"
 msgstr "Watch Trailer"
 

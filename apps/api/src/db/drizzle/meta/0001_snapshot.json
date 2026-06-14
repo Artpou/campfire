@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "5044d61a-46af-4f06-bb11-90ed97d0f125",
-  "prevId": "a3d4c6c7-06d7-47a0-94de-f5c916d2c222",
+  "id": "d9639e87-b14f-4dde-9a1c-9f20aa9ffc90",
+  "prevId": "18ab15df-36ef-42e1-99f7-50f7b5e3e4b7",
   "tables": {
     "session": {
       "name": "session",
@@ -56,8 +56,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "torrentDownload": {
-      "name": "torrentDownload",
+    "download": {
+      "name": "download",
       "columns": {
         "id": {
           "name": "id",
@@ -76,50 +76,6 @@
         "mediaId": {
           "name": "mediaId",
           "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "magnetUri": {
-          "name": "magnetUri",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "infoHash": {
-          "name": "infoHash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "size": {
-          "name": "size",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 0
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'queued'"
-        },
-        "savePath": {
-          "name": "savePath",
-          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -152,16 +108,9 @@
           "notNull": true,
           "autoincrement": false
         },
-        "startedAt": {
-          "name": "startedAt",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "completedAt": {
-          "name": "completedAt",
-          "type": "integer",
+        "torrent": {
+          "name": "torrent",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -174,19 +123,11 @@
           "autoincrement": false
         }
       },
-      "indexes": {
-        "torrentDownload_infoHash_unique": {
-          "name": "torrentDownload_infoHash_unique",
-          "columns": [
-            "infoHash"
-          ],
-          "isUnique": true
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
-        "torrentDownload_userId_user_id_fk": {
-          "name": "torrentDownload_userId_user_id_fk",
-          "tableFrom": "torrentDownload",
+        "download_userId_user_id_fk": {
+          "name": "download_userId_user_id_fk",
+          "tableFrom": "download",
           "tableTo": "user",
           "columnsFrom": [
             "userId"
@@ -312,6 +253,34 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "duration": {
+          "name": "duration",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "seasons_number": {
+          "name": "seasons_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "backdrop_path": {
+          "name": "backdrop_path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "categories": {
+          "name": "categories",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {},
@@ -381,72 +350,6 @@
             "mediaId"
           ],
           "name": "userLikes_userId_mediaId_pk"
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "userMedia": {
-      "name": "userMedia",
-      "columns": {
-        "userId": {
-          "name": "userId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "mediaId": {
-          "name": "mediaId",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "userMedia_userId_user_id_fk": {
-          "name": "userMedia_userId_user_id_fk",
-          "tableFrom": "userMedia",
-          "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "userMedia_mediaId_media_id_fk": {
-          "name": "userMedia_mediaId_media_id_fk",
-          "tableFrom": "userMedia",
-          "tableTo": "media",
-          "columnsFrom": [
-            "mediaId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "userMedia_userId_mediaId_pk": {
-          "columns": [
-            "userId",
-            "mediaId"
-          ],
-          "name": "userMedia_userId_mediaId_pk"
         }
       },
       "uniqueConstraints": {},
@@ -612,98 +515,6 @@
           "name": "watchProgress_userId_mediaId_pk"
         }
       },
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "plexConfig": {
-      "name": "plexConfig",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "hostname": {
-          "name": "hostname",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "port": {
-          "name": "port",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": 32400
-        },
-        "token": {
-          "name": "token",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "serverName": {
-          "name": "serverName",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "machineIdentifier": {
-          "name": "machineIdentifier",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "useSsl": {
-          "name": "useSsl",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "syncMovies": {
-          "name": "syncMovies",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "syncTv": {
-          "name": "syncTv",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "syncDownloads": {
-          "name": "syncDownloads",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "updatedAt": {
-          "name": "updatedAt",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
     },

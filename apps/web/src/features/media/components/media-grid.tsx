@@ -10,18 +10,12 @@ import { MediaCard } from "./media-card";
 interface MediaGridProps {
   items: Media[];
   isLoading?: boolean;
-  withType?: boolean;
   withLoading?: boolean;
+  search?: boolean;
   onLoadMore?: () => void;
 }
 
-export function MediaGrid({
-  items,
-  isLoading = false,
-  withType = false,
-  withLoading = true,
-  onLoadMore,
-}: MediaGridProps) {
+export function MediaGrid({ items, isLoading = false, withLoading = true, search, onLoadMore }: MediaGridProps) {
   const [lastItemRef, entry] = useIntersectionObserver({
     threshold: 1.0,
   });
@@ -41,11 +35,7 @@ export function MediaGrid({
     <div className="grid grid-cols-[repeat(auto-fill,minmax(165px,1fr))] gap-4">
       {items.map((item, index) => (
         <div key={`${item.type}-${item.id}`} ref={index === items.length - 1 ? lastItemRef : null} className="relative">
-          <MediaCard
-            media={item}
-            backdropPath={"backdrop_path" in item ? item.backdrop_path : undefined}
-            withType={withType}
-          />
+          <MediaCard media={item} mode="preview" withType={search} />
         </div>
       ))}
       {withLoading &&

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import { Trans } from "@lingui/react/macro";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { SortOption } from "tmdb-ts";
 
@@ -8,14 +9,14 @@ import { PlaceholderEmpty } from "@/shared/components/seedarr-placeholder";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Container } from "@/shared/ui/container";
 
-import { MediaLibrarySection } from "@/features/media/components/continue-watching-section";
 import { HeroCarousel } from "@/features/media/components/hero-carousel";
+import { MediaCarouselLibrary } from "@/features/media/components/media-carousel-library";
 import { MediaCategoryCarousel } from "@/features/media/components/media-category-carousel";
 import { MediaGrid } from "@/features/media/components/media-grid";
 import { MediaSelected, MediaSortTabs } from "@/features/media/components/media-sort-tabs";
 import { MovieFiltersSheet, type MovieFiltersValue } from "@/features/movies/components/movie-filters-sheet";
 import { MovieProviderTabs } from "@/features/movies/components/movie-provider-tabs";
-import { useMovieDiscover } from "@/features/movies/hooks/use-movie";
+import { movieQueries } from "@/features/movies/hooks/movie.queries";
 
 export interface MovieSearchParams {
   with_genres?: string;
@@ -63,7 +64,7 @@ export const Route = createFileRoute("/_app/movies/")({
 function MoviesPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
-  const tmdbLocale = useTmdbLocale();
+  const locale = useTmdbLocale();
 
   const { sort_by, with_release_type, after_date } = useMemo(() => {
     return {
@@ -78,20 +79,28 @@ function MoviesPage() {
     };
   }, [search]);
 
-  const { results, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useMovieDiscover({
-    locale: tmdbLocale,
-    sort_by,
-    with_release_type,
-    with_genres: search.with_genres,
-    with_watch_providers: search.with_watch_providers,
-    "primary_release_date.gte": search.release_date_gte ?? after_date,
-    "primary_release_date.lte": search.release_date_lte,
-    with_original_language: search.with_original_language,
-    with_keywords: search.with_keywords,
-    "with_runtime.gte": search.with_runtime_gte,
-    "with_runtime.lte": search.with_runtime_lte,
-    "vote_average.gte": search.vote_average_gte,
-  });
+  const discoverOptions = useMemo(
+    () => ({
+      locale,
+      sort_by,
+      with_release_type,
+      with_genres: search.with_genres,
+      with_watch_providers: search.with_watch_providers,
+      "primary_release_date.gte": search.release_date_gte ?? after_date,
+      "primary_release_date.lte": search.release_date_lte,
+      with_original_language: search.with_original_language,
+      with_keywords: search.with_keywords,
+      "with_runtime.gte": search.with_runtime_gte,
+      "with_runtime.lte": search.with_runtime_lte,
+      "vote_average.gte": search.vote_average_gte,
+    }),
+    [search, sort_by, with_release_type, after_date, locale],
+  );
+
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery(
+    movieQueries.discover(discoverOptions, locale),
+  );
+  const results = useMemo(() => data?.pages.flatMap((page) => page.results) ?? [], [data]);
 
   const handleLoadMore = () => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -105,6 +114,7 @@ function MoviesPage() {
         ...search,
         ...value,
       },
+      resetScroll: false,
     });
   };
 
@@ -136,10 +146,8 @@ function MoviesPage() {
     <>
       <HeroCarousel type="movie" />
       <Container>
-        <MediaLibrarySection type="movie" />
-
+        <MediaCarouselLibrary type="movie" />
         <MediaCategoryCarousel type="movie" onValueChange={(value) => handleSearchChange({ with_genres: value })} />
-
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-4">
             <MediaSortTabs

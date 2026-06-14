@@ -14,7 +14,11 @@ export function DownloadMetadata({ origin, quality, language, className = "" }: 
 
   return (
     <div className={`flex flex-wrap gap-2 ${className}`}>
-      {origin && <Badge className="text-xs">{origin}</Badge>}
+      {origin && (
+        <Badge variant="outline" className="text-xs">
+          {origin}
+        </Badge>
+      )}
       {quality && (
         <Badge variant="outline" className="text-xs">
           {quality}

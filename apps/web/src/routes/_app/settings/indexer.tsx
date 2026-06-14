@@ -10,6 +10,7 @@ import { ArrowLeftIcon, ExternalLinkIcon } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 
 import { useAuth } from "@/features/auth/auth-store";
+import { indexerQueries } from "@/features/torrent/hooks/indexer.queries";
 
 export const Route = createFileRoute("/_app/settings/indexer")({
   component: IndexerDashboardPage,
@@ -27,7 +28,7 @@ function IndexerDashboardPage() {
   const [loadFailed, setLoadFailed] = useState(false);
 
   const { data: indexer, isLoading } = useQuery({
-    queryKey: ["indexer-manager"],
+    queryKey: [...indexerQueries.key],
     queryFn: () => unwrap(api["indexer-manager"].$get()),
   });
 

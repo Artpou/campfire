@@ -5,29 +5,15 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1780617065746,
-      "tag": "0000_soft_joystick",
+      "when": 1781382488235,
+      "tag": "0000_equal_tyrannus",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "6",
-      "when": 1780657306153,
-      "tag": "0001_outgoing_donald_blake",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1780791396242,
-      "tag": "0002_same_shen",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1780932339286,
-      "tag": "0003_even_manta",
+      "when": 1781455484766,
+      "tag": "0001_spotty_thunderbolt_ross",
       "breakpoints": true
     }
   ]

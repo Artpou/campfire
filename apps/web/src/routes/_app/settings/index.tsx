@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";
 import { IndexerList } from "@/features/torrent/components/indexer-list";
-import { useIndexers } from "@/features/torrent/hooks/use-indexers";
+import { indexerQueries } from "@/features/torrent/hooks/indexer.queries";
 
 export const Route = createFileRoute("/_app/settings/")({
   component: SettingsPage,
@@ -40,7 +40,11 @@ function SettingsPage() {
     queryFn: () => unwrap(api["indexer-manager"].$get()),
   });
 
-  const { data: availableIndexers, isFetching: isIndexersFetching, isError: isIndexersError } = useIndexers();
+  const {
+    data: availableIndexers,
+    isFetching: isIndexersFetching,
+    isError: isIndexersError,
+  } = useQuery(indexerQueries.list());
 
   const [indexerType, setIndexerType] = useState<IndexerType>("jackett");
   const [indexerUrl, setIndexerUrl] = useState("");
@@ -55,7 +59,7 @@ function SettingsPage() {
   }, [indexerConfig]);
 
   const upsertIndexer = useMutation({
-    mutationFn: (data: UpsertIndexerManagerInput) => unwrap(api["indexer-manager"].$post({ json: data })),
+    mutationFn: (data: UpsertIndexerManagerInput) => api["indexer-manager"].$post({ json: data }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["indexer-manager"] });
       queryClient.invalidateQueries({ queryKey: ["torrent-indexers"] });
@@ -72,7 +76,7 @@ function SettingsPage() {
   };
 
   const logoutMutation = useMutation({
-    mutationFn: () => unwrap(api.auth.logout.$post()),
+    mutationFn: () => api.auth.logout.$post(),
     onSuccess: () => {
       logout();
       navigate({ to: "/login" });

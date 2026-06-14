@@ -11,7 +11,7 @@ const SESSION_DURATION_MS = ms("7d");
 /**
  * Generate a random session token (32 bytes hex)
  */
-export function generateSessionToken(): string {
+function generateSessionToken(): string {
   return randomBytes(32).toString("hex");
 }
 
@@ -60,7 +60,7 @@ export async function deleteSession(token: string): Promise<void> {
 /**
  * Clean up expired sessions (run periodically)
  */
-export async function cleanupExpiredSessions(): Promise<void> {
+async function cleanupExpiredSessions(): Promise<void> {
   const now = new Date();
   await db.delete(session).where(lt(session.expiresAt, now));
 }

@@ -1,15 +1,17 @@
 import { Trans } from "@lingui/react/macro";
+import type { Download } from "@seedarr/sdk";
+import { Link } from "@tanstack/react-router";
 import { PlayIcon, Trash2Icon } from "lucide-react";
 
 import { Button } from "@/shared/ui/button";
 
 interface DownloadActionButtonsProps {
-  id: string;
+  download: Download;
   onDelete: () => void;
   isMobile?: boolean;
 }
 
-export function DownloadActionButtons({ id, onDelete, isMobile = false }: DownloadActionButtonsProps) {
+export function DownloadActionButtons({ download, onDelete, isMobile = false }: DownloadActionButtonsProps) {
   return (
     <div className="flex gap-2">
       <Button variant="destructive" size="lg" onClick={onDelete} className={isMobile ? "" : "lg:w-auto"}>
@@ -21,10 +23,10 @@ export function DownloadActionButtons({ id, onDelete, isMobile = false }: Downlo
         )}
       </Button>
       <Button size="lg" asChild className="flex-1">
-        <a href={`/downloads/${id}/play`}>
+        <Link to="/downloads/$id/play" params={{ id: download.id }}>
           <PlayIcon className="mr-2 size-5" />
-          <Trans>Play</Trans>
-        </a>
+          {download.torrent?.done ? <Trans>Play</Trans> : <Trans>Streaming</Trans>}
+        </Link>
       </Button>
     </div>
   );

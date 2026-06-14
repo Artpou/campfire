@@ -1,12 +1,13 @@
 import { Trans } from "@lingui/react/macro";
 import type { Torrent } from "@seedarr/sdk";
+import { useQuery } from "@tanstack/react-query";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
 import { Skeleton } from "@/shared/ui/skeleton";
 
 import { DownloadFilesList } from "@/features/downloads/components/download-files-list";
 import { DownloadMetadata } from "@/features/downloads/components/download-metadata";
-import { useTorrentInspect } from "@/features/torrent/hooks/use-torrent";
+import { torrentQueries } from "@/features/torrent/hooks/torrent.queries";
 
 interface TorrentInspectModalProps {
   open: boolean;
@@ -33,7 +34,7 @@ function detectLanguage(name: string): string | null {
 }
 
 export function TorrentInspectModal({ open, onOpenChange, torrent, magnetUri }: TorrentInspectModalProps) {
-  const { data: inspectData, isLoading, error } = useTorrentInspect(magnetUri);
+  const { data: inspectData, isLoading, error } = useQuery(torrentQueries.inspect(magnetUri));
 
   const name = inspectData?.name || torrent?.title;
   const quality = name ? detectQuality(name) : null;

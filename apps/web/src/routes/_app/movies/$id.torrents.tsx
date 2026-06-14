@@ -1,79 +1,49 @@
 import { useMemo, useState } from "react";
 
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { Container } from "@/shared/ui/container";
 
-import { useAuth } from "@/features/auth/auth-store";
-import { useMedia } from "@/features/media/hooks/use-media";
-import { useMovieDetails } from "@/features/movies/hooks/use-movie";
+import { movieQueries } from "@/features/movies/hooks/movie.queries";
 import { TorrentIndexersTable } from "@/features/torrent/components/torrent-indexers-table";
 import { TorrentTable } from "@/features/torrent/components/torrent-table";
-import { useIndexers } from "@/features/torrent/hooks/use-indexers";
-import { useTorrents } from "@/features/torrent/hooks/use-torrent";
+import { indexerQueries } from "@/features/torrent/hooks/indexer.queries";
+import { useTorrents } from "@/features/torrent/hooks/torrent.queries";
 
 export const Route = createFileRoute("/_app/movies/$id/torrents")({
   component: MovieTorrentsPage,
-  beforeLoad: () => {
-    const user = useAuth.getState().user;
-    if (user?.role === "viewer") {
-      throw redirect({ to: "/404" });
-    }
-  },
+  loader: ({ context, params }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(movieQueries.details(params.id, context.language)),
+      context.queryClient.ensureQueryData(indexerQueries.list()),
+    ]),
+  pendingComponent: () => (
+    <div className="flex items-center justify-center size-full">
+      <SeedarrLoader />
+    </div>
+  ),
+  errorComponent: () => <Navigate to="/404" replace />,
 });
 
 function MovieTorrentsPage() {
   const params = Route.useParams();
-  const { data: movie } = useMovieDetails(params.id);
-  const { data: media, isLoading: isMediaLoading } = useMedia(Number(params.id), {
-    enabled: !!movie,
-  });
-  const { data: indexers, isLoading: isIndexersLoading } = useIndexers();
-  const torrentQueries = useTorrents(media, indexers || []);
+  const context = Route.useRouteContext();
+
+  const { data: movie } = useSuspenseQuery(movieQueries.details(params.id, context.language));
+  const { data: indexers } = useSuspenseQuery(indexerQueries.list());
+  const { torrents, indexerStats, isLoading: isAnyTorrentLoading } = useTorrents(movie.media, indexers);
 
   const [visibleIndexers, setVisibleIndexers] = useState<Set<string>>(new Set());
 
-  const allTorrents = useMemo(() => {
-    if (!indexers) return [];
-    const torrents = torrentQueries.flatMap((query, index) => {
-      if (!query.data) return [];
-      const indexerId = indexers[index]?.id;
-      return query.data.map((torrent) => ({ ...torrent, indexerId }));
-    });
-
-    const year = new Date(media?.release_date || "").getFullYear().toString();
-
-    const torrentsWithYear = torrents
-      .filter((torrent) => torrent.title.includes(year || ""))
-      .sort((a, b) => b.seeders - a.seeders);
-
-    const torrentsWithoutYear = torrents
-      .filter((torrent) => !torrent.title.includes(year || ""))
-      .sort((a, b) => b.seeders - a.seeders);
-
-    return [...torrentsWithYear, ...torrentsWithoutYear];
-  }, [torrentQueries, indexers, media]);
+  const { media } = movie;
 
   const filteredTorrents = useMemo(() => {
-    if (visibleIndexers.size === 0) return allTorrents;
-    return allTorrents.filter((t) => t.indexerId && visibleIndexers.has(t.indexerId));
-  }, [allTorrents, visibleIndexers]);
-
-  const isLoading = isMediaLoading || isIndexersLoading;
-
-  const isAnyTorrentLoading = torrentQueries.some((query) => query.isLoading);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center size-full">
-        <SeedarrLoader />
-      </div>
-    );
-  }
-
-  if (!media) return null;
+    if (visibleIndexers.size === 0) return torrents;
+    return torrents.filter((t) => t.indexerId && visibleIndexers.has(t.indexerId));
+  }, [torrents, visibleIndexers]);
 
   return (
     <Container>
@@ -92,7 +62,7 @@ function MovieTorrentsPage() {
         <div className="hidden xl:block xl:col-span-2">
           <TorrentIndexersTable
             indexers={indexers || []}
-            torrentQueries={torrentQueries}
+            indexerQueries={indexerStats}
             onVisibilityChange={setVisibleIndexers}
           />
         </div>

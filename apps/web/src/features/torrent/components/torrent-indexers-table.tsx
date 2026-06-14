@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
-import type { Torrent, TorrentIndexerQuery } from "@seedarr/sdk";
-import type { UseQueryResult } from "@tanstack/react-query";
+import type { TorrentIndexerQuery } from "@seedarr/sdk";
 import { Link } from "@tanstack/react-router";
 import { EyeIcon, EyeOffIcon, SettingsIcon } from "lucide-react";
 
@@ -11,34 +10,32 @@ import { Button } from "@/shared/ui/button";
 import { Spinner } from "@/shared/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
+interface IndexerQueryStat {
+  status: "loading" | "success" | "error" | "idle";
+  count: number;
+}
+
 interface TorrentIndexersTableProps {
   indexers: TorrentIndexerQuery[];
-  torrentQueries: UseQueryResult<Torrent[], Error>[];
+  indexerQueries: IndexerQueryStat[];
   onVisibilityChange: (visibleIndexers: Set<string>) => void;
 }
 
-export function TorrentIndexersTable({ indexers, torrentQueries, onVisibilityChange }: TorrentIndexersTableProps) {
+export function TorrentIndexersTable({ indexers, indexerQueries, onVisibilityChange }: TorrentIndexersTableProps) {
   const [visibleIndexers, setVisibleIndexers] = useState<Set<string>>(new Set());
 
   const indexerStats = useMemo(() => {
     return indexers.map((indexer, i) => {
-      const query = torrentQueries[i];
-      const data = query?.data;
-      const torrentCount = Array.isArray(data) ? data.length : 0;
-
-      let status: "loading" | "success" | "error" | "idle" = "idle";
-      if (query?.isFetching) status = "loading";
-      else if (query?.isError) status = "error";
-      else if (query?.isSuccess) status = "success";
+      const queryStat = indexerQueries[i];
 
       return {
         id: indexer.id,
         name: indexer.name,
-        status,
-        count: torrentCount,
+        status: queryStat?.status ?? "idle",
+        count: queryStat?.count ?? 0,
       };
     });
-  }, [indexers, torrentQueries]);
+  }, [indexers, indexerQueries]);
 
   useEffect(() => {
     if (indexers.length > 0 && visibleIndexers.size === 0) {

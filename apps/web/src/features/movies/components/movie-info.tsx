@@ -6,7 +6,6 @@ import type { TMDBMovieDetails, TMDBWatchProvider } from "@seedarr/sdk";
 import { CalendarIcon, ClockIcon, ExternalLinkIcon, PlusIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { CircularProgress } from "@/shared/components/circular-progress";
 import { Flag } from "@/shared/components/flag";
 import { formatRuntime } from "@/shared/helpers/date";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
@@ -21,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu";
 
+import { MediaRating } from "@/features/media/components/media-rating";
 import { getBackdropUrl } from "@/features/media/helpers/media.helper";
 
 interface MovieInfoProps {
@@ -165,7 +165,7 @@ export function MovieInfo({ movie }: MovieInfoProps) {
       )}
 
       <div className="flex items-center gap-4">
-        <CircularProgress value={(movie.vote_average || 0) * 10} size={52} strokeWidth={5} />
+        <MediaRating media={movie} size={52} strokeWidth={5} />
 
         <div className="flex items-center gap-1.5 border-l border-white/10 pl-4">
           {firstProviders.map((provider) => (

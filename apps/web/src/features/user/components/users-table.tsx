@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { User, UserRole } from "@seedarr/sdk";
-import { api, unwrap } from "@seedarr/sdk";
+import { api } from "@seedarr/sdk";
 import { useMutation } from "@tanstack/react-query";
 import { CrownIcon, GlassesIcon, PencilIcon, ShieldCheckIcon, Trash2Icon, UserCheckIcon } from "lucide-react";
 
@@ -64,7 +64,7 @@ export function UsersTable({ users, isLoading, onEditUser, onRefetch }: UsersTab
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   const deleteMutation = useMutation({
-    mutationFn: (userId: string) => unwrap(api.users[":id"].$delete({ param: { id: userId } })),
+    mutationFn: (userId: string) => api.users[":id"].$delete({ param: { id: userId } }),
     onSuccess: () => {
       setUserToDelete(null);
       onRefetch();

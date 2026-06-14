@@ -5,7 +5,43 @@ import { user } from "@/modules/user/user.schema";
 export const torrentStatusEnum = ["queued", "downloading", "completed", "failed", "paused"] as const;
 export type TorrentStatus = (typeof torrentStatusEnum)[number];
 
-export const torrentDownload = sqliteTable("torrentDownload", {
+export interface TorrentLiveData {
+  infoHash: string;
+  magnetURI: string;
+  torrentFileBlobURL?: string;
+  announce: string[];
+  "announce-list"?: string[][];
+  timeRemaining: number;
+  received: number;
+  downloaded: number;
+  uploaded: number;
+  downloadSpeed: number;
+  uploadSpeed: number;
+  progress: number;
+  ratio: number;
+  length: number;
+  pieceLength: number;
+  lastPieceLength: number;
+  numPeers: number;
+  path: string;
+  ready: boolean;
+  paused: boolean;
+  done: boolean;
+  name: string;
+  created?: Date | string;
+  createdBy?: string;
+  comment?: string;
+  maxWebConns: number;
+  files: {
+    name: string;
+    path: string;
+    length: number;
+    downloaded: number;
+    progress: number;
+  }[];
+}
+
+export const download = sqliteTable("download", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
@@ -14,14 +50,6 @@ export const torrentDownload = sqliteTable("torrentDownload", {
     .references(() => user.id, { onDelete: "cascade" }),
   mediaId: integer("mediaId"),
 
-  magnetUri: text("magnetUri").notNull(),
-  infoHash: text("infoHash").unique(),
-  name: text("name").notNull(),
-  size: integer("size").notNull().default(0),
-
-  status: text("status", { enum: torrentStatusEnum }).notNull().default("queued"),
-  savePath: text("savePath"),
-
   origin: text("origin"),
   quality: text("quality"),
   language: text("language"),
@@ -29,8 +57,8 @@ export const torrentDownload = sqliteTable("torrentDownload", {
   createdAt: integer("createdAt", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
-  startedAt: integer("startedAt", { mode: "timestamp" }),
-  completedAt: integer("completedAt", { mode: "timestamp" }),
+
+  torrent: text("torrent", { mode: "json" }).$type<TorrentLiveData>(),
 
   error: text("error"),
 });

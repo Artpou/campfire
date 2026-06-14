@@ -1,0 +1,29 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "db:generate": {
+      "cache": false
+    },
+    "build": {
+      "dependsOn": ["^build", "db:generate"],
+      "outputs": ["dist/**", ".next/**", "build/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "db:studio": {
+      "cache": false,
+      "persistent": true
+    },
+    "tsc": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "lint": { "outputs": [] },
+    "lint:fix": { "outputs": [] },
+    "test": { "outputs": [] },
+    "//#knip": { "cache": false }
+  }
+}

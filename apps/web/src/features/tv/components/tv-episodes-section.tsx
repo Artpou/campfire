@@ -2,43 +2,43 @@ import { useMemo, useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { Download, Media, TMDBTvDetails } from "@seedarr/sdk";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { CalendarIcon, ClapperboardIcon, ClockIcon, MagnetIcon, PlayIcon } from "lucide-react";
 
-import { CircularProgress } from "@/shared/components/circular-progress";
 import { formatRuntime } from "@/shared/helpers/date";
+import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
+import { ProgressCircular } from "@/shared/ui/progress-circular";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { useRole } from "@/features/auth/hooks/use-role";
+import { getDownloadStatus } from "@/features/downloads/helpers/downloads.helper";
 import { getBackdropUrl } from "@/features/media/helpers/media.helper";
 import { formatSeasonEpisode } from "@/features/tv/helpers/episode.helper";
-import { useTVSeasonDetails } from "@/features/tv/hook/use-tv";
+import { tvQueries } from "@/features/tv/hooks/tv.queries";
 
 interface TvEpisodesSectionProps {
   tv: TMDBTvDetails;
   media?: Media;
 }
 
-function getDownloadProgress(dl: Download): number {
-  return dl.live ? dl.live.progress : dl.status === "completed" ? 1 : 0;
-}
-
 export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
   const { role } = useRole();
+  const locale = useTmdbLocale();
   const validSeasons = useMemo(() => (tv.seasons ?? []).filter((s) => s.season_number > 0), [tv.seasons]);
 
   const [selectedSeason, setSelectedSeason] = useState<string>(() => validSeasons[0]?.season_number?.toString() ?? "1");
 
   const seasonNumber = Number(selectedSeason);
 
-  const { data: seasonDetails, isLoading } = useTVSeasonDetails(
-    { tvShowID: tv.id, seasonNumber },
-    { enabled: validSeasons.length > 0 },
-  );
+  const { data: seasonDetails, isLoading } = useQuery({
+    ...tvQueries.season(tv.id, seasonNumber, locale),
+    enabled: validSeasons.length > 0,
+  });
 
   if (validSeasons.length === 0) return null;
 
@@ -71,14 +71,13 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
             // TODO: fix this by storing in download season + episode number
             const episodeDownload = {} as Download;
             const episodeDownloadId = episodeDownload?.id;
-            const isDownloaded = episodeDownload?.status === "completed";
+            const episodeStatus = getDownloadStatus(episodeDownload);
+            const isDownloaded = episodeStatus === "completed";
             const isDownloading =
-              episodeDownload?.status === "downloading" ||
-              episodeDownload?.status === "queued" ||
-              episodeDownload?.status === "paused";
-            const downloadProgress = episodeDownload ? getDownloadProgress(episodeDownload) : 0;
+              episodeStatus === "downloading" || episodeStatus === "queued" || episodeStatus === "paused";
+            const downloadProgress = episodeDownload.torrent?.progress ?? 0;
             const showDownloadProgress = isDownloading && downloadProgress < 0.95;
-            const isPaused = episodeDownload?.status === "paused";
+            const isPaused = episodeStatus === "paused";
 
             const isProgressCompleted =
               !!media?.progress?.duration && media.progress.position >= media.progress.duration * 0.95;
@@ -110,13 +109,10 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
                       />
                       {showDownloadProgress && (
                         <div className="absolute top-2 left-2">
-                          <CircularProgress
+                          <ProgressCircular
                             value={downloadProgress * 100}
                             size={40}
                             strokeWidth={3}
-                            showValue
-                            noColor
-                            paused={isPaused}
                             className={isPaused ? "text-orange-500" : "text-primary"}
                           />
                         </div>

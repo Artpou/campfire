@@ -23,7 +23,7 @@ export const subtitleRoutes = SubtitleService.createRouter()
       throw new ForbiddenError("Unauthorized to add subtitles to this download");
     }
 
-    const downloadFolderPath = path.join(DOWNLOAD_PATH, download.savePath || download.name);
+    const downloadFolderPath = path.join(DOWNLOAD_PATH, download.torrent?.name ?? "");
     const { relativePath } = await c.var.service.download(downloadFolderPath, url, language, mediaTitle);
     return c.json({ relativePath });
   });
