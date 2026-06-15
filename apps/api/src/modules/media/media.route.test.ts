@@ -35,7 +35,10 @@ describe("Media Routes", () => {
 
   describe("POST / - upsert", () => {
     it("creates a new media entry", async () => {
-      const res = await mediaRoutes.request("/", json("POST", { id: 500, type: "movie", title: "Interstellar" }));
+      const res = await mediaRoutes.request(
+        "/",
+        json("POST", { id: 500, type: "movie", title: "Interstellar", imdbId: "tt0000001" }),
+      );
       expect(res.status).toBe(200);
       const body = await bodyOf(res);
       expect(body).toMatchObject({ id: 500, title: "Interstellar", likes: 0, watchList: 0 });
@@ -49,7 +52,10 @@ describe("Media Routes", () => {
 
   describe("with existing media (id: 500)", () => {
     beforeEach(() => {
-      testDbRef.current?.insert(media).values({ id: 500, type: "movie", title: "Interstellar" }).run();
+      testDbRef.current
+        ?.insert(media)
+        .values({ id: 500, type: "movie", title: "Interstellar", imdbId: "tt0000001" })
+        .run();
     });
 
     it("GET /:id - returns media with status", async () => {
@@ -81,8 +87,8 @@ describe("Media Routes", () => {
       testDbRef.current
         ?.insert(media)
         .values([
-          { id: 1, type: "movie", title: "Movie 1" },
-          { id: 2, type: "tv", title: "TV 1" },
+          { id: 1, type: "movie", title: "Movie 1", imdbId: "tt0000001" },
+          { id: 2, type: "tv", title: "TV 1", imdbId: "tt0000002" },
         ])
         .run();
     });

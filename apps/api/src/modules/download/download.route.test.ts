@@ -110,6 +110,7 @@ const testMedia = {
   id: 42,
   type: "movie" as const,
   title: "New Movie",
+  imdbId: "tt12345678",
   original_title: null,
   sanitize_title: null,
   original_language: null,

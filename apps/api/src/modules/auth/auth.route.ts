@@ -7,6 +7,7 @@ import { hashPassword, verifyPassword } from "@/auth/password.util";
 import { createSession, deleteSession, validateSession } from "@/auth/session.util";
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "@/errors/error";
 import { authRateLimiter } from "@/middlewares/rate-limiter.middleware";
+import { ActivityLogService } from "../activity-log/activity-log.service";
 import { IndexerManagerService } from "../indexer-manager/indexer-manager.service";
 import { UserService } from "../user/user.service";
 import { loginDto, registerDto } from "./auth.dto";
@@ -38,6 +39,12 @@ export const authRoutes = new Hono()
 
     const newUser = await userService.register(username, hashPassword(password));
     const sessionToken = await createSession(newUser.id);
+    ActivityLogService.log({
+      userId: newUser.id,
+      type: "SUCCESS",
+      action: "USER_CREATE",
+      title: `${username} registered`,
+    });
 
     setCookie(c, SESSION_COOKIE_NAME, sessionToken, cookieOptions);
     return c.json(newUser);
@@ -58,13 +65,21 @@ export const authRoutes = new Hono()
     setCookie(c, SESSION_COOKIE_NAME, sessionToken, cookieOptions);
 
     const user = await userService.get(existingUser.id);
+    ActivityLogService.log({
+      userId: existingUser.id,
+      type: "SUCCESS",
+      action: "USER_LOGIN",
+      title: `${username} logged in`,
+    });
     return c.json(user);
   })
   .post("/logout", async (c) => {
     const sessionToken = getCookie(c, SESSION_COOKIE_NAME);
 
     if (typeof sessionToken === "string") {
+      const userId = await validateSession(sessionToken);
       await deleteSession(sessionToken);
+      if (userId) ActivityLogService.log({ userId, type: "INFO", action: "USER_LOGOUT", title: "User logged out" });
     }
 
     deleteCookie(c, SESSION_COOKIE_NAME);

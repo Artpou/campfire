@@ -4,7 +4,9 @@ import { cors } from "hono/cors";
 
 import { errorHandler, requestLogger } from "@/middlewares/logger.middleware";
 import * as fs from "node:fs/promises";
-import { logger, startupLogger } from "./helpers/logger.helper";
+import { Readable } from "node:stream";
+import { getLogFilePath, logger, startupLogger } from "./helpers/logger.helper";
+import { activityLogRoutes } from "./modules/activity-log/activity-log.route";
 import { authRoutes } from "./modules/auth/auth.route";
 import { downloadRoutes } from "./modules/download/download.route";
 import { torrentClient } from "./modules/download/webtorrent.client";
@@ -43,6 +45,17 @@ export const app = new Hono<{ Variables: HonoVariables }>()
   .route("/torrents", torrentRoutes)
   .route("/downloads", downloadRoutes)
   .route("/subtitles", subtitleRoutes)
+  .route("/activity-logs", activityLogRoutes)
+  .get("/logs/export", async (c) => {
+    const fsSync = await import("node:fs");
+    const filePath = getLogFilePath();
+    if (!fsSync.existsSync(filePath)) return c.json({ error: "No log file found" }, 404);
+    const stat = fsSync.statSync(filePath);
+    c.header("Content-Type", "application/octet-stream");
+    c.header("Content-Disposition", "attachment; filename=seedarr.log");
+    c.header("Content-Length", stat.size.toString());
+    return c.body(Readable.toWeb(fsSync.createReadStream(filePath)) as ReadableStream);
+  })
   .get("/health", (c) => c.json({ status: "healthy", timestamp: new Date().toISOString() }));
 
 export type AppType = typeof app;

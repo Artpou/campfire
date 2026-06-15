@@ -32,8 +32,6 @@ function MoviePage() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const { data } = useSuspenseQuery(movieQueries.details(params.id, context.language));
 
-  console.log(data);
-
   const toggleLike = useToggleLike();
   const toggleWatchList = useToggleWatchList();
 

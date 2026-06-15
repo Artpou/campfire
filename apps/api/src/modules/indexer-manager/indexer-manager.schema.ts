@@ -15,6 +15,9 @@ export const indexerManager = sqliteTable("indexerManager", {
   indexerUrl: text("indexer_url"),
   indexerApiKey: text("indexer_api_key"),
   disabled: integer("disabled", { mode: "boolean" }).notNull().default(false),
+  description: text("description"),
+  logoUrl: text("logo_url"),
+  isAddon: integer("is_addon", { mode: "boolean" }).notNull().default(false),
 });
 
 export const indexer = sqliteTable("indexer", {

@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db/db";
 import { BadRequestError, ConflictError, NotFoundError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
+import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { IdentifiableService } from "@/modules/auth/auth.service";
 import { indexer, indexerManager } from "@/modules/indexer-manager/indexer-manager.schema";
 import { JackettAdapter } from "@/modules/torrent/adapters/jackett.adapter";
@@ -101,6 +102,14 @@ export class IndexerManagerService extends IdentifiableService<IndexerManagerWit
       }
 
       const result = await this.get(created.id);
+      ActivityLogService.log({
+        userId: this.user.id,
+        type: "SUCCESS",
+        action: "INDEXER_ADD",
+        title: `Indexer added: Torrentio`,
+        metadata: { indexerManagerId: created.id },
+      });
+
       return result!;
     }
 
@@ -118,6 +127,13 @@ export class IndexerManagerService extends IdentifiableService<IndexerManagerWit
       .returning();
 
     const result = await this.get(created.id);
+    ActivityLogService.log({
+      userId: this.user.id,
+      type: "SUCCESS",
+      action: "INDEXER_ADD",
+      title: `Indexer added: ${data.indexerType}`,
+      metadata: { indexerManagerId: created.id, indexerType: data.indexerType },
+    });
     return result!;
   }
 
@@ -166,6 +182,13 @@ export class IndexerManagerService extends IdentifiableService<IndexerManagerWit
     const existing = await db.query.indexerManager.findFirst({ where: eq(indexerManager.id, id) });
     if (!existing) throw new NotFoundError("IndexerManager");
     await db.delete(indexerManager).where(eq(indexerManager.id, id));
+    ActivityLogService.log({
+      userId: this.user.id,
+      type: "INFO",
+      action: "INDEXER_DELETE",
+      title: `Indexer removed: ${existing.indexerType}`,
+      metadata: { indexerManagerId: id },
+    });
     return { success: true };
   }
 

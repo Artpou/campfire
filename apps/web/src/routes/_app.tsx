@@ -36,11 +36,19 @@ const navItems = [
 ];
 
 export const Route = createFileRoute("/_app")({
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     try {
       const data = await unwrap(api.auth.me.$get());
       useAuth.getState().setUser(data);
-    } catch {
+
+      const isAdmin = data.role === "admin" || data.role === "owner";
+      const noIndexers = !data.indexerManagers || data.indexerManagers.length === 0;
+
+      if (isAdmin && noIndexers && !location.pathname.startsWith("/onboarding")) {
+        throw redirect({ to: "/onboarding" });
+      }
+    } catch (err) {
+      if (err instanceof Response || (err && typeof err === "object" && "to" in err)) throw err;
       throw redirect({ to: "/login" });
     }
   },
@@ -65,12 +73,12 @@ function AuthenticatedLayout() {
     <div className="flex flex-col min-w-0">
       {isIndexerMisconfigured && (
         <Link
-          to="/settings"
+          to="/onboarding"
           className="bg-warning/10 border-b border-warning/20 px-4 py-2 flex items-center gap-2 text-warning hover:bg-warning/20 transition-colors"
         >
           <AlertTriangleIcon className="size-4 shrink-0" />
           <span className="text-sm">
-            <Trans>Torrent indexer is not configured. Click here to set up your indexer (Prowlarr or Jackett).</Trans>
+            <Trans>Torrent indexer is not configured. Click here to set up your indexer.</Trans>
           </span>
         </Link>
       )}

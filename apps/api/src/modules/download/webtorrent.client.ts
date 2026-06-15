@@ -4,6 +4,7 @@ import type WebTorrent from "webtorrent";
 import { db } from "@/db/db";
 import { ServiceUnavailableError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
+import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import type { TorrentLiveData } from "@/modules/download/download.schema";
 import { download } from "@/modules/download/download.schema";
 import type { EventEmitter } from "node:events";
@@ -141,6 +142,14 @@ class WebTorrentManager {
         .update(download)
         .set({ torrent: { ...extractTorrentLiveData(torrent), done: true } })
         .where(eq(download.id, downloadId));
+      const dl = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
+      ActivityLogService.log({
+        userId: dl?.userId,
+        type: "SUCCESS",
+        action: "DOWNLOAD_COMPLETE",
+        title: `Download completed: ${torrent.name}`,
+        metadata: { downloadId },
+      });
     });
 
     (torrent as unknown as EventEmitter).on("error", async (err: Error) => {

@@ -5,6 +5,16 @@ import { user } from "@/modules/user/user.schema";
 export const torrentStatusEnum = ["queued", "downloading", "completed", "failed", "paused"] as const;
 export type TorrentStatus = (typeof torrentStatusEnum)[number];
 
+export const streamTypeEnum = ["TORRENT", "DIRECT_URL"] as const;
+export type StreamType = (typeof streamTypeEnum)[number];
+
+export interface DirectUrlData {
+  infoHash?: string;
+  title: string;
+  tracker: string;
+  size: number;
+}
+
 export interface TorrentLiveData {
   infoHash: string;
   magnetURI: string;
@@ -57,6 +67,9 @@ export const download = sqliteTable("download", {
   createdAt: integer("createdAt", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
+
+  streamType: text("stream_type", { enum: streamTypeEnum }).notNull().default("TORRENT"),
+  indexerManagerId: text("indexer_manager_id"),
 
   torrent: text("torrent", { mode: "json" }).$type<TorrentLiveData>(),
 

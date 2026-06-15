@@ -4,6 +4,7 @@ import type WebTorrent from "webtorrent";
 import { db } from "@/db/db";
 import { BadRequestError, NotFoundError, ServiceUnavailableError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
+import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { IdentifiableService } from "@/modules/auth/auth.service";
 import { download } from "@/modules/download/download.schema";
 import { media } from "@/modules/media/media.schema";
@@ -122,6 +123,13 @@ export class DownloadService extends IdentifiableService<Download> {
     torrentClient.setActiveTorrent(newDownload.id, torrent);
 
     logger.info("DOWNLOAD", `Started: ${torrent.name}`);
+    ActivityLogService.log({
+      userId: this.user.id,
+      type: "SUCCESS",
+      action: "DOWNLOAD_START",
+      title: `Download started: ${torrent.name}`,
+      metadata: { downloadId: newDownload.id, mediaId: newMedia.id },
+    });
     return newDownload;
   }
 
@@ -180,6 +188,13 @@ export class DownloadService extends IdentifiableService<Download> {
     await db.update(download).set({ torrent: pausedData }).where(eq(download.id, id));
 
     logger.info("DOWNLOAD", `Paused: ${activeTorrent.name}`);
+    ActivityLogService.log({
+      userId: this.user.id,
+      type: "INFO",
+      action: "DOWNLOAD_PAUSE",
+      title: `Download paused: ${activeTorrent.name}`,
+      metadata: { downloadId: id },
+    });
 
     setTimeout(() => torrentClient.unmarkDestroying(id), 5000);
     return { success: true };
@@ -208,6 +223,13 @@ export class DownloadService extends IdentifiableService<Download> {
       .set({ torrent: { ...extractTorrentLiveData(torrent), paused: false } })
       .where(eq(download.id, id));
     logger.info("DOWNLOAD", `Resumed: ${torrent.name}`);
+    ActivityLogService.log({
+      userId: this.user.id,
+      type: "INFO",
+      action: "DOWNLOAD_RESUME",
+      title: `Download resumed: ${torrent.name}`,
+      metadata: { downloadId: id },
+    });
     return { success: true };
   }
 
@@ -263,6 +285,13 @@ export class DownloadService extends IdentifiableService<Download> {
 
     torrentClient.clearPausedData(id);
     await db.delete(download).where(eq(download.id, id));
+    ActivityLogService.log({
+      userId: this.user.id,
+      type: "INFO",
+      action: "DOWNLOAD_DELETE",
+      title: `Download deleted: ${torrentName}`,
+      metadata: { downloadId: id },
+    });
     return { success: true };
   }
 }

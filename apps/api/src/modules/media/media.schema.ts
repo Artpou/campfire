@@ -9,6 +9,7 @@ export type MediaType = (typeof mediaTypeEnum)[number];
 
 export const media = sqliteTable("media", {
   id: integer("id").primaryKey(),
+  imdbId: text("imdb_id").notNull(),
   type: text("type", { enum: mediaTypeEnum }).notNull(),
   title: text("title").notNull(),
   original_title: text("original_title"),

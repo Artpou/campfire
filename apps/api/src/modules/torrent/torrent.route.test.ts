@@ -41,6 +41,12 @@ vi.mock("./adapters/prowlarr.adapter", () => ({
     search = vi.fn(async () => []);
   },
 }));
+vi.mock("./adapters/addon.adapter", () => ({
+  AddonAdapter: class {
+    getIndexers = vi.fn(async () => []);
+    search = vi.fn(async () => []);
+  },
+}));
 vi.mock("./adapters/torrentio.adapter", () => ({
   TorrentioAdapter: class {
     getIndexers = vi.fn(async () => [{ id: "torrentio", name: "torrentio", label: "Torrentio", privacy: "public" }]);
@@ -78,6 +84,7 @@ const testMedia = {
   seasons_number: null,
   backdrop_path: null,
   categories: null,
+  imdbId: "tt0816692",
 };
 
 describe("Torrent Routes", () => {

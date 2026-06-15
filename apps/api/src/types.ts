@@ -1,3 +1,5 @@
+export * from "./modules/activity-log/activity-log.dto";
+export type { ActivityLogAction, ActivityLogType } from "./modules/activity-log/activity-log.schema";
 export * from "./modules/auth/auth.dto";
 export * from "./modules/download/download.dto";
 export * from "./modules/indexer-manager/indexer-manager.dto";

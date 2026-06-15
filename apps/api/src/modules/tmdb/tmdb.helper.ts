@@ -52,6 +52,7 @@ function toMedia(
     seasons_number: seasonsNumber,
     categories,
     backdrop_path: item.backdrop_path ?? null,
+    imdbId: "TOFIX",
     likes: 0,
     watchList: 0,
   };
@@ -86,6 +87,7 @@ export function fmdbResultToMedia(fmdbResult: any): Media {
     duration: null,
     seasons_number: null,
     categories: null,
+    imdbId: "TOFIX",
     watchList: 0,
     likes: 0,
   };

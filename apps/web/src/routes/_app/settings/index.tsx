@@ -2,10 +2,20 @@ import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { IndexerManagerWithIndexers, IndexerType } from "@seedarr/sdk";
-import { api, unwrap } from "@seedarr/sdk";
+import { api, getBaseUrl, unwrap } from "@seedarr/sdk";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { PencilIcon, PlusIcon, PowerIcon, PowerOffIcon, SettingsIcon, TrashIcon } from "lucide-react";
+import {
+  DownloadIcon,
+  PencilIcon,
+  PlusIcon,
+  PowerIcon,
+  PowerOffIcon,
+  SettingsIcon,
+  ShieldIcon,
+  TrashIcon,
+  WrenchIcon,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Flag } from "@/shared/components/flag";
@@ -14,27 +24,150 @@ import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
 
+import { useRole } from "@/features/auth/hooks/use-role";
 import { IndexersManagerAddDialog } from "@/features/indexers-manager/components/indexers-manager-add-dialog";
 import { IndexersManagerEditDialog } from "@/features/indexers-manager/components/indexers-manager-edit-dialog";
 import { indexersManagerImages } from "@/features/indexers-manager/helpers/indexers-manager.helper";
 import { indexerManagerQueries } from "@/features/torrent/hooks/indexer.queries";
+
+type SettingsTab = "general" | "indexers" | "advanced";
 
 export const Route = createFileRoute("/_app/settings/")({
   component: SettingsPage,
 });
 
 function SettingsPage() {
-  const queryClient = useQueryClient();
+  const { isAdmin } = useRole();
+  const [activeTab, setActiveTab] = useState<SettingsTab>("general");
 
+  const tabs = [
+    { id: "general" as const, label: <Trans>General</Trans>, icon: SettingsIcon, adminOnly: false },
+    { id: "indexers" as const, label: <Trans>Indexers</Trans>, icon: ShieldIcon, adminOnly: true },
+    { id: "advanced" as const, label: <Trans>Advanced</Trans>, icon: WrenchIcon, adminOnly: true },
+  ];
+
+  const visibleTabs = tabs.filter((t) => !t.adminOnly || isAdmin);
+
+  return (
+    <Container>
+      <div className="flex flex-col md:flex-row gap-6 min-h-[60vh]">
+        <nav className="md:w-56 shrink-0">
+          <div className="flex md:flex-col gap-1">
+            {visibleTabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-left w-full",
+                  activeTab === tab.id
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted",
+                )}
+              >
+                <tab.icon className="size-4" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </nav>
+
+        <div className="flex-1 min-w-0">
+          {activeTab === "general" && <GeneralTab />}
+          {activeTab === "indexers" && isAdmin && <IndexersTab />}
+          {activeTab === "advanced" && isAdmin && <AdvancedTab />}
+        </div>
+      </div>
+    </Container>
+  );
+}
+
+function GeneralTab() {
+  const { data: logs } = useQuery({
+    queryKey: ["activity-logs"],
+    queryFn: () => unwrap(api["activity-logs"].$get({ query: { limit: "20" } })),
+  });
+
+  const results = logs?.results ?? [];
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <Trans>Activity</Trans>
+          </CardTitle>
+          <CardDescription>
+            <Trans>Recent activity on this instance.</Trans>
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {results.length > 0 ? (
+            <div className="divide-y divide-border max-h-[400px] overflow-y-auto">
+              {results.map((log) => (
+                <div key={log.id} className="flex items-start gap-3 py-2.5">
+                  <Badge
+                    variant={log.type === "ERROR" ? "destructive" : log.type === "WARNING" ? "outline" : "secondary"}
+                    className="text-[10px] shrink-0 mt-0.5"
+                  >
+                    {log.type}
+                  </Badge>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{log.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {log.action} &middot; {new Date(log.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground py-8 text-center">
+              <Trans>No activity yet.</Trans>
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function AdvancedTab() {
+  const handleExportLogs = () => {
+    const url = `${getBaseUrl()}/logs/export`;
+    window.open(url, "_blank");
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <Trans>Technical Logs</Trans>
+          </CardTitle>
+          <CardDescription>
+            <Trans>Download the server log file for debugging or support.</Trans>
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={handleExportLogs}>
+            <DownloadIcon className="size-4" />
+            <Trans>Export logs</Trans>
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function IndexersTab() {
+  const queryClient = useQueryClient();
   const { data: managers = [] } = useQuery(indexerManagerQueries.list());
   const [selectedManagerId, setSelectedManagerId] = useState<string | null>(null);
-
   const selectedManager = managers.find((m) => m.id === selectedManagerId) ?? managers[0] ?? null;
-
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editManager, setEditManager] = useState<IndexerManagerWithIndexers | null>(null);
-
   const hasTorrentio = managers.some((m) => m.indexerType === "torrentio");
 
   const invalidateAll = () => {
@@ -66,13 +199,7 @@ function SettingsPage() {
       indexerApiKey?: string;
       providers?: string[];
       disabled?: boolean;
-    }) =>
-      unwrap(
-        api["indexer-manager"][":id"].$patch({
-          param: { id },
-          json: data,
-        }),
-      ),
+    }) => unwrap(api["indexer-manager"][":id"].$patch({ param: { id }, json: data })),
     onSuccess: () => {
       invalidateAll();
       setEditDialogOpen(false);
@@ -89,11 +216,7 @@ function SettingsPage() {
 
   const deleteIndexerMutation = useMutation({
     mutationFn: ({ managerId, indexerId }: { managerId: string; indexerId: string }) =>
-      unwrap(
-        api["indexer-manager"][":id"].indexers[":indexerId"].$delete({
-          param: { id: managerId, indexerId },
-        }),
-      ),
+      unwrap(api["indexer-manager"][":id"].indexers[":indexerId"].$delete({ param: { id: managerId, indexerId } })),
     onSuccess: () => invalidateAll(),
   });
 
@@ -113,10 +236,10 @@ function SettingsPage() {
 
   if (!selectedManager) return null;
 
-  const indexers = selectedManager.indexers ?? [];
+  const indexers = selectedManager?.indexers ?? [];
 
   return (
-    <Container className="space-y-6">
+    <div className="space-y-6">
       <Card className="overflow-hidden shadow-sm gap-0 pb-0">
         <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
@@ -126,7 +249,7 @@ function SettingsPage() {
             </CardTitle>
           </div>
           <CardDescription>
-            <Trans>Configure your torrent indexers (Prowlarr, Jackett, Torrentio).</Trans>
+            <Trans>Configure your torrent indexers (Prowlarr, Jackett, Torrentio, Addons).</Trans>
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0 border-t">
@@ -156,7 +279,6 @@ function SettingsPage() {
                         )}
                       >
                         {isSelected && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary" />}
-
                         <div className="flex items-center gap-3 min-w-0">
                           <img
                             src={indexersManagerImages[manager.indexerType]}
@@ -172,7 +294,6 @@ function SettingsPage() {
                             </Badge>
                           )}
                         </div>
-
                         <div className="flex items-center gap-1 ml-2 shrink-0">
                           <Button
                             variant="ghost"
@@ -230,73 +351,77 @@ function SettingsPage() {
             </div>
 
             <div className="lg:col-span-2 flex flex-col">
-              <div className="flex items-center justify-between h-12 px-4 border-b shrink-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-popover-foreground uppercase tracking-wider">
-                    {selectedManager.indexerType} <Trans>Indexers</Trans>
-                  </span>
-                </div>
-                {selectedManager.indexerType === "torrentio" ? (
-                  <Button size="sm" onClick={() => handleAddIndexer(selectedManager)}>
-                    <PlusIcon className="size-4" />
-                    <Trans>Add Indexer</Trans>
-                  </Button>
-                ) : (
-                  <Button asChild size="sm">
-                    <Link to="/settings/indexer" search={{ managerId: selectedManager.id }}>
-                      <SettingsIcon className="size-4" />
-                      <Trans>Configure</Trans>
-                    </Link>
-                  </Button>
-                )}
-              </div>
-
-              <div className="flex-1 bg-background/70 overflow-y-auto">
-                {indexers.length > 0 ? (
-                  <div className="divide-y divide-border">
-                    {indexers.map((idx) => (
-                      <div
-                        key={idx.id || idx.name}
-                        className="flex items-center justify-between px-4 py-3 transition-colors"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          {idx.lang && <Flag lang={idx.lang} />}
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-sm font-medium text-foreground">{idx.label || idx.name}</span>
-                            {idx.description && (
-                              <span className="text-xs text-muted-foreground truncate max-w-md">{idx.description}</span>
-                            )}
+              {selectedManager ? (
+                <>
+                  <div className="flex items-center justify-between h-12 px-4 border-b shrink-0">
+                    <span className="text-xs font-semibold text-popover-foreground uppercase tracking-wider">
+                      {selectedManager.indexerType} <Trans>Indexers</Trans>
+                    </span>
+                    {selectedManager.indexerType === "torrentio" ? (
+                      <Button size="sm" onClick={() => handleAddIndexer(selectedManager)}>
+                        <PlusIcon className="size-4" />
+                        <Trans>Add Indexer</Trans>
+                      </Button>
+                    ) : (
+                      <Button asChild size="sm">
+                        <Link to="/settings/indexer" search={{ managerId: selectedManager.id }}>
+                          <SettingsIcon className="size-4" />
+                          <Trans>Configure</Trans>
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex-1 bg-background/70 overflow-y-auto">
+                    {indexers.length > 0 ? (
+                      <div className="divide-y divide-border">
+                        {indexers.map((idx) => (
+                          <div
+                            key={idx.id || idx.name}
+                            className="flex items-center justify-between px-4 py-3 transition-colors"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              {idx.lang && <Flag lang={idx.lang} />}
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-sm font-medium text-foreground">{idx.label || idx.name}</span>
+                                {idx.description && (
+                                  <span className="text-xs text-muted-foreground truncate max-w-md">
+                                    {idx.description}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Badge variant="outline" className="font-normal">
+                                {idx.privacy || "public"}
+                              </Badge>
+                              {selectedManager.indexerType === "torrentio" && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-8"
+                                  onClick={() =>
+                                    deleteIndexerMutation.mutate({ managerId: selectedManager.id, indexerId: idx.id })
+                                  }
+                                >
+                                  <TrashIcon className="size-4 text-destructive" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Badge variant="outline" className="font-normal">
-                            {idx.privacy || "public"}
-                          </Badge>
-                          {selectedManager.indexerType === "torrentio" && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-8"
-                              onClick={() =>
-                                deleteIndexerMutation.mutate({
-                                  managerId: selectedManager.id,
-                                  indexerId: idx.id,
-                                })
-                              }
-                            >
-                              <TrashIcon className="size-4 text-destructive" />
-                            </Button>
-                          )}
-                        </div>
+                        ))}
                       </div>
-                    ))}
+                    ) : (
+                      <div className="py-12 text-center text-sm text-popover-foreground">
+                        <Trans>No indexers found for this manager.</Trans>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="py-12 text-center text-sm text-popover-foreground">
-                    <Trans>No indexers found for this manager.</Trans>
-                  </div>
-                )}
-              </div>
+                </>
+              ) : (
+                <div className="py-12 text-center text-sm text-popover-foreground">
+                  <Trans>Select a source to view its indexers.</Trans>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
@@ -319,6 +444,6 @@ function SettingsPage() {
         onSubmit={(data) => updateMutation.mutate(data)}
         isPending={updateMutation.isPending}
       />
-    </Container>
+    </div>
   );
 }
