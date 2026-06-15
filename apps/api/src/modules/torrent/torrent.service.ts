@@ -3,11 +3,13 @@ import type WebTorrent from "webtorrent";
 import { BadRequestError, ServiceUnavailableError } from "@/errors/error";
 import { AuthenticatedService } from "@/modules/auth/auth.service";
 import { torrentClient } from "@/modules/download/webtorrent.client";
+import { TORRENTIO_BASE_URL } from "@/modules/indexer-manager/indexer-manager.dto";
 import type { IndexerType } from "@/modules/indexer-manager/indexer-manager.schema";
 import { IndexerManagerService } from "@/modules/indexer-manager/indexer-manager.service";
 import type { IndexerAdapter } from "./adapters/base.adapter";
 import { JackettAdapter } from "./adapters/jackett.adapter";
 import { ProwlarrAdapter } from "./adapters/prowlarr.adapter";
+import { TorrentioAdapter } from "./adapters/torrentio.adapter";
 import type {
   Torrent,
   TorrentIndexerQuery,
@@ -19,6 +21,7 @@ import type {
 const ADAPTERS: Record<IndexerType, IndexerAdapter> = {
   jackett: new JackettAdapter(),
   prowlarr: new ProwlarrAdapter(),
+  torrentio: new TorrentioAdapter(),
 };
 
 function sanitizeQuery(query: string): string {
@@ -40,32 +43,61 @@ function buildSeasonEpisodeSuffix(season?: number, episode?: number): string {
 }
 
 export class TorrentService extends AuthenticatedService {
-  private async getIndexerConfig() {
-    const config = await new IndexerManagerService(this.user).get();
-    if (!config) throw new BadRequestError("No indexer is configured");
-    return config;
+  private getManagerService(): IndexerManagerService {
+    return new IndexerManagerService(this.user);
   }
 
   async getIndexers(): Promise<TorrentIndexerQuery[]> {
-    const config = await this.getIndexerConfig();
-    return ADAPTERS[config.indexerType].getIndexers({
-      apiKey: config.indexerApiKey,
-      baseUrl: config.indexerUrl,
-    });
+    const managers = await this.getManagerService().getMany();
+    const activeManagers = managers.filter((m) => !m.disabled);
+    if (activeManagers.length === 0) throw new BadRequestError("No indexer is configured");
+
+    const results: TorrentIndexerQuery[] = [];
+    for (const manager of activeManagers) {
+      for (const idx of manager.indexers) {
+        results.push({
+          id: idx.id,
+          name: idx.name,
+          label: idx.label,
+          lang: idx.lang ?? undefined,
+          privacy: idx.privacy as "private" | "semi-private" | "public",
+          description: idx.description ?? undefined,
+          indexerManagerId: manager.id,
+          indexerManagerType: manager.indexerType,
+        });
+      }
+    }
+    return results;
   }
 
   async searchTorrents(query: torrentSearchQuery): Promise<Torrent[]> {
-    const config = await this.getIndexerConfig();
-    const adapter = ADAPTERS[config.indexerType];
-    const adapterConfig = { apiKey: config.indexerApiKey, baseUrl: config.indexerUrl };
+    const manager = await this.getManagerService().get(query.indexerManagerId);
+    if (!manager) throw new BadRequestError("Indexer manager not found");
+    if (manager.disabled) throw new BadRequestError("Indexer manager is disabled");
 
-    const { media, indexerId, season, episode } = query;
+    const adapter = ADAPTERS[manager.indexerType];
+    const { media, indexerId, season, episode, imdbId } = query;
+
+    if (manager.indexerType === "torrentio") {
+      const providers = manager.indexers.map((i) => i.name);
+      const adapterConfig = {
+        apiKey: "",
+        baseUrl: manager.indexerUrl ?? TORRENTIO_BASE_URL,
+        providers,
+      };
+      return adapter.search({ q: "", t: media.type, imdbId, season, episode }, adapterConfig);
+    }
+
+    const adapterConfig = {
+      apiKey: manager.indexerApiKey ?? "",
+      baseUrl: manager.indexerUrl ?? "",
+    };
 
     const suffix = buildSeasonEpisodeSuffix(season, episode);
     const appendSuffix = (q: string) => (suffix ? `${q} ${suffix}` : q);
 
-    const search = (query: string, categories: string[]) =>
-      adapter.search({ q: query, t: media.type, indexerId, categories }, adapterConfig);
+    const search = (q: string, categories: string[]) =>
+      adapter.search({ q, t: media.type, indexerId, categories, imdbId }, adapterConfig);
 
     let categories =
       media.type === "movie"

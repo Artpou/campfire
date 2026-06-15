@@ -39,7 +39,7 @@ export function getTorrentQuality(title: string): TorrentQuality {
 
   if (t.includes("HD")) return "720p";
 
-  if (t.includes("dvdrip") || t.includes("webrip") || t.includes("dvdcam")) {
+  if (t.includes("dvdrip") || t.includes("webrip") || t.includes("dvdcam") || t.includes("bdrip")) {
     return "480p";
   }
 

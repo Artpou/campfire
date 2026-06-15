@@ -10,7 +10,10 @@ import { ArrowLeftIcon, ExternalLinkIcon } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 
 import { useAuth } from "@/features/auth/auth-store";
-import { indexerQueries } from "@/features/torrent/hooks/indexer.queries";
+
+export interface IndexerSearch {
+  managerId?: string;
+}
 
 export const Route = createFileRoute("/_app/settings/indexer")({
   component: IndexerDashboardPage,
@@ -20,19 +23,27 @@ export const Route = createFileRoute("/_app/settings/indexer")({
       throw redirect({ to: "/settings" });
     }
   },
+  validateSearch: (search: Record<string, unknown>): IndexerSearch => ({
+    managerId: typeof search.managerId === "string" ? search.managerId : undefined,
+  }),
 });
 
 function IndexerDashboardPage() {
   const { t } = useLingui();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [loadFailed, setLoadFailed] = useState(false);
+  const { managerId } = Route.useSearch();
 
-  const { data: indexer, isLoading } = useQuery({
-    queryKey: [...indexerQueries.key],
-    queryFn: () => unwrap(api["indexer-manager"].$get()),
+  const { data: manager, isLoading } = useQuery({
+    queryKey: ["indexer-manager", managerId],
+    queryFn: async () => {
+      if (!managerId) return null;
+      return unwrap(api["indexer-manager"][":id"].$get({ param: { id: managerId } }));
+    },
+    enabled: !!managerId,
   });
 
-  const url = indexer?.indexerUrl;
+  const url = manager?.indexerUrl;
 
   if (isLoading) {
     return null;
@@ -53,7 +64,7 @@ function IndexerDashboardPage() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-[90vh]">
       <div className="flex items-center gap-2 p-3 border-b bg-background">
         <Button asChild variant="ghost" size="sm">
           <Link to="/settings">

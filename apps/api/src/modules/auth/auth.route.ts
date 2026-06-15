@@ -87,10 +87,10 @@ export const authRoutes = new Hono()
     const currentUser = await new UserService().get(userId);
     if (!currentUser) throw new NotFoundError("User");
 
-    const selectedIndexer = await new IndexerManagerService(currentUser).get();
+    const indexerManagers = await new IndexerManagerService(currentUser).getManyBasic();
 
     return c.json({
       ...currentUser,
-      selectedIndexer,
+      indexerManagers,
     });
   });

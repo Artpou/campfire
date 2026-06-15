@@ -16,9 +16,8 @@ export const torrentSchema = z.object({
   language: z.enum(["en", "fr", "es", "multi", ""]).optional(),
   detailsUrl: z.string().optional(),
   indexerType: z.enum(indexerTypeEnum),
-  // Optional fields from different indexers
-  downloadUrl: z.string().optional(), // OxTorrent, etc.
-  magnetUrl: z.string().optional(), // Prowlarr redirect URL
+  downloadUrl: z.string().optional(),
+  magnetUrl: z.string().optional(),
 });
 
 export type TorrentQuality = z.infer<typeof torrentSchema>["quality"];
@@ -41,14 +40,21 @@ export interface TorrentInspectResult {
 
 export const torrentIndexerDto = z.object({
   id: z.string(),
-  name: z.enum(indexerTypeEnum),
+  name: z.string(),
+  label: z.string().optional(),
+  lang: z.string().optional(),
   privacy: z.enum(["private", "semi-private", "public"]),
+  description: z.string().optional(),
+  indexerManagerId: z.string().optional(),
+  indexerManagerType: z.enum(indexerTypeEnum).optional(),
 });
 export type TorrentIndexerQuery = z.infer<typeof torrentIndexerDto>;
 
 export const torrentSearchDto = z.object({
   media: mediaSelectSchema,
-  indexerId: z.string(),
+  indexerManagerId: z.string(),
+  indexerId: z.string().optional(),
+  imdbId: z.string().optional(),
   season: z.number().int().positive().optional(),
   episode: z.number().int().positive().optional(),
 });

@@ -7,7 +7,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api, getBaseUrl, unwrap, withSessionParam } from "@seedarr/sdk";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { SubtitlesIcon } from "lucide-react";
-import ms from "ms";
 
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
@@ -18,7 +17,7 @@ import { Container } from "@/shared/ui/container";
 
 import { SubtitleSearchDialog } from "@/features/subtitles/components/subtitle-search-dialog";
 import { subtitleQueries } from "@/features/subtitles/hooks/subtitle.queries";
-import { downloadQueries } from "@/features/torrent/hooks/download.queries";
+import { downloadQueries, refetchDownloadInterval } from "@/features/torrent/hooks/download.queries";
 
 export const Route = createFileRoute("/_app/downloads/$id/play")({
   loader: ({ context, params }) =>
@@ -34,7 +33,10 @@ export const Route = createFileRoute("/_app/downloads/$id/play")({
 
 function VideoPlayerPage() {
   const { id } = Route.useParams();
-  const { data: download } = useSuspenseQuery({ ...downloadQueries.details(id), refetchInterval: ms("1s") });
+  const { data: download } = useSuspenseQuery({
+    ...downloadQueries.details(id),
+    refetchInterval: refetchDownloadInterval,
+  });
   const { data: externalSubtitles } = useSuspenseQuery(subtitleQueries.external(id));
   const { data: mediaSession } = useSuspenseQuery(mediaSessionQueries.get());
 
@@ -64,7 +66,7 @@ function VideoPlayerPage() {
         param: { id: download?.mediaId?.toString() ?? "" },
         json: { position: Math.floor(plyr.currentTime), duration: Math.floor(plyr.duration), downloadId: id },
       });
-    }, 1000);
+    }, 5000);
 
     return () => {
       clearInterval(patchInterval);

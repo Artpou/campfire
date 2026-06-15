@@ -61,6 +61,7 @@ function TVTorrentsPage() {
 
   const { data: tvData } = useSuspenseQuery(tvQueries.details(params.id, context.language));
   const { data: indexers } = useSuspenseQuery(indexerQueries.list());
+  const imdbId = tvData.tv.external_ids?.imdb_id ?? undefined;
   const {
     torrents,
     indexerStats,
@@ -68,6 +69,7 @@ function TVTorrentsPage() {
   } = useTorrents(tvData.media, indexers, {
     season: search.season,
     episode: search.episode,
+    imdbId,
   });
 
   const [visibleIndexers, setVisibleIndexers] = useState<Set<string>>(new Set());
@@ -166,18 +168,22 @@ function TVTorrentsPage() {
         </div>
       </div>
 
-      <div className="xl:grid xl:grid-cols-7 xl:gap-6">
-        <div className="xl:col-span-5">
-          <TorrentTable torrents={filteredTorrents} media={media} isLoading={isAnyTorrentLoading} />
+      {indexers.length > 1 ? (
+        <div className="xl:grid xl:grid-cols-7 xl:gap-6">
+          <div className="xl:col-span-5">
+            <TorrentTable torrents={filteredTorrents} media={media} isLoading={isAnyTorrentLoading} />
+          </div>
+          <div className="hidden xl:block xl:col-span-2">
+            <TorrentIndexersTable
+              indexers={indexers}
+              indexerQueries={indexerStats}
+              onVisibilityChange={setVisibleIndexers}
+            />
+          </div>
         </div>
-        <div className="hidden xl:block xl:col-span-2">
-          <TorrentIndexersTable
-            indexers={indexers || []}
-            indexerQueries={indexerStats}
-            onVisibilityChange={setVisibleIndexers}
-          />
-        </div>
-      </div>
+      ) : (
+        <TorrentTable torrents={filteredTorrents} media={media} isLoading={isAnyTorrentLoading} />
+      )}
     </Container>
   );
 }

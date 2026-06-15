@@ -15,14 +15,29 @@ export const torrentQueries = {
     }),
 };
 
+interface UseTorrentsOptions {
+  season?: number;
+  episode?: number;
+  imdbId?: string;
+}
+
 export function useTorrents(
   media: Media | null | undefined,
   indexers: TorrentIndexerQuery[],
-  { season, episode }: { season?: number; episode?: number } = {},
+  { season, episode, imdbId }: UseTorrentsOptions = {},
 ) {
   return useQueries({
     queries: indexers.map((indexer) => ({
-      queryKey: [...torrentQueries.key, media?.id, media?.type, indexer.id, season, episode],
+      queryKey: [
+        ...torrentQueries.key,
+        media?.id,
+        media?.type,
+        indexer.indexerManagerId,
+        indexer.id,
+        season,
+        episode,
+        imdbId,
+      ],
       queryFn: async () => {
         if (!media) return [];
 
@@ -30,7 +45,9 @@ export function useTorrents(
           api.torrents.search.$post({
             json: {
               media,
+              indexerManagerId: indexer.indexerManagerId ?? "",
               indexerId: indexer.id,
+              imdbId,
               season,
               episode,
             },
@@ -54,11 +71,27 @@ export function useTorrents(
         return { status, count: data.length };
       });
 
-      const allTorrents = results.flatMap((query, index) => {
-        if (!query.data) return [];
-        const indexerId = indexers[index]?.id;
-        return query.data.map((torrent) => ({ ...torrent, indexerId }));
-      });
+      const seenLinks = new Set<string>();
+
+      const allTorrents = results
+        .flatMap((query, index) => {
+          if (!query.data) return [];
+          const indexer = indexers[index];
+
+          return query.data.map((torrent) => ({
+            ...torrent,
+            indexerId: indexer?.id,
+            indexerManagerType: indexer?.indexerManagerType,
+          }));
+        })
+        .filter((torrent) => {
+          if (!torrent.link) return false;
+
+          if (seenLinks.has(torrent.link)) return false;
+
+          seenLinks.add(torrent.link);
+          return true;
+        });
 
       const year = new Date(media?.release_date || "").getFullYear().toString();
 

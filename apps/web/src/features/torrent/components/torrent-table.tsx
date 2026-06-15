@@ -1,32 +1,56 @@
 import { useMemo, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { Media, Torrent, TorrentQuality } from "@seedarr/sdk";
+import type { IndexerType, Media, Torrent, TorrentLanguage, TorrentQuality } from "@seedarr/sdk";
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowDownIcon, ArrowUpIcon, DownloadIcon, EarthIcon, InfoIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, DownloadIcon, EarthIcon, InfoIcon, VideoIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import { cn } from "@/lib/utils";
 import { Flag } from "@/shared/components/flag";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
-import { Badge, badgeVariants } from "@/shared/ui/badge";
+import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
+import { indexersManagerImages } from "@/features/indexers-manager/helpers/indexers-manager.helper";
 import { useStartDownload } from "@/features/torrent/hooks/download.queries";
 import { TorrentInspectModal } from "./torrent-inspect-modal";
 
+interface TorrentWithMeta extends Torrent {
+  indexerId?: string;
+  indexerManagerType?: IndexerType;
+}
+
 interface TorrentTableProps {
-  torrents: Torrent[];
+  torrents: TorrentWithMeta[];
   media: Media;
   isLoading?: boolean;
+}
+
+function LanguageOption({ lang }: { lang: string }) {
+  if (lang === "all") return <Trans>All languages</Trans>;
+  if (lang === "multi") {
+    return (
+      <span className="flex items-center gap-2">
+        <EarthIcon className="size-4" />
+        MULTI
+      </span>
+    );
+  }
+  return (
+    <span className="flex items-center gap-2">
+      <Flag lang={lang} />
+      {lang.toUpperCase()}
+    </span>
+  );
 }
 
 export function TorrentTable({ torrents, media, isLoading = false }: TorrentTableProps) {
   const { t } = useLingui();
   const startDownload = useStartDownload();
   const navigate = useNavigate();
+  const [selectedLanguage, setSelectedLanguage] = useState<TorrentLanguage | "all">("all");
 
   const [selectedQualityIndex, setSelectedQualityIndex] = useState<number>(0);
 
@@ -38,7 +62,6 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
 
   const filteredTorrents = useMemo(() => {
     return torrents.filter((torrent) => {
-      // Quality filter (minimum-quality semantics)
       if (selectedQualityIndex > 0) {
         if (!torrent.quality) return false;
         const torrentQualityIndex = qualityLevels.indexOf(torrent.quality);
@@ -47,31 +70,32 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
         }
       }
 
+      if (selectedLanguage !== "all") {
+        if (torrent.language !== selectedLanguage) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [torrents, selectedQualityIndex]);
+  }, [torrents, selectedQualityIndex, selectedLanguage]);
+
+  const availableLanguages = useMemo(() => {
+    const langs = new Set<string>();
+    for (const torrent of torrents) {
+      if (torrent.language) langs.add(torrent.language);
+    }
+    return Array.from(langs).sort();
+  }, [torrents]);
 
   /**
    * Extract the best download URI from a torrent object
    * Priority: guid (if magnet) > downloadUrl > magnetUrl > link
    */
   const getTorrentUri = (torrent: Torrent): string => {
-    // Priority 1: guid if it's a magnet URI (The Pirate Bay, etc.)
-    if (torrent.guid?.startsWith("magnet:")) {
-      return torrent.guid;
-    }
-
-    // Priority 2: downloadUrl (OxTorrent, etc.)
-    if (torrent.downloadUrl) {
-      return torrent.downloadUrl;
-    }
-
-    // Priority 3: magnetUrl (Prowlarr redirect)
-    if (torrent.magnetUrl) {
-      return torrent.magnetUrl;
-    }
-
-    // Fallback: link
+    if (torrent.guid?.startsWith("magnet:")) return torrent.guid;
+    if (torrent.downloadUrl) return torrent.downloadUrl;
+    if (torrent.magnetUrl) return torrent.magnetUrl;
     return torrent.link;
   };
 
@@ -110,26 +134,25 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
       {/* Filters */}
       <div className="flex flex-row gap-4 items-center">
         <Badge variant="outline" className="flex gap-2 w-full md:w-auto py-2 bg-card border-b-0 rounded-b-none">
-          <Trans>Minimum Quality</Trans> :
-          <div className="hidden md:flex flex-wrap gap-1.5">
-            {qualityLevels.map((quality, index) => (
-              <button
-                key={quality}
-                type="button"
-                onClick={() => setSelectedQualityIndex(index)}
-                className={cn(
-                  badgeVariants({
-                    variant: selectedQualityIndex === index ? "default" : "outline",
-                  }),
-                  "cursor-pointer rounded-full px-3 py-1 text-xs transition-colors",
-                )}
-              >
-                {quality === "all" ? <Trans>All</Trans> : quality}
-              </button>
-            ))}
-          </div>
+          {availableLanguages.length > 0 && (
+            <Select value={selectedLanguage} onValueChange={(v) => setSelectedLanguage(v as TorrentLanguage | "all")}>
+              <SelectTrigger className="h-7 w-36 border-0 bg-transparent shadow-none">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={"all"}>
+                  <LanguageOption lang={"all"} />
+                </SelectItem>
+                {availableLanguages.map((lang) => (
+                  <SelectItem key={lang} value={lang}>
+                    <LanguageOption lang={lang} />
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Select value={selectedQualityIndex.toString()} onValueChange={(v) => setSelectedQualityIndex(Number(v))}>
-            <SelectTrigger className="md:hidden w-full rounded-none">
+            <SelectTrigger className="h-7 w-36 border-0 bg-transparent shadow-none">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -147,6 +170,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
         <TableHeader className="bg-muted/50">
           <TableRow className="hover:bg-transparent">
             <TableHead className="w-full">
+              <Badge className="mr-2">{filteredTorrents.length}</Badge>
               <Trans>Torrent Name</Trans>
             </TableHead>
             <TableHead className="hidden sm:table-cell text-center">
@@ -194,8 +218,6 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
                       {torrent.title}
                     </a>
                     <div className="flex items-center gap-2">
-                      <Badge variant="default">{torrent.tracker}</Badge>
-                      {torrent.quality && <Badge variant="secondary">{torrent.quality}</Badge>}
                       {torrent.language === "multi" ? (
                         <Badge className="flex items-center gap-2" variant="secondary">
                           <EarthIcon />
@@ -203,6 +225,21 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
                         </Badge>
                       ) : (
                         <Flag lang={torrent.language || media.original_language || ""} />
+                      )}
+                      {torrent.quality && <Badge variant="secondary">{torrent.quality}</Badge>}
+                      {torrent.title.toLowerCase().includes("mkv") && (
+                        <Badge variant="secondary">
+                          <VideoIcon />
+                          Streamable
+                        </Badge>
+                      )}
+                      <Badge variant="outline">{torrent.tracker}</Badge>
+                      {torrent.indexerManagerType && (
+                        <img
+                          src={indexersManagerImages[torrent.indexerManagerType]}
+                          alt={torrent.indexerManagerType}
+                          className="size-4"
+                        />
                       )}
                     </div>
                   </div>
@@ -216,10 +253,12 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
                       <ArrowUpIcon className="size-3" />
                       <span className="text-xs">{torrent.seeders}</span>
                     </div>
-                    <div className="flex items-center gap-1 font-bold text-destructive">
-                      <ArrowDownIcon className="size-3" />
-                      <span className="text-xs">{torrent.peers}</span>
-                    </div>
+                    {torrent.indexerManagerType !== "torrentio" && (
+                      <div className="flex items-center gap-1 font-bold text-destructive">
+                        <ArrowDownIcon className="size-3" />
+                        <span className="text-xs">{torrent.peers}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="absolute inset-y-0 right-2 z-10 flex items-center gap-2 opacity-0 group-hover:opacity-100">
                     <Button

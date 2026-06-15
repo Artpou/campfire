@@ -1,9 +1,8 @@
 import { ServiceUnavailableError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
 import { getLanguageFromTitle, getTorrentQuality } from "@/helpers/video.helper";
-import type { IndexerType } from "@/modules/indexer-manager/indexer-manager.schema";
 import type { Torrent, TorrentIndexerQuery } from "../torrent.dto";
-import type { IndexerAdapter, IndexerConfig } from "./base.adapter";
+import type { IndexerAdapter, IndexerConfig, SearchQuery } from "./base.adapter";
 
 interface ProwlarrSearchItem {
   quality: string;
@@ -18,9 +17,18 @@ interface ProwlarrSearchItem {
   leechers: number | null;
 }
 
+interface ProwlarrIndexer {
+  id: number;
+  name: string;
+  definitionName: string;
+  description: string;
+  language: string;
+  privacy: string;
+  enable: boolean;
+}
+
 export class ProwlarrAdapter implements IndexerAdapter {
   private getApiUrl(baseUrl: string): string {
-    // Ensure baseUrl doesn't have trailing slash and append /api/v1
     const cleanBase = baseUrl.replace(/\/+$/, "");
     return cleanBase.includes("/api/v1") ? cleanBase : `${cleanBase}/api/v1`;
   }
@@ -38,60 +46,22 @@ export class ProwlarrAdapter implements IndexerAdapter {
       throw new ServiceUnavailableError(`Prowlarr (${response.status} ${response.statusText})`);
     }
 
-    const data = (await response.json()) as {
-      id: number;
-      name: string;
-      privacy: string;
-      enable: boolean;
-    }[];
+    const data = (await response.json()) as ProwlarrIndexer[];
 
     return data
-      .filter((indexer) => !!indexer.enable)
-      .map((indexer) => ({
-        id: indexer.id.toString(),
-        name: indexer.name as IndexerType,
-        privacy: indexer.privacy as "private" | "semi-private" | "public",
+      .filter((idx) => !!idx.enable)
+      .map((idx) => ({
+        id: idx.id.toString(),
+        name: idx.definitionName || idx.name,
+        label: idx.name,
+        lang: idx.language?.split("-")[0] || undefined,
+        privacy: idx.privacy as "private" | "semi-private" | "public",
+        description: idx.description || undefined,
       }));
   }
 
-  async search(
-    query: { q: string; t: string; indexerId?: string; categories?: string[] },
-    config: IndexerConfig,
-  ): Promise<Torrent[]> {
-    const apiUrl = this.getApiUrl(config.baseUrl);
-    const url = new URL(`${apiUrl}/search`);
-    url.searchParams.set("query", query.q);
-    url.searchParams.set("limit", "100");
-
-    // Add categories if provided
-    if (query.categories && query.categories.length > 0) {
-      for (const category of query.categories) {
-        url.searchParams.append("categories", category);
-      }
-    }
-
-    if (query.indexerId) {
-      url.searchParams.set("indexerIds", query.indexerId);
-    }
-
-    logger.debug("PROWLARR", `GET ${url.toString()}`);
-    const response = await fetch(url.toString(), {
-      headers: { "X-Api-Key": config.apiKey },
-    });
-
-    if (!response.ok) {
-      throw new ServiceUnavailableError(
-        `Prowlarr indexer ${query.indexerId} (${response.status} ${response.statusText})`,
-      );
-    }
-
-    const data = await response.json();
-
-    if (!Array.isArray(data)) {
-      throw new ServiceUnavailableError(`Prowlarr indexer ${query.indexerId} (invalid response)`);
-    }
-
-    return data.map((result: ProwlarrSearchItem) => ({
+  private mapResults(data: ProwlarrSearchItem[]): Torrent[] {
+    return data.map((result) => ({
       ...result,
       title: result.title,
       tracker: result.indexer,
@@ -104,7 +74,59 @@ export class ProwlarrAdapter implements IndexerAdapter {
       quality: getTorrentQuality(result.title),
       language: getLanguageFromTitle(result.title),
       detailsUrl: result.infoUrl,
-      indexerType: "prowlarr",
+      indexerType: "prowlarr" as const,
     }));
+  }
+
+  private buildSearchUrl(apiUrl: string, query: SearchQuery, searchTerm: string): URL {
+    const url = new URL(`${apiUrl}/search`);
+    url.searchParams.set("query", searchTerm);
+    url.searchParams.set("limit", "100");
+
+    if (query.categories && query.categories.length > 0) {
+      for (const category of query.categories) {
+        url.searchParams.append("categories", category);
+      }
+    }
+    if (query.indexerId) {
+      url.searchParams.set("indexerIds", query.indexerId);
+    }
+
+    return url;
+  }
+
+  private async fetchSearch(url: URL, config: IndexerConfig, label: string): Promise<Torrent[]> {
+    logger.debug("PROWLARR", `GET ${url.toString()}`);
+    const response = await fetch(url.toString(), {
+      headers: { "X-Api-Key": config.apiKey },
+    });
+
+    if (!response.ok) {
+      throw new ServiceUnavailableError(`Prowlarr ${label} (${response.status} ${response.statusText})`);
+    }
+
+    const data = await response.json();
+    if (!Array.isArray(data)) {
+      throw new ServiceUnavailableError(`Prowlarr ${label} (invalid response)`);
+    }
+
+    return this.mapResults(data);
+  }
+
+  async search(query: SearchQuery, config: IndexerConfig): Promise<Torrent[]> {
+    const apiUrl = this.getApiUrl(config.baseUrl);
+
+    if (query.imdbId) {
+      const imdbUrl = this.buildSearchUrl(apiUrl, query, `{ImdbId:${query.imdbId}}`);
+      try {
+        const results = await this.fetchSearch(imdbUrl, config, `imdb:${query.imdbId}`);
+        if (results.length > 0) return results;
+      } catch {
+        logger.warn("PROWLARR", `IMDB search failed for ${query.imdbId}, falling back to title search`);
+      }
+    }
+
+    const titleUrl = this.buildSearchUrl(apiUrl, query, query.q);
+    return this.fetchSearch(titleUrl, config, `query:${query.q}`);
   }
 }

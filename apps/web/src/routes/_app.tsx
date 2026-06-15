@@ -53,9 +53,8 @@ function AuthenticatedLayout() {
   const { isAdmin, hasRole } = useRole();
   const user = useAuth((state) => state.user);
 
-  const selectedIndexer = user?.selectedIndexer;
-  const isIndexerMisconfigured =
-    isAdmin && (!selectedIndexer || !selectedIndexer.indexerApiKey || !selectedIndexer.indexerUrl);
+  const indexerManagers = user?.indexerManagers;
+  const isIndexerMisconfigured = isAdmin && (!indexerManagers || indexerManagers.length === 0);
 
   const visibleNavItems = navItems.filter((item) => {
     if (item.minRole && !hasRole(item.minRole)) return false;

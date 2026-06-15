@@ -1,200 +1,324 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 
-import { msg } from "@lingui/core/macro";
-import { Trans, useLingui } from "@lingui/react/macro";
-import type { IndexerType, UpsertIndexerManagerInput } from "@seedarr/sdk";
+import { Trans } from "@lingui/react/macro";
+import type { IndexerManagerWithIndexers, IndexerType } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { LogOutIcon, SaveIcon, SettingsIcon } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { PencilIcon, PlusIcon, PowerIcon, PowerOffIcon, SettingsIcon, TrashIcon } from "lucide-react";
 
+import { cn } from "@/lib/utils";
+import { Flag } from "@/shared/components/flag";
+import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
-import { Input } from "@/shared/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 
-import { useAuth } from "@/features/auth/auth-store";
-import { useRole } from "@/features/auth/hooks/use-role";
-import { IndexerList } from "@/features/torrent/components/indexer-list";
-import { indexerQueries } from "@/features/torrent/hooks/indexer.queries";
+import { IndexersManagerAddDialog } from "@/features/indexers-manager/components/indexers-manager-add-dialog";
+import { IndexersManagerEditDialog } from "@/features/indexers-manager/components/indexers-manager-edit-dialog";
+import { indexersManagerImages } from "@/features/indexers-manager/helpers/indexers-manager.helper";
+import { indexerManagerQueries } from "@/features/torrent/hooks/indexer.queries";
 
 export const Route = createFileRoute("/_app/settings/")({
   component: SettingsPage,
 });
 
-const INDEXER_DEFAULTS: Record<IndexerType, string> = {
-  jackett: "http://localhost:9117",
-  prowlarr: "http://localhost:9696",
-};
-
 function SettingsPage() {
-  const { t } = useLingui();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
-  const logout = useAuth((state) => state.logout);
-  const { isAdmin } = useRole();
 
-  const { data: indexerConfig } = useQuery({
-    queryKey: ["indexer-manager"],
-    queryFn: () => unwrap(api["indexer-manager"].$get()),
-  });
+  const { data: managers = [] } = useQuery(indexerManagerQueries.list());
+  const [selectedManagerId, setSelectedManagerId] = useState<string | null>(null);
 
-  const {
-    data: availableIndexers,
-    isFetching: isIndexersFetching,
-    isError: isIndexersError,
-  } = useQuery(indexerQueries.list());
+  const selectedManager = managers.find((m) => m.id === selectedManagerId) ?? managers[0] ?? null;
 
-  const [indexerType, setIndexerType] = useState<IndexerType>("jackett");
-  const [indexerUrl, setIndexerUrl] = useState("");
-  const [indexerApiKey, setIndexerApiKey] = useState("");
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editManager, setEditManager] = useState<IndexerManagerWithIndexers | null>(null);
 
-  useEffect(() => {
-    if (indexerConfig) {
-      setIndexerType(indexerConfig.indexerType);
-      setIndexerUrl(indexerConfig.indexerUrl);
-      setIndexerApiKey(indexerConfig.indexerApiKey);
-    }
-  }, [indexerConfig]);
+  const hasTorrentio = managers.some((m) => m.indexerType === "torrentio");
 
-  const upsertIndexer = useMutation({
-    mutationFn: (data: UpsertIndexerManagerInput) => api["indexer-manager"].$post({ json: data }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["indexer-manager"] });
-      queryClient.invalidateQueries({ queryKey: ["torrent-indexers"] });
-    },
-  });
-
-  const handleSave = () => {
-    if (!indexerUrl || !indexerApiKey) return;
-    upsertIndexer.mutate({
-      indexerType,
-      indexerUrl,
-      indexerApiKey,
-    });
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: indexerManagerQueries.key });
+    queryClient.invalidateQueries({ queryKey: ["torrent-indexers"] });
+    queryClient.invalidateQueries({ queryKey: ["indexer-manager"] });
   };
 
-  const logoutMutation = useMutation({
-    mutationFn: () => api.auth.logout.$post(),
+  const createMutation = useMutation({
+    mutationFn: (data: {
+      indexerType: IndexerType;
+      indexerUrl?: string;
+      indexerApiKey?: string;
+      providers?: string[];
+    }) => unwrap(api["indexer-manager"].$post({ json: data })),
     onSuccess: () => {
-      logout();
-      navigate({ to: "/login" });
+      invalidateAll();
+      setAddDialogOpen(false);
     },
   });
 
-  const handleLogout = () => logoutMutation.mutate();
+  const updateMutation = useMutation({
+    mutationFn: ({
+      id,
+      ...data
+    }: {
+      id: string;
+      indexerUrl?: string;
+      indexerApiKey?: string;
+      providers?: string[];
+      disabled?: boolean;
+    }) =>
+      unwrap(
+        api["indexer-manager"][":id"].$patch({
+          param: { id },
+          json: data,
+        }),
+      ),
+    onSuccess: () => {
+      invalidateAll();
+      setEditDialogOpen(false);
+    },
+  });
 
-  const canOpenIndexerDashboard = useMemo(() => Boolean(indexerConfig?.indexerUrl), [indexerConfig]);
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => unwrap(api["indexer-manager"][":id"].$delete({ param: { id } })),
+    onSuccess: () => {
+      invalidateAll();
+      setSelectedManagerId(null);
+    },
+  });
 
-  const isDirty =
-    indexerConfig?.indexerType !== indexerType ||
-    indexerConfig?.indexerUrl !== indexerUrl ||
-    indexerConfig?.indexerApiKey !== indexerApiKey;
+  const deleteIndexerMutation = useMutation({
+    mutationFn: ({ managerId, indexerId }: { managerId: string; indexerId: string }) =>
+      unwrap(
+        api["indexer-manager"][":id"].indexers[":indexerId"].$delete({
+          param: { id: managerId, indexerId },
+        }),
+      ),
+    onSuccess: () => invalidateAll(),
+  });
+
+  const handleEdit = (manager: IndexerManagerWithIndexers) => {
+    setEditManager(manager);
+    setEditDialogOpen(true);
+  };
+
+  const handleAddIndexer = (manager: IndexerManagerWithIndexers) => {
+    setEditManager(manager);
+    setEditDialogOpen(true);
+  };
+
+  const handleToggleDisabled = (manager: IndexerManagerWithIndexers) => {
+    updateMutation.mutate({ id: manager.id, disabled: !manager.disabled });
+  };
+
+  if (!selectedManager) return null;
+
+  const indexers = selectedManager.indexers ?? [];
 
   return (
-    <Container>
-      {isAdmin && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <SettingsIcon className="size-5" />
-              <CardTitle>
-                <Trans>Torrent Indexer</Trans>
-              </CardTitle>
-            </div>
-            <CardDescription>
-              <Trans>Configure your Jackett or Prowlarr instance to search and download torrents.</Trans>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium" htmlFor="indexer-type">
-                <Trans>Type</Trans>
-              </label>
-              <Select
-                value={indexerType}
-                onValueChange={(v) => {
-                  const next = v as IndexerType;
-                  setIndexerType(next);
-                  if (!indexerUrl) setIndexerUrl(INDEXER_DEFAULTS[next]);
-                }}
-              >
-                <SelectTrigger id="indexer-type" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="jackett">Jackett</SelectItem>
-                  <SelectItem value="prowlarr">Prowlarr</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Input
-              id="indexer-url"
-              label={<Trans>URL</Trans>}
-              placeholder={INDEXER_DEFAULTS[indexerType]}
-              value={indexerUrl}
-              onChange={(e) => setIndexerUrl(e.target.value)}
-            />
-
-            <Input
-              id="indexer-api-key"
-              label={<Trans>API Key</Trans>}
-              placeholder={t(msg`Enter your API key...`)}
-              value={indexerApiKey}
-              onChange={(e) => setIndexerApiKey(e.target.value)}
-            />
-
-            <div className="flex flex-wrap gap-2">
-              <Button
-                onClick={handleSave}
-                disabled={!isDirty || !indexerUrl || !indexerApiKey || upsertIndexer.isPending}
-              >
-                <SaveIcon className="size-4" />
-                <Trans>Save</Trans>
-              </Button>
-              <Button asChild variant="outline" disabled={!canOpenIndexerDashboard}>
-                <Link to="/settings/indexer">
-                  <SettingsIcon className="size-4" />
-                  <Trans>Configure</Trans>
-                </Link>
-              </Button>
-            </div>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  <Trans>Available Indexers</Trans>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <IndexerList indexers={availableIndexers} isLoading={isIndexersFetching} isError={isIndexersError} />
-              </CardContent>
-            </Card>
-          </CardContent>
-        </Card>
-      )}
-
-      <Card>
-        <CardHeader>
+    <Container className="space-y-6">
+      <Card className="overflow-hidden shadow-sm gap-0 pb-0">
+        <CardHeader className="pb-4">
           <div className="flex items-center gap-2">
-            <LogOutIcon className="size-5" />
+            <SettingsIcon className="size-5 text-popover-foreground" />
             <CardTitle>
-              <Trans>Account</Trans>
+              <Trans>Indexer Managers</Trans>
             </CardTitle>
           </div>
           <CardDescription>
-            <Trans>Manage your account settings and sign out.</Trans>
+            <Trans>Configure your torrent indexers (Prowlarr, Jackett, Torrentio).</Trans>
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Button variant="destructive" onClick={handleLogout} className="w-full">
-            <LogOutIcon className="mr-2 size-4" />
-            <Trans>Sign Out</Trans>
-          </Button>
+        <CardContent className="p-0 border-t">
+          <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-border min-h-[380px]">
+            <div className="flex flex-col justify-between">
+              <div className="flex flex-col w-full">
+                <div className="flex items-center h-12 px-4 border-b">
+                  <span className="text-xs font-semibold text-popover-foreground uppercase tracking-wider">
+                    <Trans>Sources</Trans>
+                  </span>
+                </div>
+
+                <div className="divide-y divide-border">
+                  {managers.map((manager) => {
+                    const isSelected = selectedManager?.id === manager.id;
+                    return (
+                      <button
+                        key={manager.id}
+                        type="button"
+                        onClick={() => setSelectedManagerId(manager.id)}
+                        className={cn(
+                          "flex items-center justify-between w-full text-left px-4 py-3 relative transition-colors",
+                          isSelected
+                            ? "bg-accent text-accent-foreground"
+                            : "hover:bg-muted text-popover-foreground hover:text-foreground",
+                          manager.disabled && "opacity-50",
+                        )}
+                      >
+                        {isSelected && <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary" />}
+
+                        <div className="flex items-center gap-3 min-w-0">
+                          <img
+                            src={indexersManagerImages[manager.indexerType]}
+                            alt={manager.indexerType}
+                            className="size-4 object-contain shrink-0"
+                          />
+                          <span className="text-sm font-medium truncate">
+                            {manager.indexerType === "torrentio" ? "Torrentio" : manager.indexerUrl}
+                          </span>
+                          {manager.disabled && (
+                            <Badge variant="outline" className="text-xs shrink-0">
+                              <Trans>Disabled</Trans>
+                            </Badge>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1 ml-2 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title={manager.disabled ? "Enable" : "Disable"}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleDisabled(manager);
+                            }}
+                          >
+                            {manager.disabled ? (
+                              <PowerOffIcon className="size-4 text-muted-foreground" />
+                            ) : (
+                              <PowerIcon className="size-4" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(manager);
+                            }}
+                          >
+                            <PencilIcon className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteMutation.mutate(manager.id);
+                            }}
+                          >
+                            <TrashIcon className="size-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </button>
+                    );
+                  })}
+                  {managers.length === 0 && (
+                    <div className="py-12 text-center text-sm text-popover-foreground px-4">
+                      <Trans>No indexer managers configured.</Trans>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-border">
+                <Button className="w-full" onClick={() => setAddDialogOpen(true)}>
+                  <PlusIcon className="size-4" />
+                  <Trans>Add Indexer Manager</Trans>
+                </Button>
+              </div>
+            </div>
+
+            <div className="lg:col-span-2 flex flex-col">
+              <div className="flex items-center justify-between h-12 px-4 border-b shrink-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-popover-foreground uppercase tracking-wider">
+                    {selectedManager.indexerType} <Trans>Indexers</Trans>
+                  </span>
+                </div>
+                {selectedManager.indexerType === "torrentio" ? (
+                  <Button size="sm" onClick={() => handleAddIndexer(selectedManager)}>
+                    <PlusIcon className="size-4" />
+                    <Trans>Add Indexer</Trans>
+                  </Button>
+                ) : (
+                  <Button asChild size="sm">
+                    <Link to="/settings/indexer" search={{ managerId: selectedManager.id }}>
+                      <SettingsIcon className="size-4" />
+                      <Trans>Configure</Trans>
+                    </Link>
+                  </Button>
+                )}
+              </div>
+
+              <div className="flex-1 bg-background/70 overflow-y-auto">
+                {indexers.length > 0 ? (
+                  <div className="divide-y divide-border">
+                    {indexers.map((idx) => (
+                      <div
+                        key={idx.id || idx.name}
+                        className="flex items-center justify-between px-4 py-3 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {idx.lang && <Flag lang={idx.lang} />}
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-medium text-foreground">{idx.label || idx.name}</span>
+                            {idx.description && (
+                              <span className="text-xs text-muted-foreground truncate max-w-md">{idx.description}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Badge variant="outline" className="font-normal">
+                            {idx.privacy || "public"}
+                          </Badge>
+                          {selectedManager.indexerType === "torrentio" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                              onClick={() =>
+                                deleteIndexerMutation.mutate({
+                                  managerId: selectedManager.id,
+                                  indexerId: idx.id,
+                                })
+                              }
+                            >
+                              <TrashIcon className="size-4 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-12 text-center text-sm text-popover-foreground">
+                    <Trans>No indexers found for this manager.</Trans>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
+
+      <IndexersManagerAddDialog
+        managers={managers}
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        hasTorrentio={hasTorrentio}
+        onSubmit={(data) => createMutation.mutate(data)}
+        isPending={createMutation.isPending}
+      />
+
+      <IndexersManagerEditDialog
+        managers={managers}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        manager={editManager}
+        onSubmit={(data) => updateMutation.mutate(data)}
+        isPending={updateMutation.isPending}
+      />
     </Container>
   );
 }

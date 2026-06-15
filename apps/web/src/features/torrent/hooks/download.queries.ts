@@ -1,6 +1,6 @@
-import type { DownloadTorrentInput } from "@seedarr/sdk";
+import type { Download, DownloadTorrentInput } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
-import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
+import { QueryState, queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 
@@ -12,6 +12,13 @@ export const downloadQueries = {
       queryFn: () => unwrap(api.downloads[":id"].$get({ param: { id } })),
     }),
 };
+
+export function refetchDownloadInterval({ state }: { state: QueryState<Download> }) {
+  const data = state.data;
+  if (!data) return false;
+
+  return data.torrent?.done ? false : 1000;
+}
 
 export function useStartDownload() {
   const queryClient = useQueryClient();

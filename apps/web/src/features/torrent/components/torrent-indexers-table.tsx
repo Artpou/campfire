@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
-import type { TorrentIndexerQuery } from "@seedarr/sdk";
+import type { IndexerType, TorrentIndexerQuery } from "@seedarr/sdk";
 import { Link } from "@tanstack/react-router";
-import { EyeIcon, EyeOffIcon, SettingsIcon } from "lucide-react";
+import { SettingsIcon } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Spinner } from "@/shared/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
+
+import { indexersManagerImages } from "@/features/indexers-manager/helpers/indexers-manager.helper";
 
 interface IndexerQueryStat {
   status: "loading" | "success" | "error" | "idle";
@@ -30,7 +33,8 @@ export function TorrentIndexersTable({ indexers, indexerQueries, onVisibilityCha
 
       return {
         id: indexer.id,
-        name: indexer.name,
+        name: indexer.label ?? indexer.name,
+        indexerManagerType: indexer.indexerManagerType,
         status: queryStat?.status ?? "idle",
         count: queryStat?.count ?? 0,
       };
@@ -96,7 +100,7 @@ export function TorrentIndexersTable({ indexers, indexerQueries, onVisibilityCha
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow className="hover:bg-transparent">
-              <TableHead className="w-10"></TableHead>
+              <TableHead className="w-10" />
               <TableHead className="w-full">
                 <Trans>Name</Trans>
               </TableHead>
@@ -112,6 +116,7 @@ export function TorrentIndexersTable({ indexers, indexerQueries, onVisibilityCha
             {indexerStats.length > 0 ? (
               indexerStats.map((stat) => {
                 const isVisible = visibleIndexers.has(stat.id);
+                const managerType = stat.indexerManagerType as IndexerType | undefined;
 
                 return (
                   <TableRow key={stat.id} className={!isVisible ? "opacity-50" : ""}>
@@ -119,15 +124,19 @@ export function TorrentIndexersTable({ indexers, indexerQueries, onVisibilityCha
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6"
+                        className="h-7 w-7"
                         onClick={() => toggleIndexerVisibility(stat.id)}
                       >
                         {stat.status === "loading" ? (
                           <Spinner />
-                        ) : isVisible ? (
-                          <EyeIcon className="h-3.5 w-3.5" />
+                        ) : managerType ? (
+                          <img
+                            src={indexersManagerImages[managerType]}
+                            alt={managerType}
+                            className={cn("size-4 object-contain", !isVisible && "grayscale opacity-50")}
+                          />
                         ) : (
-                          <EyeOffIcon className="h-3.5 w-3.5" />
+                          <span className="size-4 rounded-full bg-muted" />
                         )}
                       </Button>
                     </TableCell>

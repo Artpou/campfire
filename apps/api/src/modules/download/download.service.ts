@@ -89,6 +89,7 @@ export class DownloadService extends IdentifiableService<Download> {
       try {
         torrent.destroy();
       } catch {}
+
       const reason = error instanceof Error ? error.message : "Unknown error";
       const uriPreview = input.magnetUri.startsWith("magnet:")
         ? input.magnetUri.slice(0, 60)

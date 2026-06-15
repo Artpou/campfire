@@ -1,9 +1,8 @@
 import { ServiceUnavailableError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
 import { getLanguageFromTitle, getTorrentQuality } from "@/helpers/video.helper";
-import type { IndexerType } from "@/modules/indexer-manager/indexer-manager.schema";
 import type { Torrent, TorrentIndexerQuery } from "../torrent.dto";
-import type { IndexerAdapter, IndexerConfig } from "./base.adapter";
+import type { IndexerAdapter, IndexerConfig, SearchQuery } from "./base.adapter";
 
 interface JackettSearchItem {
   Title: string;
@@ -21,9 +20,16 @@ interface JackettSearchResponse {
   Results: JackettSearchItem[];
 }
 
+interface JackettIndexer {
+  ID: string;
+  Name: string;
+  Type: string;
+  Language?: string;
+  Description?: string;
+}
+
 export class JackettAdapter implements IndexerAdapter {
   private getApiUrl(baseUrl: string): string {
-    // Ensure baseUrl doesn't have trailing slash and append /api/v2.0
     const cleanBase = baseUrl.replace(/\/+$/, "");
     return cleanBase.includes("/api/v2.0") ? cleanBase : `${cleanBase}/api/v2.0`;
   }
@@ -40,46 +46,19 @@ export class JackettAdapter implements IndexerAdapter {
       throw new ServiceUnavailableError(`Jackett (${response.status} ${response.statusText})`);
     }
 
-    const data = (await response.json()) as {
-      ID: string;
-      Name: string;
-      Type: string;
-    }[];
+    const data = (await response.json()) as JackettIndexer[];
 
-    return data.map((indexer) => ({
-      id: indexer.ID,
-      name: indexer.Name as IndexerType,
-      privacy: indexer.Type as "private" | "semi-private" | "public",
+    return data.map((idx) => ({
+      id: idx.ID,
+      name: idx.ID,
+      label: idx.Name,
+      lang: idx.Language?.split("-")[0] || undefined,
+      privacy: idx.Type as "private" | "semi-private" | "public",
+      description: idx.Description || undefined,
     }));
   }
 
-  async search(
-    query: { q: string; t: string; indexerId?: string; categories?: string[] },
-    config: IndexerConfig,
-  ): Promise<Torrent[]> {
-    const apiUrl = this.getApiUrl(config.baseUrl);
-    const url = new URL(`${apiUrl}/indexers/all/results`);
-    url.searchParams.set("apikey", config.apiKey);
-    url.searchParams.set("Query", query.q);
-    url.searchParams.set("Type", query.t);
-
-    // Jackett uses the Type parameter for filtering rather than category IDs
-    // Categories parameter is included for interface consistency but not used
-
-    if (query.indexerId) {
-      url.searchParams.append("Tracker[]", query.indexerId);
-    }
-
-    logger.debug("JACKETT", `GET ${url.toString()}`);
-    const response = await fetch(url.toString());
-    if (!response.ok) {
-      throw new ServiceUnavailableError(
-        `Jackett indexer ${query.indexerId} (${response.status} ${response.statusText})`,
-      );
-    }
-
-    const data = (await response.json()) as JackettSearchResponse;
-
+  private mapResults(data: JackettSearchResponse): Torrent[] {
     return (data.Results || []).map((result) => ({
       title: result.Title,
       tracker: result.Tracker,
@@ -92,7 +71,46 @@ export class JackettAdapter implements IndexerAdapter {
       quality: getTorrentQuality(result.Title),
       language: getLanguageFromTitle(result.Title),
       detailsUrl: result.Details,
-      indexerType: "jackett",
+      indexerType: "jackett" as const,
     }));
+  }
+
+  private buildSearchUrl(apiUrl: string, config: IndexerConfig, query: SearchQuery): URL {
+    const url = new URL(`${apiUrl}/indexers/all/results`);
+    url.searchParams.set("apikey", config.apiKey);
+    url.searchParams.set("Type", query.t);
+    if (query.indexerId) {
+      url.searchParams.append("Tracker[]", query.indexerId);
+    }
+    return url;
+  }
+
+  private async fetchSearch(url: URL, label: string): Promise<Torrent[]> {
+    logger.debug("JACKETT", `GET ${url.toString()}`);
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      throw new ServiceUnavailableError(`Jackett ${label} (${response.status} ${response.statusText})`);
+    }
+    const data = (await response.json()) as JackettSearchResponse;
+    return this.mapResults(data);
+  }
+
+  async search(query: SearchQuery, config: IndexerConfig): Promise<Torrent[]> {
+    const apiUrl = this.getApiUrl(config.baseUrl);
+
+    if (query.imdbId) {
+      const imdbUrl = this.buildSearchUrl(apiUrl, config, query);
+      imdbUrl.searchParams.set("Query", query.imdbId);
+      try {
+        const results = await this.fetchSearch(imdbUrl, `imdb:${query.imdbId}`);
+        if (results.length > 0) return results;
+      } catch {
+        logger.warn("JACKETT", `IMDB search failed for ${query.imdbId}, falling back to title search`);
+      }
+    }
+
+    const titleUrl = this.buildSearchUrl(apiUrl, config, query);
+    titleUrl.searchParams.set("Query", query.q);
+    return this.fetchSearch(titleUrl, `query:${query.q}`);
   }
 }

@@ -15,6 +15,13 @@
       "when": 1781455484766,
       "tag": "0001_spotty_thunderbolt_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1781472834226,
+      "tag": "0002_unusual_hannibal_king",
+      "breakpoints": true
     }
   ]
 }
