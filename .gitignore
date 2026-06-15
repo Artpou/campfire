@@ -38,3 +38,6 @@ coverage/
 
 # API downloads
 apps/api/downloads/
+
+# SWC cache & plugins
+.swc/
