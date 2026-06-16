@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
-import type { IndexerType, TorrentIndexerQuery } from "@seedarr/sdk";
 import { Link } from "@tanstack/react-router";
 import { SettingsIcon } from "lucide-react";
 
@@ -12,6 +11,7 @@ import { Spinner } from "@/shared/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
 import { indexersManagerImages } from "@/features/indexers-manager/helpers/indexers-manager.helper";
+import type { TorrentSource } from "@/features/torrent/hooks/torrent.queries";
 
 interface IndexerQueryStat {
   status: "loading" | "success" | "error" | "idle";
@@ -19,50 +19,33 @@ interface IndexerQueryStat {
 }
 
 interface TorrentIndexersTableProps {
-  indexers: TorrentIndexerQuery[];
-  indexerQueries: IndexerQueryStat[];
-  onVisibilityChange: (visibleIndexers: Set<string>) => void;
+  sources: TorrentSource[];
+  indexerStats: IndexerQueryStat[];
+  onVisibilityChange: (visibleSources: Set<string>) => void;
 }
 
-export function TorrentIndexersTable({ indexers, indexerQueries, onVisibilityChange }: TorrentIndexersTableProps) {
-  const [visibleIndexers, setVisibleIndexers] = useState<Set<string>>(new Set());
-
-  const indexerStats = useMemo(() => {
-    return indexers.map((indexer, i) => {
-      const queryStat = indexerQueries[i];
-
-      return {
-        id: indexer.id,
-        name: indexer.label ?? indexer.name,
-        indexerManagerType: indexer.indexerManagerType,
-        status: queryStat?.status ?? "idle",
-        count: queryStat?.count ?? 0,
-      };
-    });
-  }, [indexers, indexerQueries]);
+export function TorrentIndexersTable({ sources, indexerStats, onVisibilityChange }: TorrentIndexersTableProps) {
+  const [visibleSources, setVisibleSources] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (indexers.length > 0 && visibleIndexers.size === 0) {
-      const newSet = new Set(indexers.map((i) => i.id));
-      setVisibleIndexers(newSet);
-      onVisibilityChange(newSet);
+    if (sources.length > 0 && visibleSources.size === 0) {
+      const all = new Set(sources.map((source) => source.id));
+      setVisibleSources(all);
+      onVisibilityChange(all);
     }
-  }, [indexers, visibleIndexers.size, onVisibilityChange]);
+  }, [sources, visibleSources.size, onVisibilityChange]);
 
-  const toggleIndexerVisibility = (indexerId: string) => {
-    setVisibleIndexers((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(indexerId)) {
-        newSet.delete(indexerId);
-      } else {
-        newSet.add(indexerId);
-      }
-      onVisibilityChange(newSet);
-      return newSet;
+  const toggleVisibility = (sourceId: string) => {
+    setVisibleSources((prev) => {
+      const next = new Set(prev);
+      if (next.has(sourceId)) next.delete(sourceId);
+      else next.add(sourceId);
+      onVisibilityChange(next);
+      return next;
     });
   };
 
-  const getStatusBadge = (status: "loading" | "success" | "error" | "idle") => {
+  const getStatusBadge = (status: IndexerQueryStat["status"]) => {
     switch (status) {
       case "loading":
         return (
@@ -94,7 +77,7 @@ export function TorrentIndexersTable({ indexers, indexerQueries, onVisibilityCha
   return (
     <div className="space-y-3 sticky top-4">
       <h3 className="pl-1 text-sm font-bold tracking-wider text-muted-foreground uppercase">
-        <Trans>Indexers</Trans> ({indexerStats.length})
+        <Trans>Indexers</Trans> ({sources.length})
       </h3>
       <div className="w-full overflow-hidden">
         <Table>
@@ -113,36 +96,35 @@ export function TorrentIndexersTable({ indexers, indexerQueries, onVisibilityCha
             </TableRow>
           </TableHeader>
           <TableBody>
-            {indexerStats.length > 0 ? (
-              indexerStats.map((stat) => {
-                const isVisible = visibleIndexers.has(stat.id);
-                const managerType = stat.indexerManagerType as IndexerType | undefined;
+            {sources.length > 0 ? (
+              sources.map((source, index) => {
+                const stat = indexerStats[index];
+                const isVisible = visibleSources.has(source.id);
+                const managerType = source.indexerManagerType;
 
                 return (
-                  <TableRow key={stat.id} className={!isVisible ? "opacity-50" : ""}>
+                  <TableRow key={source.id} className={!isVisible ? "opacity-50" : ""}>
                     <TableCell>
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => toggleIndexerVisibility(stat.id)}
+                        onClick={() => toggleVisibility(source.id)}
                       >
-                        {stat.status === "loading" ? (
+                        {stat?.status === "loading" ? (
                           <Spinner />
-                        ) : managerType ? (
+                        ) : (
                           <img
                             src={indexersManagerImages[managerType]}
                             alt={managerType}
                             className={cn("size-4 object-contain", !isVisible && "grayscale opacity-50")}
                           />
-                        ) : (
-                          <span className="size-4 rounded-full bg-muted" />
                         )}
                       </Button>
                     </TableCell>
-                    <TableCell className="font-medium text-sm">{stat.name}</TableCell>
-                    <TableCell>{getStatusBadge(stat.status)}</TableCell>
-                    <TableCell className="text-right font-bold">{stat.count}</TableCell>
+                    <TableCell className="font-medium text-sm truncate max-w-[140px]">{source.label}</TableCell>
+                    <TableCell>{getStatusBadge(stat?.status ?? "idle")}</TableCell>
+                    <TableCell className="text-right font-bold">{stat?.count ?? 0}</TableCell>
                   </TableRow>
                 );
               })

@@ -5,5 +5,5 @@ import torrentioImage from "public/indexer-manager/torrentio.png";
 export const indexersManagerImages = {
   prowlarr: prowlarrImage,
   jackett: jackettImage,
-  torrentio: torrentioImage,
+  stremio: torrentioImage,
 } as const;

@@ -18,7 +18,7 @@ export const Route = createFileRoute("/_app/movies/$id/torrents")({
   loader: ({ context, params }) =>
     Promise.all([
       context.queryClient.ensureQueryData(movieQueries.details(params.id, context.language)),
-      context.queryClient.ensureQueryData(indexerQueries.list()),
+      context.queryClient.ensureQueryData(indexerQueries.list({ withDisabled: false })),
     ]),
   pendingComponent: () => (
     <div className="flex items-center justify-center size-full">
@@ -33,18 +33,17 @@ function MovieTorrentsPage() {
   const context = Route.useRouteContext();
 
   const { data: movie } = useSuspenseQuery(movieQueries.details(params.id, context.language));
-  const { data: indexers } = useSuspenseQuery(indexerQueries.list());
-  const imdbId = movie.movie.external_ids?.imdb_id ?? undefined;
-  const { torrents, indexerStats, isLoading: isAnyTorrentLoading } = useTorrents(movie.media, indexers, { imdbId });
+  const { data: managers } = useSuspenseQuery(indexerQueries.list({ withDisabled: false }));
+  const { torrents, sources, indexerStats, isLoading } = useTorrents(movie.media, managers);
 
-  const [visibleIndexers, setVisibleIndexers] = useState<Set<string>>(new Set());
-
-  const { media } = movie;
+  const [visibleSources, setVisibleSources] = useState<Set<string>>(new Set());
 
   const filteredTorrents = useMemo(() => {
-    if (visibleIndexers.size === 0) return torrents;
-    return torrents.filter((t) => t.indexerId && visibleIndexers.has(t.indexerId));
-  }, [torrents, visibleIndexers]);
+    if (visibleSources.size === 0) return torrents;
+    return torrents.filter((torrent) => torrent.indexerId && visibleSources.has(torrent.indexerId));
+  }, [torrents, visibleSources]);
+
+  const { media } = movie;
 
   return (
     <Container>
@@ -56,21 +55,21 @@ function MovieTorrentsPage() {
         ]}
       />
 
-      {indexers.length > 1 ? (
+      {sources.length > 1 ? (
         <div className="xl:grid xl:grid-cols-7 xl:gap-6">
           <div className="xl:col-span-5">
-            <TorrentTable torrents={filteredTorrents} media={media} isLoading={isAnyTorrentLoading} />
+            <TorrentTable torrents={filteredTorrents} media={media} isLoading={isLoading} />
           </div>
           <div className="hidden xl:block xl:col-span-2">
             <TorrentIndexersTable
-              indexers={indexers}
-              indexerQueries={indexerStats}
-              onVisibilityChange={setVisibleIndexers}
+              sources={sources}
+              indexerStats={indexerStats}
+              onVisibilityChange={setVisibleSources}
             />
           </div>
         </div>
       ) : (
-        <TorrentTable torrents={filteredTorrents} media={media} isLoading={isAnyTorrentLoading} />
+        <TorrentTable torrents={filteredTorrents} media={media} isLoading={isLoading} />
       )}
     </Container>
   );

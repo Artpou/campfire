@@ -2,51 +2,42 @@ import { useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { IndexerManagerWithIndexers } from "@seedarr/sdk";
+import type { IndexerManager } from "@seedarr/sdk";
 
 import { Button } from "@/shared/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
 
 import { TorrentioProviderPicker } from "@/features/indexers-manager/components/torrentio-provider-picker";
-import { INDEXER_DEFAULTS } from "@/features/indexers-manager/indexers-manager";
+import { INDEXER_DEFAULTS, parseStremioProviders } from "@/features/indexers-manager/indexers-manager";
 
 interface IndexersManagerEditDialogProps {
-  managers: IndexerManagerWithIndexers[];
+  managers: IndexerManager[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  manager: IndexerManagerWithIndexers | null;
-  mode?: "add" | "edit";
+  manager: IndexerManager | null;
   onSubmit: (data: { id: string; indexerUrl?: string; indexerApiKey?: string; providers?: string[] }) => void;
   isPending: boolean;
 }
 
 export function IndexersManagerEditDialog({
-  managers,
   open,
   onOpenChange,
   manager,
-  mode = "edit",
   onSubmit,
   isPending,
 }: IndexersManagerEditDialogProps) {
   const { t } = useLingui();
   const [indexerUrl, setIndexerUrl] = useState("");
   const [indexerApiKey, setIndexerApiKey] = useState("");
-  const [providers, setProviders] = useState<Set<string>>(
-    new Set(managers.find((m) => m.indexerType === "torrentio")?.indexers.map((i) => i.name) ?? []),
-  );
+  const [providers, setProviders] = useState<Set<string>>(new Set());
 
   const handleOpenChange = (next: boolean) => {
     if (next && manager) {
       setIndexerUrl(manager.indexerUrl ?? "");
       setIndexerApiKey(manager.indexerApiKey ?? "");
-      if (manager.indexerType === "torrentio") {
-        if (mode === "add") {
-          setProviders(new Set());
-        } else {
-          setProviders(new Set(manager.indexers.map((i) => i.name)));
-        }
+      if (manager.indexerType === "stremio") {
+        setProviders(new Set(parseStremioProviders(manager.indexerUrl)));
       }
     }
     onOpenChange(next);
@@ -64,40 +55,27 @@ export function IndexersManagerEditDialog({
   };
 
   const handleSubmit = () => {
-    if (manager.indexerType === "torrentio") {
-      const existing = manager.indexers.map((i) => i.name);
-      const merged = mode === "add" ? [...existing, ...Array.from(providers)] : Array.from(providers);
-      onSubmit({ id: manager.id, providers: merged });
+    if (manager.indexerType === "stremio") {
+      onSubmit({ id: manager.id, providers: Array.from(providers) });
     } else {
       onSubmit({ id: manager.id, indexerUrl, indexerApiKey });
     }
   };
 
   const canSubmit =
-    manager.indexerType === "torrentio"
-      ? mode === "add"
-        ? providers.size > 0
-        : providers.size > 0
-      : indexerUrl.length > 0 && indexerApiKey.length > 0;
-
-  const excludeProviders =
-    manager.indexerType === "torrentio" && mode === "add" ? new Set(manager.indexers.map((i) => i.name)) : undefined;
+    manager.indexerType === "stremio" ? providers.size > 0 : indexerUrl.length > 0 && indexerApiKey.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent showCloseButton className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {manager.indexerType === "torrentio" && mode === "add" ? (
-              <Trans>Add Torrentio indexers</Trans>
-            ) : (
-              <Trans>Edit {manager.indexerType}</Trans>
-            )}
+            <Trans>Edit {manager.indexerType === "stremio" ? "Torrentio" : manager.indexerType}</Trans>
           </DialogTitle>
         </DialogHeader>
 
-        {manager.indexerType === "torrentio" ? (
-          <TorrentioProviderPicker selected={providers} onToggle={toggleProvider} exclude={excludeProviders} />
+        {manager.indexerType === "stremio" ? (
+          <TorrentioProviderPicker selected={providers} onToggle={toggleProvider} />
         ) : (
           <div className="space-y-4 py-2">
             <Input

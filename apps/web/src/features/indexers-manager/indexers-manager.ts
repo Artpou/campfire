@@ -107,4 +107,12 @@ export const TORRENTIO_ALL_PROVIDERS = [
 export const INDEXER_DEFAULTS: Record<string, string> = {
   jackett: "http://localhost:9117",
   prowlarr: "http://localhost:9696",
+  stremio: "https://torrentio.strem.fun",
 };
+
+export function parseStremioProviders(url: string | null | undefined): string[] {
+  if (!url) return [];
+  const match = url.match(/torrentio\.strem\.fun\/([^/]+)/);
+  if (!match) return [];
+  return match[1].split(",");
+}

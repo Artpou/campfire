@@ -17,6 +17,7 @@ export interface TMDBItem {
   first_air_date?: string | null;
   media_type?: string;
   genre_ids?: number[];
+  imdb_id?: string;
 }
 
 export interface TMDBPaginatedResponse<T = TMDBItem> {

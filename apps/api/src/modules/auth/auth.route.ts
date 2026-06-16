@@ -7,10 +7,10 @@ import { hashPassword, verifyPassword } from "@/auth/password.util";
 import { createSession, deleteSession, validateSession } from "@/auth/session.util";
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "@/errors/error";
 import { authRateLimiter } from "@/middlewares/rate-limiter.middleware";
+import { IndexerManagerService } from "@/modules/indexer-manager/indexer-manager.service";
 import { ActivityLogService } from "../activity-log/activity-log.service";
-import { IndexerManagerService } from "../indexer-manager/indexer-manager.service";
 import { UserService } from "../user/user.service";
-import { loginDto, registerDto } from "./auth.dto";
+import { AuthUser, loginDto, registerDto } from "./auth.dto";
 
 const SESSION_COOKIE_NAME = "session";
 
@@ -102,10 +102,12 @@ export const authRoutes = new Hono()
     const currentUser = await new UserService().get(userId);
     if (!currentUser) throw new NotFoundError("User");
 
-    const indexerManagers = await new IndexerManagerService(currentUser).getManyBasic();
+    const countIndexerManagers = await new IndexerManagerService(currentUser).count();
 
-    return c.json({
+    const user: AuthUser = {
       ...currentUser,
-      indexerManagers,
-    });
+      countIndexerManagers,
+    };
+
+    return c.json(user);
   });

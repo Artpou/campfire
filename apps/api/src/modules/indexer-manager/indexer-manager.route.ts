@@ -8,7 +8,7 @@ import { IndexerManagerService } from "./indexer-manager.service";
 export const indexerManagerRoutes = IndexerManagerService.createRouter()
   .use("*", requireRole("member"))
   .get("/", async (c) => {
-    return c.json(await c.var.service.getMany());
+    return c.json(await c.var.service.getMany({ withIndexers: true }));
   })
   .get("/:id", zValidator("param", z.object({ id: z.string() })), async (c) => {
     const { id } = c.req.valid("param");
@@ -26,14 +26,6 @@ export const indexerManagerRoutes = IndexerManagerService.createRouter()
     async (c) => {
       const { id } = c.req.valid("param");
       return c.json(await c.var.service.update(id, c.req.valid("json")));
-    },
-  )
-  .delete(
-    "/:id/indexers/:indexerId",
-    zValidator("param", z.object({ id: z.string(), indexerId: z.string() })),
-    async (c) => {
-      const { id, indexerId } = c.req.valid("param");
-      return c.json(await c.var.service.removeIndexer(id, indexerId));
     },
   )
   .delete("/:id", zValidator("param", z.object({ id: z.string() })), async (c) => {

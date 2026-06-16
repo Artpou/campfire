@@ -26,10 +26,12 @@ export const requestLogger = async (c: Context, next: Next) => {
 };
 
 export const errorHandler = (err: Error, c: Context) => {
+  const tag = `${c.req.method} ${c.req.path}`;
+
   if (err instanceof HTTPException) {
-    if (err.status >= 500) logger.error("HTTP", err.message);
+    logger.error(tag, err.message);
     return c.json({ error: err.message }, err.status);
   }
-  logger.error("HTTP", err.message, err.stack);
+  logger.error(tag, err.message, err.stack);
   return c.json({ error: err.message }, 500);
 };

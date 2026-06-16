@@ -35,7 +35,7 @@ export const Route = createFileRoute("/_app/tv/$id/torrents")({
   loader: ({ context, params }) =>
     Promise.all([
       context.queryClient.ensureQueryData(tvQueries.details(params.id, context.language)),
-      context.queryClient.ensureQueryData(indexerQueries.list()),
+      context.queryClient.ensureQueryData(indexerQueries.list({ withDisabled: false })),
     ]),
   pendingComponent: () => (
     <div className="flex items-center justify-center size-full">
@@ -60,19 +60,13 @@ function TVTorrentsPage() {
   const navigate = useNavigate();
 
   const { data: tvData } = useSuspenseQuery(tvQueries.details(params.id, context.language));
-  const { data: indexers } = useSuspenseQuery(indexerQueries.list());
-  const imdbId = tvData.tv.external_ids?.imdb_id ?? undefined;
-  const {
-    torrents,
-    indexerStats,
-    isLoading: isAnyTorrentLoading,
-  } = useTorrents(tvData.media, indexers, {
+  const { data: managers } = useSuspenseQuery(indexerQueries.list({ withDisabled: false }));
+  const { torrents, sources, indexerStats, isLoading } = useTorrents(tvData.media, managers, {
     season: search.season,
     episode: search.episode,
-    imdbId,
   });
 
-  const [visibleIndexers, setVisibleIndexers] = useState<Set<string>>(new Set());
+  const [visibleSources, setVisibleSources] = useState<Set<string>>(new Set());
 
   const { tv, media } = tvData;
   const validSeasons = useMemo(() => (tv?.seasons ?? []).filter((s) => s.season_number > 0), [tv]);
@@ -85,9 +79,9 @@ function TVTorrentsPage() {
   });
 
   const filteredTorrents = useMemo(() => {
-    if (visibleIndexers.size === 0) return torrents;
-    return torrents.filter((t) => t.indexerId && visibleIndexers.has(t.indexerId));
-  }, [torrents, visibleIndexers]);
+    if (visibleSources.size === 0) return torrents;
+    return torrents.filter((torrent) => torrent.indexerId && visibleSources.has(torrent.indexerId));
+  }, [torrents, visibleSources]);
 
   const handleSeasonChange = (value: string) => {
     navigate({
@@ -168,21 +162,21 @@ function TVTorrentsPage() {
         </div>
       </div>
 
-      {indexers.length > 1 ? (
+      {sources.length > 1 ? (
         <div className="xl:grid xl:grid-cols-7 xl:gap-6">
           <div className="xl:col-span-5">
-            <TorrentTable torrents={filteredTorrents} media={media} isLoading={isAnyTorrentLoading} />
+            <TorrentTable torrents={filteredTorrents} media={media} isLoading={isLoading} />
           </div>
           <div className="hidden xl:block xl:col-span-2">
             <TorrentIndexersTable
-              indexers={indexers}
-              indexerQueries={indexerStats}
-              onVisibilityChange={setVisibleIndexers}
+              sources={sources}
+              indexerStats={indexerStats}
+              onVisibilityChange={setVisibleSources}
             />
           </div>
         </div>
       ) : (
-        <TorrentTable torrents={filteredTorrents} media={media} isLoading={isAnyTorrentLoading} />
+        <TorrentTable torrents={filteredTorrents} media={media} isLoading={isLoading} />
       )}
     </Container>
   );

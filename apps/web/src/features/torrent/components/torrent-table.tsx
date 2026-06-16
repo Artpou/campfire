@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { IndexerType, Media, Torrent, TorrentLanguage, TorrentQuality } from "@seedarr/sdk";
+import type { IndexerType, Media, Torrent, TorrentLanguage } from "@seedarr/sdk";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowDownIcon, ArrowUpIcon, DownloadIcon, EarthIcon, InfoIcon, VideoIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -14,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
 import { indexersManagerImages } from "@/features/indexers-manager/helpers/indexers-manager.helper";
+import { getQualityIndex, QUALITY_LEVELS } from "@/features/settings/constants/torrent-preferences";
+import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
 import { useStartDownload } from "@/features/torrent/hooks/download.queries";
 import { TorrentInspectModal } from "./torrent-inspect-modal";
 
@@ -50,24 +52,30 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
   const { t } = useLingui();
   const startDownload = useStartDownload();
   const navigate = useNavigate();
+  const preferenceQuality = useUserPreferences((s) => s.quality);
+  const preferenceMaxSize = useUserPreferences((s) => s.maxSize);
   const [selectedLanguage, setSelectedLanguage] = useState<TorrentLanguage | "all">("all");
 
-  const [selectedQualityIndex, setSelectedQualityIndex] = useState<number>(0);
+  const [selectedQualityIndex, setSelectedQualityIndex] = useState<number>(() => getQualityIndex(preferenceQuality));
 
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTorrent, setSelectedTorrent] = useState<Torrent | null>(null);
   const [selectedMagnetUri, setSelectedMagnetUri] = useState<string | null>(null);
 
-  const qualityLevels: (TorrentQuality | "all")[] = ["all", "480p", "720p", "1080p", "1440p", "2160p", "4K"];
-
   const filteredTorrents = useMemo(() => {
+    const maxSizeBytes = preferenceMaxSize !== null ? preferenceMaxSize * 1024 * 1024 * 1024 : null;
+
     return torrents.filter((torrent) => {
       if (selectedQualityIndex > 0) {
         if (!torrent.quality) return false;
-        const torrentQualityIndex = qualityLevels.indexOf(torrent.quality);
+        const torrentQualityIndex = QUALITY_LEVELS.indexOf(torrent.quality);
         if (torrentQualityIndex === -1 || torrentQualityIndex < selectedQualityIndex) {
           return false;
         }
+      }
+
+      if (maxSizeBytes !== null && torrent.size > maxSizeBytes) {
+        return false;
       }
 
       if (selectedLanguage !== "all") {
@@ -78,7 +86,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
 
       return true;
     });
-  }, [torrents, selectedQualityIndex, selectedLanguage]);
+  }, [torrents, selectedQualityIndex, selectedLanguage, preferenceMaxSize]);
 
   const availableLanguages = useMemo(() => {
     const langs = new Set<string>();
@@ -156,13 +164,18 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {qualityLevels.map((quality, index) => (
+              {QUALITY_LEVELS.map((quality, index) => (
                 <SelectItem key={quality} value={index.toString()}>
                   {quality === "all" ? <Trans>All qualities</Trans> : quality}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+          {preferenceMaxSize !== null && (
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              <Trans>Max {preferenceMaxSize} GB</Trans>
+            </span>
+          )}
         </Badge>
       </div>
 
@@ -171,7 +184,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
           <TableRow className="hover:bg-transparent">
             <TableHead className="w-full">
               <Badge className="mr-2">{filteredTorrents.length}</Badge>
-              <Trans>Torrent Name</Trans>
+              <Trans>Torrent</Trans>
             </TableHead>
             <TableHead className="hidden sm:table-cell text-center">
               <Trans>Size</Trans>
@@ -253,7 +266,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
                       <ArrowUpIcon className="size-3" />
                       <span className="text-xs">{torrent.seeders}</span>
                     </div>
-                    {torrent.indexerManagerType !== "torrentio" && (
+                    {torrent.indexerManagerType !== "stremio" && (
                       <div className="flex items-center gap-1 font-bold text-destructive">
                         <ArrowDownIcon className="size-3" />
                         <span className="text-xs">{torrent.peers}</span>

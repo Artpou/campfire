@@ -1,156 +1,23 @@
 import { createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { indexer, indexerManager, indexerTypeEnum } from "@/modules/indexer-manager/indexer-manager.schema";
+import { indexerManager, indexerTypeEnum } from "@/modules/indexer-manager/indexer-manager.schema";
 
 const indexerManagerSelectSchema = createSelectSchema(indexerManager);
 export type IndexerManager = typeof indexerManagerSelectSchema._output;
 
-const indexerSelectSchema = createSelectSchema(indexer);
-export type Indexer = typeof indexerSelectSchema._output;
+export type Indexer = {
+  id: string;
+  name: string;
+  label?: string;
+  lang?: string;
+  description?: string;
+  privacy?: "public" | "semi-private" | "private";
+};
 
-export type IndexerManagerWithIndexers = IndexerManager & { indexers: Indexer[] };
-
-export const TORRENTIO_ALL_PROVIDERS = [
-  {
-    value: "yts",
-    label: "YTS",
-    lang: "en",
-    privacy: "public",
-    description: "YTS is a Public torrent site specialising in HD movies of small size",
-  },
-  {
-    value: "eztv",
-    label: "EZTV",
-    lang: "en",
-    privacy: "public",
-    description: "EZTV is a Public torrent site for TV shows",
-  },
-  { value: "rarbg", label: "RARBG", lang: "en", privacy: "public" },
-  {
-    value: "1337x",
-    label: "1337x",
-    lang: "en",
-    privacy: "public",
-    description: "1337x is a Public torrent site that offers verified torrent downloads",
-  },
-  {
-    value: "thepiratebay",
-    label: "ThePirateBay",
-    lang: "en",
-    privacy: "public",
-    description: "The Pirate Bay (TPB) is the galaxy’s most resilient Public BitTorrent site",
-  },
-  {
-    value: "kickasstorrents",
-    label: "KickassTorrents",
-    lang: "en",
-    privacy: "public",
-    description: "kickasstorrents.to is a Public KickAssTorrent clone for MOVIES / TV / GENERAL",
-  },
-  {
-    value: "torrentgalaxy",
-    label: "TorrentGalaxy",
-    lang: "en",
-    privacy: "public",
-    description: "TorrentGalaxyClone is a Public site for MOVIES / TV / GENERAL",
-  },
-  {
-    value: "magnetdl",
-    label: "MagnetDL",
-    lang: "en",
-    privacy: "public",
-    description: "MagnetDL is a Public magnet site that offers verified magnet downloads",
-  },
-  {
-    value: "horriblesubs",
-    label: "HorribleSubs",
-    lang: "en",
-    privacy: "public",
-    description: "SubsPlease - A better HorribleSubs/Erai replacement",
-  },
-  {
-    value: "nyaasi",
-    label: "NyaaSi",
-    lang: "en",
-    privacy: "public",
-    description: "Nyaa is a Public torrent site focused on Eastern ASIAN media including anime",
-  },
-  {
-    value: "tokyotosho",
-    label: "TokyoTosho",
-    lang: "en",
-    privacy: "public",
-    description: "Tokyo Toshokan is a Public BitTorrent Library for JAPANESE Media",
-  },
-  {
-    value: "anidex",
-    label: "AniDex",
-    lang: "en",
-    privacy: "public",
-    description: "Anidex is a Public torrent tracker and indexer, primarily for English fansub groups of anime",
-  },
-  {
-    value: "rutor",
-    label: "Rutor",
-    lang: "ru",
-    privacy: "public",
-    description: "RuTor is a RUSSIAN Public site for MOVIES / TV / GENERAL",
-  },
-  {
-    value: "rutracker",
-    label: "Rutracker",
-    lang: "ru",
-    privacy: "public",
-    description: "RuTracker.org is a RUSSIAN Semi-Private site with a thriving file-sharing community",
-  },
-  { value: "comando", label: "Comando", lang: "pt", privacy: "public" },
-  { value: "bludv", label: "BluDV", lang: "pt", privacy: "public" },
-  { value: "micoleaodublado", label: "MicoLeaoDublado", lang: "pt", privacy: "public" },
-  {
-    value: "torrent9",
-    label: "Torrent9",
-    lang: "fr",
-    privacy: "public",
-    description: "Torrent9 is a FRENCH Public site for MOVIES / TV / GENERAL",
-  },
-  {
-    value: "ilcorsaronero",
-    label: "ilCorSaRoNeRo",
-    lang: "it",
-    privacy: "public",
-    description: "ilCorSaRoNeRo is a ITALIAN Public site for MOVIES / TV / GENERAL",
-  },
-  {
-    value: "mejortorrent",
-    label: "MejorTorrent",
-    lang: "es",
-    privacy: "public",
-    description: "MejorTorrent is a SPANISH Public site for MOVIES / TV / GENERAL",
-  },
-  {
-    value: "wolfmax4k",
-    label: "Wolfmax4k",
-    lang: "es",
-    privacy: "public",
-  },
-  {
-    value: "cinecalidad",
-    label: "Cinecalidad",
-    lang: "es",
-    privacy: "public",
-  },
-  {
-    value: "besttorrents",
-    label: "BestTorrents",
-    lang: "ru",
-    privacy: "public",
-  },
-] as const;
-
-export type TorrentioProvider = (typeof TORRENTIO_ALL_PROVIDERS)[number];
-
-export const TORRENTIO_BASE_URL = "https://torrentio.strem.fun";
+export type IndexerManagerWithIndexers = IndexerManager & {
+  indexers: Indexer[];
+};
 
 export const createIndexerManagerDto = z.object({
   indexerType: z.enum(indexerTypeEnum),

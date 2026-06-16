@@ -52,7 +52,7 @@ function toMedia(
     seasons_number: seasonsNumber,
     categories,
     backdrop_path: item.backdrop_path ?? null,
-    imdbId: "TOFIX",
+    imdbId: item.imdb_id ?? "",
     likes: 0,
     watchList: 0,
   };

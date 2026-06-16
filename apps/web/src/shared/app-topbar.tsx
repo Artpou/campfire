@@ -1,38 +1,15 @@
 import { useEffect, useState } from "react";
 
 import { msg } from "@lingui/core/macro";
-import { Trans, useLingui } from "@lingui/react/macro";
-import { api, unwrap } from "@seedarr/sdk";
+import { useLingui } from "@lingui/react/macro";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import {
-  FilmIcon,
-  ListIcon,
-  LogOutIcon,
-  MonitorIcon,
-  MoonIcon,
-  SettingsIcon,
-  SunIcon,
-  TvIcon,
-  UsersIcon,
-  WrenchIcon,
-} from "lucide-react";
+import { FilmIcon, ListIcon, MonitorIcon, SearchIcon, SettingsIcon, TvIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { useTheme } from "@/shared/hooks/use-theme";
 import { LanguageDropdown } from "@/shared/language-dropdown";
 import { Button } from "@/shared/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/shared/ui/dropdown-menu";
 
-import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";
-import { MediaSearch } from "@/features/media/components/media-search";
 
 interface AppTopbarProps {
   isAuthenticated?: boolean;
@@ -49,9 +26,7 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useLingui();
-  const { isAdmin, hasRole } = useRole();
-  const logout = useAuth((s) => s.logout);
-  const { theme, toggleTheme } = useTheme();
+  const { hasRole } = useRole();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -63,16 +38,6 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
   }, []);
 
   const isListsActive = location.pathname.startsWith("/lists");
-
-  const handleSignOut = async () => {
-    try {
-      await unwrap(api.auth.logout.$post());
-    } catch {
-      // continue even if server logout fails
-    }
-    logout();
-    navigate({ to: "/login" });
-  };
 
   return (
     <header
@@ -126,56 +91,21 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
             </div>
 
             <div className="flex-1 flex justify-end items-center gap-2">
-              <MediaSearch />
-              <LanguageDropdown />
+              <Button
+                variant="outline"
+                className="hidden sm:flex relative w-full max-w-xs h-9 justify-start px-3 font-normal text-muted-foreground"
+                onClick={() => navigate({ to: "/search", search: { q: "", type: "movie" } })}
+                aria-label={t`Search`}
+              >
+                <SearchIcon className="size-4 mr-2 shrink-0" />
+                {t`Search...`}
+              </Button>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" aria-label={t(msg`Settings`)}>
-                    <SettingsIcon className="size-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>
-                    <Trans>Settings</Trans>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.preventDefault();
-                      toggleTheme();
-                    }}
-                    className="cursor-pointer"
-                  >
-                    {theme === "dark" ? <SunIcon className="size-4 mr-2" /> : <MoonIcon className="size-4 mr-2" />}
-                    {theme === "dark" ? <Trans>Light mode</Trans> : <Trans>Dark mode</Trans>}
-                  </DropdownMenuItem>
-                  {isAdmin && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link to="/users" search={{}} className="flex items-center gap-2">
-                          <UsersIcon className="size-4" />
-                          <Trans>Manage users</Trans>
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/settings" search={{}} className="flex items-center gap-2">
-                          <WrenchIcon className="size-4" />
-                          <Trans>Advanced options</Trans>
-                        </Link>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                  <DropdownMenuSeparator />
-                  <div className="px-2 py-1.5">
-                    <Button variant="destructive" size="sm" className="w-full" onClick={handleSignOut}>
-                      <LogOutIcon className="size-4" />
-                      <Trans>Sign out</Trans>
-                    </Button>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button variant="ghost" size="icon" asChild aria-label={t(msg`Settings`)}>
+                <Link to="/settings" search={{}}>
+                  <SettingsIcon className="size-5" />
+                </Link>
+              </Button>
             </div>
           </>
         ) : (

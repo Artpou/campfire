@@ -1,8 +1,16 @@
-import { ServiceUnavailableError } from "@/errors/error";
-import { logger } from "@/helpers/logger.helper";
+import { BadRequestError } from "@/errors/error";
 import { getLanguageFromTitle, getTorrentQuality } from "@/helpers/video.helper";
-import type { Torrent, TorrentIndexerQuery } from "../torrent.dto";
-import type { IndexerAdapter, IndexerConfig, SearchQuery } from "./base.adapter";
+import { Indexer, IndexerManager, IndexerType } from "@/types";
+import type { Torrent, torrentListQuery } from "../torrent.dto";
+import { IndexerAdapter } from "./indexer.adapter";
+
+interface JackettIndexer {
+  ID: string;
+  Name: string;
+  Type: string;
+  Language?: string;
+  Description?: string;
+}
 
 interface JackettSearchItem {
   Title: string;
@@ -20,33 +28,29 @@ interface JackettSearchResponse {
   Results: JackettSearchItem[];
 }
 
-interface JackettIndexer {
-  ID: string;
-  Name: string;
-  Type: string;
-  Language?: string;
-  Description?: string;
-}
+export class JackettAdapter extends IndexerAdapter {
+  readonly indexerType: IndexerType = "jackett";
 
-export class JackettAdapter implements IndexerAdapter {
-  private getApiUrl(baseUrl: string): string {
-    const cleanBase = baseUrl.replace(/\/+$/, "");
-    return cleanBase.includes("/api/v2.0") ? cleanBase : `${cleanBase}/api/v2.0`;
+  constructor(indexerManager: IndexerManager) {
+    super(indexerManager, "jackett");
   }
 
-  async getIndexers(config: IndexerConfig): Promise<TorrentIndexerQuery[]> {
-    const apiUrl = this.getApiUrl(config.baseUrl);
-    const url = new URL(`${apiUrl}/indexers`);
-    url.searchParams.set("apikey", config.apiKey);
-    url.searchParams.set("configured", "true");
+  async fetchApi(url: string) {
+    if (!this.indexerManager.indexerApiKey) throw new BadRequestError("Indexer API key is required");
 
-    logger.debug("JACKETT", `GET ${url.toString()}`);
-    const response = await fetch(url.toString());
-    if (!response.ok) {
-      throw new ServiceUnavailableError(`Jackett (${response.status} ${response.statusText})`);
+    let cleanUrl = url.replace(/^\/+/, "");
+    if (!cleanUrl.startsWith("api/v2.0")) {
+      cleanUrl = `api/v2.0/${cleanUrl}`;
     }
 
-    const data = (await response.json()) as JackettIndexer[];
+    const separator = cleanUrl.includes("?") ? "&" : "?";
+    const authenticatedUrl = `${cleanUrl}${separator}apikey=${this.indexerManager.indexerApiKey}`;
+
+    return super.fetchApi(authenticatedUrl);
+  }
+
+  async getIndexers(): Promise<Indexer[]> {
+    const data = (await this.fetchApi("indexers?configured=true")) as JackettIndexer[];
 
     return data.map((idx) => ({
       id: idx.ID,
@@ -58,14 +62,45 @@ export class JackettAdapter implements IndexerAdapter {
     }));
   }
 
-  private mapResults(data: JackettSearchResponse): Torrent[] {
-    return (data.Results || []).map((result) => ({
+  async getTorrents(query: torrentListQuery): Promise<Torrent[]> {
+    const searchQueries = [query.media.imdbId ?? "", query.media.sanitize_title ?? "", query.media.title ?? ""].filter(
+      Boolean,
+    );
+
+    const fetchPromises = searchQueries.map(async (searchQuery) => {
+      let path = `indexers/all/results?Query=${encodeURIComponent(searchQuery)}`;
+      if (query.indexerId) {
+        path += `&Tracker[]=${encodeURIComponent(query.indexerId)}`;
+      }
+
+      try {
+        const response = (await this.fetchApi(path)) as JackettSearchResponse;
+        return response.Results || [];
+      } catch (error) {
+        console.error(`Jackett error for query "${searchQuery}":`, error);
+        return [];
+      }
+    });
+
+    const allResults = (await Promise.all(fetchPromises)).flat();
+
+    const uniqueTorrentsMap = new Map<string, JackettSearchItem>();
+
+    for (const torrent of allResults) {
+      const uniqueKey = torrent.Guid || torrent.Link;
+      if (uniqueKey && !uniqueTorrentsMap.has(uniqueKey)) {
+        uniqueTorrentsMap.set(uniqueKey, torrent);
+      }
+    }
+
+    // 5. Mapping final standardisé vers ton format d'application
+    return Array.from(uniqueTorrentsMap.values()).map((result) => ({
       title: result.Title,
       tracker: result.Tracker,
       size: result.Size,
       publishDate: result.PublishDate,
-      seeders: result.Seeders,
-      peers: result.Peers,
+      seeders: result.Seeders || 0,
+      peers: result.Peers || 0,
       link: result.Link,
       guid: result.Guid,
       quality: getTorrentQuality(result.Title),
@@ -73,44 +108,5 @@ export class JackettAdapter implements IndexerAdapter {
       detailsUrl: result.Details,
       indexerType: "jackett" as const,
     }));
-  }
-
-  private buildSearchUrl(apiUrl: string, config: IndexerConfig, query: SearchQuery): URL {
-    const url = new URL(`${apiUrl}/indexers/all/results`);
-    url.searchParams.set("apikey", config.apiKey);
-    url.searchParams.set("Type", query.t);
-    if (query.indexerId) {
-      url.searchParams.append("Tracker[]", query.indexerId);
-    }
-    return url;
-  }
-
-  private async fetchSearch(url: URL, label: string): Promise<Torrent[]> {
-    logger.debug("JACKETT", `GET ${url.toString()}`);
-    const response = await fetch(url.toString());
-    if (!response.ok) {
-      throw new ServiceUnavailableError(`Jackett ${label} (${response.status} ${response.statusText})`);
-    }
-    const data = (await response.json()) as JackettSearchResponse;
-    return this.mapResults(data);
-  }
-
-  async search(query: SearchQuery, config: IndexerConfig): Promise<Torrent[]> {
-    const apiUrl = this.getApiUrl(config.baseUrl);
-
-    if (query.imdbId) {
-      const imdbUrl = this.buildSearchUrl(apiUrl, config, query);
-      imdbUrl.searchParams.set("Query", query.imdbId);
-      try {
-        const results = await this.fetchSearch(imdbUrl, `imdb:${query.imdbId}`);
-        if (results.length > 0) return results;
-      } catch {
-        logger.warn("JACKETT", `IMDB search failed for ${query.imdbId}, falling back to title search`);
-      }
-    }
-
-    const titleUrl = this.buildSearchUrl(apiUrl, config, query);
-    titleUrl.searchParams.set("Query", query.q);
-    return this.fetchSearch(titleUrl, `query:${query.q}`);
   }
 }

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { indexer, indexerManager } from "@/modules/indexer-manager/indexer-manager.schema";
+import { indexerManager } from "@/modules/indexer-manager/indexer-manager.schema";
 import { user } from "@/modules/user/user.schema";
 import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
 
@@ -30,14 +30,21 @@ vi.mock("@/modules/auth/role.guard", () => ({
 vi.mock("@/modules/torrent/adapters/prowlarr.adapter", () => ({
   ProwlarrAdapter: class {
     async getIndexers() {
-      return [{ id: "1", name: "test-prowlarr", label: "Test Prowlarr", privacy: "public" }];
+      return [{ id: "1", name: "test-prowlarr", label: "Test Prowlarr", privacy: "public" as const }];
     }
   },
 }));
 vi.mock("@/modules/torrent/adapters/jackett.adapter", () => ({
   JackettAdapter: class {
     async getIndexers() {
-      return [{ id: "1", name: "test-jackett", label: "Test Jackett", privacy: "public" }];
+      return [{ id: "1", name: "test-jackett", label: "Test Jackett", privacy: "public" as const }];
+    }
+  },
+}));
+vi.mock("@/modules/torrent/adapters/stremio.adapter", () => ({
+  StremioAdapter: class {
+    async getIndexers() {
+      return [];
     }
   },
 }));
@@ -103,16 +110,15 @@ describe("Indexer Manager Routes", () => {
       expect(body.indexers).toBeDefined();
     });
 
-    it("creates a torrentio config with indexer rows", async () => {
+    it("creates a stremio config with provider URL", async () => {
       const body = await bodyOf(
-        await indexerManagerRoutes.request(
-          "/",
-          json("POST", { indexerType: "torrentio", providers: ["yts", "1337x"] }),
-        ),
+        await indexerManagerRoutes.request("/", json("POST", { indexerType: "stremio", providers: ["yts", "1337x"] })),
       );
-      expect(body).toMatchObject({ indexerType: "torrentio" });
-      expect(body.indexers).toHaveLength(2);
-      expect(body.indexers.map((i: { name: string }) => i.name).sort()).toEqual(["1337x", "yts"]);
+      expect(body).toMatchObject({
+        indexerType: "stremio",
+        indexerUrl: "https://torrentio.strem.fun/yts,1337x",
+      });
+      expect(body.indexers).toEqual([]);
     });
 
     it("allows multiple jackett/prowlarr configs", async () => {
@@ -126,15 +132,6 @@ describe("Indexer Manager Routes", () => {
       );
       const body = await bodyOf(await indexerManagerRoutes.request("/"));
       expect(body).toHaveLength(2);
-    });
-
-    it("rejects second torrentio", async () => {
-      await indexerManagerRoutes.request("/", json("POST", { indexerType: "torrentio", providers: ["yts"] }));
-      const res = await indexerManagerRoutes.request(
-        "/",
-        json("POST", { indexerType: "torrentio", providers: ["1337x"] }),
-      );
-      expect(res.status).toBe(409);
     });
   });
 
@@ -155,21 +152,15 @@ describe("Indexer Manager Routes", () => {
       expect(body).toMatchObject({ indexerUrl: "http://new", indexerApiKey: "new" });
     });
 
-    it("updates torrentio providers (sync indexer rows)", async () => {
+    it("updates stremio providers", async () => {
       const created = await bodyOf(
-        await indexerManagerRoutes.request(
-          "/",
-          json("POST", { indexerType: "torrentio", providers: ["yts", "1337x"] }),
-        ),
+        await indexerManagerRoutes.request("/", json("POST", { indexerType: "stremio", providers: ["yts", "1337x"] })),
       );
-      expect(created.indexers).toHaveLength(2);
 
       const updated = await bodyOf(
         await indexerManagerRoutes.request(`/${created.id}`, json("PATCH", { providers: ["yts", "rutor"] })),
       );
-      expect(updated.indexers).toHaveLength(2);
-      const names = updated.indexers.map((i: { name: string }) => i.name).sort();
-      expect(names).toEqual(["rutor", "yts"]);
+      expect(updated.indexerUrl).toBe("https://torrentio.strem.fun/yts,rutor");
     });
 
     it("updates disabled field", async () => {
@@ -185,6 +176,7 @@ describe("Indexer Manager Routes", () => {
         await indexerManagerRoutes.request(`/${created.id}`, json("PATCH", { disabled: true })),
       );
       expect(updated.disabled).toBe(true);
+      expect(updated.indexers).toEqual([]);
     });
   });
 
@@ -201,50 +193,6 @@ describe("Indexer Manager Routes", () => {
 
       const list = await bodyOf(await indexerManagerRoutes.request("/"));
       expect(list).toHaveLength(0);
-    });
-
-    it("cascade deletes indexer rows for torrentio", async () => {
-      const created = await bodyOf(
-        await indexerManagerRoutes.request(
-          "/",
-          json("POST", { indexerType: "torrentio", providers: ["yts", "1337x"] }),
-        ),
-      );
-      expect(created.indexers).toHaveLength(2);
-
-      await indexerManagerRoutes.request(`/${created.id}`, { method: "DELETE" });
-
-      const indexerRows = testDbRef.current?.select().from(indexer).all() ?? [];
-      expect(indexerRows).toHaveLength(0);
-    });
-  });
-
-  describe("DELETE /:id/indexers/:indexerId", () => {
-    it("deletes a single torrentio indexer", async () => {
-      const created = await bodyOf(
-        await indexerManagerRoutes.request(
-          "/",
-          json("POST", { indexerType: "torrentio", providers: ["yts", "1337x"] }),
-        ),
-      );
-      const toRemove = created.indexers[0];
-
-      const body = await bodyOf(
-        await indexerManagerRoutes.request(`/${created.id}/indexers/${toRemove.id}`, { method: "DELETE" }),
-      );
-      expect(body.indexers).toHaveLength(1);
-      expect(body.indexers[0].id).not.toBe(toRemove.id);
-    });
-
-    it("rejects delete for jackett manager", async () => {
-      const created = await bodyOf(
-        await indexerManagerRoutes.request(
-          "/",
-          json("POST", { indexerType: "jackett", indexerUrl: "http://x", indexerApiKey: "k" }),
-        ),
-      );
-      const res = await indexerManagerRoutes.request(`/${created.id}/indexers/fake-id`, { method: "DELETE" });
-      expect(res.status).toBe(400);
     });
   });
 });

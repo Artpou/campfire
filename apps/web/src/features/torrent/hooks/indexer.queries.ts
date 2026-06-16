@@ -14,10 +14,13 @@ export const indexerManagerQueries = {
 
 export const indexerQueries = {
   key: ["torrent-indexers"] as const,
-  list: () =>
+  list: ({ withDisabled }: { withDisabled?: boolean } = { withDisabled: true }) =>
     queryOptions({
-      queryKey: [...indexerQueries.key],
-      queryFn: () => unwrap(api.torrents.indexers.$get()),
-      retry: false,
+      queryKey: [...indexerQueries.key, withDisabled],
+      queryFn: async () => {
+        const data = await unwrap(api["indexer-manager"].$get());
+        if (withDisabled) return data;
+        return data.filter((indexer) => !indexer.disabled);
+      },
     }),
 };

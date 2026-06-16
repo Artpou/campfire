@@ -1,6 +1,7 @@
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, Outlet, redirect, useLocation } from "@tanstack/react-router";
 import { AlertTriangleIcon, FilmIcon, LibraryIcon, ListIcon, TvIcon } from "lucide-react";
 
@@ -9,6 +10,7 @@ import { AppTopbar } from "@/shared/app-topbar";
 
 import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";
+import { indexerManagerQueries } from "@/features/torrent/hooks/indexer.queries";
 
 const navItems = [
   {
@@ -38,11 +40,11 @@ const navItems = [
 export const Route = createFileRoute("/_app")({
   beforeLoad: async ({ location }) => {
     try {
-      const data = await unwrap(api.auth.me.$get());
-      useAuth.getState().setUser(data);
+      const user = await unwrap(api.auth.me.$get());
+      useAuth.getState().setUser(user);
 
-      const isAdmin = data.role === "admin" || data.role === "owner";
-      const noIndexers = !data.indexerManagers || data.indexerManagers.length === 0;
+      const isAdmin = user.role === "admin" || user.role === "owner";
+      const noIndexers = user.countIndexerManagers === 0;
 
       if (isAdmin && noIndexers && !location.pathname.startsWith("/onboarding")) {
         throw redirect({ to: "/onboarding" });
@@ -59,10 +61,12 @@ function AuthenticatedLayout() {
   const location = useLocation();
   const { t } = useLingui();
   const { isAdmin, hasRole } = useRole();
-  const user = useAuth((state) => state.user);
+  const { data: managers = [] } = useQuery({
+    ...indexerManagerQueries.list(),
+    enabled: isAdmin,
+  });
 
-  const indexerManagers = user?.indexerManagers;
-  const isIndexerMisconfigured = isAdmin && (!indexerManagers || indexerManagers.length === 0);
+  const isIndexerMisconfigured = isAdmin && managers.length === 0;
 
   const visibleNavItems = navItems.filter((item) => {
     if (item.minRole && !hasRole(item.minRole)) return false;

@@ -19,8 +19,8 @@ import { INDEXER_DEFAULTS } from "@/features/indexers-manager/indexers-manager";
 
 export const Route = createFileRoute("/_app/onboarding")({
   beforeLoad: async () => {
-    const user = useAuth.getState().user;
-    if (user?.indexerManagers && user.indexerManagers.length > 0) {
+    const managers = await unwrap(api["indexer-manager"].$get());
+    if (managers.length > 0) {
       throw redirect({ to: "/" });
     }
   },
@@ -34,7 +34,7 @@ function OnboardingPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [step, setStep] = useState<OnboardingStep>("select");
-  const [indexerType, setIndexerType] = useState<IndexerType>("torrentio");
+  const [indexerType, setIndexerType] = useState<IndexerType>("stremio");
   const [indexerUrl, setIndexerUrl] = useState("");
   const [indexerApiKey, setIndexerApiKey] = useState("");
   const [providers, setProviders] = useState<Set<string>>(new Set());
@@ -70,7 +70,7 @@ function OnboardingPage() {
   };
 
   const handleSubmit = () => {
-    if (indexerType === "torrentio") {
+    if (indexerType === "stremio") {
       createMutation.mutate({ indexerType, providers: Array.from(providers) });
     } else {
       createMutation.mutate({ indexerType, indexerUrl, indexerApiKey });
@@ -78,7 +78,7 @@ function OnboardingPage() {
   };
 
   const canSubmit = (() => {
-    if (indexerType === "torrentio") return providers.size > 0;
+    if (indexerType === "stremio") return providers.size > 0;
     return indexerUrl.length > 0 && indexerApiKey.length > 0;
   })();
 
@@ -107,7 +107,7 @@ function OnboardingPage() {
                 <button
                   type="button"
                   className="p-4 rounded-md border border-border hover:border-primary hover:bg-primary/5 transition-colors text-left relative"
-                  onClick={() => handleSelectType("torrentio")}
+                  onClick={() => handleSelectType("stremio")}
                 >
                   <Badge className="absolute top-2 left-2 text-[10px]">
                     <Trans>Recommended</Trans>
@@ -150,11 +150,9 @@ function OnboardingPage() {
             </div>
           ) : (
             <div className="space-y-6">
-              {indexerType === "torrentio" && (
-                <TorrentioProviderPicker selected={providers} onToggle={toggleProvider} />
-              )}
+              {indexerType === "stremio" && <TorrentioProviderPicker selected={providers} onToggle={toggleProvider} />}
 
-              {indexerType !== "torrentio" && (
+              {indexerType !== "stremio" && (
                 <div className="space-y-4">
                   <Input
                     label={<Trans>URL</Trans>}

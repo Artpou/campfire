@@ -1,10 +1,9 @@
-import { ServiceUnavailableError } from "@/errors/error";
-import { logger } from "@/helpers/logger.helper";
 import { getLanguageFromTitle, getTorrentQuality } from "@/helpers/video.helper";
-import type { Torrent, TorrentIndexerQuery } from "../torrent.dto";
-import type { IndexerAdapter, IndexerConfig, SearchQuery } from "./base.adapter";
+import { Indexer, IndexerManager } from "@/types";
+import type { Torrent, torrentListQuery } from "../torrent.dto";
+import { IndexerAdapter } from "./indexer.adapter";
 
-interface TorrentioStream {
+interface StremioTorrent {
   name: string;
   title: string;
   infoHash: string;
@@ -15,8 +14,11 @@ interface TorrentioStream {
   };
 }
 
-interface TorrentioResponse {
-  streams: TorrentioStream[];
+interface StremioResponse {
+  streams: StremioTorrent[];
+  cacheMaxAge: number;
+  staleRevalidate: string;
+  staleError: string;
 }
 
 function parseSeeders(title: string): number {
@@ -40,47 +42,26 @@ function parseSource(title: string): string {
   return match ? match[1].trim() : "Torrentio";
 }
 
-export class TorrentioAdapter implements IndexerAdapter {
-  async getIndexers(_config: IndexerConfig): Promise<TorrentIndexerQuery[]> {
-    return [
-      {
-        id: "torrentio",
-        name: "torrentio",
-        label: "Torrentio",
-        privacy: "public",
-      },
-    ];
+export class StremioAdapter extends IndexerAdapter {
+  constructor(indexerManager: IndexerManager) {
+    super(indexerManager, "stremio");
   }
 
-  async search(query: SearchQuery, config: IndexerConfig): Promise<Torrent[]> {
-    if (!query.imdbId) return [];
+  async getIndexers(): Promise<Indexer[]> {
+    return Promise.resolve([]);
+  }
 
-    const baseUrl = config.baseUrl.replace(/\/+$/, "");
-    const providers = config.providers ?? [];
-    const providerPath = providers.length > 0 ? `providers=${providers.join(",")}` : "";
-    const type = query.t === "movie" ? "movie" : "series";
+  async getTorrents(query: torrentListQuery): Promise<Torrent[]> {
+    const media = query.media;
 
-    let videoId = query.imdbId;
-    if (type === "series") {
+    let videoId = media.imdbId;
+    if (media.type === "tv") {
       const season = query.season ?? 1;
       const episode = query.episode ?? 1;
-      videoId = `${query.imdbId}:${season}:${episode}`;
+      videoId = `${media.imdbId}:${season}:${episode}`;
     }
 
-    const url = providerPath
-      ? `${baseUrl}/${providerPath}/stream/${type}/${videoId}.json`
-      : `${baseUrl}/stream/${type}/${videoId}.json`;
-
-    logger.debug("TORRENTIO", `GET ${url}`);
-
-    const response = await fetch(url);
-    if (!response.ok) {
-      if (response.status === 404) return [];
-      throw new ServiceUnavailableError(`Torrentio (${response.status} ${response.statusText})`);
-    }
-
-    const data = (await response.json()) as TorrentioResponse;
-    if (!data.streams) return [];
+    const data = (await this.fetchApi(`stream/${media.type}/${videoId}.json`)) as StremioResponse;
 
     return data.streams.map((stream) => {
       const filename = stream.behaviorHints?.filename ?? "";
@@ -98,7 +79,7 @@ export class TorrentioAdapter implements IndexerAdapter {
         quality: getTorrentQuality(`${stream.name} ${displayTitle}`),
         language: getLanguageFromTitle(stream.title),
         detailsUrl: undefined,
-        indexerType: "torrentio" as const,
+        indexerType: "stremio",
         magnetUrl: `magnet:?xt=urn:btih:${stream.infoHash}`,
       };
     });

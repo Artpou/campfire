@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { indexerTypeEnum } from "@/modules/indexer-manager/indexer-manager.schema";
-import { mediaSelectSchema } from "@/modules/media/media.dto";
+import { mediaSelectSchema } from "@/types";
 
 export const torrentSchema = z.object({
   title: z.string(),
@@ -38,27 +38,14 @@ export interface TorrentInspectResult {
   totalSize: number;
 }
 
-export const torrentIndexerDto = z.object({
-  id: z.string(),
-  name: z.string(),
-  label: z.string().optional(),
-  lang: z.string().optional(),
-  privacy: z.enum(["private", "semi-private", "public"]),
-  description: z.string().optional(),
-  indexerManagerId: z.string().optional(),
-  indexerManagerType: z.enum(indexerTypeEnum).optional(),
-});
-export type TorrentIndexerQuery = z.infer<typeof torrentIndexerDto>;
-
-export const torrentSearchDto = z.object({
-  media: mediaSelectSchema,
+export const torrentListDto = z.object({
   indexerManagerId: z.string(),
+  media: mediaSelectSchema,
   indexerId: z.string().optional(),
-  imdbId: z.string().optional(),
   season: z.number().int().positive().optional(),
   episode: z.number().int().positive().optional(),
 });
-export type torrentSearchQuery = z.infer<typeof torrentSearchDto>;
+export type torrentListQuery = z.infer<typeof torrentListDto>;
 
 export const torrentInspectDto = z.object({
   magnet: z.string().min(1),
