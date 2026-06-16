@@ -2,7 +2,6 @@ import { Trans } from "@lingui/react/macro";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import { InfoIcon } from "lucide-react";
-import ms from "ms";
 
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
@@ -22,6 +21,7 @@ import { MediaCard } from "@/features/media/components/media-card";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 import {
   downloadQueries,
+  refetchDownloadInterval,
   useDownloadDelete,
   useDownloadPause,
   useDownloadResume,
@@ -42,7 +42,10 @@ function DownloadDetailPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
 
-  const { data: download } = useSuspenseQuery({ ...downloadQueries.details(id), refetchInterval: ms("1s") });
+  const { data: download } = useSuspenseQuery({
+    ...downloadQueries.details(id),
+    refetchInterval: refetchDownloadInterval,
+  });
 
   // biome-ignore lint/style/noNonNullAssertion: mediaId is guaranteed to be not null
   const { data: media } = useSuspenseQuery(mediaQueries.details(download.mediaId!));

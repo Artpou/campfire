@@ -12,7 +12,9 @@ const config = defineConfig({
   envDir: "../../",
   plugins: [
     tanstackRouter(),
-    checker({ typescript: true }),
+    checker({ 
+      typescript: { tsconfigPath: "./tsconfig.json", buildMode: true },
+    }),
     viteTsConfigPaths({
       projects: ["./tsconfig.json"],
     }),

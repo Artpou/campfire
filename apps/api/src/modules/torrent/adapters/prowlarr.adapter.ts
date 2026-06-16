@@ -118,13 +118,10 @@ export class ProwlarrAdapter implements IndexerAdapter {
 
     if (query.imdbId) {
       const imdbUrl = this.buildSearchUrl(apiUrl, query, `{ImdbId:${query.imdbId}}`);
-      try {
-        const results = await this.fetchSearch(imdbUrl, config, `imdb:${query.imdbId}`);
-        if (results.length > 0) return results;
-      } catch {
-        logger.warn("PROWLARR", `IMDB search failed for ${query.imdbId}, falling back to title search`);
-      }
+      const results = await this.fetchSearch(imdbUrl, config, `imdb:${query.imdbId}`);
+      if (results.length > 0) return results;
     }
+    logger.info("PROWLARR", `IMDB search failed for ${query.imdbId}, falling back to title search`);
 
     const titleUrl = this.buildSearchUrl(apiUrl, query, query.q);
     return this.fetchSearch(titleUrl, config, `query:${query.q}`);

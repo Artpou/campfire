@@ -6,7 +6,8 @@
   "types": "./dist/src/server.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/src/server.d.ts"
+      "types": "./dist/src/server.d.ts",
+      "default": "./dist/server.js"
     },
     "./types": {
       "types": "./dist/src/types.d.ts"

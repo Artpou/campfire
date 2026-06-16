@@ -15,8 +15,7 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "api": ["../../apps/api/dist/src/server.d.ts"]
+      "@/*": ["./src/*"]
     },
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,

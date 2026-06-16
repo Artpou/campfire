@@ -1,7 +1,6 @@
-import { MutationCache, QueryClient } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import ms from "ms";
-import { toast } from "sonner";
 
 import { routeTree } from "./routeTree.gen";
 
@@ -15,18 +14,12 @@ export const queryClient = new QueryClient({
     queries: {
       staleTime: ms("5m"),
       gcTime: ms("30m"),
-      retry: 1,
       refetchOnWindowFocus: false,
     },
     mutations: {
       retry: false,
     },
   },
-  mutationCache: new MutationCache({
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "An unexpected error occurred");
-    },
-  }),
 });
 
 export const router = createRouter({
