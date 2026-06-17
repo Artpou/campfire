@@ -10,7 +10,6 @@ import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Container } from "@/shared/ui/container";
 
 import { HeroCarousel } from "@/features/media/components/hero-carousel";
-import { MediaCarouselLibrary } from "@/features/media/components/media-carousel-library";
 import { MediaCategoryCarousel } from "@/features/media/components/media-category-carousel";
 import { MediaGrid } from "@/features/media/components/media-grid";
 import { MediaSelected, MediaSortTabs } from "@/features/media/components/media-sort-tabs";
@@ -146,7 +145,6 @@ function MoviesPage() {
     <>
       <HeroCarousel type="movie" />
       <Container>
-        <MediaCarouselLibrary type="movie" />
         <MediaCategoryCarousel type="movie" onValueChange={(value) => handleSearchChange({ with_genres: value })} />
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-4">

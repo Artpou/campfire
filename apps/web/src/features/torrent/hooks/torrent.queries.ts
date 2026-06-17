@@ -91,7 +91,6 @@ export function useTorrents(media: Media, managers: IndexerManager[], { season, 
         return { status, count: data.length };
       });
 
-      const seenLinks = new Set<string>();
       const year = new Date(media?.release_date || "").getFullYear().toString();
 
       const torrents = results
@@ -104,11 +103,6 @@ export function useTorrents(media: Media, managers: IndexerManager[], { season, 
             indexerId: source.id,
             indexerManagerType: source.indexerManagerType,
           }));
-        })
-        .filter((torrent) => {
-          if (!torrent.link || seenLinks.has(torrent.link)) return false;
-          seenLinks.add(torrent.link);
-          return true;
         })
         .sort((a, b) => {
           const aHasYear = a.title.includes(year);

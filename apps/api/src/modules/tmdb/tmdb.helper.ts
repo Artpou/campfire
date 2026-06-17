@@ -69,26 +69,3 @@ export function tmdbTVToMedia(item: TMDBItem, genreMap?: Map<number, string>): M
     categories: formatCategories(undefined, item.genre_ids, genreMap),
   });
 }
-
-// biome-ignore lint/suspicious/noExplicitAny: fmdbResult is any
-export function fmdbResultToMedia(fmdbResult: any): Media {
-  return {
-    id: Number(fmdbResult.tmdbId),
-    type: "movie",
-    title: fmdbResult.title,
-    original_title: null,
-    sanitize_title: null,
-    original_language: null,
-    overview: null,
-    poster_path: fmdbResult.photo_url[0] ?? null,
-    vote_average: null,
-    release_date: fmdbResult.year.toString(),
-    backdrop_path: null,
-    duration: null,
-    seasons_number: null,
-    categories: null,
-    imdbId: "TOFIX",
-    watchList: 0,
-    likes: 0,
-  };
-}

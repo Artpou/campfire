@@ -52,6 +52,15 @@ export const mediaQueries = {
           : await unwrap(api.tv.trending.$get({ query: { locale } })),
     }),
 
+  library: (type: Media["type"]) =>
+    queryOptions({
+      queryKey: [...mediaQueries.key, "library", type],
+      queryFn: async () => {
+        const page = await unwrap(api.media.$get({ query: { filter: "downloaded", type, page: "1", limit: "10" } }));
+        return page.results;
+      },
+    }),
+
   keywords: (query: string) =>
     queryOptions({
       queryKey: [...mediaQueries.key, "keywords", query],
@@ -64,11 +73,18 @@ export function refetchMediaInterval({ state }: { state: QueryState<InfiniteData
   const data = state.data;
   if (!data) return false;
 
-  const hasDownloadingMedia = data.pages.some(({ results }) => {
-    return results?.some((media: Media) => isActiveDownload(media.download));
-  });
+  const hasDownloadingMedia = data.pages.some(({ results }) =>
+    results?.some((media: Media) => isActiveDownload(media.download)),
+  );
 
-  return hasDownloadingMedia ? 2000 : false;
+  return hasDownloadingMedia ? 1500 : false;
+}
+
+export function refetchLibraryInterval({ state }: { state: QueryState<Media[]> }) {
+  const data = state.data;
+  if (!data?.length) return false;
+
+  return data.some((media) => isActiveDownload(media.download)) ? 1500 : false;
 }
 
 export function useToggleLike() {

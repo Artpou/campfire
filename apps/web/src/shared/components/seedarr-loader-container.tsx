@@ -3,7 +3,7 @@ import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 
 export function SeedarrLoaderContainer({ className }: { className?: string }) {
   return (
-    <div className={cn("flex items-center justify-center size-full", className)}>
+    <div className={cn("flex items-center justify-center size-full h-screen", className)}>
       <SeedarrLoader />
     </div>
   );

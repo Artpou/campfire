@@ -23,10 +23,13 @@ export function MediaTypeTabs({ value }: MediaTypeTabsProps) {
   const navigate = useNavigate();
 
   return (
-    <Tabs value={value} onValueChange={(v) => navigate({ to: "/downloads", search: { type: getMediaType(v) } })}>
-      <TabsList className="h-auto p-1">
+    <Tabs
+      value={value ?? "all"}
+      onValueChange={(v) => navigate({ to: "/downloads", search: { type: getMediaType(v) } })}
+    >
+      <TabsList size="lg">
         {TAB_OPTIONS.map(({ value: val, icon: Icon, label }) => (
-          <TabsTrigger key={val} value={val ?? "all"} className="gap-2 px-4 py-2">
+          <TabsTrigger key={val} value={val ?? "all"} size="lg">
             <Icon className="size-4 text-foreground" />
             <span className="font-medium">{t(label)}</span>
           </TabsTrigger>

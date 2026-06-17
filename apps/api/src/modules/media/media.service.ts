@@ -8,19 +8,10 @@ import { BadRequestError, NotFoundError } from "@/errors/error";
 import { countSubquery } from "@/helpers/drizzle.helper";
 import { IdentifiableService } from "@/modules/auth/auth.service";
 import { download } from "@/modules/download/download.schema";
-import { DownloadService } from "@/modules/download/download.service";
 import { media, userLikes, userWatchList, watchProgress } from "@/modules/media/media.schema";
-import { User } from "@/modules/user/user.dto";
 import type { ListMediaQuery, Media, MediaInsert, UpdateProgressQuery } from "./media.dto";
 
 export class MediaService extends IdentifiableService<Media> {
-  private readonly downloadService: DownloadService;
-
-  constructor(user: User) {
-    super(user);
-    this.downloadService = new DownloadService(user);
-  }
-
   async getMany(pagination: Partial<ListMediaQuery>): Promise<Media[]> {
     const paginationOpts = pagination.page && pagination.limit ? paginate(pagination) : {};
     const rows = await db.query.media.findMany({
@@ -40,18 +31,14 @@ export class MediaService extends IdentifiableService<Media> {
       ...paginationOpts,
     });
 
-    return await Promise.all(
-      rows.map(async (row) => {
-        const { downloads, progress, ...mediaItem } = row;
-        const download = downloads[0] ? await this.downloadService.updateTorrent(downloads[0]) : undefined;
-
-        return {
-          ...mediaItem,
-          download: download,
-          progress: progress[0] ?? undefined,
-        };
-      }),
-    );
+    return rows.map((row) => {
+      const { downloads, progress, ...mediaItem } = row;
+      return {
+        ...mediaItem,
+        download: downloads[0],
+        progress: progress[0] ?? undefined,
+      };
+    });
   }
 
   async list(query: ListMediaQuery): Promise<Paginate<Media>> {

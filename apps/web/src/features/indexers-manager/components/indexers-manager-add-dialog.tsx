@@ -2,52 +2,39 @@ import { useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { IndexerManager, IndexerType } from "@seedarr/sdk";
+import type { CreateIndexerManagerInput } from "@seedarr/sdk";
 
 import { Button } from "@/shared/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
-import { TorrentioProviderPicker } from "@/features/indexers-manager/components/torrentio-provider-picker";
-import { INDEXER_DEFAULTS, parseStremioProviders } from "@/features/indexers-manager/indexers-manager";
+import { INDEXER_DEFAULTS, STREMIO_PRESETS } from "@/features/indexers-manager/indexers-manager";
+
+type FormType = "STREMIO_ADDON" | "SELF_HOSTED" | "PRESET";
 
 interface IndexersManagerAddDialogProps {
-  managers: IndexerManager[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  hasStremio: boolean;
-  onSubmit: (data: {
-    indexerType: IndexerType;
-    indexerUrl?: string;
-    indexerApiKey?: string;
-    providers?: string[];
-  }) => void;
+  onSubmit: (data: CreateIndexerManagerInput) => void;
   isPending: boolean;
 }
 
-export function IndexersManagerAddDialog({
-  managers,
-  open,
-  onOpenChange,
-  hasStremio,
-  onSubmit,
-  isPending,
-}: IndexersManagerAddDialogProps) {
+export function IndexersManagerAddDialog({ open, onOpenChange, onSubmit, isPending }: IndexersManagerAddDialogProps) {
   const { t } = useLingui();
-  const [step, setStep] = useState<"type" | "config">("type");
-  const [indexerType, setIndexerType] = useState<IndexerType>("jackett");
+  const [formType, setFormType] = useState<FormType>("STREMIO_ADDON");
+
+  const [selfHostedType, setSelfHostedType] = useState<"jackett" | "prowlarr">("jackett");
   const [indexerUrl, setIndexerUrl] = useState("");
   const [indexerApiKey, setIndexerApiKey] = useState("");
-  const [providers, setProviders] = useState<Set<string>>(
-    () => new Set(parseStremioProviders(managers.find((manager) => manager.indexerType === "stremio")?.indexerUrl)),
-  );
+  const [manifestUrl, setManifestUrl] = useState("");
 
   const reset = () => {
-    setStep("type");
-    setIndexerType("jackett");
+    setFormType("STREMIO_ADDON");
+    setSelfHostedType("jackett");
     setIndexerUrl("");
     setIndexerApiKey("");
-    setProviders(new Set());
+    setManifestUrl("");
   };
 
   const handleOpenChange = (next: boolean) => {
@@ -55,97 +42,81 @@ export function IndexersManagerAddDialog({
     onOpenChange(next);
   };
 
-  const handleSelectType = (type: IndexerType) => {
-    setIndexerType(type);
-    setIndexerUrl(INDEXER_DEFAULTS[type] ?? "");
-    setStep("config");
-  };
-
-  const toggleProvider = (value: string) => {
-    setProviders((prev) => {
-      const next = new Set(prev);
-      if (next.has(value)) next.delete(value);
-      else next.add(value);
-      return next;
-    });
-  };
-
-  const handleSubmit = () => {
-    if (indexerType === "stremio") {
-      onSubmit({ indexerType, providers: Array.from(providers) });
-    } else {
-      onSubmit({ indexerType, indexerUrl, indexerApiKey });
+  const handleTabChange = (value: string) => {
+    const type = value as FormType;
+    setFormType(type);
+    if (type === "SELF_HOSTED") {
+      setIndexerUrl(INDEXER_DEFAULTS[selfHostedType] ?? "");
     }
   };
 
-  const canSubmit = indexerType === "stremio" ? providers.size > 0 : indexerUrl.length > 0 && indexerApiKey.length > 0;
+  const handleSelfHostedTypeChange = (type: "jackett" | "prowlarr") => {
+    setSelfHostedType(type);
+    setIndexerUrl(INDEXER_DEFAULTS[type] ?? "");
+  };
+
+  const handlePresetSelect = (preset: "torrentio" | "comet" | "mediafusion") => {
+    onSubmit({ type: "PRESET", preset });
+  };
+
+  const handleSubmit = () => {
+    if (formType === "SELF_HOSTED") {
+      onSubmit({ type: "SELF_HOSTED", indexerType: selfHostedType, indexerUrl, indexerApiKey });
+    } else if (formType === "STREMIO_ADDON") {
+      onSubmit({ type: "STREMIO_ADDON", manifestUrl });
+    }
+  };
+
+  const canSubmit = (() => {
+    if (formType === "SELF_HOSTED") return indexerUrl.length > 0 && indexerApiKey.length > 0;
+    if (formType === "STREMIO_ADDON") return manifestUrl.length > 0;
+    return false;
+  })();
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent
-        showCloseButton
-        className={indexerType === "stremio" && step === "config" ? "max-w-2xl" : undefined}
-      >
+      <DialogContent showCloseButton className="max-w-xl">
         <DialogHeader>
           <DialogTitle>
-            {step === "type" ? <Trans>Add Indexer Manager</Trans> : <Trans>Configure {indexerType}</Trans>}
+            <Trans>Add New Indexer</Trans>
           </DialogTitle>
-          <DialogDescription>
-            {step === "type" ? (
-              <Trans>Choose the type of indexer to add.</Trans>
-            ) : indexerType === "stremio" ? (
-              <Trans>Select the providers you want to use.</Trans>
-            ) : (
-              <Trans>Enter the URL and API key for your instance.</Trans>
-            )}
-          </DialogDescription>
         </DialogHeader>
 
-        {step === "type" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 py-2">
-            <button
-              type="button"
-              className="p-4 rounded-md border border-border hover:border-primary hover:bg-primary/5 transition-colors text-left"
-              onClick={() => handleSelectType("jackett")}
-            >
-              <p className="font-semibold">Jackett</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                <Trans>Proxy server for torrent trackers</Trans>
-              </p>
-            </button>
-            <button
-              type="button"
-              className="p-4 rounded-md border border-border hover:border-primary hover:bg-primary/5 transition-colors text-left"
-              onClick={() => handleSelectType("prowlarr")}
-            >
-              <p className="font-semibold">Prowlarr</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                <Trans>Indexer manager for *arr apps</Trans>
-              </p>
-            </button>
-            <button
-              type="button"
-              className={`p-4 rounded-md border transition-colors text-left ${
-                hasStremio
-                  ? "border-border/50 opacity-50 cursor-not-allowed"
-                  : "border-border hover:border-primary hover:bg-primary/5"
-              }`}
-              onClick={() => !hasStremio && handleSelectType("stremio")}
-              disabled={hasStremio}
-            >
-              <p className="font-semibold">Torrentio</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {hasStremio ? <Trans>Already configured</Trans> : <Trans>Stremio addon for torrents</Trans>}
-              </p>
-            </button>
-          </div>
-        ) : indexerType === "stremio" ? (
-          <TorrentioProviderPicker selected={providers} onToggle={toggleProvider} />
-        ) : (
-          <div className="space-y-4 py-2">
+        <Tabs value={formType} onValueChange={handleTabChange}>
+          <TabsList className="w-full">
+            <TabsTrigger value="STREMIO_ADDON" className="flex-1">
+              <Trans>Custom Stremio Addon</Trans>
+            </TabsTrigger>
+            <TabsTrigger value="SELF_HOSTED" className="flex-1">
+              <Trans>Self-Hosted</Trans>
+            </TabsTrigger>
+            <TabsTrigger value="PRESET" className="flex-1">
+              <Trans>Presets</Trans>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="STREMIO_ADDON">
             <Input
-              label={<Trans>URL</Trans>}
-              placeholder={INDEXER_DEFAULTS[indexerType]}
+              label={<Trans>Manifest URL</Trans>}
+              placeholder="https://torrentio.strem.fun/manifest.json"
+              value={manifestUrl}
+              onChange={(e) => setManifestUrl(e.target.value)}
+            />
+          </TabsContent>
+
+          <TabsContent value="SELF_HOSTED" className="space-y-4">
+            <Tabs
+              value={selfHostedType}
+              onValueChange={(value) => handleSelfHostedTypeChange(value as "jackett" | "prowlarr")}
+            >
+              <TabsList>
+                <TabsTrigger value="jackett">Jackett</TabsTrigger>
+                <TabsTrigger value="prowlarr">Prowlarr</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <Input
+              label={<Trans>Base URL</Trans>}
+              placeholder={INDEXER_DEFAULTS[selfHostedType]}
               value={indexerUrl}
               onChange={(e) => setIndexerUrl(e.target.value)}
             />
@@ -155,13 +126,38 @@ export function IndexersManagerAddDialog({
               value={indexerApiKey}
               onChange={(e) => setIndexerApiKey(e.target.value)}
             />
-          </div>
-        )}
+          </TabsContent>
 
-        {step === "config" && (
+          <TabsContent value="PRESET" className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              <Trans>Choose a pre-configured provider:</Trans>
+            </p>
+            {STREMIO_PRESETS.map((preset) => (
+              <div key={preset.value} className="flex items-center justify-between p-3 rounded-lg border border-border">
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">{preset.emoji}</span>
+                  <div>
+                    <p className="text-sm font-medium">{preset.label}</p>
+                    <p className="text-xs text-muted-foreground">{preset.description}</p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handlePresetSelect(preset.value)}
+                  disabled={isPending}
+                >
+                  <Trans>Select</Trans>
+                </Button>
+              </div>
+            ))}
+          </TabsContent>
+        </Tabs>
+
+        {formType !== "PRESET" && (
           <DialogFooter>
-            <Button variant="outline" onClick={() => setStep("type")}>
-              <Trans>Back</Trans>
+            <Button variant="outline" onClick={() => handleOpenChange(false)}>
+              <Trans>Cancel</Trans>
             </Button>
             <Button onClick={handleSubmit} disabled={!canSubmit || isPending}>
               <Trans>Save</Trans>

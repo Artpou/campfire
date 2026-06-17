@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { IndexerType } from "@seedarr/sdk";
+import type { CreateIndexerManagerInput } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
@@ -14,38 +14,35 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/sha
 import { Input } from "@/shared/ui/input";
 
 import { useAuth } from "@/features/auth/auth-store";
-import { TorrentioProviderPicker } from "@/features/indexers-manager/components/torrentio-provider-picker";
-import { INDEXER_DEFAULTS } from "@/features/indexers-manager/indexers-manager";
+import { INDEXER_DEFAULTS, STREMIO_PRESETS } from "@/features/indexers-manager/indexers-manager";
 
 export const Route = createFileRoute("/_app/onboarding")({
   beforeLoad: async () => {
-    const managers = await unwrap(api["indexer-manager"].$get());
-    if (managers.length > 0) {
-      throw redirect({ to: "/" });
-    }
+    const onboarded = useAuth.getState().onboarded;
+    if (onboarded) throw redirect({ to: "/" });
+
+    const countManagers = await unwrap(api["indexer-manager"].count.$get());
+    if (countManagers > 0) throw redirect({ to: "/" });
+
+    useAuth.getState().setOnboarded();
   },
   component: OnboardingPage,
 });
 
 type OnboardingStep = "select" | "config";
+type OnboardingType = "preset" | "prowlarr" | "jackett";
 
 function OnboardingPage() {
   const { t } = useLingui();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [step, setStep] = useState<OnboardingStep>("select");
-  const [indexerType, setIndexerType] = useState<IndexerType>("stremio");
+  const [configType, setConfigType] = useState<OnboardingType>("preset");
   const [indexerUrl, setIndexerUrl] = useState("");
   const [indexerApiKey, setIndexerApiKey] = useState("");
-  const [providers, setProviders] = useState<Set<string>>(new Set());
 
   const createMutation = useMutation({
-    mutationFn: (data: {
-      indexerType: IndexerType;
-      indexerUrl?: string;
-      indexerApiKey?: string;
-      providers?: string[];
-    }) => unwrap(api["indexer-manager"].$post({ json: data })),
+    mutationFn: (data: CreateIndexerManagerInput) => unwrap(api["indexer-manager"].$post({ json: data })),
     onSuccess: async () => {
       const data = await unwrap(api.auth.me.$get());
       useAuth.getState().setUser(data);
@@ -54,33 +51,27 @@ function OnboardingPage() {
     },
   });
 
-  const handleSelectType = (type: IndexerType) => {
-    setIndexerType(type);
-    setIndexerUrl(INDEXER_DEFAULTS[type] ?? "");
-    setStep("config");
-  };
-
-  const toggleProvider = (value: string) => {
-    setProviders((prev) => {
-      const next = new Set(prev);
-      if (next.has(value)) next.delete(value);
-      else next.add(value);
-      return next;
-    });
-  };
-
-  const handleSubmit = () => {
-    if (indexerType === "stremio") {
-      createMutation.mutate({ indexerType, providers: Array.from(providers) });
+  const handleSelectType = (type: OnboardingType) => {
+    setConfigType(type);
+    if (type !== "preset") {
+      setIndexerUrl(INDEXER_DEFAULTS[type] ?? "");
+      setStep("config");
     } else {
-      createMutation.mutate({ indexerType, indexerUrl, indexerApiKey });
+      setStep("config");
     }
   };
 
-  const canSubmit = (() => {
-    if (indexerType === "stremio") return providers.size > 0;
-    return indexerUrl.length > 0 && indexerApiKey.length > 0;
-  })();
+  const handlePresetSelect = (preset: "torrentio" | "comet" | "mediafusion") => {
+    createMutation.mutate({ type: "PRESET", preset });
+  };
+
+  const handleSubmit = () => {
+    if (configType === "prowlarr" || configType === "jackett") {
+      createMutation.mutate({ type: "SELF_HOSTED", indexerType: configType, indexerUrl, indexerApiKey });
+    }
+  };
+
+  const canSubmit = indexerUrl.length > 0 && indexerApiKey.length > 0;
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4">
@@ -107,14 +98,16 @@ function OnboardingPage() {
                 <button
                   type="button"
                   className="p-4 rounded-md border border-border hover:border-primary hover:bg-primary/5 transition-colors text-left relative"
-                  onClick={() => handleSelectType("stremio")}
+                  onClick={() => handleSelectType("preset")}
                 >
                   <Badge className="absolute top-2 left-2 text-[10px]">
                     <Trans>Recommended</Trans>
                   </Badge>
                   <div className="flex items-center gap-2 mt-4">
                     <ZapIcon className="size-4 text-primary" />
-                    <p className="font-semibold">Torrentio</p>
+                    <p className="font-semibold">
+                      <Trans>Stremio Presets</Trans>
+                    </p>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     <Trans>No setup required. Browse torrents from public trackers instantly.</Trans>
@@ -143,20 +136,48 @@ function OnboardingPage() {
               </div>
 
               <div className="flex justify-center pt-2">
-                <Button variant="ghost" onClick={() => navigate({ to: "/" })} className="text-muted-foreground">
+                <Button variant="outline" onClick={() => navigate({ to: "/" })} className="text-muted-foreground">
                   <Trans>Skip for now</Trans>
                 </Button>
               </div>
             </div>
           ) : (
             <div className="space-y-6">
-              {indexerType === "stremio" && <TorrentioProviderPicker selected={providers} onToggle={toggleProvider} />}
+              {configType === "preset" && (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    <Trans>Choose a pre-configured provider:</Trans>
+                  </p>
+                  {STREMIO_PRESETS.map((preset) => (
+                    <div
+                      key={preset.value}
+                      className="flex items-center justify-between p-3 rounded-lg border border-border hover:border-muted-foreground/40 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-lg">{preset.emoji}</span>
+                        <div>
+                          <p className="text-sm font-medium">{preset.label}</p>
+                          <p className="text-xs text-muted-foreground">{preset.description}</p>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handlePresetSelect(preset.value)}
+                        disabled={createMutation.isPending}
+                      >
+                        <Trans>Select</Trans>
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-              {indexerType !== "stremio" && (
+              {configType !== "preset" && (
                 <div className="space-y-4">
                   <Input
                     label={<Trans>URL</Trans>}
-                    placeholder={INDEXER_DEFAULTS[indexerType]}
+                    placeholder={INDEXER_DEFAULTS[configType]}
                     value={indexerUrl}
                     onChange={(e) => setIndexerUrl(e.target.value)}
                   />
@@ -174,12 +195,14 @@ function OnboardingPage() {
                   <Trans>Back</Trans>
                 </Button>
                 <div className="flex gap-2">
-                  <Button variant="ghost" onClick={() => navigate({ to: "/" })} className="text-muted-foreground">
+                  <Button variant="outline" onClick={() => navigate({ to: "/" })} className="text-muted-foreground">
                     <Trans>Skip for now</Trans>
                   </Button>
-                  <Button onClick={handleSubmit} disabled={!canSubmit || createMutation.isPending}>
-                    <Trans>Confirm</Trans>
-                  </Button>
+                  {configType !== "preset" && (
+                    <Button onClick={handleSubmit} disabled={!canSubmit || createMutation.isPending}>
+                      <Trans>Confirm</Trans>
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

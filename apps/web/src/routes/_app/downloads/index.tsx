@@ -4,7 +4,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import type { ListMediaQuery, Media } from "@seedarr/sdk";
 import { useQuery, useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowDownIcon, ArrowUpIcon, InfoIcon, SearchIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, InfoIcon } from "lucide-react";
 
 import { formatBytes } from "@/shared/helpers/format.helper";
 import { Button } from "@/shared/ui/button";
@@ -63,16 +63,14 @@ function DownloadsPage() {
       <div className="space-y-4">
         <div className="flex items-center gap-4">
           <MediaTypeTabs value={type} />
-          <div className="flex-1 relative">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-            <Input
-              type="text"
-              className="pl-9 py-5"
-              placeholder={t`Search in your library...`}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+          <Input
+            type="text"
+            h="lg"
+            search
+            placeholder={t`Search in your library...`}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
 
         {stats && (

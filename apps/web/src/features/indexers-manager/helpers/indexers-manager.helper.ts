@@ -1,6 +1,6 @@
-import jackettImage from "public/indexer-manager/jackett.png";
-import prowlarrImage from "public/indexer-manager/prowlarr.png";
-import torrentioImage from "public/indexer-manager/torrentio.png";
+import jackettImage from "../assets/jackett.png";
+import prowlarrImage from "../assets/prowlarr.png";
+import torrentioImage from "../assets/torrentio.png";
 
 export const indexersManagerImages = {
   prowlarr: prowlarrImage,

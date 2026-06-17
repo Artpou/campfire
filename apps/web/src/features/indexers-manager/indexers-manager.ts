@@ -1,118 +1,25 @@
-export const TORRENTIO_ALL_PROVIDERS = [
+export const STREMIO_PRESETS = [
   {
-    value: "yts",
-    label: "YTS",
-    lang: "en",
-    description: "YTS is a Public torrent site specialising in HD movies of small size",
+    value: "torrentio" as const,
+    label: "Torrentio",
+    emoji: "\u{1F7E2}",
+    description: "The gold standard, movies & series",
   },
   {
-    value: "eztv",
-    label: "EZTV",
-    lang: "en",
-    description: "EZTV is a Public torrent site for TV shows",
-  },
-  { value: "rarbg", label: "RARBG", lang: "en" },
-  {
-    value: "1337x",
-    label: "1337x",
-    lang: "en",
-    description: "1337x is a Public torrent site that offers verified torrent downloads",
+    value: "comet" as const,
+    label: "Comet",
+    emoji: "\u2604\uFE0F",
+    description: "Ultra-fast lightweight scraper",
   },
   {
-    value: "thepiratebay",
-    label: "ThePirateBay",
-    lang: "en",
-    description: "The Pirate Bay (TPB) is the galaxy's most resilient Public BitTorrent site",
+    value: "mediafusion" as const,
+    label: "MediaFusion",
+    emoji: "\u{1F988}",
+    description: "Great for movies, live TV & anime",
   },
-  {
-    value: "kickasstorrents",
-    label: "KickassTorrents",
-    lang: "en",
-    description: "kickasstorrents.to is a Public KickAssTorrent clone for MOVIES / TV / GENERAL",
-  },
-  {
-    value: "torrentgalaxy",
-    label: "TorrentGalaxy",
-    lang: "en",
-    description: "TorrentGalaxyClone is a Public site for MOVIES / TV / GENERAL",
-  },
-  {
-    value: "magnetdl",
-    label: "MagnetDL",
-    lang: "en",
-    description: "MagnetDL is a Public magnet site that offers verified magnet downloads",
-  },
-  {
-    value: "horriblesubs",
-    label: "HorribleSubs",
-    lang: "en",
-    description: "SubsPlease - A better HorribleSubs/Erai replacement",
-  },
-  {
-    value: "nyaasi",
-    label: "NyaaSi",
-    lang: "en",
-    description: "Nyaa is a Public torrent site focused on Eastern ASIAN media including anime",
-  },
-  {
-    value: "tokyotosho",
-    label: "TokyoTosho",
-    lang: "en",
-    description: "Tokyo Toshokan is a Public BitTorrent Library for JAPANESE Media",
-  },
-  {
-    value: "anidex",
-    label: "AniDex",
-    lang: "en",
-    description: "Anidex is a Public torrent tracker and indexer, primarily for English fansub groups of anime",
-  },
-  {
-    value: "rutor",
-    label: "Rutor",
-    lang: "ru",
-    description: "RuTor is a RUSSIAN Public site for MOVIES / TV / GENERAL",
-  },
-  {
-    value: "rutracker",
-    label: "Rutracker",
-    lang: "ru",
-    description: "RuTracker.org is a RUSSIAN Semi-Private site with a thriving file-sharing community",
-  },
-  { value: "comando", label: "Comando", lang: "pt" },
-  { value: "bludv", label: "BluDV", lang: "pt" },
-  { value: "micoleaodublado", label: "MicoLeaoDublado", lang: "pt" },
-  {
-    value: "torrent9",
-    label: "Torrent9",
-    lang: "fr",
-    description: "Torrent9 is a FRENCH Public site for MOVIES / TV / GENERAL",
-  },
-  {
-    value: "ilcorsaronero",
-    label: "ilCorSaRoNeRo",
-    lang: "it",
-    description: "ilCorSaRoNeRo is a ITALIAN Public site for MOVIES / TV / GENERAL",
-  },
-  {
-    value: "mejortorrent",
-    label: "MejorTorrent",
-    lang: "es",
-    description: "MejorTorrent is a SPANISH Public site for MOVIES / TV / GENERAL",
-  },
-  { value: "wolfmax4k", label: "Wolfmax4k", lang: "es" },
-  { value: "cinecalidad", label: "Cinecalidad", lang: "es" },
-  { value: "besttorrents", label: "BestTorrents", lang: "ru" },
 ] as const;
 
 export const INDEXER_DEFAULTS: Record<string, string> = {
   jackett: "http://localhost:9117",
   prowlarr: "http://localhost:9696",
-  stremio: "https://torrentio.strem.fun",
 };
-
-export function parseStremioProviders(url: string | null | undefined): string[] {
-  if (!url) return [];
-  const match = url.match(/torrentio\.strem\.fun\/([^/]+)/);
-  if (!match) return [];
-  return match[1].split(",");
-}

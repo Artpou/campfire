@@ -1,11 +1,11 @@
 import { count, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/db/db";
-import { NotFoundError } from "@/errors/error";
+import { BadRequestError, NotFoundError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { IdentifiableService } from "@/modules/auth/auth.service";
-import { indexerManager } from "@/modules/indexer-manager/indexer-manager.schema";
+import { indexerManager, type StremioManifest } from "@/modules/indexer-manager/indexer-manager.schema";
 import { IndexerAdapter } from "@/modules/torrent/adapters/indexer.adapter";
 import { JackettAdapter } from "@/modules/torrent/adapters/jackett.adapter";
 import { ProwlarrAdapter } from "@/modules/torrent/adapters/prowlarr.adapter";
@@ -15,14 +15,30 @@ import {
   Indexer,
   IndexerManager,
   IndexerManagerWithIndexers,
+  STREMIO_PRESETS,
   type UpdateIndexerManagerInput,
 } from "./indexer-manager.dto";
 
-function buildStremioUrl(providers: string[]): string {
-  return `https://torrentio.strem.fun/${providers.join(",")}`;
+type IndexerManagerDto = IndexerManager | IndexerManagerWithIndexers;
+
+async function fetchManifest(manifestUrl: string): Promise<StremioManifest> {
+  const response = await fetch(manifestUrl);
+  if (!response.ok) {
+    throw new BadRequestError(`Failed to fetch manifest from ${manifestUrl} (${response.status})`);
+  }
+  return (await response.json()) as StremioManifest;
 }
 
-type IndexerManagerDto = IndexerManager | IndexerManagerWithIndexers;
+function resolveManifestUrl(data: Extract<CreateIndexerManagerInput, { type: "STREMIO_ADDON" | "PRESET" }>): string {
+  if (data.type === "PRESET") {
+    return STREMIO_PRESETS[data.preset];
+  }
+  return data.manifestUrl;
+}
+
+function deriveBaseUrl(manifestUrl: string): string {
+  return manifestUrl.replace(/\/manifest\.json$/, "");
+}
 
 export class IndexerManagerService extends IdentifiableService<IndexerManager> {
   private prowlarrAdapter?: ProwlarrAdapter;
@@ -78,14 +94,22 @@ export class IndexerManagerService extends IdentifiableService<IndexerManager> {
   }
 
   async create(data: CreateIndexerManagerInput): Promise<IndexerManagerWithIndexers> {
-    const values: typeof indexerManager.$inferInsert = {
-      indexerType: data.indexerType,
-      indexerUrl: data.indexerUrl,
-      indexerApiKey: data.indexerApiKey,
-    };
+    let values: typeof indexerManager.$inferInsert;
 
-    if (data.indexerType === "stremio" && data.providers?.length) {
-      values.indexerUrl = buildStremioUrl(data.providers);
+    if (data.type === "SELF_HOSTED") {
+      values = {
+        indexerType: data.indexerType,
+        indexerUrl: data.indexerUrl,
+        indexerApiKey: data.indexerApiKey,
+      };
+    } else {
+      const manifestUrl = resolveManifestUrl(data);
+      const manifest = await fetchManifest(manifestUrl);
+      values = {
+        indexerType: "stremio",
+        indexerUrl: deriveBaseUrl(manifestUrl),
+        manifest,
+      };
     }
 
     const [created] = await db.insert(indexerManager).values(values).returning();
@@ -94,8 +118,8 @@ export class IndexerManagerService extends IdentifiableService<IndexerManager> {
       userId: this.user.id,
       type: "SUCCESS",
       action: "INDEXER_ADD",
-      title: `Indexer added: ${data.indexerType}`,
-      metadata: { indexerManagerId: created.id, indexerType: data.indexerType },
+      title: `Indexer added: ${values.indexerType}`,
+      metadata: { indexerManagerId: created.id, indexerType: values.indexerType },
     });
 
     return this.addIndexers(created);
@@ -112,8 +136,11 @@ export class IndexerManagerService extends IdentifiableService<IndexerManager> {
     if (data.indexerUrl) updateData.indexerUrl = data.indexerUrl;
     if (data.indexerApiKey) updateData.indexerApiKey = data.indexerApiKey;
     if (data.disabled !== undefined) updateData.disabled = data.disabled;
-    if (existing.indexerType === "stremio" && data.providers?.length) {
-      updateData.indexerUrl = buildStremioUrl(data.providers);
+
+    if (existing.indexerType === "stremio" && data.manifestUrl) {
+      const manifest = await fetchManifest(data.manifestUrl);
+      updateData.indexerUrl = deriveBaseUrl(data.manifestUrl);
+      updateData.manifest = manifest;
     }
 
     if (Object.keys(updateData).length > 0) {

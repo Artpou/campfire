@@ -7,7 +7,7 @@ import { InfoIcon } from "lucide-react";
 
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/shared/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
@@ -49,67 +49,65 @@ export function SettingsActivityTab() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            <Trans>Activity</Trans>
-          </CardTitle>
-          <CardDescription>
-            <Trans>Recent activity on this instance.</Trans>
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {results.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-24">
-                    <Trans>Type</Trans>
-                  </TableHead>
-                  <TableHead>
-                    <Trans>Title</Trans>
-                  </TableHead>
-                  <TableHead className="w-44 text-right">
-                    <Trans>Date</Trans>
-                  </TableHead>
+      <CardHeader>
+        <CardTitle>
+          <Trans>Activity</Trans>
+        </CardTitle>
+        <CardDescription>
+          <Trans>Recent activity on this instance.</Trans>
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {results.length > 0 ? (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-24">
+                  <Trans>Type</Trans>
+                </TableHead>
+                <TableHead>
+                  <Trans>Title</Trans>
+                </TableHead>
+                <TableHead className="w-44 text-right">
+                  <Trans>Date</Trans>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {results.map((log) => (
+                <TableRow key={log.id} className="group relative cursor-pointer" onClick={() => setSelectedLog(log)}>
+                  <TableCell>
+                    <Badge variant={getTypeBadgeVariant(log.type)} className="text-[10px]">
+                      {log.type}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-medium truncate max-w-0">{log.title}</TableCell>
+                  <TableCell className="text-right text-muted-foreground text-sm relative">
+                    {new Date(log.createdAt).toLocaleString()}
+                    <div className="absolute inset-y-0 right-0 z-10 flex items-center opacity-0 group-hover:opacity-100">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedLog(log);
+                        }}
+                      >
+                        <InfoIcon className="size-4" />
+                        <Trans>Details</Trans>
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {results.map((log) => (
-                  <TableRow key={log.id} className="group relative cursor-pointer" onClick={() => setSelectedLog(log)}>
-                    <TableCell>
-                      <Badge variant={getTypeBadgeVariant(log.type)} className="text-[10px]">
-                        {log.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium truncate max-w-0">{log.title}</TableCell>
-                    <TableCell className="text-right text-muted-foreground text-sm relative">
-                      {new Date(log.createdAt).toLocaleString()}
-                      <div className="absolute inset-y-0 right-0 z-10 flex items-center opacity-0 group-hover:opacity-100">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedLog(log);
-                          }}
-                        >
-                          <InfoIcon className="size-4" />
-                          <Trans>Details</Trans>
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-sm text-muted-foreground py-8 text-center">
-              <Trans>No activity yet.</Trans>
-            </p>
-          )}
-        </CardContent>
-      </Card>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <p className="text-sm text-muted-foreground py-8 text-center">
+            <Trans>No activity yet.</Trans>
+          </p>
+        )}
+      </CardContent>
 
       <Sheet open={!!selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)}>
         <SheetContent side="right" className="sm:max-w-md overflow-y-auto">

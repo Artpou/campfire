@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { Trans } from "@lingui/react/macro";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
@@ -6,6 +8,16 @@ import { InfoIcon } from "lucide-react";
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
 import { getFlagUrl } from "@/shared/helpers/lang.helper";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/ui/alert-dialog";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
@@ -41,6 +53,7 @@ export const Route = createFileRoute("/_app/downloads/$id/")({
 function DownloadDetailPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { data: download } = useSuspenseQuery({
     ...downloadQueries.details(id),
@@ -56,7 +69,7 @@ function DownloadDetailPage() {
   const status = getDownloadStatus(download);
   const { downloadSpeed, uploadSpeed, numPeers } = download.torrent ?? {};
 
-  const handleDelete = async () => {
+  const handleDeleteConfirm = async () => {
     await deleteTorrent.mutateAsync(id);
     navigate({ to: "/downloads" });
   };
@@ -98,7 +111,7 @@ function DownloadDetailPage() {
             </div>
 
             <div className="lg:hidden">
-              <DownloadActionButtons download={download} onDelete={handleDelete} isMobile={true} />
+              <DownloadActionButtons download={download} onDelete={() => setShowDeleteConfirm(true)} isMobile={true} />
             </div>
 
             {status !== "completed" && (
@@ -119,7 +132,7 @@ function DownloadDetailPage() {
 
         <div className="block space-y-4 overflow-y-auto">
           <div className="hidden lg:block">
-            <DownloadActionButtons download={download} onDelete={handleDelete} />
+            <DownloadActionButtons download={download} onDelete={() => setShowDeleteConfirm(true)} />
           </div>
 
           <DownloadNetworkChart download={download} />
@@ -135,6 +148,30 @@ function DownloadDetailPage() {
           </div>
         </div>
       </div>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              <Trans>Delete Download</Trans>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              <Trans>Are you sure you want to delete this download? This action cannot be undone.</Trans>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              <Trans>Cancel</Trans>
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              <Trans>Delete</Trans>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Container>
   );
 }

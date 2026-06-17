@@ -1,19 +1,22 @@
 import { api, unwrap } from "@seedarr/sdk";
 import { queryOptions } from "@tanstack/react-query";
 
-const QUERY_KEY = { INDEXER_MANAGERS: ["indexer-managers"] as const };
-
 export const indexerManagerQueries = {
-  key: QUERY_KEY.INDEXER_MANAGERS,
+  key: ["indexer-manager"] as const,
   list: () =>
     queryOptions({
       queryKey: [...indexerManagerQueries.key],
       queryFn: () => unwrap(api["indexer-manager"].$get()),
     }),
+  count: () =>
+    queryOptions({
+      queryKey: [...indexerManagerQueries.key, "count"],
+      queryFn: () => unwrap(api["indexer-manager"].count.$get()),
+    }),
 };
 
 export const indexerQueries = {
-  key: ["torrent-indexers"] as const,
+  key: [...indexerManagerQueries.key, "indexers"],
   list: ({ withDisabled }: { withDisabled?: boolean } = { withDisabled: true }) =>
     queryOptions({
       queryKey: [...indexerQueries.key, withDisabled],

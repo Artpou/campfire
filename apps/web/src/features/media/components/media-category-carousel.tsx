@@ -63,11 +63,11 @@ export function MediaCategoryCarousel({ type, onValueChange }: MediaCategoryCaro
                 )}
               />
               {selectedGenreId !== genre.id && (
-                <div className="absolute inset-0 bg-linear-to-r from-background via-background/50 to-background" />
+                <div className="absolute inset-0 bg-linear-to-r light:from-background/50 light:via-background/50 light:to-background/50 from-background via-background/50 to-background" />
               )}
 
               <div className="relative flex h-full items-center justify-center">
-                <h3 className="text-base font-bold  drop-shadow-lg">{genre.name}</h3>
+                <h3 className="text-base font-bold drop-shadow-lg">{genre.name}</h3>
               </div>
             </CardContent>
           </Card>

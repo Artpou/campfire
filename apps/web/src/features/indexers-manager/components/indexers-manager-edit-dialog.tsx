@@ -8,15 +8,13 @@ import { Button } from "@/shared/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
 
-import { TorrentioProviderPicker } from "@/features/indexers-manager/components/torrentio-provider-picker";
-import { INDEXER_DEFAULTS, parseStremioProviders } from "@/features/indexers-manager/indexers-manager";
+import { INDEXER_DEFAULTS } from "@/features/indexers-manager/indexers-manager";
 
 interface IndexersManagerEditDialogProps {
-  managers: IndexerManager[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   manager: IndexerManager | null;
-  onSubmit: (data: { id: string; indexerUrl?: string; indexerApiKey?: string; providers?: string[] }) => void;
+  onSubmit: (data: { id: string; indexerUrl?: string; indexerApiKey?: string; manifestUrl?: string }) => void;
   isPending: boolean;
 }
 
@@ -30,14 +28,15 @@ export function IndexersManagerEditDialog({
   const { t } = useLingui();
   const [indexerUrl, setIndexerUrl] = useState("");
   const [indexerApiKey, setIndexerApiKey] = useState("");
-  const [providers, setProviders] = useState<Set<string>>(new Set());
+  const [manifestUrl, setManifestUrl] = useState("");
 
   const handleOpenChange = (next: boolean) => {
     if (next && manager) {
       setIndexerUrl(manager.indexerUrl ?? "");
       setIndexerApiKey(manager.indexerApiKey ?? "");
       if (manager.indexerType === "stremio") {
-        setProviders(new Set(parseStremioProviders(manager.indexerUrl)));
+        const url = manager.indexerUrl ? `${manager.indexerUrl}/manifest.json` : "";
+        setManifestUrl(url);
       }
     }
     onOpenChange(next);
@@ -45,37 +44,38 @@ export function IndexersManagerEditDialog({
 
   if (!manager) return null;
 
-  const toggleProvider = (value: string) => {
-    setProviders((prev) => {
-      const next = new Set(prev);
-      if (next.has(value)) next.delete(value);
-      else next.add(value);
-      return next;
-    });
-  };
-
   const handleSubmit = () => {
     if (manager.indexerType === "stremio") {
-      onSubmit({ id: manager.id, providers: Array.from(providers) });
+      onSubmit({ id: manager.id, manifestUrl });
     } else {
       onSubmit({ id: manager.id, indexerUrl, indexerApiKey });
     }
   };
 
   const canSubmit =
-    manager.indexerType === "stremio" ? providers.size > 0 : indexerUrl.length > 0 && indexerApiKey.length > 0;
+    manager.indexerType === "stremio" ? manifestUrl.length > 0 : indexerUrl.length > 0 && indexerApiKey.length > 0;
+
+  const displayName =
+    manager.indexerType === "stremio" ? (manager.manifest?.name ?? "Stremio Addon") : manager.indexerType;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent showCloseButton className="max-w-2xl">
+      <DialogContent showCloseButton className="max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            <Trans>Edit {manager.indexerType === "stremio" ? "Torrentio" : manager.indexerType}</Trans>
+            <Trans>Edit {displayName}</Trans>
           </DialogTitle>
         </DialogHeader>
 
         {manager.indexerType === "stremio" ? (
-          <TorrentioProviderPicker selected={providers} onToggle={toggleProvider} />
+          <div className="space-y-4 py-2">
+            <Input
+              label={<Trans>Manifest URL</Trans>}
+              placeholder="https://torrentio.strem.fun/manifest.json"
+              value={manifestUrl}
+              onChange={(e) => setManifestUrl(e.target.value)}
+            />
+          </div>
         ) : (
           <div className="space-y-4 py-2">
             <Input

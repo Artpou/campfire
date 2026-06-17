@@ -47,9 +47,9 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
   return (
     <div className="space-y-4">
       <Tabs value={selectedSeason} onValueChange={setSelectedSeason}>
-        <TabsList className="flex-wrap h-auto">
+        <TabsList size="lg" className="flex-wrap">
           {validSeasons.map((season) => (
-            <TabsTrigger key={season.season_number} value={season.season_number.toString()} className="px-4 py-2">
+            <TabsTrigger key={season.season_number} value={season.season_number.toString()} size="lg">
               <Trans>Season {season.season_number}</Trans>
             </TabsTrigger>
           ))}

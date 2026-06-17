@@ -10,6 +10,9 @@ export const indexerManagerRoutes = IndexerManagerService.createRouter()
   .get("/", async (c) => {
     return c.json(await c.var.service.getMany({ withIndexers: true }));
   })
+  .get("/count", async (c) => {
+    return c.json(await c.var.service.count());
+  })
   .get("/:id", zValidator("param", z.object({ id: z.string() })), async (c) => {
     const { id } = c.req.valid("param");
     const config = await c.var.service.get(id);

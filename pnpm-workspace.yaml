@@ -2,6 +2,16 @@ packages:
   - "apps/*"
   - "packages/*"
 
+allowBuilds:
+  '@swc/core': true
+  better-sqlite3: true
+  bufferutil: true
+  core-js: true
+  esbuild: true
+  node-datachannel: true
+  utf-8-validate: true
+  utp-native: true
+
 catalog:
   hono: "^4.7.9"
   zod: "^3.24.1"

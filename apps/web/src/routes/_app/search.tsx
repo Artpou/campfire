@@ -24,12 +24,16 @@ export const Route = createFileRoute("/_app/search")({
     type: getMediaType(search.type) || "movie",
   }),
   loaderDeps: ({ search }) => search,
-  loader: ({ context, deps }) =>
-    Promise.all([
-      context.queryClient.ensureQueryData(mediaQueries.search(deps.q, context.language)),
-      context.queryClient.ensureQueryData(mediaQueries.trending("movie", context.language)),
-      context.queryClient.ensureQueryData(mediaQueries.trending("tv", context.language)),
-    ]),
+  loader: ({ context, deps }) => {
+    if (deps.q.trim().length < 2) {
+      return Promise.all([
+        context.queryClient.ensureQueryData(mediaQueries.trending("movie", context.language)),
+        context.queryClient.ensureQueryData(mediaQueries.trending("tv", context.language)),
+      ]);
+    }
+
+    return Promise.all([context.queryClient.ensureQueryData(mediaQueries.search(deps.q, context.language))]);
+  },
 });
 
 function SearchPage() {
@@ -50,7 +54,10 @@ function SearchPage() {
     });
   }, [debouncedQuery, navigate, type]);
 
-  const { data: searchResults = [], isLoading } = useQuery(mediaQueries.search(q || "", locale));
+  const { data: searchResults = [], isLoading } = useQuery({
+    ...mediaQueries.search(q || "", locale),
+    enabled: q.trim().length >= 2,
+  });
   const { data: trendingMovies = [] } = useSuspenseQuery(mediaQueries.trending("movie", locale));
   const { data: trendingTv = [] } = useSuspenseQuery(mediaQueries.trending("tv", locale));
 
@@ -65,10 +72,10 @@ function SearchPage() {
           <div className="relative flex-1">
             <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground pointer-events-none" />
             <Input
-              type="text"
-              className="pl-12 py-6"
+              h="lg"
               placeholder={t`Search movies and TV shows...`}
               value={query}
+              search
               onChange={(e) => setQuery(e.target.value)}
               autoFocus
             />

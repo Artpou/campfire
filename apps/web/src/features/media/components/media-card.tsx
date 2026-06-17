@@ -87,7 +87,7 @@ export function MediaCard({ media, mode = "default", className, playable, withTy
         )}
 
         {["search", "preview"].includes(mode) && !!media.download && (
-          <Badge variant="secondary" className="absolute text-green-500 top-2 left-2">
+          <Badge variant="secondary" className="absolute top-2 left-2">
             <CheckCircle2Icon className="size-6 " />
             <Trans>Downloaded</Trans>
           </Badge>

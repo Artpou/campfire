@@ -49,6 +49,27 @@ vi.mock("@/modules/torrent/adapters/stremio.adapter", () => ({
   },
 }));
 
+const fakeManifest = {
+  id: "com.test.addon",
+  version: "1.0.0",
+  name: "Test Addon",
+  description: "A test addon",
+  catalogs: [],
+  resources: [],
+  types: ["movie"],
+};
+
+const originalFetch = globalThis.fetch;
+beforeEach(() => {
+  globalThis.fetch = vi.fn((input) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    if (url.endsWith("/manifest.json")) {
+      return Promise.resolve(new Response(JSON.stringify(fakeManifest), { status: 200 }));
+    }
+    return originalFetch(input);
+  }) as typeof fetch;
+});
+
 const { indexerManagerRoutes } = await import("./indexer-manager.route");
 
 describe("Indexer Manager Routes", () => {
@@ -99,36 +120,55 @@ describe("Indexer Manager Routes", () => {
   });
 
   describe("POST /", () => {
-    it("creates a jackett config", async () => {
+    it("creates a jackett config (SELF_HOSTED)", async () => {
       const body = await bodyOf(
         await indexerManagerRoutes.request(
           "/",
-          json("POST", { indexerType: "jackett", indexerUrl: "http://localhost:9117", indexerApiKey: "key" }),
+          json("POST", {
+            type: "SELF_HOSTED",
+            indexerType: "jackett",
+            indexerUrl: "http://localhost:9117",
+            indexerApiKey: "key",
+          }),
         ),
       );
       expect(body).toMatchObject({ indexerType: "jackett" });
       expect(body.indexers).toBeDefined();
     });
 
-    it("creates a stremio config with provider URL", async () => {
+    it("creates a stremio config via STREMIO_ADDON", async () => {
       const body = await bodyOf(
-        await indexerManagerRoutes.request("/", json("POST", { indexerType: "stremio", providers: ["yts", "1337x"] })),
+        await indexerManagerRoutes.request(
+          "/",
+          json("POST", { type: "STREMIO_ADDON", manifestUrl: "https://torrentio.strem.fun/manifest.json" }),
+        ),
       );
       expect(body).toMatchObject({
         indexerType: "stremio",
-        indexerUrl: "https://torrentio.strem.fun/yts,1337x",
+        indexerUrl: "https://torrentio.strem.fun",
       });
-      expect(body.indexers).toEqual([]);
+      expect(body.manifest).toMatchObject({ name: "Test Addon" });
+    });
+
+    it("creates a stremio config via PRESET", async () => {
+      const body = await bodyOf(
+        await indexerManagerRoutes.request("/", json("POST", { type: "PRESET", preset: "torrentio" })),
+      );
+      expect(body).toMatchObject({
+        indexerType: "stremio",
+        indexerUrl: "https://torrentio.strem.fun",
+      });
+      expect(body.manifest).toMatchObject({ name: "Test Addon" });
     });
 
     it("allows multiple jackett/prowlarr configs", async () => {
       await indexerManagerRoutes.request(
         "/",
-        json("POST", { indexerType: "jackett", indexerUrl: "http://one", indexerApiKey: "k1" }),
+        json("POST", { type: "SELF_HOSTED", indexerType: "jackett", indexerUrl: "http://one", indexerApiKey: "k1" }),
       );
       await indexerManagerRoutes.request(
         "/",
-        json("POST", { indexerType: "prowlarr", indexerUrl: "http://two", indexerApiKey: "k2" }),
+        json("POST", { type: "SELF_HOSTED", indexerType: "prowlarr", indexerUrl: "http://two", indexerApiKey: "k2" }),
       );
       const body = await bodyOf(await indexerManagerRoutes.request("/"));
       expect(body).toHaveLength(2);
@@ -140,7 +180,12 @@ describe("Indexer Manager Routes", () => {
       const created = await bodyOf(
         await indexerManagerRoutes.request(
           "/",
-          json("POST", { indexerType: "jackett", indexerUrl: "http://old", indexerApiKey: "old" }),
+          json("POST", {
+            type: "SELF_HOSTED",
+            indexerType: "jackett",
+            indexerUrl: "http://old",
+            indexerApiKey: "old",
+          }),
         ),
       );
       const body = await bodyOf(
@@ -152,22 +197,33 @@ describe("Indexer Manager Routes", () => {
       expect(body).toMatchObject({ indexerUrl: "http://new", indexerApiKey: "new" });
     });
 
-    it("updates stremio providers", async () => {
+    it("updates stremio manifest URL", async () => {
       const created = await bodyOf(
-        await indexerManagerRoutes.request("/", json("POST", { indexerType: "stremio", providers: ["yts", "1337x"] })),
+        await indexerManagerRoutes.request(
+          "/",
+          json("POST", { type: "STREMIO_ADDON", manifestUrl: "https://torrentio.strem.fun/manifest.json" }),
+        ),
       );
 
       const updated = await bodyOf(
-        await indexerManagerRoutes.request(`/${created.id}`, json("PATCH", { providers: ["yts", "rutor"] })),
+        await indexerManagerRoutes.request(
+          `/${created.id}`,
+          json("PATCH", { manifestUrl: "https://comet.elfhosted.com/manifest.json" }),
+        ),
       );
-      expect(updated.indexerUrl).toBe("https://torrentio.strem.fun/yts,rutor");
+      expect(updated.indexerUrl).toBe("https://comet.elfhosted.com");
     });
 
     it("updates disabled field", async () => {
       const created = await bodyOf(
         await indexerManagerRoutes.request(
           "/",
-          json("POST", { indexerType: "jackett", indexerUrl: "http://x", indexerApiKey: "k" }),
+          json("POST", {
+            type: "SELF_HOSTED",
+            indexerType: "jackett",
+            indexerUrl: "http://x",
+            indexerApiKey: "k",
+          }),
         ),
       );
       expect(created.disabled).toBe(false);
@@ -185,7 +241,12 @@ describe("Indexer Manager Routes", () => {
       const created = await bodyOf(
         await indexerManagerRoutes.request(
           "/",
-          json("POST", { indexerType: "jackett", indexerUrl: "http://x", indexerApiKey: "x" }),
+          json("POST", {
+            type: "SELF_HOSTED",
+            indexerType: "jackett",
+            indexerUrl: "http://x",
+            indexerApiKey: "x",
+          }),
         ),
       );
       const body = await bodyOf(await indexerManagerRoutes.request(`/${created.id}`, { method: "DELETE" }));

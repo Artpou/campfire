@@ -26,11 +26,11 @@ export function MovieRelated({ collection, collectionMedia, recommendedMovies }:
       title={
         hasCollection ? (
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "collection" | "recommendations")}>
-            <TabsList>
-              <TabsTrigger value="collection">
+            <TabsList size="lg">
+              <TabsTrigger value="collection" size="lg">
                 <Trans>{typeof collection?.name === "string" ? collection.name : ""}</Trans> ({collectionMedia.length})
               </TabsTrigger>
-              <TabsTrigger value="recommendations">
+              <TabsTrigger value="recommendations" size="lg">
                 <Trans>Recommended</Trans> ({recommendedMovies.length})
               </TabsTrigger>
             </TabsList>

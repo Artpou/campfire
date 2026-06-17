@@ -5,11 +5,10 @@ import { authGuard, HonoAuthenticatedVariables } from "@/modules/auth/auth.guard
 import { Identifiable, IdentifiableService } from "@/modules/auth/auth.service";
 import type { Media } from "@/modules/media/media.dto";
 import { MediaService } from "@/modules/media/media.service";
-import { fmdbResultToMedia, tmdbMovieToMedia, tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
+import { tmdbMovieToMedia, tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
 import { User } from "@/types";
 import type {
   FetchOptions,
-  FMDBResult,
   TMDBGenresResponse,
   TMDBItem,
   TMDBKeywordResult,
@@ -25,7 +24,6 @@ import type {
 
 const TMDB_API_URL = "https://api.themoviedb.org/3";
 
-const FMDB_URL = "https://imdb.iamidiotareyoutoo.com/";
 const NUMBER_OF_PROVIDERS = 5;
 const TRENDING_LIMIT = 10;
 
@@ -165,15 +163,6 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
       { query: query.q },
     );
     const items = searchResults.results.filter((r) => r.media_type === this.type).map((item) => this.toMedia(item));
-
-    if (items.length === 0) {
-      const res = await fetch(`${FMDB_URL}/justwatch?q=${encodeURIComponent(query.q)}`);
-      if (res.ok) {
-        const fmdbResult = await (res.json() as Promise<{ description: FMDBResult[] }>);
-        items.push(...fmdbResult.description.map(fmdbResultToMedia));
-      }
-    }
-
     const mediaMap = await this.mediaService.getMany({ ids: items.map((m) => m.id.toString()) });
     return items.map((item) => mediaMap.find((m) => m.id === item.id) ?? item);
   }

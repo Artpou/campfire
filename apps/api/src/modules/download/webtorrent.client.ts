@@ -5,10 +5,11 @@ import { db } from "@/db/db";
 import { ServiceUnavailableError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
-import type { TorrentLiveData } from "@/modules/download/download.schema";
 import { download } from "@/modules/download/download.schema";
 import type { EventEmitter } from "node:events";
 import { extractTorrentLiveData } from "./webtorrent.helper";
+
+const SYNC_THROTTLE_MS = 1_500;
 
 class WebTorrentManager {
   private client: WebTorrent.Instance | null = null;
@@ -17,8 +18,8 @@ class WebTorrentManager {
   private isInitialized = false;
   private isInitializing = false;
 
-  private pauseCache = new Map<string, TorrentLiveData>();
   private destroyingIds = new Set<string>();
+  private lastSyncTimestamps = new Map<string, number>();
 
   markDestroying(id: string): void {
     this.destroyingIds.add(id);
@@ -26,18 +27,6 @@ class WebTorrentManager {
 
   unmarkDestroying(id: string): void {
     this.destroyingIds.delete(id);
-  }
-
-  setPausedData(id: string, data: TorrentLiveData) {
-    this.pauseCache.set(id, { ...data, uploadSpeed: 0, downloadSpeed: 0 });
-  }
-
-  getPausedData(id: string) {
-    return this.pauseCache.get(id);
-  }
-
-  clearPausedData(id: string) {
-    this.pauseCache.delete(id);
   }
 
   async initialize(downloadPath: string): Promise<void> {
@@ -49,20 +38,17 @@ class WebTorrentManager {
     this.isInitializing = true;
 
     try {
-      logger.info("WEBTORRENT", "Initializing...");
+      logger.debug("WEBTORRENT", "Initializing...");
       const WebTorrentModule = (await import("webtorrent")).default;
       this.client = new WebTorrentModule();
 
       this.client.on("error", (err) => {
-        const message = err instanceof Error ? err.message : String(err);
-        logger.error("WEBTORRENT", `Client error (non-fatal): ${message}`);
+        logger.error("WEBTORRENT", `Client error (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
       });
 
       process.on("uncaughtException", (err) => {
-        if (err.message?.includes("_debugId") || err.stack?.includes("webtorrent")) {
-          logger.error("WEBTORRENT", `Caught internal WebTorrent exception (non-fatal): ${err.message}`);
-          return;
-        }
+        logger.error("WEBTORRENT", `Caught internal WebTorrent exception (non-fatal): ${err.message}`);
+        return;
       });
 
       logger.debug("WEBTORRENT", "Client created");
@@ -86,12 +72,9 @@ class WebTorrentManager {
   }
 
   getClient(): WebTorrent.Instance {
-    if (this.initError) {
-      throw new ServiceUnavailableError(`WebTorrent (init failed: ${this.initError.message})`);
-    }
-    if (!this.client) {
-      throw new ServiceUnavailableError("WebTorrent (initializing)");
-    }
+    if (this.initError) throw new ServiceUnavailableError(`WebTorrent (init failed: ${this.initError.message})`);
+    if (!this.client) throw new ServiceUnavailableError("WebTorrent (initializing)");
+
     return this.client;
   }
 
@@ -108,13 +91,9 @@ class WebTorrentManager {
     return this.client.torrents.find((t) => t.infoHash === infoHash);
   }
 
-  setActiveTorrent(id: string, torrent: WebTorrent.Torrent): void {
-    this.activeTorrents.set(id, torrent);
-  }
-
   deleteActiveTorrent(id: string): void {
     this.activeTorrents.delete(id);
-    this.pauseCache.delete(id);
+    this.lastSyncTimestamps.delete(id);
   }
 
   safeAdd(uri: string, opts: { path: string }): WebTorrent.Torrent {
@@ -125,23 +104,36 @@ class WebTorrentManager {
     return client.add(uri, opts);
   }
 
-  setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: string, _downloadPath: string): void {
-    torrent.on("ready", async () => {
-      logger.info("WEBTORRENT", `Ready: ${torrent.name}`);
+  setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: string): void {
+    const syncDb = async (force: boolean, extraFields?: Record<string, unknown>) => {
+      if (this.destroyingIds.has(downloadId)) return;
+
+      if (!force) {
+        const lastSync = this.lastSyncTimestamps.get(downloadId) ?? 0;
+        if (Date.now() - lastSync < SYNC_THROTTLE_MS) return;
+      }
+
+      this.lastSyncTimestamps.set(downloadId, Date.now());
       await db
         .update(download)
-        .set({ torrent: extractTorrentLiveData(torrent) })
+        .set({ torrent: { ...extractTorrentLiveData(torrent), ...extraFields } })
         .where(eq(download.id, downloadId));
+    };
 
+    torrent.on("ready", () => {
+      logger.info("WEBTORRENT", `Ready: ${torrent.name}`);
       this.activeTorrents.set(downloadId, torrent);
+      syncDb(true);
+    });
+
+    torrent.on("download", () => {
+      syncDb(false);
     });
 
     torrent.on("done", async () => {
       logger.info("WEBTORRENT", `Completed: ${torrent.name}`);
-      await db
-        .update(download)
-        .set({ torrent: { ...extractTorrentLiveData(torrent), done: true } })
-        .where(eq(download.id, downloadId));
+      await syncDb(true, { done: true });
+
       const dl = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
       ActivityLogService.log({
         userId: dl?.userId,
@@ -154,14 +146,15 @@ class WebTorrentManager {
 
     (torrent as unknown as EventEmitter).on("error", async (err: Error) => {
       if (this.destroyingIds.has(downloadId)) return;
-
-      logger.error(
-        "WEBTORRENT",
-        `Error on "${torrent.name || downloadId}": ${err.message}` +
-          ` (infoHash: ${torrent.infoHash || "unknown"}, magnetURI: ${(torrent.magnetURI || "").slice(0, 60)}...)`,
-      );
+      logger.error("WEBTORRENT", `Error on "${torrent.name || downloadId}": ${err.message}`);
       await db.update(download).set({ error: err.message }).where(eq(download.id, downloadId));
+      await syncDb(true);
     });
+
+    if (torrent.ready) {
+      this.activeTorrents.set(downloadId, torrent);
+      syncDb(true);
+    }
   }
 
   private async restoreActiveTorrents(downloadPath: string): Promise<void> {
@@ -180,7 +173,7 @@ class WebTorrentManager {
       try {
         logger.debug("WEBTORRENT", `Restoring: ${item.torrent.name}`);
         const restored = this.safeAdd(item.torrent.magnetURI, { path: downloadPath });
-        this.setupTorrentHandlers(restored, item.id, downloadPath);
+        this.setupTorrentHandlers(restored, item.id);
 
         this.activeTorrents.set(item.id, restored);
       } catch (error) {

@@ -3,7 +3,7 @@ export type { ActivityLogAction, ActivityLogType } from "./modules/activity-log/
 export * from "./modules/auth/auth.dto";
 export * from "./modules/download/download.dto";
 export * from "./modules/indexer-manager/indexer-manager.dto";
-export type { IndexerPrivacy, IndexerType } from "./modules/indexer-manager/indexer-manager.schema";
+export type { IndexerPrivacy, IndexerType, StremioManifest } from "./modules/indexer-manager/indexer-manager.schema";
 export * from "./modules/media/media.dto";
 export * from "./modules/movie/movie.dto";
 export * from "./modules/subtitle/subtitle.dto";

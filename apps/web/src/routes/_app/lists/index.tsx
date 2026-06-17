@@ -61,9 +61,9 @@ function ListsPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between gap-4">
           <Tabs value={tab} onValueChange={handleTabChange}>
-            <TabsList>
+            <TabsList size="lg">
               {tabValues.map((value) => (
-                <TabsTrigger key={value} value={value}>
+                <TabsTrigger key={value} value={value} size="lg">
                   {_(tabLabels[value])}
                 </TabsTrigger>
               ))}

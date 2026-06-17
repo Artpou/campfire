@@ -17,7 +17,7 @@ export function refetchDownloadInterval({ state }: { state: QueryState<Download>
   const data = state.data;
   if (!data) return false;
 
-  return data.torrent?.done ? false : 1000;
+  return data.torrent?.done ? false : 1500;
 }
 
 export function useStartDownload() {

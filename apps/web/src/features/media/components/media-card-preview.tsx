@@ -73,14 +73,14 @@ export function MediaCardPreview({ media, detailLinkProps }: MediaCardPreviewPro
       </Link>
 
       <div className="p-3 space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <Link {...detailLinkProps} className="min-w-0 flex-1">
-            <h3 className="font-bold text-base leading-tight hover:underline truncate">{media.title}</h3>
+        <div className="flex items-center gap-8">
+          <Link {...detailLinkProps}>
+            <h2 className="font-bold">{media.title}</h2>
           </Link>
-          {!!media.vote_average && media.vote_average > 0 && <MediaRating media={media} size={34} strokeWidth={3} />}
         </div>
 
-        <div className="flex items-center gap-1.5 text-xs flex-wrap">
+        <div className="flex items-center gap-2 text-xs flex-wrap">
+          {!!media.vote_average && media.vote_average > 0 && <MediaRating media={media} size={36} strokeWidth={2} />}
           {year && <Badge variant="outline">{year}</Badge>}
           {formatRuntime(media.duration) && (
             <Badge variant="outline">
@@ -104,10 +104,10 @@ export function MediaCardPreview({ media, detailLinkProps }: MediaCardPreviewPro
         </div>
 
         {categories.length > 0 && (
-          <span className="text-xs text-popover-foreground">{categories.slice(0, 3).join(", ")}</span>
+          <span className="text-sm font-bold text-muted-foreground">{categories.slice(0, 3).join(", ")}</span>
         )}
 
-        {media.overview && <p className="text-xs leading-relaxed line-clamp-3 mt-1">{media.overview}</p>}
+        {media.overview && <p className="text-sm leading-relaxed line-clamp-3 mt-1">{media.overview}</p>}
 
         <div className="flex items-center gap-2 pt-1">
           <Button size="sm" className="flex-1" asChild>

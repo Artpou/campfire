@@ -1,12 +1,14 @@
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, Outlet, redirect, useLocation } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, Navigate, Outlet, redirect, useLocation } from "@tanstack/react-router";
 import { AlertTriangleIcon, FilmIcon, LibraryIcon, ListIcon, TvIcon } from "lucide-react";
+import ms from "ms";
 
 import { cn } from "@/lib/utils";
 import { AppTopbar } from "@/shared/app-topbar";
+import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
 
 import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";
@@ -37,10 +39,16 @@ const navItems = [
   },
 ];
 
+const authQueryOptions = {
+  queryKey: ["auth", "me"],
+  queryFn: () => unwrap(api.auth.me.$get()),
+  staleTime: ms("5m"),
+};
+
 export const Route = createFileRoute("/_app")({
-  beforeLoad: async ({ location }) => {
+  beforeLoad: async ({ location, context }) => {
     try {
-      const user = await unwrap(api.auth.me.$get());
+      const user = await context.queryClient.ensureQueryData(authQueryOptions);
       useAuth.getState().setUser(user);
 
       const isAdmin = user.role === "admin" || user.role === "owner";
@@ -49,11 +57,20 @@ export const Route = createFileRoute("/_app")({
       if (isAdmin && noIndexers && !location.pathname.startsWith("/onboarding")) {
         throw redirect({ to: "/onboarding" });
       }
+
+      return { user };
     } catch (err) {
-      if (err instanceof Response || (err && typeof err === "object" && "to" in err)) throw err;
+      if (err && typeof err === "object" && "to" in err) throw err;
+
+      useAuth.getState().setUser(null);
       throw redirect({ to: "/login" });
     }
   },
+  loader: ({ context }) => {
+    return context.queryClient.ensureQueryData(indexerManagerQueries.count());
+  },
+  errorComponent: () => <Navigate to="/404" replace />,
+  pendingComponent: () => <SeedarrLoaderContainer />,
   component: AuthenticatedLayout,
 });
 
@@ -61,12 +78,9 @@ function AuthenticatedLayout() {
   const location = useLocation();
   const { t } = useLingui();
   const { isAdmin, hasRole } = useRole();
-  const { data: managers = [] } = useQuery({
-    ...indexerManagerQueries.list(),
-    enabled: isAdmin,
-  });
+  const { data: count = 0 } = useSuspenseQuery(indexerManagerQueries.count());
 
-  const isIndexerMisconfigured = isAdmin && managers.length === 0;
+  const isIndexerMisconfigured = isAdmin && count === 0;
 
   const visibleNavItems = navItems.filter((item) => {
     if (item.minRole && !hasRole(item.minRole)) return false;
