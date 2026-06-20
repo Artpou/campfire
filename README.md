@@ -1,183 +1,138 @@
 <p align="center">
-<img src="./apps/web/public/logo512.png" alt="Seedarr" width="200" style="margin: 20px 0;">
+<img src="./apps/web/public/logo.svg" alt="Seedarr" width="120">
 </p>
 
 <h1 align="center">Seedarr</h1>
 
 <p align="center">
-A modern, self-hosted media discovery and torrent search platform powered by TMDB and your favorite indexers.
+<b>Your self-hosted media center.</b><br>
+Discover, download, and stream movies & TV shows — all from one place.
+</p>
+
+<p align="center">
+<img src="https://img.shields.io/badge/status-beta-blue" alt="Status">
+<img src="https://img.shields.io/badge/license-MIT-green" alt="License">
+<img src="https://img.shields.io/badge/platform-docker%20%7C%20node-lightgrey" alt="Platform">
 </p>
 
 ---
 
-**Seedarr** is a free and open-source web application that combines the power of **[The Movie Database (TMDB)](https://www.themoviedb.org/)** with torrent indexers like **[Prowlarr](https://prowlarr.com/)** and **[Jackett](https://github.com/Jackett/Jackett)** to help you discover and find media content.
+**Seedarr** is a free, open-source, self-hosted web app that lets you browse the entire TMDB catalog, search torrents through your indexers, download them with a built-in torrent client, and **stream content directly in your browser** — even while it's still downloading.
 
-## ✨ Features
+Think of it as **Stremio meets Overseerr**, but fully self-hosted and under your control.
 
-- **TMDB Integration** - Browse movies and TV shows with rich metadata, ratings, and artwork
-- **Torrent Search & Download** - Search for torrents directly through Prowlarr or Jackett
-- **WebTorrent Integration** - Download torrents directly in the app with real-time progress
-- **Video Streaming** - Stream downloaded videos directly in the browser (MP4 support)
-- **Personal Lists** - Like, watch list, and viewing history tracking
-- **Multi-language Support** - Available in English and French (more coming soon!)
-- **Role-Based Access** - User roles (viewer, member, admin, owner) with different permissions
-- **Responsive Design** - Beautiful UI that works seamlessly on desktop, tablet, and mobile
+<!-- TODO: Add screenshots
+<p align="center">
+<img src=".github/screenshots/discover.png" width="80%" alt="Discover movies and TV shows">
+</p>
+-->
 
-## 🚀 Tech Stack
+## Features
 
-- **Frontend**: React 19 + TanStack Router + Vite
-- **Backend**: Hono + Node.js (tsx runtime)
-- **Database**: SQLite with Drizzle ORM
-- **Styling**: Tailwind CSS v4 + Radix UI
-- **Type Safety**: TypeScript with Zod validation
-- **Package Manager**: pnpm
-- **Linting**: Biome
-- **Torrent**: WebTorrent for downloads and streaming
+### Browse & Discover
 
-## 📋 Prerequisites
+- Full **TMDB catalog** — movies, TV shows, trending, popular, top rated, upcoming
+- Rich metadata: trailers, ratings, cast, genres, backdrops
+- Search across the entire TMDB database
+- Personalized **Watchlist** and **Likes** to keep track of what you want to watch
 
-- [Node.js](https://nodejs.org/) v18.0.0 or higher
-- [pnpm](https://pnpm.io/) v9.0.0 or higher
-- (Optional) [FFmpeg](https://ffmpeg.org/) for video remuxing (MKV to MP4)
-- (Optional) A [TMDB API key](https://www.themoviedb.org/settings/api)
-- (Optional) Prowlarr or Jackett instance for torrent search
+### Torrent Search & Download
 
-## 🛠️ Installation
+- Search torrents from **Stremio addons** (like Torrentio), **Jackett** or **Prowlarr** with live indexer status
+- Built-in **WebTorrent client** — no external download client needed
+- Real-time download progress, speed, peers, seeds, and ratio
+- Pause, resume, and manage downloads directly from the UI
+- Quality and language info displayed for each result
 
-1. **Clone the repository**
+### Stream & Watch
 
-   ```bash
-   git clone https://github.com/yourusername/seedarr.git
-   cd seedarr
-   ```
+- **Stream while downloading** — start watching before the download completes
+- Integrated **video player** with full playback controls
+- Automatic **subtitle detection** from downloaded files
+- SRT to VTT conversion with encoding detection
+- MKV to MP4 real-time **transcoding** via FFmpeg
+- **Watch progress tracking** — resume where you left off
 
-2. **Install dependencies**
+### Multi-User & Roles
 
-   ```bash
-   pnpm install
-   ```
+- **Role-based access control**: Owner, Admin, Member, Viewer
+- First user becomes the owner — no open registration by default
+- Per-user watchlist, likes, watch history, and downloads
+- **Guided onboarding** for new users
 
-3. **Set up environment variables**
+### Self-Hosted & Private
 
-   Create a `.env` file in the root directory:
+- Runs entirely on your hardware — your data stays yours
+- Lightweight **SQLite** database, no external DB required
+- **Docker** ready with a single `docker compose up`
+- Responsive, **mobile-friendly** design
+- Available in **English** and **French**
 
-   ```env
-   # API Configuration
-   API_PORT=3002
+<!-- TODO: Add more screenshots
+<details>
+<summary><b>More screenshots</b></summary>
+<br>
+<p align="center">
+<img src=".github/screenshots/movie.png" width="80%" alt="Movie details">
+<br><br>
+<img src=".github/screenshots/torrents.png" width="80%" alt="Torrent search">
+<br><br>
+<img src=".github/screenshots/player.png" width="80%" alt="Video player">
+<br><br>
+<img src=".github/screenshots/downloads.png" width="80%" alt="Download manager">
+<br><br>
+<img src=".github/screenshots/mobile.png" width="40%" alt="Mobile view">
+</p>
+</details>
+-->
 
-   # Frontend Configuration
-   VITE_API_URL=http://localhost:3002
-   VITE_TMDB_API_KEY=your_tmdb_api_key_here
-   ```
+## Quick Start
 
-4. **Initialize the database**
-
-   ```bash
-   pnpm db:push
-   ```
-
-5. **Start the development servers**
-
-   ```bash
-   pnpm dev
-   ```
-
-   The application will be available at:
-   - **Web**: http://localhost:3000
-   - **API**: http://localhost:3002
-
-## 📖 Usage
-
-1. **Create an account** - Sign up with a username and password
-2. **Configure indexers** - Go to Settings and add your Prowlarr or Jackett instance
-3. **Browse media** - Explore movies and TV shows by category or search
-4. **Find torrents** - Click on any title to view details and search for torrents
-
-## 🏗️ Project Structure
-
-```
-.
-└── 📁 apps/
-    ├── 📁 api/                      # Hono Backend (Port 3002)
-    │   ├── 📁 src/
-    │   │   ├── 📁 auth/            # Authentication utilities
-    │   │   ├── 📁 db/              # Database schema & migrations
-    │   │   ├── 📁 helpers/         # Utility functions
-    │   │   ├── 📁 modules/         # Feature modules (routes & services)
-    │   │   └── server.ts           # Hono app entry point
-    │   ├── 📁 downloads/            # Downloaded torrent files
-    │   └── drizzle.config.ts
-    │
-    └── 📁 web/                      # React Frontend (Port 3000)
-        ├── 📁 public/               # Static assets
-        │   ├── logo512.png
-        │   ├── 📁 movie/category/   # Movie genre images
-        │   └── 📁 tv/category/      # TV genre images
-        └── 📁 src/
-            ├── 📁 features/        # Feature-based modules
-            ├── 📁 shared/          # Shared components and utilities
-            ├── 📁 routes/          # TanStack Router routes
-            │   ├── _app.*.tsx      # Authenticated layout/routes
-            │   └── _auth.*.tsx     # Public layout/routes
-            ├── 📁 lib/             # Core utilities & API client
-            ├── 📁 locales/         # i18n translations (en, fr)
-            ├── main.tsx            # App entry point
-            └── styles.css          # Global styles & theme
-```
-
-### Key Directories
-
-- **`apps/api/src/modules/`** - Each module contains routes, services, and business logic for a specific feature
-- **`apps/web/src/features/`** - Feature-based architecture with components, hooks, and helpers co-located
-- **`apps/web/src/shared/`** - Reusable components and utilities used across features
-- **`apps/web/src/routes/`** - TanStack Router file-based routing
-
-## 🧪 Development
+### Docker (recommended)
 
 ```bash
-# Run both API and web
-pnpm dev
-
-# Run API only
-pnpm dev:api
-
-# Run web only
-pnpm dev:web
-
-# Lint all packages
-pnpm lint
-
-# Fix linting issues
-pnpm lint:fix
-
-# Format code
-pnpm format
-
-# Type check
-pnpm type-check
-
-# Database commands
-pnpm db:generate    # Generate migrations
-pnpm db:push        # Push schema to database
-pnpm db:studio      # Open Drizzle Studio
+docker compose up -d
 ```
 
-## ⚙️ Configuration
+Seedarr will be available at **http://localhost:5551**. Create your account, configure your indexer (Jackett or Prowlarr), and start browsing.
 
-For detailed configuration options (especially for Docker and indexer setup), see:
+### Manual Setup
 
-- [API Configuration Guide](apps/api/CONFIGURATION.md)
+```bash
+git clone https://github.com/yourusername/seedarr.git
+cd seedarr
+pnpm install
+pnpm db:push
+pnpm dev
+```
 
-## 📝 License
+Open **http://localhost:3000** — the API runs on port 3002.
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+> **Requirements:** Node.js 18+, pnpm 9+. Optional: [FFmpeg](https://ffmpeg.org/) for MKV transcoding.
 
-## 🙏 Acknowledgments
+## Roadmap
 
-- [TMDB](https://www.themoviedb.org/) for their excellent API
-- [Prowlarr](https://prowlarr.com/) and [Jackett](https://github.com/Jackett/Jackett) for indexer management
-- All the amazing open-source projects that made this possible
+Seedarr is under active development. Here's what's coming next:
+
+- [ ] **Instance customization** — custom logo, title, branding
+- [ ] **Request system** — non-admin users can request content, admin approves via email notification
+- [ ] **Direct URL streaming** — play from external links
+- [ ] **Chromecast** — cast to your TV
+- [ ] **Debrid support** — Real-Debrid, AllDebrid, Premiumize integration
+
+## Contributing
+
+Contributions are welcome! Whether it's fixing a bug, adding a feature, or improving translations.
+
+Please read our [Contributing Guide](CONTRIBUTING.md) to learn how to set up the development environment and follow our coding standards.
+
+## Acknowledgments
+
+- [TMDB](https://www.themoviedb.org/) for their incredible API
+- All the open-source projects that power Seedarr
 
 ---
 
-<p align="center">Made with ❤️ using pnpm, Hono, and React</p>
+<p align="center">
+<sub>Seedarr is not affiliated with TMDB, Stremio, Prowlarr, or Jackett. This product uses the TMDB API but is not endorsed or certified by TMDB.</sub>
+</p>
