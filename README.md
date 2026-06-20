@@ -21,11 +21,25 @@ Discover, download, and stream movies & TV shows — all from one place.
 
 Think of it as **Stremio meets Overseerr**, but fully self-hosted and under your control.
 
-<!-- TODO: Add screenshots
+## Screenshots
+
+### 🖥️ Dashboard
+
 <p align="center">
-<img src=".github/screenshots/discover.png" width="80%" alt="Discover movies and TV shows">
+  <img src="./.github/screenshots/seedarr-home.png" alt="Catalogue Dashboard" width="850" />
 </p>
--->
+
+### 🎬 Movie Details
+
+<p align="center">
+  <img src="./.github/screenshots/seedarr-detail.png" alt="Movie Details" width="850" />
+</p>
+
+### 📥 Download Manager
+
+<p align="center">
+  <img src="./.github/screenshots/seedarr-download.png" alt="Download Manager" width="850" />
+</p>
 
 ## Features
 
