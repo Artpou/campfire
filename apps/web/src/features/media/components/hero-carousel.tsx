@@ -154,7 +154,7 @@ const HeroSlide = memo(function HeroSlide({ media, isLibraryMode }: HeroSlidePro
               </Button>
             )}
 
-            <Button asChild variant="outline" size="lg">
+            <Button asChild variant="secondary" size="lg">
               <Link {...detailLinkProps}>
                 <Trans>Details</Trans>
               </Link>

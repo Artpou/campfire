@@ -1,6 +1,7 @@
+import { filenameParse } from "@ctrl/video-filename-parser";
+
 import { BadRequestError } from "@/errors/error";
 import { sanitize } from "@/helpers/string.helper";
-import { getLanguageFromTitle, getTorrentQuality } from "@/helpers/video.helper";
 import { Indexer, IndexerManager, IndexerType } from "@/types";
 import type { Torrent, torrentListQuery } from "../torrent.dto";
 import { IndexerAdapter } from "./indexer.adapter";
@@ -90,10 +91,9 @@ export class ProwlarrAdapter extends IndexerAdapter {
       peers: result.leechers || 0,
       link: result.downloadUrl,
       guid: result.guid,
-      quality: getTorrentQuality(result.title),
-      language: getLanguageFromTitle(result.title),
       detailsUrl: result.infoUrl,
       indexerType: "prowlarr" as const,
+      mediaInfos: filenameParse(result.title),
     }));
   }
 }

@@ -3,12 +3,11 @@ import { FileIcon, GlobeIcon, MoonIcon, PaletteIcon, SunIcon } from "lucide-reac
 
 import { useTheme } from "@/shared/hooks/use-theme";
 import { LanguageDropdown } from "@/shared/language-dropdown";
+import { SelectQuality } from "@/shared/reusable/select/select-quality";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 
-import { QUALITY_LEVELS } from "@/features/settings/constants/torrent-preferences";
 import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
 
 export function SettingsGeneralTab() {
@@ -37,7 +36,7 @@ export function SettingsGeneralTab() {
           <PaletteIcon className="size-4" />
           <Trans>Theme</Trans>
         </h3>
-        <Button variant="outline" onClick={toggleTheme}>
+        <Button variant="secondary" onClick={toggleTheme}>
           {theme === "dark" ? <SunIcon className="size-4" /> : <MoonIcon className="size-4" />}
           {theme === "dark" ? <Trans>Light mode</Trans> : <Trans>Dark mode</Trans>}
         </Button>
@@ -57,18 +56,7 @@ export function SettingsGeneralTab() {
               <Trans>Minimum quality filter applied when searching torrents.</Trans>
             </p>
           </div>
-          <Select value={quality} onValueChange={setQuality}>
-            <SelectTrigger className="w-36">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {QUALITY_LEVELS.map((level) => (
-                <SelectItem key={level} value={level}>
-                  {level === "all" ? <Trans>All qualities</Trans> : level}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SelectQuality value={quality} onValueChange={setQuality} triggerClassName="w-36" />
         </div>
 
         <div className="flex items-center justify-between gap-4">

@@ -1,4 +1,5 @@
-import { getLanguageFromTitle, getTorrentQuality } from "@/helpers/video.helper";
+import { filenameParse } from "@ctrl/video-filename-parser";
+
 import { Indexer, IndexerManager } from "@/types";
 import type { Torrent, torrentListQuery } from "../torrent.dto";
 import { IndexerAdapter } from "./indexer.adapter";
@@ -76,11 +77,10 @@ export class StremioAdapter extends IndexerAdapter {
         peers: 0,
         link: `magnet:?xt=urn:btih:${stream.infoHash}`,
         guid: stream.infoHash,
-        quality: getTorrentQuality(`${stream.name} ${displayTitle}`),
-        language: getLanguageFromTitle(stream.title),
         detailsUrl: undefined,
         indexerType: "stremio",
         magnetUrl: `magnet:?xt=urn:btih:${stream.infoHash}`,
+        mediaInfos: filenameParse(displayTitle),
       };
     });
   }

@@ -1,3 +1,5 @@
+export type { Language, Resolution, Source } from "@ctrl/video-filename-parser";
+
 export * from "./modules/activity-log/activity-log.dto";
 export type { ActivityLogAction, ActivityLogType } from "./modules/activity-log/activity-log.schema";
 export * from "./modules/auth/auth.dto";

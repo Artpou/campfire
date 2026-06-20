@@ -1,5 +1,6 @@
+import { filenameParse } from "@ctrl/video-filename-parser";
+
 import { BadRequestError } from "@/errors/error";
-import { getLanguageFromTitle, getTorrentQuality } from "@/helpers/video.helper";
 import { Indexer, IndexerManager, IndexerType } from "@/types";
 import type { Torrent, torrentListQuery } from "../torrent.dto";
 import { IndexerAdapter } from "./indexer.adapter";
@@ -103,10 +104,9 @@ export class JackettAdapter extends IndexerAdapter {
       peers: result.Peers || 0,
       link: result.Link,
       guid: result.Guid,
-      quality: getTorrentQuality(result.Title),
-      language: getLanguageFromTitle(result.Title),
       detailsUrl: result.Details,
       indexerType: "jackett" as const,
+      mediaInfos: filenameParse(result.Title),
     }));
   }
 }

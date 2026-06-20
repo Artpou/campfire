@@ -1,22 +1,21 @@
+import { Resolution } from "@seedarr/sdk";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import type { QualityPreference } from "@/features/settings/constants/torrent-preferences";
-
 interface UserPreferences {
-  quality: QualityPreference;
+  quality: Resolution | null;
   maxSize: number | null;
 }
 
 interface UserPreferenceStore extends UserPreferences {
-  setQuality: (quality: QualityPreference) => void;
+  setQuality: (quality: Resolution | null) => void;
   setMaxSize: (maxSize: number | null) => void;
 }
 
 export const useUserPreferences = create<UserPreferenceStore>()(
   persist(
     (set) => ({
-      quality: "all",
+      quality: null,
       maxSize: null,
       setQuality: (quality) => set({ quality }),
       setMaxSize: (maxSize) => set({ maxSize }),

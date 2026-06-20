@@ -65,11 +65,11 @@ code {
   --foreground: oklch(1 0 0);
   --card: oklch(0.26 0.008 225);
   --card-foreground: oklch(0.92 0.01 140);
-  --popover: oklch(0.26 0.012 225);
+  --popover: oklch(0.26 0.008 225);
   --popover-foreground: oklch(0.92 0.01 140);
   --primary: oklch(0.63 0.13 135);
   --primary-foreground: oklch(0.98 0.005 140);
-  --secondary: oklch(0.24 0.006 220);
+  --secondary: oklch(0.18 0.006 220);
   --secondary-foreground: oklch(0.9 0.01 135);
   --muted: oklch(0.25 0.006 230);
   --muted-foreground: oklch(0.75 0.008 230);

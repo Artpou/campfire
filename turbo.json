@@ -3,7 +3,8 @@
   "ui": "tui",
   "tasks": {
     "db:generate": {
-      "cache": false
+      "cache": true,
+      "outputs": ["src/db/drizzle/**"]
     },
     "build": {
       "dependsOn": ["^build", "db:generate"],
@@ -18,7 +19,7 @@
       "persistent": true
     },
     "tsc": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^tsc"],
       "outputs": []
     },
     "lint": { "outputs": [] },

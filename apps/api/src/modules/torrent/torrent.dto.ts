@@ -1,7 +1,10 @@
+import type { ParsedFilename } from "@ctrl/video-filename-parser";
 import { z } from "zod";
 
 import { indexerTypeEnum } from "@/modules/indexer-manager/indexer-manager.schema";
 import { mediaSelectSchema } from "@/types";
+
+type MediaInfos = { [K in keyof ParsedFilename]: ParsedFilename[K] };
 
 export const torrentSchema = z.object({
   title: z.string(),
@@ -12,16 +15,12 @@ export const torrentSchema = z.object({
   peers: z.number(),
   link: z.string(),
   guid: z.string(),
-  quality: z.enum(["4K", "2160p", "1440p", "1080p", "720p", "480p", ""]),
-  language: z.enum(["en", "fr", "es", "multi", ""]).optional(),
   detailsUrl: z.string().optional(),
   indexerType: z.enum(indexerTypeEnum),
   downloadUrl: z.string().optional(),
   magnetUrl: z.string().optional(),
+  mediaInfos: z.custom<MediaInfos>(),
 });
-
-export type TorrentQuality = z.infer<typeof torrentSchema>["quality"];
-export type TorrentLanguage = z.infer<typeof torrentSchema>["language"];
 
 export type Torrent = z.infer<typeof torrentSchema>;
 
