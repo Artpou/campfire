@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
@@ -25,7 +25,6 @@ export const Route = createFileRoute("/_app/movies/$id/torrents")({
       <SeedarrLoader />
     </div>
   ),
-  errorComponent: () => <Navigate to="/404" replace />,
 });
 
 function MovieTorrentsPage() {

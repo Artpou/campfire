@@ -2,12 +2,13 @@ import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, Navigate, Outlet, redirect, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, redirect, useLocation } from "@tanstack/react-router";
 import { AlertTriangleIcon, FilmIcon, LibraryIcon, ListIcon, TvIcon } from "lucide-react";
 import ms from "ms";
 
 import { cn } from "@/lib/utils";
 import { AppTopbar } from "@/shared/app-topbar";
+import { RouteErrorHandler } from "@/shared/components/route-error";
 import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
 
 import { useAuth } from "@/features/auth/auth-store";
@@ -70,7 +71,7 @@ export const Route = createFileRoute("/_app")({
   loader: ({ context }) => {
     return context.queryClient.ensureQueryData(indexerManagerQueries.count());
   },
-  errorComponent: () => <Navigate to="/404" replace />,
+  errorComponent: RouteErrorHandler,
   pendingComponent: () => <SeedarrLoaderContainer />,
   component: AuthenticatedLayout,
 });

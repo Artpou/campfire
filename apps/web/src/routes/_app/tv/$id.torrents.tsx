@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
@@ -42,7 +42,6 @@ export const Route = createFileRoute("/_app/tv/$id/torrents")({
       <SeedarrLoader />
     </div>
   ),
-  errorComponent: () => <Navigate to="/404" replace />,
   validateSearch: (search: Record<string, unknown>): TvTorrentsSearch => {
     return {
       season: optionalPositiveInt(search.season),

@@ -20,7 +20,7 @@ function parseTab(value: unknown): TabValue {
   return "watch-list";
 }
 
-export const Route = createFileRoute("/_app/lists/")({
+export const Route = createFileRoute("/_app/lists")({
   component: ListsPage,
   validateSearch: (search: Record<string, unknown>) => ({
     tab: parseTab(search.tab),

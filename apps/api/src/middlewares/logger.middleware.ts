@@ -1,5 +1,4 @@
 import type { Context, Next } from "hono";
-import { HTTPException } from "hono/http-exception";
 
 import { logger, logRequest } from "../helpers/logger.helper";
 
@@ -19,19 +18,6 @@ export const requestLogger = async (c: Context, next: Next) => {
       if (body?.error?.issues) {
         logger.warn("VALIDATION", JSON.stringify(body.error.issues, null, 2));
       }
-    } catch {
-      // body wasn't JSON
-    }
+    } catch {}
   }
-};
-
-export const errorHandler = (err: Error, c: Context) => {
-  const tag = `${c.req.method} ${c.req.path}`;
-
-  if (err instanceof HTTPException) {
-    logger.error(tag, err.message);
-    return c.json({ error: err.message }, err.status);
-  }
-  logger.error(tag, err.message, err.stack);
-  return c.json({ error: err.message }, 500);
 };

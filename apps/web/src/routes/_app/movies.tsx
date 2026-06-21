@@ -21,7 +21,7 @@ import { MovieFiltersSheet } from "@/features/movies/components/movie-filters-sh
 import { MovieProviderTabs } from "@/features/movies/components/movie-provider-tabs";
 import { movieQueries } from "@/features/movies/hooks/movie.queries";
 
-export const Route = createFileRoute("/_app/movies/")({
+export const Route = createFileRoute("/_app/movies")({
   component: MoviesPage,
   validateSearch: validateMovieDiscoverSearch,
   loaderDeps: ({ search }) => search,

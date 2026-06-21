@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { InfoIcon } from "lucide-react";
 
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
@@ -48,7 +48,6 @@ export const Route = createFileRoute("/_app/downloads/$id/")({
     await context.queryClient.ensureQueryData(mediaQueries.details(download.mediaId));
   },
   pendingComponent: () => <SeedarrLoaderContainer />,
-  errorComponent: () => <Navigate to="/404" replace />,
 });
 function DownloadDetailPage() {
   const { id } = Route.useParams();

@@ -3,7 +3,8 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
-import { errorHandler, requestLogger } from "@/middlewares/logger.middleware";
+import { errorHandler } from "@/middlewares/error.middleware";
+import { requestLogger } from "@/middlewares/logger.middleware";
 import { authGuard } from "@/modules/auth/auth.guard";
 import { requireRole } from "@/modules/auth/role.guard";
 import * as fs from "node:fs/promises";

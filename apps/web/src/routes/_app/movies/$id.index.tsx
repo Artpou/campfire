@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { ClockPlusIcon, HeartIcon, InfoIcon } from "lucide-react";
 
 import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
@@ -23,7 +23,6 @@ export const Route = createFileRoute("/_app/movies/$id/")({
     context.queryClient.ensureQueryData(movieQueries.details(params.id, context.language)),
   component: MoviePage,
   pendingComponent: () => <SeedarrLoaderContainer />,
-  errorComponent: () => <Navigate to="/404" replace />,
 });
 
 function MoviePage() {

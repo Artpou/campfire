@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { ClockPlusIcon, HeartIcon, InfoIcon } from "lucide-react";
 
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
@@ -27,7 +27,6 @@ export const Route = createFileRoute("/_app/tv/$id/")({
       <SeedarrLoader />
     </div>
   ),
-  errorComponent: () => <Navigate to="/404" replace />,
 });
 
 function TVPage() {

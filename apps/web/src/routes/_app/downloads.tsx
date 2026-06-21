@@ -19,7 +19,7 @@ import { MediaTypeTabs } from "@/features/media/components/media-type-tabs";
 import { getMediaType } from "@/features/media/helpers/media.helper";
 import { mediaQueries, refetchMediaInterval } from "@/features/media/hooks/media.queries";
 
-export const Route = createFileRoute("/_app/downloads/")({
+export const Route = createFileRoute("/_app/downloads")({
   component: DownloadsPage,
   validateSearch: (search): Partial<ListMediaQuery> => ({ type: getMediaType(search.type) }),
   loaderDeps: ({ search }) => search,

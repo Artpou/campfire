@@ -1,5 +1,5 @@
 import { Trans } from "@lingui/react/macro";
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { APITypes, Plyr } from "plyr-react";
 import "plyr-react/plyr.css";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -27,7 +27,6 @@ export const Route = createFileRoute("/_app/downloads/$id/play")({
       context.queryClient.ensureQueryData(mediaSessionQueries.get()),
     ]),
   pendingComponent: () => <SeedarrLoaderContainer />,
-  errorComponent: () => <Navigate to="/404" replace />,
   component: VideoPlayerPage,
 });
 
