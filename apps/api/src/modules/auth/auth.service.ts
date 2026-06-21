@@ -3,13 +3,17 @@ import { Hono } from "hono";
 import { Paginate, PaginationQuery } from "@/shared/pagination.dto";
 import { toPaginate } from "@/shared/pagination.helper";
 
+import { NotFoundError } from "@/errors/error";
 import { authGuard, HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
+import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import type { User } from "../user/user.dto";
-
-const PRIVILEGED_ROLES = new Set(["owner", "admin"]);
 
 export class AuthenticatedService {
   protected readonly user: User;
+
+  get roleLevel(): number {
+    return ROLE_LEVELS[this.user.role];
+  }
 
   constructor(user: User) {
     this.user = user;
@@ -24,10 +28,6 @@ export class AuthenticatedService {
         await next();
       });
   }
-
-  get isPrivileged(): boolean {
-    return PRIVILEGED_ROLES.has(this.user.role);
-  }
 }
 
 export interface Identifiable {
@@ -37,7 +37,11 @@ export abstract class IdentifiableService<T extends Identifiable> extends Authen
   abstract getMany({ ids }: { ids?: string[] }): Promise<T[]>;
 
   async get(id: string): Promise<T | undefined> {
-    return (await this.getMany({ ids: [id] }))?.[0];
+    const result = (await this.getMany({ ids: [id] }))?.[0];
+    if (!result) {
+      throw new NotFoundError("Item not found");
+    }
+    return result;
   }
 
   async list(query: PaginationQuery): Promise<Paginate<T>> {

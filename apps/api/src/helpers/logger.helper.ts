@@ -44,7 +44,9 @@ function writeToFile(line: string) {
       renameSync(filePath, filePath.replace(/\.log$/, ".old.log"));
     }
     appendFileSync(filePath, `${stripAnsi(line)}\n`);
-  } catch {}
+  } catch (err) {
+    console.error(`[LOGGER] Failed to write to log file: ${err instanceof Error ? err.message : String(err)}`);
+  }
 }
 
 export function getLogFilePath(): string {

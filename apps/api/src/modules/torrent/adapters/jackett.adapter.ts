@@ -1,6 +1,7 @@
 import { filenameParse } from "@ctrl/video-filename-parser";
 
 import { BadRequestError } from "@/errors/error";
+import { logger } from "@/helpers/logger.helper";
 import { Indexer, IndexerManager, IndexerType } from "@/types";
 import type { Torrent, torrentListQuery } from "../torrent.dto";
 import { IndexerAdapter } from "./indexer.adapter";
@@ -78,7 +79,7 @@ export class JackettAdapter extends IndexerAdapter {
         const response = (await this.fetchApi(path)) as JackettSearchResponse;
         return response.Results || [];
       } catch (error) {
-        console.error(`Jackett error for query "${searchQuery}":`, error);
+        logger.error("JACKETT", `Error for query "${searchQuery}":`, error);
         return [];
       }
     });

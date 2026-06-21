@@ -5,6 +5,7 @@ import { AuthenticatedService } from "@/modules/auth/auth.service";
 import { torrentClient } from "@/modules/download/webtorrent.client";
 import { IndexerManagerService } from "@/modules/indexer-manager/indexer-manager.service";
 import { User } from "@/types";
+import type { EventEmitter } from "node:events";
 import type { Torrent, TorrentInspectResult, torrentInspectQuery, torrentListQuery } from "./torrent.dto";
 
 export class TorrentService extends AuthenticatedService {
@@ -59,14 +60,11 @@ export class TorrentService extends AuthenticatedService {
         resolve(result);
       });
 
-      (torrent as unknown as { on: (event: string, callback: (err: Error) => void) => void }).on(
-        "error",
-        (err: Error) => {
-          clearTimeout(timeoutId);
-          if (torrent) torrent.destroy();
-          reject(err);
-        },
-      );
+      (torrent as unknown as EventEmitter).on("error", (err: Error) => {
+        clearTimeout(timeoutId);
+        if (torrent) torrent.destroy();
+        reject(new ServiceUnavailableError(`Torrent error: ${err.message}`));
+      });
     });
   }
 }

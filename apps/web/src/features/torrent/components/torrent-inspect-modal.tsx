@@ -59,7 +59,9 @@ export function TorrentInspectModal({ open, onOpenChange, torrent, magnetUri }: 
             <p className="text-destructive">
               <Trans>Failed to fetch torrent metadata</Trans>
             </p>
-            <p className="text-sm text-muted-foreground mt-2">{(error as Error).message}</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              {error instanceof Error ? error.message : String(error)}
+            </p>
           </div>
         )}
 

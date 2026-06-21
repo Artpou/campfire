@@ -4,7 +4,7 @@ import { z } from "zod";
 import { indexerManager } from "@/modules/indexer-manager/indexer-manager.schema";
 
 const indexerManagerSelectSchema = createSelectSchema(indexerManager);
-export type IndexerManager = typeof indexerManagerSelectSchema._output;
+export type IndexerManager = z.infer<typeof indexerManagerSelectSchema>;
 
 export type Indexer = {
   id: string;

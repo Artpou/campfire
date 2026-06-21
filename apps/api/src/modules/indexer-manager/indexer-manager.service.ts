@@ -5,6 +5,7 @@ import { BadRequestError, NotFoundError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { IdentifiableService } from "@/modules/auth/auth.service";
+import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import { indexerManager, type StremioManifest } from "@/modules/indexer-manager/indexer-manager.schema";
 import { IndexerAdapter } from "@/modules/torrent/adapters/indexer.adapter";
 import { JackettAdapter } from "@/modules/torrent/adapters/jackett.adapter";
@@ -74,8 +75,13 @@ export class IndexerManagerService extends IdentifiableService<IndexerManager> {
   async getMany(options: { ids?: string[]; withIndexers: true }): Promise<IndexerManagerWithIndexers[]>;
   async getMany(options: { ids?: string[]; withIndexers?: false }): Promise<IndexerManager[]>;
   async getMany(options: { ids?: string[]; withIndexers?: boolean }): Promise<IndexerManagerDto[]> {
-    const managers = await db.query.indexerManager.findMany({
-      where: options.ids ? inArray(indexerManager.id, options.ids) : undefined,
+    const managers = (
+      await db.query.indexerManager.findMany({
+        where: options.ids ? inArray(indexerManager.id, options.ids) : undefined,
+      })
+    ).map((manager) => {
+      if (this.roleLevel < ROLE_LEVELS.admin) manager.indexerApiKey = "";
+      return manager;
     });
 
     if (!options.withIndexers) return managers;
@@ -83,14 +89,15 @@ export class IndexerManagerService extends IdentifiableService<IndexerManager> {
     return await Promise.all(managers.map((manager) => this.addIndexers(manager)));
   }
 
+  async get(id: string): Promise<IndexerManagerWithIndexers> {
+    const managers = await this.getMany({ ids: [id], withIndexers: true });
+    if (!managers[0]) throw new NotFoundError("Indexer Manager");
+    return managers[0];
+  }
+
   async count(): Promise<number> {
     const [result] = await db.select({ count: count() }).from(indexerManager);
     return result?.count ?? 0;
-  }
-
-  async get(id: string): Promise<IndexerManagerWithIndexers | undefined> {
-    const managers = await this.getMany({ ids: [id], withIndexers: true });
-    return managers[0];
   }
 
   async create(data: CreateIndexerManagerInput): Promise<IndexerManagerWithIndexers> {

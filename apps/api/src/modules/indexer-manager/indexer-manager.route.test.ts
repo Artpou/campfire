@@ -21,11 +21,15 @@ vi.mock("@/modules/auth/auth.guard", () => ({
     await next();
   },
 }));
-vi.mock("@/modules/auth/role.guard", () => ({
-  requireRole: () => async (_c: unknown, next: () => Promise<void>) => {
-    await next();
-  },
-}));
+vi.mock("@/modules/auth/role.guard", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/modules/auth/role.guard")>();
+  return {
+    ...actual,
+    requireRole: () => async (_c: unknown, next: () => Promise<void>) => {
+      await next();
+    },
+  };
+});
 
 vi.mock("@/modules/torrent/adapters/prowlarr.adapter", () => ({
   ProwlarrAdapter: class {
@@ -102,9 +106,9 @@ describe("Indexer Manager Routes", () => {
   });
 
   describe("GET /:id", () => {
-    it("returns null for unknown id", async () => {
-      const body = await bodyOf(await indexerManagerRoutes.request("/unknown-id"));
-      expect(body).toBeNull();
+    it("returns 404 for unknown id", async () => {
+      const res = await indexerManagerRoutes.request("/unknown-id");
+      expect(res.status).toBe(404);
     });
 
     it("returns config by id with indexers", async () => {

@@ -5,6 +5,7 @@ import { paginate, toPaginate } from "@/shared/pagination.helper";
 
 import { db } from "@/db/db";
 import { ForbiddenError } from "@/errors/error";
+import { logger } from "@/helpers/logger.helper";
 import { AuthenticatedService } from "@/modules/auth/auth.service";
 import type { ActivityLog, ListActivityLogsQuery } from "./activity-log.dto";
 import type { ActivityLogAction, ActivityLogType } from "./activity-log.schema";
@@ -26,14 +27,16 @@ export class ActivityLogService extends AuthenticatedService {
         title: params.title,
         metadata: params.metadata ? JSON.stringify(params.metadata) : null,
       });
-    } catch {}
+    } catch (err) {
+      logger.error("ACTIVITY_LOG", `Failed to insert log: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   async list(query: ListActivityLogsQuery): Promise<Paginate<ActivityLog>> {
     if (this.user.role === "viewer") throw new ForbiddenError();
 
     const conditions = [];
-    if (!this.isPrivileged) conditions.push(eq(activityLog.userId, this.user.id));
+    if (this.roleLevel < 3) conditions.push(eq(activityLog.userId, this.user.id));
     if (query.action) conditions.push(eq(activityLog.action, query.action));
     if (query.type) conditions.push(eq(activityLog.type, query.type));
 

@@ -8,9 +8,8 @@ export const errorHandler = (err: Error, c: Context) => {
 
   if (err instanceof HTTPException) {
     logger.error(tag, err.message);
-    console.log(err.getResponse());
     return err.getResponse();
   }
   logger.error(tag, err.message, err.stack);
-  return c.text("Internal Server Error", 500);
+  return c.json({ error: "Internal Server Error" }, 500);
 };

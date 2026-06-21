@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
+import { TorrentInspectFile } from "@seedarr/sdk";
 import { formatBytes } from "@seedarr/shared";
 import { ChevronDownIcon, ChevronUpIcon, FileIcon, VideoIcon } from "lucide-react";
 
@@ -9,15 +10,9 @@ import { Flag } from "@/shared/components/flag";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 
-export interface FileItem {
-  path: string;
-  name: string;
-  length: number;
-}
-
 interface DownloadFilesListProps {
   className?: string;
-  files: FileItem[];
+  files: TorrentInspectFile[];
   title?: string;
   collapsible?: boolean;
   defaultExpanded?: boolean;
@@ -36,7 +31,7 @@ function getFileType(fileName: string): FileType {
   return "other";
 }
 
-function getVideoType(files: FileItem[]): string {
+function getVideoType(files: TorrentInspectFile[]): string {
   for (const file of files) {
     const ext = file.name.split(".").pop()?.toLowerCase();
     if (ext && VIDEO_EXTENSIONS.includes(ext)) {
@@ -46,7 +41,7 @@ function getVideoType(files: FileItem[]): string {
   return "";
 }
 
-function sortFiles(files: FileItem[]): FileItem[] {
+function sortFiles(files: TorrentInspectFile[]): TorrentInspectFile[] {
   const typeOrder: Record<FileType, number> = { video: 1, subtitle: 2, other: 3 };
 
   return [...files].sort((a, b) => {

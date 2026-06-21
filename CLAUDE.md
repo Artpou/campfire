@@ -179,10 +179,10 @@ Each module has `{module}.dto.ts`: Zod schemas for validation, TypeScript types 
 
 ### Data Layer
 
-- `unwrap(api.endpoint.$method(params))` for all API calls
+- `unwrap(api.endpoint.$method(params))` for all API calls (queries **and** mutations)
 - Colocated `*.queries.ts` per feature (queryOptions + mutations)
-- `QUERY_KEY.MEDIA` / `QUERY_KEY.DOWNLOAD` for cache invalidation
-- Zustand only for auth user (persisted)
+- Colocated query keys per feature: `mediaQueries.key`, `downloadQueries.key`, `movieQueries.key`, etc.
+- Zustand for auth user (persisted) + user preferences (torrent filtering)
 
 ### Type Imports
 

@@ -9,6 +9,10 @@ import { download } from "@/modules/download/download.schema";
 import type { EventEmitter } from "node:events";
 import { extractTorrentLiveData } from "./webtorrent.helper";
 
+function onTorrentError(torrent: WebTorrent.Torrent, handler: (err: Error) => void): void {
+  (torrent as unknown as EventEmitter).on("error", handler);
+}
+
 const SYNC_THROTTLE_MS = 1_500;
 
 class WebTorrentManager {
@@ -143,7 +147,7 @@ class WebTorrentManager {
       });
     });
 
-    (torrent as unknown as EventEmitter).on("error", async (err: Error) => {
+    onTorrentError(torrent, async (err: Error) => {
       if (this.destroyingIds.has(downloadId)) return;
       logger.error("WEBTORRENT", `Error on "${torrent.name || downloadId}": ${err.message}`);
       await db.update(download).set({ error: err.message }).where(eq(download.id, downloadId));

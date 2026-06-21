@@ -174,14 +174,39 @@ export class DownloadService extends IdentifiableService<Download> {
     return { success: true };
   }
 
-  private async resolveTorrentSource(uri: string): Promise<string | Buffer> {
+  private static readonly MAX_REDIRECT_DEPTH = 5;
+
+  private static isPrivateUrl(url: string): boolean {
+    try {
+      const { hostname } = new URL(url);
+      return (
+        hostname === "localhost" ||
+        hostname === "127.0.0.1" ||
+        hostname === "0.0.0.0" ||
+        hostname === "[::1]" ||
+        hostname.startsWith("10.") ||
+        hostname.startsWith("192.168.") ||
+        /^172\.(1[6-9]|2\d|3[01])\./.test(hostname)
+      );
+    } catch {
+      return true;
+    }
+  }
+
+  private async resolveTorrentSource(uri: string, depth = 0): Promise<string | Buffer> {
     if (uri.startsWith("magnet:")) return uri;
+    if (depth > DownloadService.MAX_REDIRECT_DEPTH) throw new BadRequestError("Too many redirects");
+    if (!uri.startsWith("http://") && !uri.startsWith("https://"))
+      throw new BadRequestError("Invalid torrent URI scheme");
+    if (DownloadService.isPrivateUrl(uri))
+      throw new BadRequestError("Torrent source URLs cannot point to private networks");
+
     const response = await fetch(uri, { redirect: "manual" });
 
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get("location");
       if (location?.startsWith("magnet:")) return location;
-      if (location) return this.resolveTorrentSource(location);
+      if (location) return this.resolveTorrentSource(location, depth + 1);
       throw new BadRequestError("Redirect without Location header");
     }
 

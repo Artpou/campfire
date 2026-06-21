@@ -8,23 +8,13 @@ import { IndexerManagerService } from "./indexer-manager.service";
 export const indexerManagerRoutes = IndexerManagerService.createRouter()
   .use("*", requireRole("member"))
   .get("/", async (c) => {
-    const managers = await c.var.service.getMany({ withIndexers: true });
-    if (!c.var.service.isPrivileged) {
-      return c.json(managers.map((m) => ({ ...m, indexerApiKey: "" })));
-    }
-    return c.json(managers);
+    return c.json(await c.var.service.getMany({ withIndexers: true }));
   })
   .get("/count", async (c) => {
     return c.json(await c.var.service.count());
   })
-  .get("/:id", zValidator("param", z.object({ id: z.string() })), async (c) => {
-    const { id } = c.req.valid("param");
-    const config = await c.var.service.get(id);
-    if (!config) return c.json(null);
-    if (!c.var.service.isPrivileged) {
-      return c.json({ ...config, indexerApiKey: "" });
-    }
-    return c.json(config);
+  .get("/:id", async (c) => {
+    return c.json(await c.var.service.get(c.req.param("id")));
   })
   .use("*", requireRole("admin"))
   .post("/", zValidator("json", createIndexerManagerDto), async (c) => {

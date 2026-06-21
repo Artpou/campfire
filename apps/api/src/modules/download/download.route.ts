@@ -54,8 +54,9 @@ export const downloadRoutes = DownloadService.createRouter()
 
     return stream(c, async (honoStream) => {
       honoStream.onAbort(() => {
-        // biome-ignore lint/suspicious/noExplicitAny: nodeStream type varies
-        (nodeStream as any).destroy?.();
+        if ("destroy" in nodeStream && typeof nodeStream.destroy === "function") {
+          nodeStream.destroy();
+        }
       });
 
       if (isMkv && !filePath) {
@@ -193,7 +194,7 @@ export const downloadRoutes = DownloadService.createRouter()
     const vttContent = lower.endsWith(".vtt") ? content : srt2webvtt(content);
 
     c.header("Content-Type", "text/vtt; charset=utf-8");
-    c.header("Access-Control-Allow-Origin", "*");
+    c.header("Access-Control-Allow-Origin", process.env.WEB_URL || "");
     c.header("Access-Control-Allow-Methods", "GET");
     c.header("Cache-Control", "public, max-age=3600");
 

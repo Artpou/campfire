@@ -1,5 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 
+import { NotFoundError } from "@/errors/error";
 import {
   tmdbDiscoverDto,
   tmdbIdDto,
@@ -8,7 +9,6 @@ import {
   tmdbSearchDto,
   tmdbTvSeasonDto,
 } from "@/modules/tmdb/tmdb.dto";
-import { TV } from "@/types";
 import { TVService } from "./tv.service";
 
 export const tvRoutes = TVService.createTMDBRouter("tv")
@@ -32,7 +32,9 @@ export const tvRoutes = TVService.createTMDBRouter("tv")
     return c.json(await c.var.service.providers());
   })
   .get("/:id", zValidator("param", tmdbIdDto), zValidator("query", tmdbListDto), async (c) => {
-    return c.json((await c.var.service.get(c.req.param("id"))) as unknown as TV);
+    const result = await c.var.service.get(c.req.param("id"));
+    if (!result) throw new NotFoundError("TV show");
+    return c.json(result);
   })
   .get("/:id/trailer", zValidator("param", tmdbIdDto), zValidator("query", tmdbListDto), async (c) => {
     return c.json(await c.var.service.trailer(c.req.param("id")));

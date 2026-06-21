@@ -63,9 +63,9 @@ describe("Media Routes", () => {
       expect(body).toMatchObject({ id: 500, title: "Interstellar", likes: 0, watchList: 0 });
     });
 
-    it("GET /:id - returns null for unknown id", async () => {
+    it("GET /:id - returns 404 for unknown id", async () => {
       const res = await mediaRoutes.request("/99999");
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(404);
     });
 
     it("POST /:id/like - toggles like on then off", async () => {

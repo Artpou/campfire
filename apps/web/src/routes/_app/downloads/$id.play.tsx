@@ -15,6 +15,7 @@ import { mediaSessionQueries } from "@/shared/hooks/media-session.queries";
 import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
 
+import { getTorrentFiles } from "@/features/downloads/helpers/downloads.helper";
 import { SubtitleSearchDialog } from "@/features/subtitles/components/subtitle-search-dialog";
 import { subtitleQueries } from "@/features/subtitles/hooks/subtitle.queries";
 import { downloadQueries, refetchDownloadInterval } from "@/features/torrent/hooks/download.queries";
@@ -98,11 +99,7 @@ function VideoPlayerPage() {
 
     if (download?.torrent?.files) {
       const videoExtensions = /\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v)$/i;
-      const torrentFiles = (download.torrent.files ?? []) as unknown as Array<{
-        name: string;
-        path: string;
-        length: number;
-      }>;
+      const torrentFiles = getTorrentFiles(download);
       const videoFiles = torrentFiles.filter((file) => videoExtensions.test(file.name));
       if (videoFiles.length > 0) {
         const largestVideo = videoFiles.sort((a, b) => b.length - a.length)[0];
