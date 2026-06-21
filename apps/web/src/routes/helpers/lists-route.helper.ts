@@ -4,7 +4,7 @@ export type ListsTab = (typeof tabValues)[number];
 
 export const listsTabValues = tabValues;
 
-export function parseListsTab(value: unknown): ListsTab {
+function parseListsTab(value: unknown): ListsTab {
   if (typeof value === "string" && tabValues.includes(value as ListsTab)) {
     return value as ListsTab;
   }
