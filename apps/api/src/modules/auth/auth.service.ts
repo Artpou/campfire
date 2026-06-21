@@ -25,7 +25,7 @@ export class AuthenticatedService {
       });
   }
 
-  protected get isPrivileged(): boolean {
+  get isPrivileged(): boolean {
     return PRIVILEGED_ROLES.has(this.user.role);
   }
 }

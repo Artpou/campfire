@@ -47,8 +47,7 @@ class WebTorrentManager {
       });
 
       process.on("uncaughtException", (err) => {
-        logger.error("WEBTORRENT", `Caught internal WebTorrent exception (non-fatal): ${err.message}`);
-        return;
+        logger.error("WEBTORRENT", `Uncaught exception (possibly from WebTorrent internals): ${err.message}`);
       });
 
       logger.debug("WEBTORRENT", "Client created");

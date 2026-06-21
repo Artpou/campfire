@@ -34,10 +34,22 @@ export function MovieDetails({ movie, isLiked, isInWatchList, onToggleLike, onTo
   return (
     <dl className="dark text-foreground space-y-4">
       <div className="flex gap-3">
-        <Button size="icon-lg" variant={isLiked ? "default" : "outline"} rounded onClick={onToggleLike}>
+        <Button
+          size="icon-lg"
+          variant={isLiked ? "default" : "outline"}
+          rounded
+          onClick={onToggleLike}
+          aria-label="Like"
+        >
           <HeartIcon fill={isLiked ? "currentColor" : "none"} />
         </Button>
-        <Button size="icon-lg" variant={isInWatchList ? "default" : "outline"} rounded onClick={onToggleWatchList}>
+        <Button
+          size="icon-lg"
+          variant={isInWatchList ? "default" : "outline"}
+          rounded
+          onClick={onToggleWatchList}
+          aria-label="Watchlist"
+        >
           <ClockPlusIcon fill={isInWatchList ? "currentColor" : "none"} />
         </Button>
       </div>

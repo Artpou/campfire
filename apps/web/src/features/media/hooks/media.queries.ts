@@ -1,6 +1,13 @@
 import type { ListMediaQuery, Media, Paginate } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
-import { InfiniteData, infiniteQueryOptions, QueryState, queryOptions, useMutation } from "@tanstack/react-query";
+import {
+  InfiniteData,
+  infiniteQueryOptions,
+  QueryState,
+  queryOptions,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 import { toPaginationQuery } from "@/shared/helpers/pagination.helper";
 
@@ -88,12 +95,20 @@ export function refetchLibraryInterval({ state }: { state: QueryState<Media[]> }
 }
 
 export function useToggleLike() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (media: Media) => api.media[":id"].like.$post({ param: { id: media.id.toString() } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: mediaQueries.key });
+    },
   });
 }
 export function useToggleWatchList() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (media: Media) => api.media[":id"].watchlist.$post({ param: { id: media.id.toString() } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: mediaQueries.key });
+    },
   });
 }

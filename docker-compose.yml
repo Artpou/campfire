@@ -10,6 +10,7 @@ services:
       - DATABASE_URL=file:/data/seedarr.db
       - DOWNLOADS_PATH=/downloads
       - API_PORT=3002
+      - WEB_URL=http://localhost:5551
     volumes:
       - db_data:/data
       - downloads:/downloads

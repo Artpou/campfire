@@ -106,7 +106,7 @@ export const downloadRoutes = DownloadService.createRouter()
     const baseDir = path.resolve(DOWNLOAD_PATH, download.torrent?.name ?? "");
     const fullPath = path.resolve(baseDir, filePath);
 
-    if (!fullPath.startsWith(baseDir)) throw new BadRequestError("Invalid file path");
+    if (!fullPath.startsWith(baseDir + path.sep)) throw new BadRequestError("Invalid file path");
     if (!fs.existsSync(fullPath)) throw new NotFoundError("File");
 
     let contentType = "application/octet-stream";
@@ -168,10 +168,10 @@ export const downloadRoutes = DownloadService.createRouter()
 
     const path = await import("node:path");
     const fs = await import("node:fs/promises");
-    const resolvedBase = path.resolve(DOWNLOAD_PATH);
-    const fullPath = path.resolve(DOWNLOAD_PATH, filePath);
+    const downloadFolder = path.resolve(DOWNLOAD_PATH, download.torrent?.name ?? "");
+    const fullPath = path.resolve(downloadFolder, filePath);
 
-    if (!fullPath.startsWith(resolvedBase)) throw new BadRequestError("Invalid file path");
+    if (!fullPath.startsWith(downloadFolder + path.sep)) throw new BadRequestError("Invalid file path");
 
     try {
       await fs.access(fullPath);

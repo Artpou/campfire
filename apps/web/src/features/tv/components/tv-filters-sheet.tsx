@@ -124,7 +124,7 @@ export function TvFiltersSheet({ value, onChange }: TvFiltersSheetProps) {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="secondary" size="icon-lg" className="relative">
+        <Button variant="secondary" size="icon-lg" className="relative" aria-label="Filters">
           <FilterIcon />
           {activeCount > 0 && (
             <Badge className="absolute -top-1 -right-1 size-5 rounded-full p-0 text-[10px]">{activeCount}</Badge>

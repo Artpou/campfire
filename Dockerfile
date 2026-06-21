@@ -25,6 +25,8 @@ FROM node:20-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/api/package.json apps/api/tsconfig.json ./apps/api/
 COPY packages/sdk/package.json ./packages/sdk/
@@ -42,4 +44,4 @@ EXPOSE 3002
 
 WORKDIR /app/apps/api
 
-CMD ["sh", "-c", "./node_modules/.bin/drizzle-kit push && ./node_modules/.bin/tsx src/server.ts"]
+CMD ["sh", "-c", "./node_modules/.bin/drizzle-kit migrate && ./node_modules/.bin/tsx src/server.ts"]

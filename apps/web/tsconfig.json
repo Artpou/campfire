@@ -9,8 +9,6 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolvePackageJsonExports": true,
-    "composite": true,
-    "incremental": true,
     "jsx": "react-jsx",
     "noEmit": true,
     "baseUrl": ".",
@@ -23,6 +21,5 @@
     "verbatimModuleSyntax": false
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts", "lucide-react.d.ts"],
-  "exclude": ["node_modules", "dist"],
-  "references": [{ "path": "../../apps/api" }]
+  "exclude": ["node_modules", "dist"]
 }

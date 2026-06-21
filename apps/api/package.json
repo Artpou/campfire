@@ -3,19 +3,21 @@
   "version": "1.0.0",
   "private": true,
   "main": "./src/server.ts",
-  "types": "./dist/src/server.d.ts",
+  "types": "./dist/server.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/src/server.d.ts",
-      "default": "./dist/server.js"
+      "types": "./dist/server.d.ts",
+      "default": "./src/server.ts"
     },
     "./types": {
-      "types": "./dist/src/types.d.ts"
+      "types": "./dist/types.d.ts",
+      "default": "./src/types.ts"
     }
   },
   "scripts": {
     "dev": "tsx watch --include 'src/**' src/server.ts",
-    "build": "tsc --emitDeclarationOnly --outDir dist",
+    "tsc": "tsc",
+    "build": "tsc",
     "start": "node --loader tsx src/server.ts",
     "lint": "biome check .",
     "lint:fix": "biome check --write --unsafe .",

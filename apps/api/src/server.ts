@@ -1,9 +1,13 @@
 import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import { errorHandler, requestLogger } from "@/middlewares/logger.middleware";
+import { authGuard } from "@/modules/auth/auth.guard";
+import { requireRole } from "@/modules/auth/role.guard";
 import * as fs from "node:fs/promises";
+import path from "node:path";
 import { Readable } from "node:stream";
 import { getLogFilePath, logger, startupLogger } from "./helpers/logger.helper";
 import { activityLogRoutes } from "./modules/activity-log/activity-log.route";
@@ -46,7 +50,7 @@ export const app = new Hono<{ Variables: HonoVariables }>()
   .route("/downloads", downloadRoutes)
   .route("/subtitles", subtitleRoutes)
   .route("/activity-logs", activityLogRoutes)
-  .get("/logs/export", async (c) => {
+  .get("/logs/export", authGuard, requireRole("admin"), async (c) => {
     const fsSync = await import("node:fs");
     const filePath = getLogFilePath();
     if (!fsSync.existsSync(filePath)) return c.json({ error: "No log file found" }, 404);
@@ -57,6 +61,19 @@ export const app = new Hono<{ Variables: HonoVariables }>()
     return c.body(Readable.toWeb(fsSync.createReadStream(filePath)) as ReadableStream);
   })
   .get("/health", (c) => c.json({ status: "healthy", timestamp: new Date().toISOString() }));
+
+const WEB_DIST_PATH = path.resolve(__dirname, "../../web/dist");
+
+if (process.env.NODE_ENV === "production") {
+  app.use("*", serveStatic({ root: "../web/dist" }));
+  app.get("*", async (c) => {
+    const fsSync = await import("node:fs");
+    const indexPath = path.join(WEB_DIST_PATH, "index.html");
+    if (!fsSync.existsSync(indexPath)) return c.json({ error: "Frontend not found" }, 404);
+    const html = fsSync.readFileSync(indexPath, "utf-8");
+    return c.html(html);
+  });
+}
 
 export type AppType = typeof app;
 

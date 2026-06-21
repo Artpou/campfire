@@ -8,8 +8,6 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolvePackageJsonExports": true,
-    "composite": true,
-    "incremental": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
@@ -20,9 +18,11 @@
     "noUncheckedSideEffectImports": true,
     "allowImportingTsExtensions": true,
     "declaration": true,
+    "declarationMap": true,
     "emitDeclarationOnly": true,
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "rootDir": "./src"
   },
-  "include": ["**/*.ts"],
-  "exclude": ["dist"]
+  "include": ["src/**/*"],
+  "exclude": ["dist", "src/tests/**", "**/*.test.ts"]
 }

@@ -19,8 +19,7 @@
       "persistent": true
     },
     "tsc": {
-      "dependsOn": ["^tsc"],
-      "outputs": []
+      "dependsOn": ["^tsc"]
     },
     "lint": { "outputs": [] },
     "lint:fix": { "outputs": [] },

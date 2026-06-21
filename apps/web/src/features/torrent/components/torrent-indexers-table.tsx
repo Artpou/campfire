@@ -110,6 +110,7 @@ export function TorrentIndexersTable({ sources, indexerStats, onVisibilityChange
                         size="icon"
                         className="h-7 w-7"
                         onClick={() => toggleVisibility(source.id)}
+                        aria-label={isVisible ? "Hide indexer" : "Show indexer"}
                       >
                         {stat?.status === "loading" ? (
                           <Spinner />
