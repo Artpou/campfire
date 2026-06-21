@@ -1,4 +1,5 @@
 import type { Media } from "@seedarr/sdk";
+import { parseString } from "@seedarr/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
 
@@ -19,9 +20,10 @@ interface MediaCategoryCarouselProps {
 export function MediaCategoryCarousel({ type, onValueChange }: MediaCategoryCarouselProps) {
   const locale = useTmdbLocale();
   const { data: genres = [], isLoading } = useQuery(genreQueries.list(type, locale));
-  const search = useSearch({ strict: false }) as { with_genres?: string };
+  const search = useSearch({ strict: false });
+  const withGenres = parseString("with_genres" in search ? search.with_genres : undefined);
 
-  const selectedGenreId = search.with_genres ? Number.parseInt(search.with_genres, 10) : undefined;
+  const selectedGenreId = withGenres ? Number.parseInt(withGenres, 10) : undefined;
 
   const handleGenreClick = (genreId: number) => {
     if (selectedGenreId === genreId) {

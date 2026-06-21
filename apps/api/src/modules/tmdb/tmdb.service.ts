@@ -8,6 +8,7 @@ import type { Media } from "@/modules/media/media.dto";
 import { MediaService } from "@/modules/media/media.service";
 import { tmdbMovieToMedia, tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
 import { User } from "@/types";
+import { getTmdbCache, isCachedPayload, setTmdbCache } from "./tmdb.cache";
 import type {
   FetchOptions,
   TMDBGenresResponse,
@@ -105,12 +106,23 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
 
   protected async request<T>(url: string, options?: FetchOptions): Promise<T> {
     const fullUrl = buildUrl(url, this.locale, options);
+    const cached = getTmdbCache(fullUrl);
+
+    if (isCachedPayload<T>(cached)) {
+      logger.debug("TMDB (cached)", `GET ${fullUrl}`);
+      return cached;
+    }
+
     const res = await fetch(fullUrl);
 
     if (!res.ok) throw new ServiceUnavailableError(`TMDB (${res.status} ${res.statusText})`);
-    else logger.debug("TMDB", `GET ${fullUrl}`);
+    logger.debug("TMDB", `GET ${fullUrl}`);
 
-    return res.json() as Promise<T>;
+    const data = await res.json();
+    if (!isCachedPayload<T>(data)) throw new ServiceUnavailableError("TMDB (invalid response)");
+    setTmdbCache(fullUrl, url, options, data);
+
+    return data;
   }
 
   private get toMedia() {

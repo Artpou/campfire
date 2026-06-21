@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 
+import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import ReactDOM from "react-dom/client";
 
@@ -7,9 +8,6 @@ import { ErrorBoundary } from "./shared/components/error-boundary";
 import "./styles.css";
 
 import { useLingui } from "@lingui/react";
-import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
-import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import ms from "ms";
 
 import { getI18nInstance, getInitialCountry, getLanguageFromCountry } from "@/shared/helpers/i18n.helper";
 import { LinguiClientProvider } from "@/shared/lingui-client-provider";
@@ -21,11 +19,6 @@ declare module "@tanstack/react-router" {
     router: typeof router;
   }
 }
-
-const persister = createSyncStoragePersister({
-  storage: window.localStorage,
-  key: "campfire-query-cache",
-});
 
 function InnerApp() {
   const { i18n: linguiInstance } = useLingui();
@@ -41,23 +34,11 @@ function App() {
 
   return (
     <LinguiClientProvider initialLocale={initialCountry} initialMessages={i18n.messages}>
-      <PersistQueryClientProvider
-        client={queryClient}
-        persistOptions={{
-          persister,
-          maxAge: ms("24h"),
-          dehydrateOptions: {
-            shouldDehydrateQuery: (query) => {
-              const key = query.queryKey[0];
-              return key === "genres" || key === "providers";
-            },
-          },
-        }}
-      >
+      <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <InnerApp />
         </ErrorBoundary>
-      </PersistQueryClientProvider>
+      </QueryClientProvider>
     </LinguiClientProvider>
   );
 }
