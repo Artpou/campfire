@@ -20,16 +20,10 @@ export function SettingsIndexersTab() {
   const [searchQuery, setSearchQuery] = useState("");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
-  const invalidateAll = () => {
-    queryClient.invalidateQueries({ queryKey: indexerManagerQueries.key });
-    queryClient.invalidateQueries({ queryKey: ["torrent-indexers"] });
-    queryClient.invalidateQueries({ queryKey: ["indexer-manager"] });
-  };
-
   const createMutation = useMutation({
     mutationFn: (data: CreateIndexerManagerInput) => api["indexer-manager"].$post({ json: data }),
     onSuccess: () => {
-      invalidateAll();
+      queryClient.invalidateQueries({ queryKey: indexerManagerQueries.key });
       setAddDialogOpen(false);
     },
   });

@@ -1,6 +1,7 @@
 import React from "react";
 
-import { Trans } from "@lingui/react/macro";
+import { msg } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
@@ -32,6 +33,7 @@ interface LoginForm {
 
 function Login() {
   const navigate = useNavigate();
+  const { t } = useLingui();
   const [error, setError] = React.useState<string>();
 
   const {
@@ -41,10 +43,10 @@ function Login() {
   } = useForm<LoginForm>();
 
   const { mutate: login, isPending } = useMutation({
-    mutationFn: (data: LoginForm) => api.auth.login.$post({ json: data }),
+    mutationFn: (data: LoginForm) => unwrap(api.auth.login.$post({ json: data })),
     onSuccess: () => navigate({ to: "/" }),
     onError: (err: unknown) => {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : t(msg`An error occurred`));
     },
   });
 
@@ -69,8 +71,8 @@ function Login() {
             <Input
               id="username"
               {...register("username", {
-                required: "Username is required",
-                minLength: { value: 3, message: "Min 3 characters" },
+                required: t(msg`Username is required`),
+                minLength: { value: 3, message: t(msg`Min 3 characters`) },
               })}
             />
             {errors.username && <p className="text-sm text-destructive">{errors.username.message}</p>}
@@ -80,7 +82,11 @@ function Login() {
             <label htmlFor="password">
               <Trans>Password</Trans>
             </label>
-            <Input id="password" type="password" {...register("password", { required: "Password is required" })} />
+            <Input
+              id="password"
+              type="password"
+              {...register("password", { required: t(msg`Password is required`) })}
+            />
             {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
           </div>
 

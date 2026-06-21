@@ -1,6 +1,7 @@
 import { useState } from "react";
 
-import { Trans } from "@lingui/react/macro";
+import { msg } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { InfoIcon } from "lucide-react";
@@ -23,12 +24,12 @@ import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
 
 import { DownloadActionButtons } from "@/features/downloads/components/download-action-buttons";
-import { DownloadFilesList, type FileItem } from "@/features/downloads/components/download-files-list";
+import { DownloadFilesList } from "@/features/downloads/components/download-files-list";
 import { DownloadMetadata } from "@/features/downloads/components/download-metadata";
 import { DownloadNetworkCard } from "@/features/downloads/components/download-network-card";
 import { DownloadNetworkChart } from "@/features/downloads/components/download-network-chart";
 import { DownloadProgress } from "@/features/downloads/components/download-progress";
-import { getDownloadStatus } from "@/features/downloads/helpers/downloads.helper";
+import { getDownloadStatus, getTorrentFiles } from "@/features/downloads/helpers/downloads.helper";
 import { MediaCard } from "@/features/media/components/media-card";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 import {
@@ -52,6 +53,7 @@ export const Route = createFileRoute("/_app/downloads/$id/")({
 function DownloadDetailPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const { t } = useLingui();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { data: download } = useSuspenseQuery({
@@ -77,7 +79,7 @@ function DownloadDetailPage() {
 
   return (
     <Container>
-      <AppBreadcrumb items={[{ name: "Downloads", link: "/downloads" }, { name: media.title }]} />
+      <AppBreadcrumb items={[{ name: t(msg`Downloads`), link: "/downloads" }, { name: media.title }]} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 overflow-y-auto">
@@ -123,9 +125,7 @@ function DownloadDetailPage() {
               </div>
             )}
 
-            {download.torrent?.files && (
-              <DownloadFilesList files={(download.torrent.files ?? []) as unknown as FileItem[]} />
-            )}
+            {download.torrent?.files && <DownloadFilesList files={getTorrentFiles(download)} />}
           </Card>
         </div>
 

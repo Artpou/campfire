@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
-import { Trans } from "@lingui/react/macro";
+import { msg } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
@@ -57,6 +58,7 @@ function TVTorrentsPage() {
   const context = Route.useRouteContext();
   const search = Route.useSearch();
   const navigate = useNavigate();
+  const { t } = useLingui();
 
   const { data: tvData } = useSuspenseQuery(tvQueries.details(params.id, context.language));
   const { data: managers } = useSuspenseQuery(indexerQueries.list({ withDisabled: false }));
@@ -107,9 +109,9 @@ function TVTorrentsPage() {
     <Container>
       <AppBreadcrumb
         items={[
-          { name: "TV Shows", link: "/tv" },
+          { name: t(msg`TV Shows`), link: "/tv" },
           { name: media.title, link: `/tv/${params.id}` },
-          { name: "Torrents" },
+          { name: t(msg`Torrents`) },
         ]}
       />
 

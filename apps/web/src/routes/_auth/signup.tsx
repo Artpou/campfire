@@ -1,6 +1,7 @@
 import React from "react";
 
-import { Trans } from "@lingui/react/macro";
+import { msg } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
@@ -33,6 +34,7 @@ interface SignupForm {
 
 function Signup() {
   const navigate = useNavigate();
+  const { t } = useLingui();
   const [error, setError] = React.useState<string | null>(null);
 
   const {
@@ -45,10 +47,10 @@ function Signup() {
   const password = watch("password");
 
   const { mutate: signup, isPending } = useMutation({
-    mutationFn: (data: { username: string; password: string }) => api.auth.register.$post({ json: data }),
+    mutationFn: (data: { username: string; password: string }) => unwrap(api.auth.register.$post({ json: data })),
     onSuccess: () => navigate({ to: "/" }),
     onError: (err: unknown) => {
-      setError(err instanceof Error ? err.message : "An error occurred");
+      setError(err instanceof Error ? err.message : t(msg`An error occurred`));
     },
   });
 
@@ -73,8 +75,8 @@ function Signup() {
             <Input
               id="username"
               {...register("username", {
-                required: "Username is required",
-                minLength: { value: 3, message: "Min 3 characters" },
+                required: t(msg`Username is required`),
+                minLength: { value: 3, message: t(msg`Min 3 characters`) },
               })}
             />
             {errors.username && <p className="text-sm text-destructive">{errors.username.message}</p>}
@@ -88,8 +90,8 @@ function Signup() {
               id="password"
               type="password"
               {...register("password", {
-                required: "Password is required",
-                minLength: { value: 8, message: "Min 8 characters" },
+                required: t(msg`Password is required`),
+                minLength: { value: 8, message: t(msg`Min 8 characters`) },
               })}
             />
             {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
@@ -103,8 +105,8 @@ function Signup() {
               id="confirmPassword"
               type="password"
               {...register("confirmPassword", {
-                required: "Please confirm your password",
-                validate: (value) => value === password || "Passwords do not match",
+                required: t(msg`Please confirm your password`),
+                validate: (value) => value === password || t(msg`Passwords do not match`),
               })}
             />
             {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}

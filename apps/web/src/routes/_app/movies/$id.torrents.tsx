@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 
+import { msg } from "@lingui/core/macro";
+import { useLingui } from "@lingui/react/macro";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -30,6 +32,7 @@ export const Route = createFileRoute("/_app/movies/$id/torrents")({
 function MovieTorrentsPage() {
   const params = Route.useParams();
   const context = Route.useRouteContext();
+  const { t } = useLingui();
 
   const { data: movie } = useSuspenseQuery(movieQueries.details(params.id, context.language));
   const { data: managers } = useSuspenseQuery(indexerQueries.list({ withDisabled: false }));
@@ -48,9 +51,9 @@ function MovieTorrentsPage() {
     <Container>
       <AppBreadcrumb
         items={[
-          { name: "Movies", link: "/movies" },
+          { name: t(msg`Movies`), link: "/movies" },
           { name: media.title, link: `/movies/${params.id}` },
-          { name: "Torrents" },
+          { name: t(msg`Torrents`) },
         ]}
       />
 
