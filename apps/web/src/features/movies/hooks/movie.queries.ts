@@ -4,7 +4,9 @@ import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 
 import { queryClient } from "@/router";
 
-function toDiscoverQuery(options: tmdbDiscoverQuery, page: number, locale: string): Record<string, string> {
+type MovieDiscoverOptions = Omit<tmdbDiscoverQuery, "locale" | "page">;
+
+function toDiscoverQuery(options: MovieDiscoverOptions, page: number, locale: string): Record<string, string> {
   const query: Record<string, string> = { locale, page: page.toString() };
   for (const [key, value] of Object.entries(options)) {
     if (value === undefined || key === "page") continue;
@@ -24,7 +26,7 @@ export const movieQueries = {
       },
     }),
 
-  discover: (options: tmdbDiscoverQuery, locale: string) =>
+  discover: (options: MovieDiscoverOptions, locale: string) =>
     infiniteQueryOptions({
       queryKey: ["movie-discover", locale, options],
       queryFn: async ({ pageParam = 1 }) => {

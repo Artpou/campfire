@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 
 import { ServiceUnavailableError } from "@/errors/error";
+import { logger } from "@/helpers/logger.helper";
 import { authGuard, HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
 import { Identifiable, IdentifiableService } from "@/modules/auth/auth.service";
 import type { Media } from "@/modules/media/media.dto";
@@ -105,7 +106,10 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
   protected async request<T>(url: string, options?: FetchOptions): Promise<T> {
     const fullUrl = buildUrl(url, this.locale, options);
     const res = await fetch(fullUrl);
+
     if (!res.ok) throw new ServiceUnavailableError(`TMDB (${res.status} ${res.statusText})`);
+    else logger.debug("TMDB", `GET ${fullUrl}`);
+
     return res.json() as Promise<T>;
   }
 

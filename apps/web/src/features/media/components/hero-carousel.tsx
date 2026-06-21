@@ -2,13 +2,13 @@ import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
+import { formatRuntime } from "@seedarr/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ClockIcon, MagnetIcon, PlayIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
-import { formatRuntime } from "@/shared/helpers/date";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";

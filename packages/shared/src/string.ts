@@ -1,3 +1,7 @@
+export function parseString(value: unknown): string | undefined {
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
 export const toLatin = (str: string): string | undefined => {
   const sanitized = str
     .normalize("NFD")

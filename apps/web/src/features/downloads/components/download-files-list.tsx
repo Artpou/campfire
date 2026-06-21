@@ -1,11 +1,11 @@
 import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
+import { formatBytes } from "@seedarr/shared";
 import { ChevronDownIcon, ChevronUpIcon, FileIcon, VideoIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Flag } from "@/shared/components/flag";
-import { formatBytes } from "@/shared/helpers/format.helper";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 

@@ -6,12 +6,12 @@ import { PopcornIcon, RadioIcon, SofaIcon, StarIcon } from "lucide-react";
 import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
-export type MediaSelected = "home" | "cinema" | "top-rated" | "upcoming";
+import { isMediaSelected } from "@/features/media/helpers/discover-search.helper";
 
 interface MediaSortTabsProps {
-  value?: MediaSelected;
+  value?: "home" | "cinema" | "top-rated" | "upcoming";
   type: Media["type"];
-  onChange: (value: MediaSelected) => void;
+  onChange: (value: "home" | "cinema" | "top-rated" | "upcoming") => void;
 }
 
 export function MediaSortTabs({ value, type, onChange }: MediaSortTabsProps) {
@@ -21,7 +21,7 @@ export function MediaSortTabs({ value, type, onChange }: MediaSortTabsProps) {
   const activeValue = value || "home";
 
   const handleChange = (value: string) => {
-    onChange(value as MediaSelected);
+    if (isMediaSelected(value)) onChange(value);
   };
 
   const sortOptions = [

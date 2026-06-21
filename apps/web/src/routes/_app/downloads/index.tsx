@@ -2,11 +2,11 @@ import { useMemo, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { ListMediaQuery, Media } from "@seedarr/sdk";
+import { formatBytes } from "@seedarr/shared";
 import { useQuery, useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowDownIcon, ArrowUpIcon, InfoIcon } from "lucide-react";
 
-import { formatBytes } from "@/shared/helpers/format.helper";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";

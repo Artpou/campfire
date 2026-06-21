@@ -1,8 +1,8 @@
 import { Trans } from "@lingui/react/macro";
 import type { Download } from "@seedarr/sdk";
+import { formatBytes, formatTime } from "@seedarr/shared";
 import { ClockIcon, DownloadIcon, PauseIcon } from "lucide-react";
 
-import { formatBytes, formatTime } from "@/shared/helpers/format.helper";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Progress } from "@/shared/ui/progress";

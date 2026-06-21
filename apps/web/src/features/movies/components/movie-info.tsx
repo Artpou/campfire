@@ -3,11 +3,11 @@ import { useMemo } from "react";
 import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
 import type { TMDBMovieDetails, TMDBWatchProvider } from "@seedarr/sdk";
+import { formatRuntime } from "@seedarr/shared";
 import { CalendarIcon, ClockIcon, ExternalLinkIcon, PlusIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Flag } from "@/shared/components/flag";
-import { formatRuntime } from "@/shared/helpers/date";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";

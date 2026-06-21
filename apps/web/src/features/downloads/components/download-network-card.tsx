@@ -1,7 +1,7 @@
 import { Trans } from "@lingui/react/macro";
+import { formatBytes } from "@seedarr/shared";
 import { ArrowDownIcon, ArrowUpIcon, ScaleIcon, UsersIcon } from "lucide-react";
 
-import { formatBytes } from "@/shared/helpers/format.helper";
 import { Card } from "@/shared/ui/card";
 
 interface DownloadNetworkCardProps {

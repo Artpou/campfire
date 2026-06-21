@@ -2,11 +2,11 @@ import { useMemo, useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { Download, Media, TMDBTvDetails } from "@seedarr/sdk";
+import { formatRuntime } from "@seedarr/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { CalendarIcon, ClapperboardIcon, ClockIcon, MagnetIcon, PlayIcon } from "lucide-react";
 
-import { formatRuntime } from "@/shared/helpers/date";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";

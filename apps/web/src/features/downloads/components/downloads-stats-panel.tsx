@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { DownloadStats } from "@seedarr/sdk";
+import { formatBytes } from "@seedarr/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, YAxis } from "recharts";
 
-import { formatBytes } from "@/shared/helpers/format.helper";
 import { Card } from "@/shared/ui/card";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/shared/ui/sheet";
 
