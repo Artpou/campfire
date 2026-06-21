@@ -9,28 +9,17 @@ import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { MediaGrid } from "@/features/media/components/media-grid";
 import { mediaQueries, refetchMediaInterval } from "@/features/media/hooks/media.queries";
-
-const tabValues = ["watch-list", "like"] as const;
-type TabValue = (typeof tabValues)[number];
-
-function parseTab(value: unknown): TabValue {
-  if (typeof value === "string" && tabValues.includes(value as TabValue)) {
-    return value as TabValue;
-  }
-  return "watch-list";
-}
+import { type ListsTab, listsTabValues, validateListsSearch } from "@/routes/helpers/lists-route.helper";
 
 export const Route = createFileRoute("/_app/lists")({
   component: ListsPage,
-  validateSearch: (search: Record<string, unknown>) => ({
-    tab: parseTab(search.tab),
-  }),
-  loaderDeps: ({ search }) => ({ tab: parseTab(search.tab) }),
+  validateSearch: validateListsSearch,
+  loaderDeps: ({ search }) => ({ tab: validateListsSearch(search).tab }),
   loader: ({ context, deps }) =>
     Promise.all([context.queryClient.ensureInfiniteQueryData(mediaQueries.list({ filter: deps.tab }))]),
 });
 
-const tabLabels: Record<TabValue, ReturnType<typeof msg>> = {
+const tabLabels: Record<ListsTab, ReturnType<typeof msg>> = {
   "watch-list": msg`Watch List`,
   like: msg`Liked`,
 };
@@ -47,7 +36,7 @@ function ListsPage() {
   const results = data?.pages.flatMap((page) => page.results) ?? [];
 
   const handleTabChange = (value: string) => {
-    navigate({ to: "/lists", search: { tab: value as TabValue }, replace: true, resetScroll: false });
+    navigate({ to: "/lists", search: { tab: value as ListsTab }, replace: true, resetScroll: false });
   };
 
   const handleLoadMore = () => {
@@ -62,7 +51,7 @@ function ListsPage() {
         <div className="flex items-center justify-between gap-4">
           <Tabs value={tab} onValueChange={handleTabChange}>
             <TabsList size="lg">
-              {tabValues.map((value) => (
+              {listsTabValues.map((value) => (
                 <TabsTrigger key={value} value={value} size="lg">
                   {_(tabLabels[value])}
                 </TabsTrigger>

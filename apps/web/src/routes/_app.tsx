@@ -2,7 +2,7 @@ import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, Outlet, redirect, useLocation } from "@tanstack/react-router";
+import { createFileRoute, isRedirect, Link, Outlet, redirect, useLocation } from "@tanstack/react-router";
 import { AlertTriangleIcon, FilmIcon, LibraryIcon, ListIcon, TvIcon } from "lucide-react";
 import ms from "ms";
 
@@ -62,7 +62,7 @@ export const Route = createFileRoute("/_app")({
 
       return { user };
     } catch (err) {
-      if (err && typeof err === "object" && "to" in err) throw err;
+      if (isRedirect(err)) throw err;
 
       useAuth.getState().setUser(null);
       throw redirect({ to: "/login" });

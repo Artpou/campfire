@@ -14,18 +14,15 @@ import { Input } from "@/shared/ui/input";
 
 import { MediaCarousel } from "@/features/media/components/media-carousel";
 import { MediaGrid } from "@/features/media/components/media-grid";
-import { getMediaType } from "@/features/media/helpers/media.helper";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
+import { shouldLoadSearchResults, validateSearchRouteSearch } from "@/routes/helpers/search-route.helper";
 
 export const Route = createFileRoute("/_app/search")({
   component: SearchPage,
-  validateSearch: (search) => ({
-    q: typeof search.q === "string" ? search.q : "",
-    type: getMediaType(search.type) || "movie",
-  }),
+  validateSearch: validateSearchRouteSearch,
   loaderDeps: ({ search }) => search,
   loader: ({ context, deps }) => {
-    if (deps.q.trim().length < 2) {
+    if (!shouldLoadSearchResults(deps.q)) {
       return Promise.all([
         context.queryClient.ensureQueryData(mediaQueries.trending("movie", context.language)),
         context.queryClient.ensureQueryData(mediaQueries.trending("tv", context.language)),

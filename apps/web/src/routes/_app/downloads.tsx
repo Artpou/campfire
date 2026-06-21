@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { ListMediaQuery, Media } from "@seedarr/sdk";
+import type { Media } from "@seedarr/sdk";
 import { formatBytes } from "@seedarr/shared";
 import { useQuery, useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -16,12 +16,12 @@ import { DownloadsStatsPanel } from "@/features/downloads/components/downloads-s
 import { downloadStatsQueries } from "@/features/downloads/hooks/download-stats.queries";
 import { MediaCard } from "@/features/media/components/media-card";
 import { MediaTypeTabs } from "@/features/media/components/media-type-tabs";
-import { getMediaType } from "@/features/media/helpers/media.helper";
 import { mediaQueries, refetchMediaInterval } from "@/features/media/hooks/media.queries";
+import { validateDownloadsSearch } from "@/routes/helpers/downloads-route.helper";
 
 export const Route = createFileRoute("/_app/downloads")({
   component: DownloadsPage,
-  validateSearch: (search): Partial<ListMediaQuery> => ({ type: getMediaType(search.type) }),
+  validateSearch: validateDownloadsSearch,
   loaderDeps: ({ search }) => search,
   loader: ({ context, deps }) =>
     Promise.all([

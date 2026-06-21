@@ -5,10 +5,10 @@ import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
 
+import { validateErrorSearch } from "@/routes/helpers/error-route.helper";
+
 export const Route = createFileRoute("/_app/error")({
-  validateSearch: (search): { message?: string } => ({
-    message: typeof search.message === "string" ? search.message : undefined,
-  }),
+  validateSearch: validateErrorSearch,
   component: ErrorPage,
 });
 
