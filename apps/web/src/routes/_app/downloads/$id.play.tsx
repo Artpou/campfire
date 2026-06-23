@@ -1,4 +1,5 @@
-import { Trans } from "@lingui/react/macro";
+import { msg } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { createFileRoute } from "@tanstack/react-router";
 import { APITypes, Plyr } from "plyr-react";
 import "plyr-react/plyr.css";
@@ -33,6 +34,7 @@ export const Route = createFileRoute("/_app/downloads/$id/play")({
 
 function VideoPlayerPage() {
   const { id } = Route.useParams();
+  const { t } = useLingui();
   const { data: download } = useSuspenseQuery({
     ...downloadQueries.details(id),
     refetchInterval: refetchDownloadInterval,
@@ -178,9 +180,9 @@ function VideoPlayerPage() {
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <AppBreadcrumb
             items={[
-              { name: "Downloads", link: "/downloads" },
+              { name: t(msg`Downloads`), link: "/downloads" },
               { name: download.torrent?.name ?? "", link: `/downloads/${id}` },
-              { name: "Play" },
+              { name: t(msg`Play`) },
             ]}
           />
           {download.mediaId != null && (

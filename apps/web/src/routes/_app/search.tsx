@@ -5,15 +5,18 @@ import type { Media } from "@seedarr/sdk";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useDebounce } from "@uidotdev/usehooks";
-import { SearchIcon } from "lucide-react";
+import { FilmIcon, SearchIcon, TvIcon } from "lucide-react";
 
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
+import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Container } from "@/shared/ui/container";
 import { Input } from "@/shared/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { MediaCarousel } from "@/features/media/components/media-carousel";
 import { MediaGrid } from "@/features/media/components/media-grid";
+import { getMediaType } from "@/features/media/helpers/media.helper";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 import { shouldLoadSearchResults, validateSearchRouteSearch } from "@/routes/helpers/search-route.helper";
 
@@ -22,14 +25,15 @@ export const Route = createFileRoute("/_app/search")({
   validateSearch: validateSearchRouteSearch,
   loaderDeps: ({ search }) => search,
   loader: ({ context, deps }) => {
+    const locale = countryToTmdbLocale(context.language);
     if (!shouldLoadSearchResults(deps.q)) {
       return Promise.all([
-        context.queryClient.ensureQueryData(mediaQueries.trending("movie", context.language)),
-        context.queryClient.ensureQueryData(mediaQueries.trending("tv", context.language)),
+        context.queryClient.ensureQueryData(mediaQueries.trending("movie", locale)),
+        context.queryClient.ensureQueryData(mediaQueries.trending("tv", locale)),
       ]);
     }
 
-    return Promise.all([context.queryClient.ensureQueryData(mediaQueries.search(deps.q, context.language))]);
+    return Promise.all([context.queryClient.ensureQueryData(mediaQueries.search(deps.q, locale))]);
   },
 });
 
@@ -77,6 +81,23 @@ function SearchPage() {
               autoFocus
             />
           </div>
+          <Tabs
+            value={type}
+            onValueChange={(v) =>
+              navigate({ to: "/search", search: { q, type: getMediaType(v) || "movie" }, replace: true })
+            }
+          >
+            <TabsList>
+              <TabsTrigger value="movie">
+                <FilmIcon className="size-4" />
+                <Trans>Movies</Trans>
+              </TabsTrigger>
+              <TabsTrigger value="tv">
+                <TvIcon className="size-4" />
+                <Trans>TV</Trans>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         {!q ? (

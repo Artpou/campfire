@@ -7,6 +7,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
+import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { Container } from "@/shared/ui/container";
 import { Label } from "@/shared/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
@@ -35,7 +36,7 @@ export const Route = createFileRoute("/_app/tv/$id/torrents")({
   component: TVTorrentsPage,
   loader: ({ context, params }) =>
     Promise.all([
-      context.queryClient.ensureQueryData(tvQueries.details(params.id, context.language)),
+      context.queryClient.ensureQueryData(tvQueries.details(params.id, countryToTmdbLocale(context.language))),
       context.queryClient.ensureQueryData(indexerQueries.list({ withDisabled: false })),
     ]),
   pendingComponent: () => (

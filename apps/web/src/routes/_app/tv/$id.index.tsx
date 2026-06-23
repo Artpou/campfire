@@ -5,6 +5,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ClockPlusIcon, HeartIcon, InfoIcon } from "lucide-react";
 
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
+import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/shared/ui/sheet";
@@ -20,7 +21,8 @@ import { TvRelated } from "@/features/tv/components/tv-related";
 import { tvQueries } from "@/features/tv/hooks/tv.queries";
 
 export const Route = createFileRoute("/_app/tv/$id/")({
-  loader: ({ context, params }) => context.queryClient.ensureQueryData(tvQueries.details(params.id, context.language)),
+  loader: ({ context, params }) =>
+    context.queryClient.ensureQueryData(tvQueries.details(params.id, countryToTmdbLocale(context.language))),
   component: TVPage,
   pendingComponent: () => (
     <div className="flex items-center justify-center size-full">

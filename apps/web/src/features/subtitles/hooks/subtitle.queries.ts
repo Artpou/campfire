@@ -2,7 +2,7 @@ import type { SubdlSearchResponse } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { torrentQueries } from "@/features/torrent/hooks/torrent.queries";
+import { downloadQueries } from "@/features/torrent/hooks/download.queries";
 
 export const subtitleQueries = {
   key: ["subtitles"] as const,
@@ -31,9 +31,9 @@ export function useDownloadSubtitle() {
 
   return useMutation({
     mutationFn: (input: { downloadId: string; url: string; language: string; mediaTitle: string }) =>
-      api.subtitles.download.$post({ json: input }),
+      unwrap(api.subtitles.download.$post({ json: input })),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [...torrentQueries.key, variables.downloadId] });
+      queryClient.invalidateQueries({ queryKey: [...downloadQueries.key, variables.downloadId] });
       queryClient.invalidateQueries({ queryKey: [...subtitleQueries.key, "external", variables.downloadId] });
     },
   });

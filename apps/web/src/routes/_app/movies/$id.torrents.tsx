@@ -7,6 +7,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
+import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { Container } from "@/shared/ui/container";
 
 import { movieQueries } from "@/features/movies/hooks/movie.queries";
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/_app/movies/$id/torrents")({
   component: MovieTorrentsPage,
   loader: ({ context, params }) =>
     Promise.all([
-      context.queryClient.ensureQueryData(movieQueries.details(params.id, context.language)),
+      context.queryClient.ensureQueryData(movieQueries.details(params.id, countryToTmdbLocale(context.language))),
       context.queryClient.ensureQueryData(indexerQueries.list({ withDisabled: false })),
     ]),
   pendingComponent: () => (

@@ -1,8 +1,9 @@
 import { useState } from "react";
 
-import { Trans } from "@lingui/react/macro";
+import { msg } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import type { CreateIndexerManagerInput, IndexerManager, StremioManifest } from "@seedarr/sdk";
-import { api } from "@seedarr/sdk";
+import { api, unwrap } from "@seedarr/sdk";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";
 
@@ -15,13 +16,14 @@ import { indexerManagerQueries } from "@/features/torrent/hooks/indexer.queries"
 
 export function SettingsIndexersTab() {
   const queryClient = useQueryClient();
+  const { t } = useLingui();
   const { data: managers = [] } = useQuery(indexerManagerQueries.list());
 
   const [searchQuery, setSearchQuery] = useState("");
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
   const createMutation = useMutation({
-    mutationFn: (data: CreateIndexerManagerInput) => api["indexer-manager"].$post({ json: data }),
+    mutationFn: (data: CreateIndexerManagerInput) => unwrap(api["indexer-manager"].$post({ json: data })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: indexerManagerQueries.key });
       setAddDialogOpen(false);
@@ -65,7 +67,7 @@ export function SettingsIndexersTab() {
       <div className="space-y-3">
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
           <Input
-            placeholder="Rechercher un indexeur..."
+            placeholder={t(msg`Search an indexer...`)}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             h="lg"
@@ -73,7 +75,7 @@ export function SettingsIndexersTab() {
           />
           <Button onClick={() => setAddDialogOpen(true)} className="w-full sm:w-auto shrink-0">
             <PlusIcon className="size-4" />
-            <Trans>Ajouter indexer</Trans>
+            <Trans>Add indexer</Trans>
           </Button>
         </div>
       </div>
@@ -85,7 +87,7 @@ export function SettingsIndexersTab() {
 
         {filteredManagers.length === 0 && (
           <div className="py-12 text-center border border-dashed border-border rounded-xl">
-            <Trans>Aucune source trouvée.</Trans>
+            <Trans>No source found.</Trans>
           </div>
         )}
       </div>

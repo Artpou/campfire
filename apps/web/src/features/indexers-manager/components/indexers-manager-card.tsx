@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
-import { api, IndexerManager, StremioManifest, UpdateIndexerManagerInput } from "@seedarr/sdk";
+import { api, IndexerManager, StremioManifest, UpdateIndexerManagerInput, unwrap } from "@seedarr/sdk";
 import { cn } from "@seedarr/ui/cn";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { SettingsIcon, TrashIcon } from "lucide-react";
@@ -52,7 +52,7 @@ export function IndexersManagerCard({ manager }: IndexersManagerCardProps) {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, ...data }: { id: string } & UpdateIndexerManagerInput) =>
-      api["indexer-manager"][":id"].$patch({ param: { id }, json: data }),
+      unwrap(api["indexer-manager"][":id"].$patch({ param: { id }, json: data })),
     onSuccess: () => {
       invalidateAll();
       setDialogOpen(null);
@@ -60,7 +60,7 @@ export function IndexersManagerCard({ manager }: IndexersManagerCardProps) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api["indexer-manager"][":id"].$delete({ param: { id } }),
+    mutationFn: (id: string) => unwrap(api["indexer-manager"][":id"].$delete({ param: { id } })),
     onSuccess: () => {
       invalidateAll();
       setDialogOpen(null);
@@ -106,7 +106,7 @@ export function IndexersManagerCard({ manager }: IndexersManagerCardProps) {
             )}
             <Button variant="destructive" onClick={() => setDialogOpen("delete")}>
               <TrashIcon />
-              <Trans>Désinstaller</Trans>
+              <Trans>Uninstall</Trans>
             </Button>
           </div>
         </CardContent>
@@ -124,8 +124,8 @@ export function IndexersManagerCard({ manager }: IndexersManagerCardProps) {
         open={dialogOpen === "delete"}
         setOpen={(open) => setDialogOpen(open ? "delete" : null)}
         validate={() => deleteMutation.mutate(manager.id)}
-        title={<Trans>Désinstaller la source</Trans>}
-        description={<Trans>Êtes-vous sûr de vouloir désinstaller cette source ? Cette action est irréversible.</Trans>}
+        title={<Trans>Uninstall source</Trans>}
+        description={<Trans>Are you sure you want to uninstall this source? This action cannot be undone.</Trans>}
       />
     </>
   );

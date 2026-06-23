@@ -97,7 +97,7 @@ export function refetchLibraryInterval({ state }: { state: QueryState<Media[]> }
 export function useToggleLike() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (media: Media) => api.media[":id"].like.$post({ param: { id: media.id.toString() } }),
+    mutationFn: (media: Media) => unwrap(api.media[":id"].like.$post({ param: { id: media.id.toString() } })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
     },
@@ -106,7 +106,7 @@ export function useToggleLike() {
 export function useToggleWatchList() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (media: Media) => api.media[":id"].watchlist.$post({ param: { id: media.id.toString() } }),
+    mutationFn: (media: Media) => unwrap(api.media[":id"].watchlist.$post({ param: { id: media.id.toString() } })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
     },

@@ -24,7 +24,7 @@ export function useStartDownload() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: DownloadTorrentInput) => api.downloads.$post({ json: input }),
+    mutationFn: (input: DownloadTorrentInput) => unwrap(api.downloads.$post({ json: input })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: downloadQueries.key });
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
@@ -35,7 +35,7 @@ export function useDownloadDelete() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => api.downloads[":id"].$delete({ param: { id } }),
+    mutationFn: (id: string) => unwrap(api.downloads[":id"].$delete({ param: { id } })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: downloadQueries.key });
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
@@ -46,7 +46,7 @@ export function useDownloadPause() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => api.downloads[":id"].pause.$post({ param: { id } }),
+    mutationFn: (id: string) => unwrap(api.downloads[":id"].pause.$post({ param: { id } })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: downloadQueries.key });
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
@@ -57,7 +57,7 @@ export function useDownloadResume() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => api.downloads[":id"].resume.$post({ param: { id } }),
+    mutationFn: (id: string) => unwrap(api.downloads[":id"].resume.$post({ param: { id } })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: downloadQueries.key });
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });

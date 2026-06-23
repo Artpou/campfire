@@ -5,6 +5,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ClockPlusIcon, HeartIcon, InfoIcon } from "lucide-react";
 
 import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
+import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/shared/ui/sheet";
@@ -20,7 +21,7 @@ import { movieQueries } from "@/features/movies/hooks/movie.queries";
 
 export const Route = createFileRoute("/_app/movies/$id/")({
   loader: ({ context, params }) =>
-    context.queryClient.ensureQueryData(movieQueries.details(params.id, context.language)),
+    context.queryClient.ensureQueryData(movieQueries.details(params.id, countryToTmdbLocale(context.language))),
   component: MoviePage,
   pendingComponent: () => <SeedarrLoaderContainer />,
 });

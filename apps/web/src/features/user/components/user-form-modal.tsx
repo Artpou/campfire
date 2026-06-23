@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 
-import { Trans } from "@lingui/react/macro";
+import { msg } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import type { User } from "@seedarr/sdk";
-import { api } from "@seedarr/sdk";
+import { api, unwrap } from "@seedarr/sdk";
 import { useMutation } from "@tanstack/react-query";
 import { CrownIcon, GlassesIcon, ShieldCheckIcon, UserCheckIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -28,6 +29,13 @@ interface UserFormModalProps {
   user?: User | null;
 }
 
+const ROLE_LABELS: Record<string, ReturnType<typeof msg>> = {
+  owner: msg`Owner`,
+  admin: msg`Admin`,
+  member: msg`Member`,
+  viewer: msg`Viewer`,
+};
+
 const roleConfig = {
   owner: {
     icon: CrownIcon,
@@ -49,6 +57,7 @@ const roleConfig = {
 
 export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
   const { role: currentUserRole } = useRole();
+  const { t } = useLingui();
   const isEditing = !!user;
 
   const {
@@ -90,7 +99,7 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
 
   const createMutation = useMutation({
     mutationFn: (data: { username: string; password: string; role: "owner" | "admin" | "member" | "viewer" }) =>
-      api.users.$post({ json: data }),
+      unwrap(api.users.$post({ json: data })),
     onSuccess: () => {
       onClose();
     },
@@ -99,7 +108,7 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
   const updateMutation = useMutation({
     mutationFn: (data: { username?: string; password?: string; role?: "owner" | "admin" | "member" | "viewer" }) => {
       if (!user) return Promise.resolve(null);
-      return api.users[":id"].$put({ param: { id: user.id }, json: data });
+      return unwrap(api.users[":id"].$put({ param: { id: user.id }, json: data }));
     },
     onSuccess: () => {
       onClose();
@@ -162,8 +171,8 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
             <Input
               id="username"
               {...register("username", {
-                required: "Username is required",
-                minLength: { value: 3, message: "Min 3 characters" },
+                required: t(msg`Username is required`),
+                minLength: { value: 3, message: t(msg`Min 3 characters`) },
               })}
             />
             {errors.username && <p className="text-sm text-destructive">{errors.username.message}</p>}
@@ -172,14 +181,18 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
           <div className="space-y-2">
             <Label htmlFor="password">
               <Trans>Password</Trans>
-              {isEditing && <span className="text-muted-foreground ml-2">(leave empty to keep current)</span>}
+              {isEditing && (
+                <span className="text-muted-foreground ml-2">
+                  (<Trans>leave empty to keep current</Trans>)
+                </span>
+              )}
             </Label>
             <Input
               id="password"
               type="password"
               {...register("password", {
-                required: !isEditing && "Password is required",
-                minLength: { value: 8, message: "Min 8 characters" },
+                required: !isEditing && t(msg`Password is required`),
+                minLength: { value: 8, message: t(msg`Min 8 characters`) },
               })}
             />
             {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
@@ -194,8 +207,8 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
                 id="confirmPassword"
                 type="password"
                 {...register("confirmPassword", {
-                  required: "Please confirm your password",
-                  validate: (value) => value === password || "Passwords do not match",
+                  required: t(msg`Please confirm your password`),
+                  validate: (value) => value === password || t(msg`Passwords do not match`),
                 })}
               />
               {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
@@ -211,8 +224,8 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
                 id="confirmPassword"
                 type="password"
                 {...register("confirmPassword", {
-                  required: watch("password") ? "Please confirm your password" : false,
-                  validate: (value) => !watch("password") || value === password || "Passwords do not match",
+                  required: watch("password") ? t(msg`Please confirm your password`) : false,
+                  validate: (value) => !watch("password") || value === password || t(msg`Passwords do not match`),
                 })}
               />
               {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
@@ -231,7 +244,7 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
                 <SelectValue>
                   <div className="flex items-center gap-2">
                     <SelectedRoleIcon className="size-4" style={{ color: roleConfig[selectedRole].color }} />
-                    {selectedRole}
+                    {t(ROLE_LABELS[selectedRole])}
                   </div>
                 </SelectValue>
               </SelectTrigger>
@@ -242,7 +255,7 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
                     <SelectItem key={roleOption} value={roleOption}>
                       <div className="flex items-center gap-2">
                         <RoleIcon className="size-4" style={{ color: roleConfig[roleOption].color }} />
-                        {roleOption}
+                        {t(ROLE_LABELS[roleOption])}
                       </div>
                     </SelectItem>
                   );
