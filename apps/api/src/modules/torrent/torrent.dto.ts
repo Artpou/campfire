@@ -47,6 +47,6 @@ export const torrentListDto = z.object({
 export type torrentListQuery = z.infer<typeof torrentListDto>;
 
 export const torrentInspectDto = z.object({
-  magnet: z.string().min(1),
+  magnet: z.string().min(1).max(8192),
 });
 export type torrentInspectQuery = z.infer<typeof torrentInspectDto>;

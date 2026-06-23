@@ -51,7 +51,14 @@ class WebTorrentManager {
       });
 
       process.on("uncaughtException", (err) => {
-        logger.error("WEBTORRENT", `Uncaught exception (possibly from WebTorrent internals): ${err.message}`);
+        const isWebTorrentError =
+          err.stack?.includes("webtorrent") || err.stack?.includes("bittorrent") || err.stack?.includes("ut_metadata");
+        if (isWebTorrentError) {
+          logger.error("WEBTORRENT", `Uncaught exception from WebTorrent internals: ${err.message}`);
+          return;
+        }
+        logger.error("PROCESS", `Uncaught exception (non-WebTorrent): ${err.message}`);
+        throw err;
       });
 
       logger.debug("WEBTORRENT", "Client created");
@@ -126,32 +133,40 @@ class WebTorrentManager {
     torrent.on("ready", () => {
       logger.info("WEBTORRENT", `Ready: ${torrent.name}`);
       this.activeTorrents.set(downloadId, torrent);
-      syncDb(true);
+      syncDb(true).catch((err) => logger.error("WEBTORRENT", `syncDb error on ready: ${err}`));
     });
 
     torrent.on("download", () => {
-      syncDb(false);
+      syncDb(false).catch((err) => logger.error("WEBTORRENT", `syncDb error on download: ${err}`));
     });
 
     torrent.on("done", async () => {
-      logger.info("WEBTORRENT", `Completed: ${torrent.name}`);
-      await syncDb(true, { done: true });
+      try {
+        logger.info("WEBTORRENT", `Completed: ${torrent.name}`);
+        await syncDb(true, { done: true });
 
-      const dl = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
-      ActivityLogService.log({
-        userId: dl?.userId,
-        type: "SUCCESS",
-        action: "DOWNLOAD_COMPLETE",
-        title: `Download completed: ${torrent.name}`,
-        metadata: { downloadId },
-      });
+        const dl = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
+        ActivityLogService.log({
+          userId: dl?.userId,
+          type: "SUCCESS",
+          action: "DOWNLOAD_COMPLETE",
+          title: `Download completed: ${torrent.name}`,
+          metadata: { downloadId },
+        });
+      } catch (err) {
+        logger.error("WEBTORRENT", `Error in done handler for "${torrent.name}": ${err}`);
+      }
     });
 
     onTorrentError(torrent, async (err: Error) => {
-      if (this.destroyingIds.has(downloadId)) return;
-      logger.error("WEBTORRENT", `Error on "${torrent.name || downloadId}": ${err.message}`);
-      await db.update(download).set({ error: err.message }).where(eq(download.id, downloadId));
-      await syncDb(true);
+      try {
+        if (this.destroyingIds.has(downloadId)) return;
+        logger.error("WEBTORRENT", `Error on "${torrent.name || downloadId}": ${err.message}`);
+        await db.update(download).set({ error: err.message }).where(eq(download.id, downloadId));
+        await syncDb(true);
+      } catch (handlerErr) {
+        logger.error("WEBTORRENT", `Error in error handler for "${downloadId}": ${handlerErr}`);
+      }
     });
 
     if (torrent.ready) {

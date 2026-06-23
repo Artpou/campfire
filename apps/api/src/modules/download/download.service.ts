@@ -4,6 +4,7 @@ import type WebTorrent from "webtorrent";
 import { db } from "@/db/db";
 import { BadRequestError, NotFoundError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
+import { isPrivateHost } from "@/helpers/url.helper";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { IdentifiableService } from "@/modules/auth/auth.service";
 import { download } from "@/modules/download/download.schema";
@@ -176,38 +177,25 @@ export class DownloadService extends IdentifiableService<Download> {
 
   private static readonly MAX_REDIRECT_DEPTH = 5;
 
-  private static isPrivateUrl(url: string): boolean {
-    try {
-      const { hostname } = new URL(url);
-      return (
-        hostname === "localhost" ||
-        hostname === "127.0.0.1" ||
-        hostname === "0.0.0.0" ||
-        hostname === "[::1]" ||
-        hostname.startsWith("10.") ||
-        hostname.startsWith("192.168.") ||
-        /^172\.(1[6-9]|2\d|3[01])\./.test(hostname)
-      );
-    } catch {
-      return true;
-    }
-  }
-
   private async resolveTorrentSource(uri: string, depth = 0): Promise<string | Buffer> {
     if (uri.startsWith("magnet:")) return uri;
     if (depth > DownloadService.MAX_REDIRECT_DEPTH) throw new BadRequestError("Too many redirects");
     if (!uri.startsWith("http://") && !uri.startsWith("https://"))
       throw new BadRequestError("Invalid torrent URI scheme");
-    if (DownloadService.isPrivateUrl(uri))
+
+    const parsed = new URL(uri);
+    if (isPrivateHost(parsed.hostname))
       throw new BadRequestError("Torrent source URLs cannot point to private networks");
 
     const response = await fetch(uri, { redirect: "manual" });
 
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get("location");
-      if (location?.startsWith("magnet:")) return location;
-      if (location) return this.resolveTorrentSource(location, depth + 1);
-      throw new BadRequestError("Redirect without Location header");
+      if (!location) throw new BadRequestError("Redirect without Location header");
+      if (location.startsWith("magnet:")) return location;
+
+      const resolved = new URL(location, uri).toString();
+      return this.resolveTorrentSource(resolved, depth + 1);
     }
 
     if (!response.ok) throw new BadRequestError(`Failed to fetch .torrent file (${response.status})`);

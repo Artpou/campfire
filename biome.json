@@ -81,6 +81,21 @@
       }
     },
     {
+      "includes": ["apps/api/src/**/*", "!apps/api/src/helpers/logger.helper.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": {
+              "level": "warn",
+              "options": {
+                "allow": ["error", "warn", "debug"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["**/*.d.ts"],
       "linter": {
         "rules": {

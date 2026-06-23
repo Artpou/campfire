@@ -6,6 +6,7 @@ import { paginationDto } from "@/shared/pagination.dto";
 import { BadRequestError, NotFoundError } from "@/errors/error";
 import { srt2webvtt } from "@/helpers/subtitle.helper";
 import { convertMkvToMp4Stream } from "@/helpers/video.helper";
+import { downloadStartRateLimiter } from "@/middlewares/rate-limiter.middleware";
 import type { Dirent } from "node:fs";
 import { Readable } from "node:stream";
 import { downloadTorrentDto } from "./download.dto";
@@ -37,7 +38,7 @@ export const downloadRoutes = DownloadService.createRouter()
     if (!download) throw new NotFoundError("Download");
     return c.json(download);
   })
-  .post("/", zValidator("json", downloadTorrentDto), async (c) => {
+  .post("/", downloadStartRateLimiter, zValidator("json", downloadTorrentDto), async (c) => {
     return c.json(await c.var.service.start(c.req.valid("json")));
   })
   .get("/:id/stream", requireDownloadOwnership, async (c) => {

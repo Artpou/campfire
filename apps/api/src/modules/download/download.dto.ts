@@ -18,11 +18,11 @@ export interface DownloadStats {
 }
 
 export const downloadTorrentDto = z.object({
-  magnetUri: z.string(),
-  name: z.string(),
+  magnetUri: z.string().max(8192),
+  name: z.string().max(512),
   media: mediaSelectSchema,
-  origin: z.string().optional(),
-  quality: z.string().optional(),
-  language: z.string().optional(),
+  origin: z.string().max(256).optional(),
+  quality: z.string().max(64).optional(),
+  language: z.string().max(64).optional(),
 });
 export type DownloadTorrentInput = z.infer<typeof downloadTorrentDto>;

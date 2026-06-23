@@ -15,7 +15,9 @@ export type HonoAuthenticatedVariables = {
 };
 
 export const authGuard = async (c: Context<{ Variables: HonoAuthenticatedVariables }>, next: Next) => {
-  const sessionToken = getCookie(c, SESSION_COOKIE_NAME) || c.req.query("session");
+  const path = new URL(c.req.url).pathname;
+  const allowQuerySession = /^\/downloads\/[^/]+\/(stream|subtitles|file)/.test(path);
+  const sessionToken = getCookie(c, SESSION_COOKIE_NAME) || (allowQuerySession ? c.req.query("session") : undefined);
 
   if (typeof sessionToken !== "string") {
     throw new UnauthorizedError();

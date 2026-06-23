@@ -2,6 +2,7 @@ import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { secureHeaders } from "hono/secure-headers";
 
 import { errorHandler } from "@/middlewares/error.middleware";
 import { requestLogger } from "@/middlewares/logger.middleware";
@@ -29,6 +30,7 @@ if (!process.env.WEB_URL) throw new Error("WEB_URL is not set");
 
 export const app = new Hono<{ Variables: HonoVariables }>()
   .use("*", requestLogger)
+  .use("*", secureHeaders())
   .onError(errorHandler)
   .use(
     "*",

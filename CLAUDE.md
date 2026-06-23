@@ -28,7 +28,7 @@ Download
  ├── origin, quality, language (from torrent search metadata)
  └── error: string | null
 
-IndexerManager → single Jackett/Prowlarr config per instance
+IndexerManager → multiple configs (Jackett, Prowlarr, Stremio addons/presets)
 ```
 
 **Flow:** Browse TMDB → Search torrents → Start download (upserts Media + creates Download) → WebTorrent streams to disk → Play via `/downloads/:id/stream` (range requests, MKV→MP4 transcode).
@@ -44,12 +44,12 @@ IndexerManager → single Jackett/Prowlarr config per instance
 - **ORM**: Drizzle ORM + drizzle-zod
 - **Validation**: Zod with `@hono/zod-validator`
 - **Styling**: Tailwind CSS v4 + Radix UI primitives (shadcn pattern)
-- **State**: TanStack Query (server) + Zustand (auth only)
+- **State**: TanStack Query (server) + Zustand (auth + user preferences)
 - **Torrent**: WebTorrent
 - **Video Player**: Plyr (plyr-react)
 - **Linting**: Biome (not ESLint/Prettier)
 - **i18n**: Lingui v5 (en, fr)
-- **Testing**: Vitest (API route tests only)
+- **Testing**: Vitest (API route tests + web route helper tests)
 
 ## Coding Standards
 
@@ -103,7 +103,7 @@ apps/
 │       └── db/             # Drizzle config, schema aggregation, migrations
 └── web/                    # React frontend
     └── src/
-        ├── features/       # Feature modules (media, movies, tv, torrent, downloads, subtitles, playback, user)
+        ├── features/       # Feature modules (media, movies, tv, torrent, downloads, subtitles, user, indexers-manager)
         │   └── [feature]/
         │       ├── components/
         │       ├── hooks/          # *.queries.ts (queryOptions + mutations)
@@ -121,9 +121,9 @@ packages/
 
 ```bash
 pnpm dev          # Start both API + web (+ Drizzle Studio)
-pnpm dev:api      # API only (port 3002)
-pnpm dev:web      # Web only (port 3000)
-pnpm check        # Full validation: lint:fix + tsc + lint + test + knip
+pnpm --filter @seedarr/api dev   # API only (port 3002)
+pnpm --filter web dev            # Web only (port 3000)
+pnpm check        # Full validation: tsc + lint + test + knip
 pnpm lint:fix     # Auto-fix with Biome
 pnpm db:generate  # Generate Drizzle migrations
 pnpm db:migrate   # Apply migrations
@@ -153,7 +153,7 @@ Each module has `{module}.dto.ts`: Zod schemas for validation, TypeScript types 
 
 ### Route Conventions
 
-- RESTful: `GET /`, `GET /:id`, `POST /`, `PATCH /:id`, `DELETE /:id`
+- RESTful: `GET /`, `GET /:id`, `POST /`, `PUT /:id`, `DELETE /:id`
 - Guards: `authGuard` (session), `requireRole(min)`, `requireDownloadOwnership`
 - Validation: `zValidator("json" | "query" | "param", schema)`
 
@@ -183,7 +183,6 @@ Each module has `{module}.dto.ts`: Zod schemas for validation, TypeScript types 
 - Colocated `*.queries.ts` per feature (queryOptions + mutations)
 - Colocated query keys per feature: `mediaQueries.key`, `downloadQueries.key`, `movieQueries.key`, etc.
 - Zustand for auth user (persisted) + user preferences (torrent filtering)
-
 ### Type Imports
 
 - **Always** import types from `@seedarr/sdk`

@@ -51,8 +51,8 @@ importers:
         specifier: 2.3.5
         version: 2.3.5
       '@types/node':
-        specifier: ^25.9.3
-        version: 25.9.3
+        specifier: 'catalog:'
+        version: 24.10.4
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -6920,7 +6920,7 @@ snapshots:
 
   '@types/better-sqlite3@7.6.13':
     dependencies:
-      '@types/node': 24.10.4
+      '@types/node': 25.9.3
 
   '@types/bittorrent-protocol@3.1.7':
     dependencies:
@@ -6961,7 +6961,7 @@ snapshots:
 
   '@types/fluent-ffmpeg@2.1.28':
     dependencies:
-      '@types/node': 24.10.4
+      '@types/node': 25.9.3
 
   '@types/istanbul-lib-coverage@2.0.6': {}
 
@@ -7018,7 +7018,7 @@ snapshots:
   '@types/webtorrent@0.110.1':
     dependencies:
       '@types/bittorrent-protocol': 3.1.7
-      '@types/node': 24.10.4
+      '@types/node': 25.9.3
       '@types/parse-torrent': 5.8.8
       '@types/simple-peer': 9.11.9
 

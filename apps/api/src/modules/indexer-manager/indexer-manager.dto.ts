@@ -22,13 +22,13 @@ export type IndexerManagerWithIndexers = IndexerManager & {
 const selfHostedSchema = z.object({
   type: z.literal("SELF_HOSTED"),
   indexerType: z.enum(["prowlarr", "jackett"]),
-  indexerUrl: z.string().min(1),
-  indexerApiKey: z.string().min(1),
+  indexerUrl: z.string().min(1).max(2048),
+  indexerApiKey: z.string().min(1).max(256),
 });
 
 const stremioAddonSchema = z.object({
   type: z.literal("STREMIO_ADDON"),
-  manifestUrl: z.string().url(),
+  manifestUrl: z.string().url().max(2048),
 });
 
 export const STREMIO_PRESETS = {
@@ -52,9 +52,9 @@ export const createIndexerManagerDto = z.discriminatedUnion("type", [
 export type CreateIndexerManagerInput = z.infer<typeof createIndexerManagerDto>;
 
 export const updateIndexerManagerDto = z.object({
-  indexerUrl: z.string().optional(),
-  indexerApiKey: z.string().optional(),
-  manifestUrl: z.string().url().optional(),
+  indexerUrl: z.string().max(2048).optional(),
+  indexerApiKey: z.string().max(256).optional(),
+  manifestUrl: z.string().url().max(2048).optional(),
   disabled: z.boolean().optional(),
 });
 export type UpdateIndexerManagerInput = z.infer<typeof updateIndexerManagerDto>;

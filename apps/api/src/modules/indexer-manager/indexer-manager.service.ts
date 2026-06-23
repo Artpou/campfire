@@ -3,6 +3,7 @@ import { count, eq, inArray } from "drizzle-orm";
 import { db } from "@/db/db";
 import { BadRequestError, NotFoundError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
+import { isPrivateHost } from "@/helpers/url.helper";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { IdentifiableService } from "@/modules/auth/auth.service";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
@@ -23,6 +24,14 @@ import {
 type IndexerManagerDto = IndexerManager | IndexerManagerWithIndexers;
 
 async function fetchManifest(manifestUrl: string): Promise<StremioManifest> {
+  const parsed = new URL(manifestUrl);
+  if (!["http:", "https:"].includes(parsed.protocol)) {
+    throw new BadRequestError("Invalid manifest URL scheme");
+  }
+  if (isPrivateHost(parsed.hostname)) {
+    throw new BadRequestError("Manifest URLs cannot point to private networks");
+  }
+
   const response = await fetch(manifestUrl);
   if (!response.ok) {
     throw new BadRequestError(`Failed to fetch manifest from ${manifestUrl} (${response.status})`);
