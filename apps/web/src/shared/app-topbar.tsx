@@ -92,6 +92,15 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
 
             <div className="flex-1 flex justify-end items-center gap-2">
               <Button
+                variant="ghost"
+                size="icon"
+                className="sm:hidden"
+                onClick={() => navigate({ to: "/search", search: { q: "", type: "movie" } })}
+                aria-label={t`Search`}
+              >
+                <SearchIcon className="size-5" />
+              </Button>
+              <Button
                 variant="outline"
                 className="hidden sm:flex relative w-full max-w-xs h-9 justify-start px-3 font-normal text-muted-foreground"
                 onClick={() => navigate({ to: "/search", search: { q: "", type: "movie" } })}

@@ -1,6 +1,6 @@
 import type { Context, Next } from "hono";
 
-import { ForbiddenError, NotFoundError } from "@/errors/error";
+import { BadRequestError, ForbiddenError, NotFoundError } from "@/errors/error";
 import { HonoAuthenticatedVariables } from "../auth/auth.guard";
 import { DownloadService } from "./download.service";
 
@@ -9,6 +9,7 @@ export async function requireDownloadOwnership(
   next: Next,
 ): Promise<void> {
   const downloadId = c.req.param("id");
+  if (!downloadId) throw new BadRequestError("Missing download id");
   const user = c.get("user");
 
   const download = await new DownloadService(user).get(downloadId);

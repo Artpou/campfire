@@ -17,6 +17,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "allowImportingTsExtensions": true,
+    "composite": true,
     "declaration": true,
     "declarationMap": true,
     "emitDeclarationOnly": true,

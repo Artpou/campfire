@@ -2,12 +2,16 @@
   "name": "@seedarr/api",
   "version": "1.0.0",
   "private": true,
-  "main": "./src/server.ts",
-  "types": "./dist/server.d.ts",
+  "main": "./src/app.ts",
+  "types": "./dist/app.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/server.d.ts",
-      "default": "./src/server.ts"
+      "types": "./dist/app.d.ts",
+      "default": "./src/app.ts"
+    },
+    "./types/inputs": {
+      "types": "./dist/types/inputs.d.ts",
+      "default": "./src/types/inputs.ts"
     },
     "./types": {
       "types": "./dist/types.d.ts",

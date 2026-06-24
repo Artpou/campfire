@@ -7,8 +7,8 @@ import { user, userRoleEnum } from "@/modules/user/user.schema";
 export const userSelectSchema = createSelectSchema(user);
 export const userInsertSchema = createInsertSchema(user);
 
-type UserBase = Omit<z.infer<typeof userSelectSchema>, "password" | "createdAt">;
-export type User = UserBase & { createdAt: Date | string };
+type UserBase = Omit<z.infer<typeof userSelectSchema>, "password">;
+export type User = UserBase;
 export type NewUser = z.input<typeof userInsertSchema>;
 
 // Request schemas

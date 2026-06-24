@@ -6,7 +6,7 @@ const authState = vi.hoisted(() => ({
     id: string;
     username: string;
     role: "owner" | "admin" | "member" | "viewer";
-    createdAt: Date;
+    createdAt: string;
     countIndexerManagers: number;
   } | null,
   onboarded: false,
@@ -47,7 +47,7 @@ const ownerWithoutIndexers = {
   id: "user-1",
   username: "owner",
   role: "owner" as const,
-  createdAt: new Date("2024-01-01"),
+  createdAt: "2024-01-01T00:00:00.000Z",
   countIndexerManagers: 0,
 };
 
@@ -55,7 +55,7 @@ const memberUser = {
   id: "user-2",
   username: "member",
   role: "member" as const,
-  createdAt: new Date("2024-01-01"),
+  createdAt: "2024-01-01T00:00:00.000Z",
   countIndexerManagers: 0,
 };
 

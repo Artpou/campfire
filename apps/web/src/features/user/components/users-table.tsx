@@ -95,7 +95,7 @@ export function UsersTable({ users, isLoading, onEditUser, onRefetch }: UsersTab
     return canEditUser(targetUser);
   };
 
-  const formatDate = (date: Date | string) => {
+  const formatDate = (date: string) => {
     return new Intl.DateTimeFormat(navigator.language, {
       year: "numeric",
       month: "long",

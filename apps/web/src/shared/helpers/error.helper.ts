@@ -1,8 +1,5 @@
-import { msg } from "@lingui/core/macro";
 import { ApiError } from "@seedarr/sdk";
 import { isNotFound } from "@tanstack/react-router";
-
-export const FALLBACK_ERROR_MESSAGE = msg`Something went wrong`;
 
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;

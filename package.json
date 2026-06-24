@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "turbo dev db:studio",
+    "build:types": "pnpm --filter @seedarr/api build && pnpm --filter @seedarr/sdk build",
+    "dev": "pnpm build:types && turbo dev dev:types db:studio",
     "build": "turbo build",
     "lint": "turbo lint",
     "lint:fix": "biome check --write --unsafe .",

@@ -17,6 +17,12 @@ import { DownloadStreamService } from "./download-stream.service";
 
 const DOWNLOAD_PATH = process.env.DOWNLOADS_PATH || "./downloads";
 
+function requireDownloadId(c: { req: { param: (name: string) => string | undefined } }): string {
+  const id = c.req.param("id");
+  if (!id) throw new BadRequestError("Missing download id");
+  return id;
+}
+
 function getContentType(fileName: string): string {
   const ext = fileName.toLowerCase();
   if (ext.endsWith(".webm")) return "video/webm";
@@ -42,7 +48,7 @@ export const downloadRoutes = DownloadService.createRouter()
     return c.json(await c.var.service.start(c.req.valid("json")));
   })
   .get("/:id/stream", requireDownloadOwnership, async (c) => {
-    const download = await c.var.service.get(c.req.param("id"));
+    const download = await c.var.service.get(requireDownloadId(c));
     if (!download) throw new NotFoundError("Download");
 
     const streamService = new DownloadStreamService(DOWNLOAD_PATH);
@@ -202,11 +208,11 @@ export const downloadRoutes = DownloadService.createRouter()
     return c.text(vttContent);
   })
   .post("/:id/pause", requireDownloadOwnership, async (c) => {
-    return c.json(await c.var.service.pause(c.req.param("id")));
+    return c.json(await c.var.service.pause(requireDownloadId(c)));
   })
   .post("/:id/resume", requireDownloadOwnership, async (c) => {
-    return c.json(await c.var.service.resume(c.req.param("id")));
+    return c.json(await c.var.service.resume(requireDownloadId(c)));
   })
   .delete("/:id", requireDownloadOwnership, async (c) => {
-    return c.json(await c.var.service.delete(c.req.param("id")));
+    return c.json(await c.var.service.delete(requireDownloadId(c)));
   });
