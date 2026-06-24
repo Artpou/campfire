@@ -4,7 +4,7 @@ import { ServiceUnavailableError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
 import { authGuard, HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
 import { Identifiable, IdentifiableService } from "@/modules/auth/auth.service";
-import type { Media } from "@/modules/media/media.dto";
+import type { MediaEnriched } from "@/modules/media/media.dto";
 import { MediaService } from "@/modules/media/media.service";
 import { tmdbMovieToMedia, tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
 import { User } from "@/types";
@@ -129,7 +129,7 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
     return this.type === "movie" ? tmdbMovieToMedia : tmdbTVToMedia;
   }
 
-  async trending(): Promise<Media[]> {
+  async trending(): Promise<MediaEnriched[]> {
     const today = new Date().toISOString().split("T")[0];
     const data = await this.request<TMDBPaginatedResponse>(`/discover/${this.type}`, {
       sort_by: "popularity.desc",
@@ -150,7 +150,7 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
     });
   }
 
-  async discover(query: tmdbDiscoverQuery): Promise<{ results: Media[]; page: number; totalPages: number }> {
+  async discover(query: tmdbDiscoverQuery): Promise<{ results: MediaEnriched[]; page: number; totalPages: number }> {
     const [data, genresData] = await Promise.all([
       this.request<TMDBPaginatedResponse>(`/discover/${this.type}`, normalizeDiscoverOptions(query)),
       this.genres(),
@@ -173,7 +173,7 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
     };
   }
 
-  async search(query: tmdbSearchQuery): Promise<Media[]> {
+  async search(query: tmdbSearchQuery): Promise<MediaEnriched[]> {
     const searchResults = await this.request<TMDBPaginatedResponse<TMDBItem & { media_type: string }>>(
       "/search/multi",
       { query: query.q },

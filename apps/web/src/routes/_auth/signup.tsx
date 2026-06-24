@@ -2,6 +2,7 @@ import React from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
+import type { RegisterInput } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
@@ -26,11 +27,7 @@ export const Route = createFileRoute("/_auth/signup")({
   },
 });
 
-interface SignupForm {
-  username: string;
-  password: string;
-  confirmPassword: string;
-}
+type SignupForm = RegisterInput & { confirmPassword: string };
 
 function Signup() {
   const navigate = useNavigate();
@@ -47,7 +44,7 @@ function Signup() {
   const password = watch("password");
 
   const { mutate: signup, isPending } = useMutation({
-    mutationFn: (data: { username: string; password: string }) => unwrap(api.auth.register.$post({ json: data })),
+    mutationFn: (data: RegisterInput) => unwrap(api.auth.register.$post({ json: data })),
     onSuccess: () => navigate({ to: "/" }),
     onError: (err: unknown) => {
       setError(err instanceof Error ? err.message : t(msg`An error occurred`));

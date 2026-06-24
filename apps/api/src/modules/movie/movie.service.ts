@@ -1,5 +1,5 @@
 import { BadRequestError } from "@/errors/error";
-import type { Media } from "@/modules/media/media.dto";
+import type { MediaEnriched } from "@/modules/media/media.dto";
 import { TMDBItem, TMDBMovieDetails } from "@/modules/tmdb/tmdb.dto";
 import { tmdbMovieToMedia } from "@/modules/tmdb/tmdb.helper";
 import { TMDBService } from "@/modules/tmdb/tmdb.service";
@@ -41,7 +41,8 @@ export class MovieService extends TMDBService<Movie> {
     const mediaMap = await this.mediaService.getMany({ ids: allRelated.map((m) => m.id.toString()) });
     const collectionIds = new Set(collectionParts.map((p) => p.id));
 
-    const withMediaStatus = (list: Media[]) => list.map((item) => mediaMap.find((m) => m.id === item.id) ?? item);
+    const withMediaStatus = (list: MediaEnriched[]) =>
+      list.map((item) => mediaMap.find((m) => m.id === item.id) ?? item);
 
     return {
       id,

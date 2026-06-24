@@ -9,9 +9,13 @@
       "types": "./dist/app.d.ts",
       "default": "./src/app.ts"
     },
-    "./types/inputs": {
-      "types": "./dist/types/inputs.d.ts",
-      "default": "./src/types/inputs.ts"
+    "./export/inputs": {
+      "types": "./dist/export/inputs.d.ts",
+      "default": "./src/export/inputs.d.ts"
+    },
+    "./export/schemas": {
+      "types": "./dist/export/schemas.d.ts",
+      "default": "./src/export/schemas.ts"
     },
     "./types": {
       "types": "./dist/types.d.ts",

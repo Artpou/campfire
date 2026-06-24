@@ -9,10 +9,10 @@ import { countSubquery } from "@/helpers/drizzle.helper";
 import { IdentifiableService } from "@/modules/auth/auth.service";
 import { download } from "@/modules/download/download.schema";
 import { media, userLikes, userWatchList, watchProgress } from "@/modules/media/media.schema";
-import type { ListMediaQuery, Media, MediaInsert, UpdateProgressQuery } from "./media.dto";
+import type { ListMediaQuery, MediaEnriched, MediaInsert, UpdateProgressQuery } from "./media.dto";
 
-export class MediaService extends IdentifiableService<Media> {
-  async getMany(pagination: Partial<ListMediaQuery>): Promise<Media[]> {
+export class MediaService extends IdentifiableService<MediaEnriched> {
+  async getMany(pagination: Partial<ListMediaQuery>): Promise<MediaEnriched[]> {
     const paginationOpts = pagination.page && pagination.limit ? paginate(pagination) : {};
     const rows = await db.query.media.findMany({
       where: pagination.ids ? inArray(media.id, pagination.ids?.map(Number) ?? []) : undefined,
@@ -41,7 +41,7 @@ export class MediaService extends IdentifiableService<Media> {
     });
   }
 
-  async list(query: ListMediaQuery): Promise<Paginate<Media>> {
+  async list(query: ListMediaQuery): Promise<Paginate<MediaEnriched>> {
     const { type, filter, ids } = query;
 
     const conditions = [];
@@ -76,7 +76,7 @@ export class MediaService extends IdentifiableService<Media> {
     return toPaginate(await this.getMany({ ids: mediaIds, ...query }), query);
   }
 
-  async upsert(data: MediaInsert): Promise<Media> {
+  async upsert(data: MediaInsert): Promise<MediaEnriched> {
     if (!data.id) throw new BadRequestError("Media ID is required");
 
     await db.insert(media).values(data).onConflictDoUpdate({ target: media.id, set: data });
@@ -86,7 +86,7 @@ export class MediaService extends IdentifiableService<Media> {
     return result;
   }
 
-  async toggleLike(mediaId: number): Promise<Media | undefined> {
+  async toggleLike(mediaId: number): Promise<MediaEnriched | undefined> {
     const existing = await db.query.userLikes.findFirst({
       columns: { userId: true },
       where: and(eq(userLikes.userId, this.user.id), eq(userLikes.mediaId, mediaId)),
@@ -99,7 +99,7 @@ export class MediaService extends IdentifiableService<Media> {
     return this.get(mediaId.toString());
   }
 
-  async toggleWatchList(mediaId: number): Promise<Media | undefined> {
+  async toggleWatchList(mediaId: number): Promise<MediaEnriched | undefined> {
     const existing = await db.query.userWatchList.findFirst({
       columns: { userId: true },
       where: and(eq(userWatchList.userId, this.user.id), eq(userWatchList.mediaId, mediaId)),

@@ -1,5 +1,5 @@
 import { toLatin } from "@/helpers/string.helper";
-import type { Media } from "@/modules/media/media.dto";
+import type { MediaEnriched } from "@/modules/media/media.dto";
 import type { TMDBGenre, TMDBItem } from "./tmdb.dto";
 
 function formatCategories(genres?: TMDBGenre[], genreIds?: number[], genreMap?: Map<number, string>): string | null {
@@ -28,7 +28,7 @@ function toMedia(
   },
   type: "movie" | "tv",
   extra: MediaExtraFields = {},
-): Media {
+): MediaEnriched {
   const title = type === "movie" ? (item.title ?? item.original_title ?? "") : (item.name ?? item.original_name ?? "");
   const originalTitle = type === "movie" ? (item.original_title ?? null) : (item.original_name ?? null);
   const releaseDate = type === "movie" ? (item.release_date ?? null) : (item.first_air_date ?? null);
@@ -58,13 +58,13 @@ function toMedia(
   };
 }
 
-export function tmdbMovieToMedia(item: TMDBItem, genreMap?: Map<number, string>): Media {
+export function tmdbMovieToMedia(item: TMDBItem, genreMap?: Map<number, string>): MediaEnriched {
   return toMedia(item, "movie", {
     categories: formatCategories(undefined, item.genre_ids, genreMap),
   });
 }
 
-export function tmdbTVToMedia(item: TMDBItem, genreMap?: Map<number, string>): Media {
+export function tmdbTVToMedia(item: TMDBItem, genreMap?: Map<number, string>): MediaEnriched {
   return toMedia(item, "tv", {
     categories: formatCategories(undefined, item.genre_ids, genreMap),
   });

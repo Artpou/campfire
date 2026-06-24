@@ -1,5 +1,5 @@
 import type { AppType } from "@seedarr/api";
-import { hc } from "hono/client";
+import { type ApplyGlobalResponse, type ClientResponse, hc, parseResponse } from "hono/client";
 
 export const getBaseUrl = () => {
   if (import.meta.env.DEV) {
@@ -23,6 +23,15 @@ export class ApiError extends Error {
   }
 }
 
+type GlobalErrorResponse = {
+  401: { json: { error: string } };
+  403: { json: { error: string } };
+  404: { json: { error: string } };
+  500: { json: { error: string } };
+};
+
+export type AppRpcType = ApplyGlobalResponse<AppType, GlobalErrorResponse>;
+
 async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const res = await fetch(input, init);
   if (!res.ok) {
@@ -45,24 +54,24 @@ export const api: ApiClient = createApiClient(getBaseUrl(), {
   fetch: apiFetch,
 });
 
-/**
- * Extract JSON data from a Hono client response.
- * Since `api` already throws on non-ok responses, this only
- * needs to parse the JSON body. Kept for backward compatibility
- * with query hooks that need typed return values.
- */
-export async function unwrap<T>(response: Promise<{ ok: boolean; json: () => Promise<T> } | Response>): Promise<T> {
-  const res = await response;
-  if (!res.ok) {
-    const status = "status" in res ? res.status : 0;
-    let message = `API Error: ${status}`;
-    try {
-      const body = (await (res as Response).json()) as { error?: string };
-      if (body && typeof body.error === "string") {
-        message = body.error;
-      }
-    } catch {}
-    throw new ApiError(message, typeof status === "number" ? status : 0);
+function toApiError(error: unknown): ApiError {
+  if (error instanceof ApiError) return error;
+  if (error instanceof Error) {
+    const status = "status" in error && typeof error.status === "number" ? error.status : 0;
+    return new ApiError(error.message, status);
   }
-  return res.json() as Promise<T>;
+  return new ApiError("API Error", 0);
+}
+
+/**
+ * Parse a Hono client response with type safety.
+ * Uses `parseResponse()` from hono/client; errors are normalized to `ApiError`.
+ * Global error shapes (401/403/404/500) are available via `AppRpcType` for manual handling.
+ */
+export async function unwrap<R>(response: ClientResponse<R> | Promise<ClientResponse<R>>): Promise<R> {
+  try {
+    return (await parseResponse(response)) as R;
+  } catch (error) {
+    throw toApiError(error);
+  }
 }

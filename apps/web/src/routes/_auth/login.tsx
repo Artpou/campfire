@@ -2,6 +2,7 @@ import React from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
+import type { LoginInput } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
@@ -26,11 +27,6 @@ export const Route = createFileRoute("/_auth/login")({
   },
 });
 
-interface LoginForm {
-  username: string;
-  password: string;
-}
-
 function Login() {
   const navigate = useNavigate();
   const { t } = useLingui();
@@ -40,17 +36,17 @@ function Login() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginForm>();
+  } = useForm<LoginInput>();
 
   const { mutate: login, isPending } = useMutation({
-    mutationFn: (data: LoginForm) => unwrap(api.auth.login.$post({ json: data })),
+    mutationFn: (data: LoginInput) => unwrap(api.auth.login.$post({ json: data })),
     onSuccess: () => navigate({ to: "/" }),
     onError: (err: unknown) => {
       setError(err instanceof Error ? err.message : t(msg`An error occurred`));
     },
   });
 
-  const onSubmit = (data: LoginForm) => {
+  const onSubmit = (data: LoginInput) => {
     setError(undefined);
     login(data);
   };

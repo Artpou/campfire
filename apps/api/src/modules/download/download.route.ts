@@ -2,6 +2,7 @@ import { zValidator } from "@hono/zod-validator";
 import { stream } from "hono/streaming";
 
 import { paginationDto } from "@/shared/pagination.dto";
+import { downloadFilePathParamDto, stringIdParamDto } from "@/shared/param.dto";
 
 import { BadRequestError, NotFoundError } from "@/errors/error";
 import { srt2webvtt } from "@/helpers/subtitle.helper";
@@ -17,10 +18,8 @@ import { DownloadStreamService } from "./download-stream.service";
 
 const DOWNLOAD_PATH = process.env.DOWNLOADS_PATH || "./downloads";
 
-function requireDownloadId(c: { req: { param: (name: string) => string | undefined } }): string {
-  const id = c.req.param("id");
-  if (!id) throw new BadRequestError("Missing download id");
-  return id;
+function getDownloadId(c: { req: { valid: (target: "param") => { id: string } } }): string {
+  return c.req.valid("param").id;
 }
 
 function getContentType(fileName: string): string {
@@ -39,16 +38,17 @@ export const downloadRoutes = DownloadService.createRouter()
   .get("/stats", async (c) => {
     return c.json(await c.var.service.getStats());
   })
-  .get("/:id", async (c) => {
-    const download = await c.var.service.get(c.req.param("id"));
+  .get("/:id", zValidator("param", stringIdParamDto), async (c) => {
+    const { id } = c.req.valid("param");
+    const download = await c.var.service.get(id);
     if (!download) throw new NotFoundError("Download");
     return c.json(download);
   })
   .post("/", downloadStartRateLimiter, zValidator("json", downloadTorrentDto), async (c) => {
     return c.json(await c.var.service.start(c.req.valid("json")));
   })
-  .get("/:id/stream", requireDownloadOwnership, async (c) => {
-    const download = await c.var.service.get(requireDownloadId(c));
+  .get("/:id/stream", zValidator("param", stringIdParamDto), requireDownloadOwnership, async (c) => {
+    const download = await c.var.service.get(getDownloadId(c));
     if (!download) throw new NotFoundError("Download");
 
     const streamService = new DownloadStreamService(DOWNLOAD_PATH);
@@ -104,11 +104,12 @@ export const downloadRoutes = DownloadService.createRouter()
       await honoStream.pipe(Readable.toWeb(nodeStream as Readable));
     });
   })
-  .get("/:id/file/:filePath", async (c) => {
-    const download = await c.var.service.get(c.req.param("id"));
+  .get("/:id/file/:filePath", zValidator("param", downloadFilePathParamDto), async (c) => {
+    const { id, filePath: rawFilePath } = c.req.valid("param");
+    const download = await c.var.service.get(id);
     if (!download) throw new NotFoundError("Download");
 
-    const filePath = decodeURIComponent(c.req.param("filePath"));
+    const filePath = decodeURIComponent(rawFilePath);
     const path = await import("node:path");
     const fs = await import("node:fs");
     const baseDir = path.resolve(DOWNLOAD_PATH, download.torrent?.name ?? "");
@@ -127,8 +128,9 @@ export const downloadRoutes = DownloadService.createRouter()
 
     return c.body(Readable.toWeb(fs.createReadStream(fullPath) as Readable));
   })
-  .get("/:id/external-subtitles", async (c) => {
-    const download = await c.var.service.get(c.req.param("id"));
+  .get("/:id/external-subtitles", zValidator("param", stringIdParamDto), async (c) => {
+    const { id } = c.req.valid("param");
+    const download = await c.var.service.get(id);
     if (!download) throw new NotFoundError("Download");
 
     const path = await import("node:path");
@@ -164,11 +166,12 @@ export const downloadRoutes = DownloadService.createRouter()
     await scan(folderPath);
     return c.json({ paths: collected });
   })
-  .get("/:id/subtitles/:filePath", async (c) => {
-    const download = await c.var.service.get(c.req.param("id"));
+  .get("/:id/subtitles/:filePath", zValidator("param", downloadFilePathParamDto), async (c) => {
+    const { id, filePath: rawFilePath } = c.req.valid("param");
+    const download = await c.var.service.get(id);
     if (!download) throw new NotFoundError("Download");
 
-    const filePath = decodeURIComponent(c.req.param("filePath"));
+    const filePath = decodeURIComponent(rawFilePath);
     const lower = filePath.toLowerCase();
     if (!lower.endsWith(".srt") && !lower.endsWith(".vtt")) {
       throw new BadRequestError("Only .srt and .vtt files are supported");
@@ -207,12 +210,12 @@ export const downloadRoutes = DownloadService.createRouter()
 
     return c.text(vttContent);
   })
-  .post("/:id/pause", requireDownloadOwnership, async (c) => {
-    return c.json(await c.var.service.pause(requireDownloadId(c)));
+  .post("/:id/pause", zValidator("param", stringIdParamDto), requireDownloadOwnership, async (c) => {
+    return c.json(await c.var.service.pause(getDownloadId(c)));
   })
-  .post("/:id/resume", requireDownloadOwnership, async (c) => {
-    return c.json(await c.var.service.resume(requireDownloadId(c)));
+  .post("/:id/resume", zValidator("param", stringIdParamDto), requireDownloadOwnership, async (c) => {
+    return c.json(await c.var.service.resume(getDownloadId(c)));
   })
-  .delete("/:id", requireDownloadOwnership, async (c) => {
-    return c.json(await c.var.service.delete(requireDownloadId(c)));
+  .delete("/:id", zValidator("param", stringIdParamDto), requireDownloadOwnership, async (c) => {
+    return c.json(await c.var.service.delete(getDownloadId(c)));
   });

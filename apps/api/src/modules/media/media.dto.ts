@@ -24,7 +24,7 @@ export const mediaSchema = mediaSelectSchema.extend({
     })
     .optional(),
 });
-export type Media = z.infer<typeof mediaSchema>;
+export type MediaEnriched = z.infer<typeof mediaSchema>;
 
 export const updateProgressDto = z.object({
   position: z.number().int().min(0),

@@ -1,4 +1,4 @@
-import type { Media } from "@/modules/media/media.dto";
+import type { MediaEnriched } from "@/modules/media/media.dto";
 import type { TMDBItem, TMDBSeasonDetails, TMDBTvDetails } from "@/modules/tmdb/tmdb.dto";
 import { tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
 import { TMDBService } from "@/modules/tmdb/tmdb.service";
@@ -18,7 +18,8 @@ export class TVService extends TMDBService<TV> {
     const related = recommendations.map((item) => tmdbTVToMedia(item));
     const mediaMap = await this.mediaService.getMany({ ids: related.map((m) => m.id.toString()) });
 
-    const withMediaStatus = (list: Media[]) => list.map((item) => mediaMap.find((m) => m.id === item.id) ?? item);
+    const withMediaStatus = (list: MediaEnriched[]) =>
+      list.map((item) => mediaMap.find((m) => m.id === item.id) ?? item);
 
     return {
       id,

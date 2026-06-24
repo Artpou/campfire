@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { User } from "@seedarr/sdk";
+import type { CreateUserInput, UpdateUserInput, User } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { useMutation } from "@tanstack/react-query";
 import { CrownIcon, GlassesIcon, ShieldCheckIcon, UserCheckIcon } from "lucide-react";
@@ -16,12 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { useRole } from "@/features/auth/hooks/use-role";
 
-interface UserFormData {
-  username: string;
-  password: string;
-  confirmPassword: string;
-  role: "owner" | "admin" | "member" | "viewer";
-}
+type UserFormData = CreateUserInput & { confirmPassword: string };
 
 interface UserFormModalProps {
   open: boolean;
@@ -98,15 +93,14 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
   }, [user, reset]);
 
   const createMutation = useMutation({
-    mutationFn: (data: { username: string; password: string; role: "owner" | "admin" | "member" | "viewer" }) =>
-      unwrap(api.users.$post({ json: data })),
+    mutationFn: (data: CreateUserInput) => unwrap(api.users.$post({ json: data })),
     onSuccess: () => {
       onClose();
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: { username?: string; password?: string; role?: "owner" | "admin" | "member" | "viewer" }) => {
+    mutationFn: (data: UpdateUserInput) => {
       if (!user) return Promise.resolve(null);
       return unwrap(api.users[":id"].$put({ param: { id: user.id }, json: data }));
     },
@@ -117,11 +111,7 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
 
   const onSubmit = async (data: UserFormData) => {
     if (isEditing) {
-      const updateData: {
-        username?: string;
-        password?: string;
-        role?: "owner" | "admin" | "member" | "viewer";
-      } = {};
+      const updateData: UpdateUserInput = {};
       if (data.username !== user?.username) updateData.username = data.username;
       if (data.password) updateData.password = data.password;
       if (data.role !== user?.role) updateData.role = data.role;

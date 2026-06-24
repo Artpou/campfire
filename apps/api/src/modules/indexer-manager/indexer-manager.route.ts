@@ -1,5 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
-import { z } from "zod";
+
+import { stringIdParamDto } from "@/shared/param.dto";
 
 import { requireRole } from "@/modules/auth/role.guard";
 import { createIndexerManagerDto, updateIndexerManagerDto } from "./indexer-manager.dto";
@@ -13,23 +14,19 @@ export const indexerManagerRoutes = IndexerManagerService.createRouter()
   .get("/count", async (c) => {
     return c.json(await c.var.service.count());
   })
-  .get("/:id", async (c) => {
-    return c.json(await c.var.service.get(c.req.param("id")));
+  .get("/:id", zValidator("param", stringIdParamDto), async (c) => {
+    const { id } = c.req.valid("param");
+    return c.json(await c.var.service.get(id));
   })
   .use("*", requireRole("admin"))
   .post("/", zValidator("json", createIndexerManagerDto), async (c) => {
     return c.json(await c.var.service.create(c.req.valid("json")));
   })
-  .patch(
-    "/:id",
-    zValidator("param", z.object({ id: z.string() })),
-    zValidator("json", updateIndexerManagerDto),
-    async (c) => {
-      const { id } = c.req.valid("param");
-      return c.json(await c.var.service.update(id, c.req.valid("json")));
-    },
-  )
-  .delete("/:id", zValidator("param", z.object({ id: z.string() })), async (c) => {
+  .patch("/:id", zValidator("param", stringIdParamDto), zValidator("json", updateIndexerManagerDto), async (c) => {
+    const { id } = c.req.valid("param");
+    return c.json(await c.var.service.update(id, c.req.valid("json")));
+  })
+  .delete("/:id", zValidator("param", stringIdParamDto), async (c) => {
     const { id } = c.req.valid("param");
     return c.json(await c.var.service.remove(id));
   });

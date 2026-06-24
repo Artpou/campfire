@@ -1,16 +1,16 @@
 import z from "zod";
 
-import type { Media } from "@/modules/media/media.dto";
+import type { MediaEnriched } from "@/modules/media/media.dto";
 import type { TMDBMovieDetails } from "@/modules/tmdb/tmdb.dto";
 
 export type Movie = {
   id: string;
   movie: TMDBMovieDetails;
-  media: Media;
+  media: MediaEnriched;
   collection: Record<string, unknown> | null;
   related: {
-    collection: Media[];
-    recommendations: Media[];
+    collection: MediaEnriched[];
+    recommendations: MediaEnriched[];
   };
 };
 
