@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 
 import { plural } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import { IndexerType, Media, Resolution, Torrent } from "@seedarr/sdk";
+import type { IndexerType, Media, Resolution, Torrent } from "@seedarr/sdk";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowDownIcon, ArrowUpIcon, DownloadIcon, InfoIcon } from "lucide-react";
 import { toast } from "sonner";

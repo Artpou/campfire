@@ -51,7 +51,7 @@
     "rules": {
       "recommended": true,
       "style": {
-        "useImportType": "off"
+        "useImportType": "error"
       },
       "a11y": {
         "recommended": true

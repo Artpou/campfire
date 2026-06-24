@@ -4,7 +4,7 @@ import { BadRequestError, NotFoundError, ServiceUnavailableError } from "@/error
 import { AuthenticatedService } from "@/modules/auth/auth.service";
 import { torrentClient } from "@/modules/download/webtorrent.client";
 import { IndexerManagerService } from "@/modules/indexer-manager/indexer-manager.service";
-import { User } from "@/types";
+import type { User } from "@/types";
 import type { EventEmitter } from "node:events";
 import type { Torrent, TorrentInspectResult, torrentInspectQuery, torrentListQuery } from "./torrent.dto";
 

@@ -1,6 +1,6 @@
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import { Media } from "@seedarr/sdk";
+import type { Media } from "@seedarr/sdk";
 import { useNavigate } from "@tanstack/react-router";
 import { FilmIcon, LayoutGridIcon, TvIcon } from "lucide-react";
 

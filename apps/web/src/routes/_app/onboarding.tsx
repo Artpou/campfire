@@ -7,7 +7,7 @@ import { api, unwrap } from "@seedarr/sdk";
 import { cn } from "@seedarr/ui/cn";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { SearchIcon, ZapIcon } from "lucide-react";
+import { ZapIcon } from "lucide-react";
 
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";

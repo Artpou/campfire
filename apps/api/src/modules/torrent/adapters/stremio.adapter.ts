@@ -1,6 +1,6 @@
 import { filenameParse } from "@ctrl/video-filename-parser";
 
-import { Indexer, IndexerManager } from "@/types";
+import type { Indexer, IndexerManager } from "@/types";
 import type { Torrent, torrentListQuery } from "../torrent.dto";
 import { IndexerAdapter } from "./indexer.adapter";
 

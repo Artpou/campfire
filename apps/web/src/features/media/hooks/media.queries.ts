@@ -1,9 +1,9 @@
 import type { ListMediaQuery, Media, Paginate } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import {
-  InfiniteData,
+  type InfiniteData,
   infiniteQueryOptions,
-  QueryState,
+  type QueryState,
   queryOptions,
   useMutation,
   useQueryClient,

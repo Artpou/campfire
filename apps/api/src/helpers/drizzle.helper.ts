@@ -1,4 +1,4 @@
-import { AnyColumn, sql, Table } from "drizzle-orm";
+import { type AnyColumn, sql, type Table } from "drizzle-orm";
 
 /**
  * Generate a type-safe subquery for the 'extras' block of Drizzle.

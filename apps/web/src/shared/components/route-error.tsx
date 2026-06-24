@@ -1,4 +1,4 @@
-import { ErrorComponentProps, Navigate } from "@tanstack/react-router";
+import { type ErrorComponentProps, Navigate } from "@tanstack/react-router";
 
 import { getErrorMessage, isRouteNotFound } from "@/shared/helpers/error.helper";
 

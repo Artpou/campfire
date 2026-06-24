@@ -10,7 +10,7 @@ import { authRateLimiter } from "@/middlewares/rate-limiter.middleware";
 import { IndexerManagerService } from "@/modules/indexer-manager/indexer-manager.service";
 import { ActivityLogService } from "../activity-log/activity-log.service";
 import { UserService } from "../user/user.service";
-import { AuthUser, loginDto, registerDto } from "./auth.dto";
+import { type AuthUser, loginDto, registerDto } from "./auth.dto";
 
 const SESSION_COOKIE_NAME = "session";
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
-import { TorrentInspectFile } from "@seedarr/sdk";
+import type { TorrentInspectFile } from "@seedarr/sdk";
 import { formatBytes } from "@seedarr/shared";
 import { ChevronDownIcon, ChevronUpIcon, FileIcon, VideoIcon } from "lucide-react";
 

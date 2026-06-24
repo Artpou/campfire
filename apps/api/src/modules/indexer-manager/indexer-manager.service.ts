@@ -8,15 +8,15 @@ import { ActivityLogService } from "@/modules/activity-log/activity-log.service"
 import { IdentifiableService } from "@/modules/auth/auth.service";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import { indexerManager, type StremioManifest } from "@/modules/indexer-manager/indexer-manager.schema";
-import { IndexerAdapter } from "@/modules/torrent/adapters/indexer.adapter";
+import type { IndexerAdapter } from "@/modules/torrent/adapters/indexer.adapter";
 import { JackettAdapter } from "@/modules/torrent/adapters/jackett.adapter";
 import { ProwlarrAdapter } from "@/modules/torrent/adapters/prowlarr.adapter";
 import { StremioAdapter } from "@/modules/torrent/adapters/stremio.adapter";
 import {
   type CreateIndexerManagerInput,
-  Indexer,
-  IndexerManager,
-  IndexerManagerWithIndexers,
+  type Indexer,
+  type IndexerManager,
+  type IndexerManagerWithIndexers,
   STREMIO_PRESETS,
   type UpdateIndexerManagerInput,
 } from "./indexer-manager.dto";

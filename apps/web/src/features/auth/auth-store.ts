@@ -1,4 +1,4 @@
-import { AuthUser } from "@seedarr/sdk";
+import type { AuthUser } from "@seedarr/sdk";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 

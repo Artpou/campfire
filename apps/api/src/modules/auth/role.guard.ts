@@ -1,6 +1,6 @@
 import type { Context, MiddlewareHandler, Next } from "hono";
 
-import { HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
+import type { HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
 import type { UserRole } from "@/modules/user/user.schema";
 import { ForbiddenError, UnauthorizedError } from "../../errors/error";
 

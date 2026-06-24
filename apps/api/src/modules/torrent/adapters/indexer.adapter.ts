@@ -1,7 +1,7 @@
 import { BadRequestError, ServiceUnavailableError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
 import type { Torrent, torrentListQuery } from "@/modules/torrent/torrent.dto";
-import { Indexer, IndexerManager, IndexerType } from "@/types";
+import type { Indexer, IndexerManager, IndexerType } from "@/types";
 
 export abstract class IndexerAdapter {
   readonly indexerManager: IndexerManager;

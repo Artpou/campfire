@@ -5,7 +5,7 @@ import { Toaster } from "sonner";
 
 import { RouteErrorHandler } from "@/shared/components/route-error";
 
-import { SeedarrRouterContext } from "@/router";
+import type { SeedarrRouterContext } from "@/router";
 
 const TanStackDevtools = import.meta.env.DEV
   ? lazy(async () => {

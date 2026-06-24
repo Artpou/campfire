@@ -2,12 +2,12 @@ import { Hono } from "hono";
 
 import { ServiceUnavailableError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
-import { authGuard, HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
-import { Identifiable, IdentifiableService } from "@/modules/auth/auth.service";
+import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
+import { type Identifiable, IdentifiableService } from "@/modules/auth/auth.service";
 import type { MediaEnriched } from "@/modules/media/media.dto";
 import { MediaService } from "@/modules/media/media.service";
 import { tmdbMovieToMedia, tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
-import { User } from "@/types";
+import type { User } from "@/types";
 import { getTmdbCache, isCachedPayload, setTmdbCache } from "./tmdb.cache";
 import type {
   FetchOptions,

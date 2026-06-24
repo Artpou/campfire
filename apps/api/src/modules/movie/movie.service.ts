@@ -1,9 +1,9 @@
 import { BadRequestError } from "@/errors/error";
 import type { MediaEnriched } from "@/modules/media/media.dto";
-import { TMDBItem, TMDBMovieDetails } from "@/modules/tmdb/tmdb.dto";
+import type { TMDBItem, TMDBMovieDetails } from "@/modules/tmdb/tmdb.dto";
 import { tmdbMovieToMedia } from "@/modules/tmdb/tmdb.helper";
 import { TMDBService } from "@/modules/tmdb/tmdb.service";
-import { User } from "@/types";
+import type { User } from "@/types";
 import type { Movie } from "./movie.dto";
 
 export class MovieService extends TMDBService<Movie> {

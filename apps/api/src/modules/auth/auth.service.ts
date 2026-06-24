@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 
-import { Paginate, PaginationQuery } from "@/shared/pagination.dto";
+import type { Paginate, PaginationQuery } from "@/shared/pagination.dto";
 import { toPaginate } from "@/shared/pagination.helper";
 
 import { NotFoundError } from "@/errors/error";
-import { authGuard, HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
+import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import type { User } from "../user/user.dto";
 

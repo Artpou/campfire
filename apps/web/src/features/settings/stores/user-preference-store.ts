@@ -1,4 +1,4 @@
-import { Resolution } from "@seedarr/sdk";
+import type { Resolution } from "@seedarr/sdk";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 

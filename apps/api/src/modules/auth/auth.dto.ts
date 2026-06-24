@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { User } from "@/types";
+import type { User } from "@/types";
 
 export const registerDto = z.object({
   username: z.string().min(3).max(64),

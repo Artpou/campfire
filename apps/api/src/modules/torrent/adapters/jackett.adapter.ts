@@ -2,7 +2,7 @@ import { filenameParse } from "@ctrl/video-filename-parser";
 
 import { BadRequestError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
-import { Indexer, IndexerManager, IndexerType } from "@/types";
+import type { Indexer, IndexerManager, IndexerType } from "@/types";
 import type { Torrent, torrentListQuery } from "../torrent.dto";
 import { IndexerAdapter } from "./indexer.adapter";
 

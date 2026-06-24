@@ -1,4 +1,4 @@
-import { Media } from "@seedarr/sdk";
+import type { Media } from "@seedarr/sdk";
 
 export type PosterFormat = "w92" | "w154" | "w185" | "w342" | "w500" | "w780" | "original";
 

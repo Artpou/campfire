@@ -42,7 +42,9 @@ function seedUsers(db: TestDb) {
     .run();
 }
 
-function seedLogs(db: TestDb) {
+function seedLogs(db: TestDb | null) {
+  if (!db) throw new Error("Database not found");
+
   db.insert(activityLog)
     .values([
       {
@@ -72,7 +74,7 @@ function withAuth(token: string) {
 describe("Activity Log Routes", () => {
   beforeEach(() => {
     testDbRef.current = createTestDb();
-    seedUsers(testDbRef.current!);
+    seedUsers(testDbRef.current);
   });
 
   describe("GET /", () => {
@@ -87,7 +89,7 @@ describe("Activity Log Routes", () => {
     });
 
     it("returns logs for member (own logs only)", async () => {
-      seedLogs(testDbRef.current!);
+      seedLogs(testDbRef.current);
       const body = await bodyOf(await activityLogRoutes.request("/", withAuth(MEMBER_TOKEN)));
       expect(body.results).toBeDefined();
       for (const log of body.results) {
@@ -96,21 +98,21 @@ describe("Activity Log Routes", () => {
     });
 
     it("returns all logs for owner (privileged)", async () => {
-      seedLogs(testDbRef.current!);
+      seedLogs(testDbRef.current);
       const body = await bodyOf(await activityLogRoutes.request("/", withAuth(OWNER_TOKEN)));
       expect(body.results).toBeDefined();
       expect(body.results.length).toBe(2);
     });
 
     it("filters by action", async () => {
-      seedLogs(testDbRef.current!);
+      seedLogs(testDbRef.current);
       const body = await bodyOf(await activityLogRoutes.request("/?action=DOWNLOAD_START", withAuth(OWNER_TOKEN)));
       expect(body.results.length).toBe(1);
       expect(body.results[0].action).toBe("DOWNLOAD_START");
     });
 
     it("filters by type", async () => {
-      seedLogs(testDbRef.current!);
+      seedLogs(testDbRef.current);
       const body = await bodyOf(await activityLogRoutes.request("/?type=SUCCESS", withAuth(OWNER_TOKEN)));
       expect(body.results.length).toBe(1);
       expect(body.results[0].type).toBe("SUCCESS");
@@ -128,6 +130,9 @@ describe("Activity Log Routes", () => {
       });
 
       const logs = testDbRef.current?.select().from(activityLog).all();
+
+      if (!logs) throw new Error("Logs not found");
+
       expect(logs.length).toBe(1);
       expect(logs[0].title).toBe("Test log");
       expect(logs[0].metadata).toBe('{"key":"value"}');
@@ -141,6 +146,9 @@ describe("Activity Log Routes", () => {
       });
 
       const logs = testDbRef.current?.select().from(activityLog).all();
+
+      if (!logs) throw new Error("Logs not found");
+
       expect(logs.length).toBe(1);
       expect(logs[0].userId).toBeNull();
     });

@@ -1,7 +1,7 @@
 import type { Context, Next } from "hono";
 
 import { BadRequestError, ForbiddenError, NotFoundError } from "@/errors/error";
-import { HonoAuthenticatedVariables } from "../auth/auth.guard";
+import type { HonoAuthenticatedVariables } from "../auth/auth.guard";
 import { DownloadService } from "./download.service";
 
 export async function requireDownloadOwnership(

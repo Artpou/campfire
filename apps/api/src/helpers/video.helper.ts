@@ -1,7 +1,7 @@
 import ffmpeg from "fluent-ffmpeg";
 
 import { logger } from "@/helpers/logger.helper";
-import { PassThrough, Readable } from "node:stream";
+import { PassThrough, type Readable } from "node:stream";
 
 export function convertMkvToMp4Stream(inputStream: NodeJS.ReadableStream): NodeJS.ReadableStream {
   const outputStream = new PassThrough();

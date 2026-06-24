@@ -1,6 +1,6 @@
 import type { Download, DownloadTorrentInput } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
-import { QueryState, queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
+import { type QueryState, queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 

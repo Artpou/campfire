@@ -1,5 +1,5 @@
 import type * as React from "react";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import { Link } from "@tanstack/react-router";

@@ -21,9 +21,10 @@
     "declaration": true,
     "declarationMap": true,
     "emitDeclarationOnly": true,
+    "verbatimModuleSyntax": true,
     "outDir": "./dist",
     "rootDir": "./src"
   },
   "include": ["src/**/*"],
-  "exclude": ["dist", "src/tests/**", "**/*.test.ts"]
+  "exclude": ["dist"]
 }

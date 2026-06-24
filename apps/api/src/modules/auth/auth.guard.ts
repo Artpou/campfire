@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { type Context, type Next } from "hono";
+import type { Context, Next } from "hono";
 import { getCookie } from "hono/cookie";
 
 import { validateSession } from "@/auth/session.util";
