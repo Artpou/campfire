@@ -19,7 +19,7 @@ import { MediaTypeTabs } from "@/features/media/components/media-type-tabs";
 import { mediaQueries, refetchMediaInterval } from "@/features/media/hooks/media.queries";
 import { validateDownloadsSearch } from "@/routes/helpers/downloads-route.helper";
 
-export const Route = createFileRoute("/_app/downloads")({
+export const Route = createFileRoute("/_app/downloads/")({
   component: DownloadsPage,
   validateSearch: validateDownloadsSearch,
   loaderDeps: ({ search }) => search,

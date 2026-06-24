@@ -20,7 +20,7 @@ import { SettingsUsersTab } from "@/features/settings/components/settings-users-
 
 type SettingsTab = "general" | "activity" | "indexers" | "users" | "advanced";
 
-export const Route = createFileRoute("/_app/settings")({
+export const Route = createFileRoute("/_app/settings/")({
   component: SettingsPage,
 });
 

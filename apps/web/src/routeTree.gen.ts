@@ -14,15 +14,15 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AuthSignupRouteImport } from './routes/_auth/signup'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
-import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppSearchRouteImport } from './routes/_app/search'
 import { Route as AppOnboardingRouteImport } from './routes/_app/onboarding'
-import { Route as AppMoviesRouteImport } from './routes/_app/movies'
 import { Route as AppListsRouteImport } from './routes/_app/lists'
 import { Route as AppErrorRouteImport } from './routes/_app/error'
-import { Route as AppDownloadsRouteImport } from './routes/_app/downloads'
 import { Route as App404RouteImport } from './routes/_app/404'
 import { Route as AppTvIndexRouteImport } from './routes/_app/tv/index'
+import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
+import { Route as AppMoviesIndexRouteImport } from './routes/_app/movies/index'
+import { Route as AppDownloadsIndexRouteImport } from './routes/_app/downloads/index'
 import { Route as AppSettingsIndexerRouteImport } from './routes/_app/settings/indexer'
 import { Route as AppTvIdIndexRouteImport } from './routes/_app/tv/$id.index'
 import { Route as AppMoviesIdIndexRouteImport } from './routes/_app/movies/$id.index'
@@ -54,11 +54,6 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => AuthRoute,
 } as any)
-const AppSettingsRoute = AppSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppSearchRoute = AppSearchRouteImport.update({
   id: '/search',
   path: '/search',
@@ -67,11 +62,6 @@ const AppSearchRoute = AppSearchRouteImport.update({
 const AppOnboardingRoute = AppOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppMoviesRoute = AppMoviesRouteImport.update({
-  id: '/movies',
-  path: '/movies',
   getParentRoute: () => AppRoute,
 } as any)
 const AppListsRoute = AppListsRouteImport.update({
@@ -84,11 +74,6 @@ const AppErrorRoute = AppErrorRouteImport.update({
   path: '/error',
   getParentRoute: () => AppRoute,
 } as any)
-const AppDownloadsRoute = AppDownloadsRouteImport.update({
-  id: '/downloads',
-  path: '/downloads',
-  getParentRoute: () => AppRoute,
-} as any)
 const App404Route = App404RouteImport.update({
   id: '/404',
   path: '/404',
@@ -99,10 +84,25 @@ const AppTvIndexRoute = AppTvIndexRouteImport.update({
   path: '/tv/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMoviesIndexRoute = AppMoviesIndexRouteImport.update({
+  id: '/movies/',
+  path: '/movies/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDownloadsIndexRoute = AppDownloadsIndexRouteImport.update({
+  id: '/downloads/',
+  path: '/downloads/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSettingsIndexerRoute = AppSettingsIndexerRouteImport.update({
-  id: '/indexer',
-  path: '/indexer',
-  getParentRoute: () => AppSettingsRoute,
+  id: '/settings/indexer',
+  path: '/settings/indexer',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppTvIdIndexRoute = AppTvIdIndexRouteImport.update({
   id: '/tv/$id/',
@@ -110,14 +110,14 @@ const AppTvIdIndexRoute = AppTvIdIndexRouteImport.update({
   getParentRoute: () => AppRoute,
 } as any)
 const AppMoviesIdIndexRoute = AppMoviesIdIndexRouteImport.update({
-  id: '/$id/',
-  path: '/$id/',
-  getParentRoute: () => AppMoviesRoute,
+  id: '/movies/$id/',
+  path: '/movies/$id/',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppDownloadsIdIndexRoute = AppDownloadsIdIndexRouteImport.update({
-  id: '/$id/',
-  path: '/$id/',
-  getParentRoute: () => AppDownloadsRoute,
+  id: '/downloads/$id/',
+  path: '/downloads/$id/',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppTvIdTorrentsRoute = AppTvIdTorrentsRouteImport.update({
   id: '/tv/$id/torrents',
@@ -125,29 +125,29 @@ const AppTvIdTorrentsRoute = AppTvIdTorrentsRouteImport.update({
   getParentRoute: () => AppRoute,
 } as any)
 const AppMoviesIdTorrentsRoute = AppMoviesIdTorrentsRouteImport.update({
-  id: '/$id/torrents',
-  path: '/$id/torrents',
-  getParentRoute: () => AppMoviesRoute,
+  id: '/movies/$id/torrents',
+  path: '/movies/$id/torrents',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppDownloadsIdPlayRoute = AppDownloadsIdPlayRouteImport.update({
-  id: '/$id/play',
-  path: '/$id/play',
-  getParentRoute: () => AppDownloadsRoute,
+  id: '/downloads/$id/play',
+  path: '/downloads/$id/play',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/404': typeof App404Route
-  '/downloads': typeof AppDownloadsRouteWithChildren
   '/error': typeof AppErrorRoute
   '/lists': typeof AppListsRoute
-  '/movies': typeof AppMoviesRouteWithChildren
   '/onboarding': typeof AppOnboardingRoute
   '/search': typeof AppSearchRoute
-  '/settings': typeof AppSettingsRouteWithChildren
   '/login': typeof AuthLoginRoute
   '/signup': typeof AuthSignupRoute
   '/': typeof AppIndexRoute
   '/settings/indexer': typeof AppSettingsIndexerRoute
+  '/downloads': typeof AppDownloadsIndexRoute
+  '/movies': typeof AppMoviesIndexRoute
+  '/settings': typeof AppSettingsIndexRoute
   '/tv': typeof AppTvIndexRoute
   '/downloads/$id/play': typeof AppDownloadsIdPlayRoute
   '/movies/$id/torrents': typeof AppMoviesIdTorrentsRoute
@@ -158,17 +158,17 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/404': typeof App404Route
-  '/downloads': typeof AppDownloadsRouteWithChildren
   '/error': typeof AppErrorRoute
   '/lists': typeof AppListsRoute
-  '/movies': typeof AppMoviesRouteWithChildren
   '/onboarding': typeof AppOnboardingRoute
   '/search': typeof AppSearchRoute
-  '/settings': typeof AppSettingsRouteWithChildren
   '/login': typeof AuthLoginRoute
   '/signup': typeof AuthSignupRoute
   '/': typeof AppIndexRoute
   '/settings/indexer': typeof AppSettingsIndexerRoute
+  '/downloads': typeof AppDownloadsIndexRoute
+  '/movies': typeof AppMoviesIndexRoute
+  '/settings': typeof AppSettingsIndexRoute
   '/tv': typeof AppTvIndexRoute
   '/downloads/$id/play': typeof AppDownloadsIdPlayRoute
   '/movies/$id/torrents': typeof AppMoviesIdTorrentsRoute
@@ -182,17 +182,17 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
   '/_app/404': typeof App404Route
-  '/_app/downloads': typeof AppDownloadsRouteWithChildren
   '/_app/error': typeof AppErrorRoute
   '/_app/lists': typeof AppListsRoute
-  '/_app/movies': typeof AppMoviesRouteWithChildren
   '/_app/onboarding': typeof AppOnboardingRoute
   '/_app/search': typeof AppSearchRoute
-  '/_app/settings': typeof AppSettingsRouteWithChildren
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/signup': typeof AuthSignupRoute
   '/_app/': typeof AppIndexRoute
   '/_app/settings/indexer': typeof AppSettingsIndexerRoute
+  '/_app/downloads/': typeof AppDownloadsIndexRoute
+  '/_app/movies/': typeof AppMoviesIndexRoute
+  '/_app/settings/': typeof AppSettingsIndexRoute
   '/_app/tv/': typeof AppTvIndexRoute
   '/_app/downloads/$id/play': typeof AppDownloadsIdPlayRoute
   '/_app/movies/$id/torrents': typeof AppMoviesIdTorrentsRoute
@@ -205,17 +205,17 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/404'
-    | '/downloads'
     | '/error'
     | '/lists'
-    | '/movies'
     | '/onboarding'
     | '/search'
-    | '/settings'
     | '/login'
     | '/signup'
     | '/'
     | '/settings/indexer'
+    | '/downloads'
+    | '/movies'
+    | '/settings'
     | '/tv'
     | '/downloads/$id/play'
     | '/movies/$id/torrents'
@@ -226,17 +226,17 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/404'
-    | '/downloads'
     | '/error'
     | '/lists'
-    | '/movies'
     | '/onboarding'
     | '/search'
-    | '/settings'
     | '/login'
     | '/signup'
     | '/'
     | '/settings/indexer'
+    | '/downloads'
+    | '/movies'
+    | '/settings'
     | '/tv'
     | '/downloads/$id/play'
     | '/movies/$id/torrents'
@@ -249,17 +249,17 @@ export interface FileRouteTypes {
     | '/_app'
     | '/_auth'
     | '/_app/404'
-    | '/_app/downloads'
     | '/_app/error'
     | '/_app/lists'
-    | '/_app/movies'
     | '/_app/onboarding'
     | '/_app/search'
-    | '/_app/settings'
     | '/_auth/login'
     | '/_auth/signup'
     | '/_app/'
     | '/_app/settings/indexer'
+    | '/_app/downloads/'
+    | '/_app/movies/'
+    | '/_app/settings/'
     | '/_app/tv/'
     | '/_app/downloads/$id/play'
     | '/_app/movies/$id/torrents'
@@ -311,13 +311,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof AuthRoute
     }
-    '/_app/settings': {
-      id: '/_app/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AppSettingsRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/search': {
       id: '/_app/search'
       path: '/search'
@@ -330,13 +323,6 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof AppOnboardingRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/movies': {
-      id: '/_app/movies'
-      path: '/movies'
-      fullPath: '/movies'
-      preLoaderRoute: typeof AppMoviesRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/lists': {
@@ -353,13 +339,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppErrorRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/downloads': {
-      id: '/_app/downloads'
-      path: '/downloads'
-      fullPath: '/downloads'
-      preLoaderRoute: typeof AppDownloadsRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/404': {
       id: '/_app/404'
       path: '/404'
@@ -374,12 +353,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTvIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/settings/': {
+      id: '/_app/settings/'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/movies/': {
+      id: '/_app/movies/'
+      path: '/movies'
+      fullPath: '/movies'
+      preLoaderRoute: typeof AppMoviesIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/downloads/': {
+      id: '/_app/downloads/'
+      path: '/downloads'
+      fullPath: '/downloads'
+      preLoaderRoute: typeof AppDownloadsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/settings/indexer': {
       id: '/_app/settings/indexer'
-      path: '/indexer'
+      path: '/settings/indexer'
       fullPath: '/settings/indexer'
       preLoaderRoute: typeof AppSettingsIndexerRouteImport
-      parentRoute: typeof AppSettingsRoute
+      parentRoute: typeof AppRoute
     }
     '/_app/tv/$id/': {
       id: '/_app/tv/$id/'
@@ -390,17 +390,17 @@ declare module '@tanstack/react-router' {
     }
     '/_app/movies/$id/': {
       id: '/_app/movies/$id/'
-      path: '/$id'
+      path: '/movies/$id'
       fullPath: '/movies/$id'
       preLoaderRoute: typeof AppMoviesIdIndexRouteImport
-      parentRoute: typeof AppMoviesRoute
+      parentRoute: typeof AppRoute
     }
     '/_app/downloads/$id/': {
       id: '/_app/downloads/$id/'
-      path: '/$id'
+      path: '/downloads/$id'
       fullPath: '/downloads/$id'
       preLoaderRoute: typeof AppDownloadsIdIndexRouteImport
-      parentRoute: typeof AppDownloadsRoute
+      parentRoute: typeof AppRoute
     }
     '/_app/tv/$id/torrents': {
       id: '/_app/tv/$id/torrents'
@@ -411,88 +411,58 @@ declare module '@tanstack/react-router' {
     }
     '/_app/movies/$id/torrents': {
       id: '/_app/movies/$id/torrents'
-      path: '/$id/torrents'
+      path: '/movies/$id/torrents'
       fullPath: '/movies/$id/torrents'
       preLoaderRoute: typeof AppMoviesIdTorrentsRouteImport
-      parentRoute: typeof AppMoviesRoute
+      parentRoute: typeof AppRoute
     }
     '/_app/downloads/$id/play': {
       id: '/_app/downloads/$id/play'
-      path: '/$id/play'
+      path: '/downloads/$id/play'
       fullPath: '/downloads/$id/play'
       preLoaderRoute: typeof AppDownloadsIdPlayRouteImport
-      parentRoute: typeof AppDownloadsRoute
+      parentRoute: typeof AppRoute
     }
   }
 }
 
-interface AppDownloadsRouteChildren {
-  AppDownloadsIdPlayRoute: typeof AppDownloadsIdPlayRoute
-  AppDownloadsIdIndexRoute: typeof AppDownloadsIdIndexRoute
-}
-
-const AppDownloadsRouteChildren: AppDownloadsRouteChildren = {
-  AppDownloadsIdPlayRoute: AppDownloadsIdPlayRoute,
-  AppDownloadsIdIndexRoute: AppDownloadsIdIndexRoute,
-}
-
-const AppDownloadsRouteWithChildren = AppDownloadsRoute._addFileChildren(
-  AppDownloadsRouteChildren,
-)
-
-interface AppMoviesRouteChildren {
-  AppMoviesIdTorrentsRoute: typeof AppMoviesIdTorrentsRoute
-  AppMoviesIdIndexRoute: typeof AppMoviesIdIndexRoute
-}
-
-const AppMoviesRouteChildren: AppMoviesRouteChildren = {
-  AppMoviesIdTorrentsRoute: AppMoviesIdTorrentsRoute,
-  AppMoviesIdIndexRoute: AppMoviesIdIndexRoute,
-}
-
-const AppMoviesRouteWithChildren = AppMoviesRoute._addFileChildren(
-  AppMoviesRouteChildren,
-)
-
-interface AppSettingsRouteChildren {
-  AppSettingsIndexerRoute: typeof AppSettingsIndexerRoute
-}
-
-const AppSettingsRouteChildren: AppSettingsRouteChildren = {
-  AppSettingsIndexerRoute: AppSettingsIndexerRoute,
-}
-
-const AppSettingsRouteWithChildren = AppSettingsRoute._addFileChildren(
-  AppSettingsRouteChildren,
-)
-
 interface AppRouteChildren {
   App404Route: typeof App404Route
-  AppDownloadsRoute: typeof AppDownloadsRouteWithChildren
   AppErrorRoute: typeof AppErrorRoute
   AppListsRoute: typeof AppListsRoute
-  AppMoviesRoute: typeof AppMoviesRouteWithChildren
   AppOnboardingRoute: typeof AppOnboardingRoute
   AppSearchRoute: typeof AppSearchRoute
-  AppSettingsRoute: typeof AppSettingsRouteWithChildren
   AppIndexRoute: typeof AppIndexRoute
+  AppSettingsIndexerRoute: typeof AppSettingsIndexerRoute
+  AppDownloadsIndexRoute: typeof AppDownloadsIndexRoute
+  AppMoviesIndexRoute: typeof AppMoviesIndexRoute
+  AppSettingsIndexRoute: typeof AppSettingsIndexRoute
   AppTvIndexRoute: typeof AppTvIndexRoute
+  AppDownloadsIdPlayRoute: typeof AppDownloadsIdPlayRoute
+  AppMoviesIdTorrentsRoute: typeof AppMoviesIdTorrentsRoute
   AppTvIdTorrentsRoute: typeof AppTvIdTorrentsRoute
+  AppDownloadsIdIndexRoute: typeof AppDownloadsIdIndexRoute
+  AppMoviesIdIndexRoute: typeof AppMoviesIdIndexRoute
   AppTvIdIndexRoute: typeof AppTvIdIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   App404Route: App404Route,
-  AppDownloadsRoute: AppDownloadsRouteWithChildren,
   AppErrorRoute: AppErrorRoute,
   AppListsRoute: AppListsRoute,
-  AppMoviesRoute: AppMoviesRouteWithChildren,
   AppOnboardingRoute: AppOnboardingRoute,
   AppSearchRoute: AppSearchRoute,
-  AppSettingsRoute: AppSettingsRouteWithChildren,
   AppIndexRoute: AppIndexRoute,
+  AppSettingsIndexerRoute: AppSettingsIndexerRoute,
+  AppDownloadsIndexRoute: AppDownloadsIndexRoute,
+  AppMoviesIndexRoute: AppMoviesIndexRoute,
+  AppSettingsIndexRoute: AppSettingsIndexRoute,
   AppTvIndexRoute: AppTvIndexRoute,
+  AppDownloadsIdPlayRoute: AppDownloadsIdPlayRoute,
+  AppMoviesIdTorrentsRoute: AppMoviesIdTorrentsRoute,
   AppTvIdTorrentsRoute: AppTvIdTorrentsRoute,
+  AppDownloadsIdIndexRoute: AppDownloadsIdIndexRoute,
+  AppMoviesIdIndexRoute: AppMoviesIdIndexRoute,
   AppTvIdIndexRoute: AppTvIdIndexRoute,
 }
 
