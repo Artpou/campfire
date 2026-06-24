@@ -1,8 +1,14 @@
-export const STREMIO_PRESETS = [
+export const STREMIO_PRESETS: {
+  value: "torrentio" | "comet" | "mediafusion";
+  label: string;
+  image?: string;
+  emoji?: string;
+  description: string;
+}[] = [
   {
     value: "torrentio" as const,
     label: "Torrentio",
-    emoji: "\u{1F7E2}",
+    image: "https://torrentio.strem.fun/images/logo_v1.png",
     description: "The gold standard, movies & series",
   },
   {

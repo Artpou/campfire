@@ -4,6 +4,7 @@ import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { CreateIndexerManagerInput } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
+import { cn } from "@seedarr/ui/cn";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { SearchIcon, ZapIcon } from "lucide-react";
@@ -75,13 +76,8 @@ function OnboardingPage() {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4">
-      <Card className="w-full max-w-2xl">
+      <Card className="w-full max-w-2xl bg-background">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <SearchIcon className="size-6 text-primary" />
-            </div>
-          </div>
           <CardTitle className="text-2xl">
             <Trans>Configure your media source</Trans>
           </CardTitle>
@@ -94,10 +90,10 @@ function OnboardingPage() {
         <CardContent>
           {step === "select" ? (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-3">
                 <button
                   type="button"
-                  className="p-4 rounded-md border border-border hover:border-primary hover:bg-primary/5 transition-colors text-left relative"
+                  className="cursor-pointer p-4 rounded-md border border-border hover:border-primary hover:bg-primary/5 transition-colors text-left relative"
                   onClick={() => handleSelectType("preset")}
                 >
                   <Badge className="absolute top-2 left-2 text-[10px]">
@@ -105,31 +101,31 @@ function OnboardingPage() {
                   </Badge>
                   <div className="flex items-center gap-2 mt-4">
                     <ZapIcon className="size-4 text-primary" />
-                    <p className="font-semibold">
+                    <h3>
                       <Trans>Stremio Presets</Trans>
-                    </p>
+                    </h3>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-popover-foreground mt-1">
                     <Trans>No setup required. Browse torrents from public trackers instantly.</Trans>
                   </p>
                 </button>
                 <button
                   type="button"
-                  className="p-4 rounded-md border border-border hover:border-primary hover:bg-primary/5 transition-colors text-left"
+                  className="cursor-pointer p-4 rounded-md border border-border hover:border-primary hover:bg-primary/5 transition-colors text-left"
                   onClick={() => handleSelectType("prowlarr")}
                 >
-                  <p className="font-semibold">Prowlarr</p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <h3 className="font-semibold">Prowlarr</h3>
+                  <p className="text-xs text-popover-foreground mt-1">
                     <Trans>Indexer manager for *arr apps</Trans>
                   </p>
                 </button>
                 <button
                   type="button"
-                  className="p-4 rounded-md border border-border hover:border-primary hover:bg-primary/5 transition-colors text-left"
+                  className="cursor-pointer p-4 rounded-md border border-border hover:border-primary hover:bg-primary/5 transition-colors text-left"
                   onClick={() => handleSelectType("jackett")}
                 >
-                  <p className="font-semibold">Jackett</p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <h3 className="font-semibold">Jackett</h3>
+                  <p className="text-xs text-popover-foreground mt-1">
                     <Trans>Proxy server for torrent trackers</Trans>
                   </p>
                 </button>
@@ -144,31 +140,31 @@ function OnboardingPage() {
           ) : (
             <div className="space-y-6">
               {configType === "preset" && (
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground mb-3">
-                    <Trans>Choose a pre-configured provider:</Trans>
-                  </p>
+                <div className="flex flex-col gap-3">
                   {STREMIO_PRESETS.map((preset) => (
-                    <div
+                    <button
                       key={preset.value}
-                      className="flex items-center justify-between p-3 rounded-lg border border-border hover:border-muted-foreground/40 hover:bg-muted/50 transition-colors"
+                      type="button"
+                      disabled={createMutation.isPending}
+                      className="relative w-full cursor-pointer p-4 rounded-md border border-border hover:border-primary hover:bg-primary/5 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => handlePresetSelect(preset.value)}
                     >
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg">{preset.emoji}</span>
+                      {preset.value === "torrentio" && (
+                        <Badge className="absolute top-2 left-2 text-[10px]">
+                          <Trans>Recommended</Trans>
+                        </Badge>
+                      )}
+                      <div className={cn("flex items-center gap-3", preset.value === "torrentio" && "mt-4")}>
+                        {preset.image && (
+                          <img src={preset.image} alt={preset.label} className="size-7 object-contain" />
+                        )}
+                        {preset.emoji && <span className="text-xl">{preset.emoji}</span>}
                         <div>
-                          <p className="text-sm font-medium">{preset.label}</p>
-                          <p className="text-xs text-muted-foreground">{preset.description}</p>
+                          <h3 className="font-semibold text-sm">{preset.label}</h3>
+                          <p className="text-xs text-popover-foreground mt-1">{preset.description}</p>
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handlePresetSelect(preset.value)}
-                        disabled={createMutation.isPending}
-                      >
-                        <Trans>Select</Trans>
-                      </Button>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}

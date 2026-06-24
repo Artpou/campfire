@@ -57,7 +57,7 @@ function Signup() {
   };
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full max-w-md bg-background">
       <CardHeader>
         <CardTitle>
           <Trans>Create Owner Account</Trans>
