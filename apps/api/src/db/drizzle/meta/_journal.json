@@ -43,6 +43,13 @@
       "when": 1781599750345,
       "tag": "0005_fantastic_bucky",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1782501538300,
+      "tag": "0006_clever_crystal",
+      "breakpoints": true
     }
   ]
 }

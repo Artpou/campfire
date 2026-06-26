@@ -8,17 +8,24 @@ WORKDIR /app
 # Stage 2: Builder
 FROM base AS builder
 RUN apt-get update && apt-get install -y python3 make g++ cmake && rm -rf /var/lib/apt/lists/*
+
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/api/package.json ./apps/api/
 COPY apps/web/package.json ./apps/web/
 COPY packages/sdk/package.json ./packages/sdk/
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/ui/package.json ./packages/ui/
+
 ENV HUSKY=0
 RUN pnpm install --frozen-lockfile
+
 COPY . .
+
 RUN pnpm --filter @seedarr/api build
+RUN pnpm --filter @seedarr/api build:runtime
 RUN pnpm --filter web build
+
+RUN pnpm --filter @seedarr/api --prod deploy --legacy /app/isolated
 
 # Stage 3: Runner
 FROM node:20-slim AS runner
@@ -27,21 +34,14 @@ ENV NODE_ENV=production
 
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
 
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY apps/api/package.json apps/api/tsconfig.json ./apps/api/
-COPY packages/sdk/package.json ./packages/sdk/
-COPY packages/shared/package.json ./packages/shared/
-COPY packages/ui/package.json ./packages/ui/
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
-COPY --from=builder /app/apps/api/drizzle.config.ts ./apps/api/drizzle.config.ts
-COPY --from=builder /app/apps/api/src ./apps/api/src
-COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/apps/web/dist ./apps/web/dist
-COPY --from=builder /app/packages ./packages
+COPY --from=builder /app/isolated ./
+COPY --from=builder /app/apps/api/dist-server ./dist-server
+COPY --from=builder /app/apps/api/dist ./dist
+COPY --from=builder /app/apps/api/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder /app/apps/api/src/db ./src/db
+COPY --from=builder /app/apps/api/src/modules ./src/modules
+COPY --from=builder /app/apps/web/dist ./web/dist
 
 EXPOSE 3002
 
-WORKDIR /app/apps/api
-
-CMD ["sh", "-c", "./node_modules/.bin/drizzle-kit migrate && ./node_modules/.bin/tsx src/server.ts"]
+CMD ["sh", "-c", "./node_modules/.bin/drizzle-kit migrate && node dist-server/server.mjs"]

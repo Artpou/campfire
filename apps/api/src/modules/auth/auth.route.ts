@@ -1,28 +1,16 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
-import ms from "ms";
 
+import { SESSION_COOKIE_NAME, sessionCookieOptions } from "@/auth/auth.constants";
 import { hashPassword, verifyPassword } from "@/auth/password.util";
-import { createSession, deleteSession, validateSession } from "@/auth/session.util";
+import { createSession, deleteOtherSessions, deleteSession, resolveAuthenticatedSession } from "@/auth/session.util";
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "@/errors/error";
 import { authRateLimiter } from "@/middlewares/rate-limiter.middleware";
 import { IndexerManagerService } from "@/modules/indexer-manager/indexer-manager.service";
 import { ActivityLogService } from "../activity-log/activity-log.service";
 import { UserService } from "../user/user.service";
 import { type AuthUser, loginDto, registerDto } from "./auth.dto";
-
-const SESSION_COOKIE_NAME = "session";
-
-const isProduction = process.env.NODE_ENV === "production";
-
-const cookieOptions = {
-  httpOnly: true,
-  secure: isProduction,
-  maxAge: Math.floor(ms("7d") / 1000), // Convert to seconds
-  path: "/",
-  sameSite: "lax" as const,
-};
 
 export const authRoutes = new Hono()
   .get("/has-owner", async (c) => {
@@ -46,7 +34,7 @@ export const authRoutes = new Hono()
       title: `${username} registered`,
     });
 
-    setCookie(c, SESSION_COOKIE_NAME, sessionToken, cookieOptions);
+    setCookie(c, SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions);
     return c.json(newUser);
   })
   .post("/login", authRateLimiter, zValidator("json", loginDto), async (c) => {
@@ -61,8 +49,9 @@ export const authRoutes = new Hono()
     if (!isValid) throw new UnauthorizedError("Invalid username or password");
 
     const sessionToken = await createSession(existingUser.id);
+    await deleteOtherSessions(existingUser.id, sessionToken);
 
-    setCookie(c, SESSION_COOKIE_NAME, sessionToken, cookieOptions);
+    setCookie(c, SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions);
 
     const user = await userService.get(existingUser.id);
     ActivityLogService.log({
@@ -77,9 +66,16 @@ export const authRoutes = new Hono()
     const sessionToken = getCookie(c, SESSION_COOKIE_NAME);
 
     if (typeof sessionToken === "string") {
-      const userId = await validateSession(sessionToken);
+      const resolved = await resolveAuthenticatedSession(sessionToken);
       await deleteSession(sessionToken);
-      if (userId) ActivityLogService.log({ userId, type: "INFO", action: "USER_LOGOUT", title: "User logged out" });
+      if (resolved) {
+        ActivityLogService.log({
+          userId: resolved.user.id,
+          type: "INFO",
+          action: "USER_LOGOUT",
+          title: "User logged out",
+        });
+      }
     }
 
     deleteCookie(c, SESSION_COOKIE_NAME);
@@ -96,10 +92,14 @@ export const authRoutes = new Hono()
 
     if (typeof sessionToken !== "string") throw new UnauthorizedError("Not authenticated");
 
-    const userId = await validateSession(sessionToken);
-    if (!userId) throw new UnauthorizedError("Invalid or expired session");
+    const resolved = await resolveAuthenticatedSession(sessionToken);
+    if (!resolved) throw new UnauthorizedError("Invalid or expired session");
 
-    const currentUser = await new UserService().get(userId);
+    if (resolved.rotatedToken) {
+      setCookie(c, SESSION_COOKIE_NAME, resolved.rotatedToken, sessionCookieOptions);
+    }
+
+    const currentUser = resolved.user;
     if (!currentUser) throw new NotFoundError("User");
 
     const countIndexerManagers = await new IndexerManagerService(currentUser).count();

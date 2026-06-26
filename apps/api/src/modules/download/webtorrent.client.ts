@@ -6,12 +6,7 @@ import { ServiceUnavailableError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { download } from "@/modules/download/download.schema";
-import type { EventEmitter } from "node:events";
 import { extractTorrentLiveData } from "./webtorrent.helper";
-
-function onTorrentError(torrent: WebTorrent.Torrent, handler: (err: Error) => void): void {
-  (torrent as unknown as EventEmitter).on("error", handler);
-}
 
 const SYNC_THROTTLE_MS = 1_500;
 
@@ -158,11 +153,12 @@ class WebTorrentManager {
       }
     });
 
-    onTorrentError(torrent, async (err: Error) => {
+    torrent.on("error", async (err) => {
       try {
         if (this.destroyingIds.has(downloadId)) return;
-        logger.error("WEBTORRENT", `Error on "${torrent.name || downloadId}": ${err.message}`);
-        await db.update(download).set({ error: err.message }).where(eq(download.id, downloadId));
+        const message = err instanceof Error ? err.message : String(err);
+        logger.error("WEBTORRENT", `Error on "${torrent.name || downloadId}": ${message}`);
+        await db.update(download).set({ error: message }).where(eq(download.id, downloadId));
         await syncDb(true);
       } catch (handlerErr) {
         logger.error("WEBTORRENT", `Error in error handler for "${downloadId}": ${handlerErr}`);

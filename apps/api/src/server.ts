@@ -3,16 +3,18 @@ import { serveStatic } from "@hono/node-server/serve-static";
 
 import * as fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { app } from "./app";
 import { logger, startupLogger } from "./helpers/logger.helper";
 import { torrentClient } from "./modules/download/webtorrent.client";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const startTime = Date.now();
-const WEB_DIST_PATH = path.resolve(__dirname, "../../web/dist");
+const WEB_DIST_PATH = path.resolve(__dirname, "../web/dist");
 
 const serverApp =
   process.env.NODE_ENV === "production"
-    ? app.use("*", serveStatic({ root: "../web/dist" })).get("*", async (c) => {
+    ? app.use("*", serveStatic({ root: WEB_DIST_PATH })).get("*", async (c) => {
         const fsSync = await import("node:fs");
         const indexPath = path.join(WEB_DIST_PATH, "index.html");
         if (!fsSync.existsSync(indexPath)) return c.json({ error: "Frontend not found" }, 404);

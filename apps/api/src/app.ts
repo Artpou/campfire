@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
 
+import { csrfGuard } from "@/middlewares/csrf.middleware";
 import { errorHandler } from "@/middlewares/error.middleware";
 import { requestLogger } from "@/middlewares/logger.middleware";
 import { authGuard } from "@/modules/auth/auth.guard";
@@ -25,6 +26,7 @@ if (!process.env.WEB_URL) throw new Error("WEB_URL is not set");
 export const app = new Hono<{ Variables: HonoVariables }>()
   .use("*", requestLogger)
   .use("*", secureHeaders())
+  .use("*", csrfGuard)
   .onError(errorHandler)
   .use(
     "*",
