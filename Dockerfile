@@ -1,5 +1,5 @@
 # Stage 1: Base image
-FROM node:20-slim AS base
+FROM node:22-slim AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
@@ -28,7 +28,7 @@ RUN pnpm --filter web build
 RUN pnpm --filter @seedarr/api --prod deploy --legacy /app/isolated
 
 # Stage 3: Runner
-FROM node:20-slim AS runner
+FROM node:22-slim AS runner
 ARG VERSION=dev
 ARG CHANNEL=beta
 WORKDIR /app

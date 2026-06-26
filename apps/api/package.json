@@ -25,7 +25,7 @@
   "scripts": {
     "dev": "tsx watch --include 'src/**' src/server.ts",
     "tsc": "tsc --build",
-    "build": "tsc --build",
+    "build": "rm -f tsconfig.tsbuildinfo && tsc --build",
     "build:runtime": "tsup",
     "start": "node dist-server/server.mjs",
     "lint": "biome check .",

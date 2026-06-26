@@ -23,7 +23,8 @@
       "persistent": true
     },
     "tsc": {
-      "dependsOn": ["^tsc"]
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
     },
     "lint": { "outputs": [] },
     "lint:fix": { "outputs": [] },

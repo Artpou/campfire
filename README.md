@@ -141,7 +141,7 @@ pnpm dev
 
 Open **http://localhost:3000** — the API runs on port 3002.
 
-> **Requirements:** Node.js 18+, pnpm 9+. Optional: [FFmpeg](https://ffmpeg.org/) for MKV transcoding.
+> **Requirements:** Node.js 22.13+, pnpm 9+. Optional: [FFmpeg](https://ffmpeg.org/) for MKV transcoding.
 
 ## Roadmap
 
