@@ -12,6 +12,7 @@ import { Container } from "@/shared/ui/container";
 
 import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";
+import { AppVersionBadge } from "@/features/settings/components/app-version-badge";
 import { SettingsActivityTab } from "@/features/settings/components/settings-activity-tab";
 import { SettingsAdvancedTab } from "@/features/settings/components/settings-advanced-tab";
 import { SettingsGeneralTab } from "@/features/settings/components/settings-general-tab";
@@ -79,7 +80,7 @@ function SettingsPage() {
                 <HardDriveIcon />
                 <div>
                   <p className="font-semibold">seedarr</p>
-                  <p className="text-xs text-muted-foreground">v.0.1</p>
+                  <AppVersionBadge />
                 </div>
               </CardContent>
             </Card>
@@ -105,7 +106,7 @@ function SettingsPage() {
               <img src="/logo.svg" alt="Seedarr" className="size-8 shrink-0" />
               <div>
                 <p className="font-semibold">seedarr</p>
-                <p className="text-xs text-muted-foreground">v.0.1</p>
+                <AppVersionBadge />
               </div>
             </CardContent>
           </Card>

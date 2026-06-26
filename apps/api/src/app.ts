@@ -59,6 +59,12 @@ export const app = new Hono<{ Variables: HonoVariables }>()
     c.header("Content-Length", stat.size.toString());
     return c.body(Readable.toWeb(fsSync.createReadStream(filePath)) as ReadableStream);
   })
-  .get("/health", (c) => c.json({ status: "healthy", timestamp: new Date().toISOString() }));
+  .get("/health", (c) => c.json({ status: "healthy", timestamp: new Date().toISOString() }))
+  .get("/version", (c) =>
+    c.json({
+      version: process.env.SEEDARR_VERSION ?? "dev",
+      channel: process.env.SEEDARR_CHANNEL ?? "development",
+    }),
+  );
 
 export type AppType = typeof app;

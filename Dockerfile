@@ -29,8 +29,15 @@ RUN pnpm --filter @seedarr/api --prod deploy --legacy /app/isolated
 
 # Stage 3: Runner
 FROM node:20-slim AS runner
+ARG VERSION=dev
+ARG CHANNEL=beta
 WORKDIR /app
 ENV NODE_ENV=production
+ENV SEEDARR_VERSION=$VERSION
+ENV SEEDARR_CHANNEL=$CHANNEL
+
+LABEL org.opencontainers.image.version=$VERSION
+LABEL org.opencontainers.image.source=https://github.com/Artpou/seedarr
 
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
 

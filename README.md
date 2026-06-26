@@ -104,11 +104,30 @@ Think of it as **Stremio meets Overseerr**, but fully self-hosted and under your
 
 ### Docker (recommended)
 
+> **Beta:** images are published automatically on every push to `main`. Use the `beta` tag for the latest build, or pin a specific version (e.g. `ghcr.io/artpou/seedarr:0.1.0-beta.0`).
+
 ```bash
+mkdir seedarr && cd seedarr
+curl -fsSL https://raw.githubusercontent.com/Artpou/seedarr/main/docker-compose.yml -o docker-compose.yml
+docker compose pull
 docker compose up -d
 ```
 
 Seedarr will be available at **http://localhost:5551**. Create your account, configure your indexer (Jackett or Prowlarr), and start browsing.
+
+**Update to the latest beta:**
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+**Build locally from source** (contributors):
+
+```bash
+git clone https://github.com/Artpou/seedarr.git
+cd seedarr
+docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+```
 
 ### Manual Setup
 

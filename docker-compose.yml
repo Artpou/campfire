@@ -1,6 +1,6 @@
 services:
   app:
-    build: .
+    image: ghcr.io/artpou/seedarr:beta
     ports:
       - "5551:3002"
     extra_hosts:
