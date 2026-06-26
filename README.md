@@ -113,7 +113,7 @@ Seedarr will be available at **http://localhost:5551**. Create your account, con
 ### Manual Setup
 
 ```bash
-git clone https://github.com/yourusername/seedarr.git
+git clone https://github.com/Artpou/seedarr.git
 cd seedarr
 pnpm install
 pnpm db:push

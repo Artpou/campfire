@@ -15,7 +15,7 @@ Thank you for your interest in contributing! This guide covers how to set up the
 1. **Fork and clone the repository**
 
    ```bash
-   git clone https://github.com/yourusername/seedarr.git
+   git clone https://github.com/Artpou/seedarr.git
    cd seedarr
    ```
 
