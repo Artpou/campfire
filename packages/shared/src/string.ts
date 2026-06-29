@@ -30,3 +30,11 @@ export const slugify = (text: string): string | null => {
 
   return null;
 };
+
+export function sanitizeFileName(name: string): string {
+  return name
+    .replace(/[/\\?*:|"<>]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 200);
+}

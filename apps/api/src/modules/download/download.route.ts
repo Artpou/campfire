@@ -4,11 +4,11 @@ import { stream } from "hono/streaming";
 import { BadRequestError, NotFoundError } from "@/errors/error";
 import { downloadFilePathParamDto, stringIdParamDto } from "@/helpers/param.dto";
 import { getDownloadsRoot, resolveWithinDownloads } from "@/helpers/path.helper";
+import { pipeNodeStream, toWebStream } from "@/helpers/stream.helper";
 import { srt2webvtt } from "@/helpers/subtitle.helper";
-import { convertMkvToMp4Stream } from "@/helpers/video.helper";
+import { convertToFragmentedMp4Stream, getVideoInputFormat, shouldTranscodeForPlayback } from "@/helpers/video.helper";
 import { downloadStartRateLimiter } from "@/middlewares/rate-limiter.middleware";
 import type { Dirent } from "node:fs";
-import { Readable } from "node:stream";
 import { downloadTorrentDto } from "./download.dto";
 import { requireDownloadOwnership } from "./download.guard";
 import type { TorrentLiveData } from "./download.schema";
@@ -52,26 +52,32 @@ export const downloadRoutes = DownloadService.createRouter()
     const result = await streamService.getStreamForDownload(download);
     if (!result) throw new NotFoundError("Video file");
 
-    const { stream: nodeStream, fileName, size, filePath } = result;
-    const isMkv = fileName.toLowerCase().endsWith(".mkv");
+    const { stream: nodeStream, fileName, size, filePath, torrentFile } = result;
     const contentType = getContentType(fileName);
+    const useTranscodedStream = shouldTranscodeForPlayback(fileName);
 
     return stream(c, async (honoStream) => {
-      honoStream.onAbort(() => {
+      let destroyTranscode: (() => void) | undefined;
+
+      const cleanup = (): void => {
+        destroyTranscode?.();
         if ("destroy" in nodeStream && typeof nodeStream.destroy === "function") {
           nodeStream.destroy();
         }
-      });
+      };
 
-      if (isMkv && !filePath) {
-        const convertedStream = convertMkvToMp4Stream(nodeStream);
+      honoStream.onAbort(cleanup);
+
+      if (useTranscodedStream) {
+        const transcoded = convertToFragmentedMp4Stream(nodeStream, getVideoInputFormat(fileName));
+        destroyTranscode = transcoded.destroy;
         c.header("Content-Type", "video/mp4");
-        await honoStream.pipe(Readable.toWeb(convertedStream as Readable));
+        await pipeNodeStream(honoStream, transcoded.stream);
         return;
       }
 
       const rangeHeader = c.req.header("range");
-      if (filePath && rangeHeader) {
+      if (rangeHeader && (torrentFile || filePath)) {
         const parts = rangeHeader.replace(/bytes=/, "").split("-");
         const start = parseInt(parts[0], 10);
         const end = parts[1] ? parseInt(parts[1], 10) : size - 1;
@@ -82,23 +88,23 @@ export const downloadRoutes = DownloadService.createRouter()
           return;
         }
 
-        const chunkSize = end - start + 1;
         c.status(206);
         c.header("Content-Range", `bytes ${start}-${end}/${size}`);
         c.header("Accept-Ranges", "bytes");
-        c.header("Content-Length", chunkSize.toString());
+        c.header("Content-Length", String(end - start + 1));
         c.header("Content-Type", contentType);
 
-        const fs = await import("node:fs");
-        const rangeStream = fs.createReadStream(filePath, { start, end });
-        await honoStream.pipe(Readable.toWeb(rangeStream));
+        const rangeStream = torrentFile
+          ? torrentFile.createReadStream({ start, end })
+          : (await import("node:fs")).createReadStream(filePath as string, { start, end });
+        await pipeNodeStream(honoStream, rangeStream);
         return;
       }
 
       c.header("Content-Type", contentType);
       c.header("Content-Length", size.toString());
       c.header("Accept-Ranges", "bytes");
-      await honoStream.pipe(Readable.toWeb(nodeStream as Readable));
+      await pipeNodeStream(honoStream, nodeStream);
     });
   })
   .get("/:id/file/:filePath", zValidator("param", downloadFilePathParamDto), async (c) => {
@@ -120,7 +126,7 @@ export const downloadRoutes = DownloadService.createRouter()
     c.header("Content-Type", contentType);
     c.header("Content-Length", stats.size.toString());
 
-    return c.body(Readable.toWeb(fs.createReadStream(fullPath) as Readable));
+    return c.body(toWebStream(fs.createReadStream(fullPath)));
   })
   .get("/:id/external-subtitles", zValidator("param", stringIdParamDto), async (c) => {
     const { id } = c.req.valid("param");

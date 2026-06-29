@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseString, slugify, toLatin } from "./string";
+import { parseString, sanitizeFileName, slugify, toLatin } from "./string";
 
 describe("parseString", () => {
   it("returns undefined for empty or non-string values", () => {
@@ -30,5 +30,15 @@ describe("slugify", () => {
 
   it("returns null when slug has no latin characters", () => {
     expect(slugify("日本語")).toBeNull();
+  });
+});
+
+describe("sanitizeFileName", () => {
+  it("removes invalid filename characters", () => {
+    expect(sanitizeFileName('Movie: Name / Part "1"')).toBe("Movie Name Part 1");
+  });
+
+  it("truncates long names", () => {
+    expect(sanitizeFileName("a".repeat(250))).toHaveLength(200);
   });
 });

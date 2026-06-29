@@ -50,6 +50,11 @@ vi.mock("@/db/db", () => ({
 vi.mock("@/modules/auth/auth.guard", () => ({
   authGuard: createAuthGuardMock(fakeUser),
 }));
+vi.mock("@/helpers/video.helper", () => ({
+  getVideoInputFormat: vi.fn(() => "matroska"),
+  shouldTranscodeForPlayback: vi.fn((fileName: string) => fileName.endsWith(".mkv")),
+  convertToFragmentedMp4Stream: vi.fn((input: Readable) => ({ stream: input, destroy: vi.fn() })),
+}));
 vi.mock("@/modules/download/download-stream.service", () => ({
   DownloadStreamService: class {
     getStreamForDownload = mockGetStreamForDownload;
@@ -103,6 +108,8 @@ vi.mock("@/modules/download/webtorrent.client", () => {
       markDestroying: vi.fn(),
       unmarkDestroying: vi.fn(),
       findByInfoHash: vi.fn(() => null),
+      resolveTorrent: vi.fn(() => null),
+      attachTorrent: vi.fn(async () => makeFakeTorrent()),
       safeAdd: vi.fn(() => makeFakeTorrent()),
     },
   };
@@ -276,6 +283,62 @@ describe("Download Routes", () => {
       expect(res.headers.get("content-type")).toBe("video/mp4");
       expect(res.headers.get("accept-ranges")).toBe("bytes");
       await expect(res.text()).resolves.toBe("fake-video");
+    });
+
+    it("uses webtorrent for range requests on active mp4 downloads", async () => {
+      const mockCreateReadStream = vi.fn(() => Readable.from(Buffer.from("range-chunk")));
+
+      testDbRef.current
+        ?.insert(download)
+        .values({
+          id: "dl-stream-range",
+          userId: fakeUser.id,
+          torrent: sampleTorrent({ name: "Movie.mp4", done: false }),
+          createdAt: new Date(),
+        })
+        .run();
+
+      mockGetStreamForDownload.mockResolvedValue({
+        stream: Readable.from(Buffer.from("fake-video")),
+        size: 1000,
+        fileName: "Movie.mp4",
+        torrentFile: { createReadStream: mockCreateReadStream },
+      });
+
+      const res = await downloadRoutes.request("/dl-stream-range/stream", {
+        headers: { Range: "bytes=0-99" },
+      });
+      expect(res.status).toBe(206);
+      expect(mockCreateReadStream).toHaveBeenCalledWith({ start: 0, end: 99 });
+      await expect(res.text()).resolves.toBe("range-chunk");
+    });
+
+    it("transcodes active mkv torrent streams via ffmpeg", async () => {
+      const mockCreateReadStream = vi.fn(() => Readable.from(Buffer.from("torrent-chunk")));
+
+      testDbRef.current
+        ?.insert(download)
+        .values({
+          id: "dl-stream-transcode",
+          userId: fakeUser.id,
+          torrent: sampleTorrent({ name: "Movie.mkv", done: false }),
+          createdAt: new Date(),
+        })
+        .run();
+
+      mockGetStreamForDownload.mockResolvedValue({
+        stream: Readable.from(Buffer.from("fake-video")),
+        size: 1000,
+        fileName: "Movie.mkv",
+        torrentFile: { createReadStream: mockCreateReadStream },
+      });
+
+      const res = await downloadRoutes.request("/dl-stream-transcode/stream", {
+        headers: { Range: "bytes=0-99" },
+      });
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toBe("video/mp4");
+      expect(mockCreateReadStream).not.toHaveBeenCalled();
     });
   });
 });

@@ -4,6 +4,7 @@ import { api, unwrap } from "@seedarr/sdk";
 import { type QueryState, queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { translateDownloadError } from "@/features/downloads/helpers/download-error.helper";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 
 export const downloadQueries = {
@@ -64,7 +65,7 @@ export function useDownloadPause() {
     },
     onError: (error) => {
       toast.error(t`Could not pause download`, {
-        description: error instanceof Error ? error.message : undefined,
+        description: error instanceof Error ? translateDownloadError(error.message) : undefined,
       });
     },
   });
@@ -82,7 +83,7 @@ export function useDownloadResume() {
     },
     onError: (error) => {
       toast.error(t`Could not resume download`, {
-        description: error instanceof Error ? error.message : undefined,
+        description: error instanceof Error ? translateDownloadError(error.message) : undefined,
       });
     },
   });

@@ -1,3 +1,5 @@
+import type WebTorrent from "webtorrent";
+
 import { assertWithinDownloads, resolveWithinDownloads } from "@/helpers/path.helper";
 import * as path from "node:path";
 import type { Download } from "./download.dto";
@@ -9,6 +11,7 @@ export interface StreamResult {
   size: number;
   fileName: string;
   filePath?: string;
+  torrentFile?: WebTorrent.TorrentFile;
 }
 
 export class DownloadStreamService {
@@ -18,14 +21,11 @@ export class DownloadStreamService {
       const videoFile = findLargestVideoFile(activeTorrent);
       if (!videoFile) return undefined;
 
-      const filePath = path.join(activeTorrent.path, videoFile.path);
-      assertWithinDownloads(filePath);
-
       return {
         stream: videoFile.createReadStream(),
         size: videoFile.length,
         fileName: videoFile.name,
-        filePath,
+        torrentFile: videoFile,
       };
     }
 

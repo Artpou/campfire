@@ -19,7 +19,7 @@ import { Container } from "@/shared/ui/container";
 import { getTorrentFiles } from "@/features/downloads/helpers/downloads.helper";
 import { SubtitleSearchDialog } from "@/features/subtitles/components/subtitle-search-dialog";
 import { subtitleQueries } from "@/features/subtitles/hooks/subtitle.queries";
-import { downloadQueries, refetchDownloadInterval } from "@/features/torrent/hooks/download.queries";
+import { downloadQueries } from "@/features/torrent/hooks/download.queries";
 
 export const Route = createFileRoute("/_app/downloads/$id/play")({
   loader: ({ context, params }) =>
@@ -35,10 +35,7 @@ export const Route = createFileRoute("/_app/downloads/$id/play")({
 function VideoPlayerPage() {
   const { id } = Route.useParams();
   const { t } = useLingui();
-  const { data: download } = useSuspenseQuery({
-    ...downloadQueries.details(id),
-    refetchInterval: refetchDownloadInterval,
-  });
+  const { data: download } = useSuspenseQuery(downloadQueries.details(id));
   const { data: externalSubtitles } = useSuspenseQuery(subtitleQueries.external(id));
   const { data: mediaSession } = useSuspenseQuery(mediaSessionQueries.get());
 
@@ -49,13 +46,22 @@ function VideoPlayerPage() {
   const hasInitialSeeked = useRef(false);
 
   useEffect(() => {
-    const progress = download?.torrent?.progress;
-    const bufferBar = document.querySelector(".plyr__progress--buffer") as HTMLElement;
+    if (download.torrent?.done) return;
 
-    if (bufferBar && typeof progress === "number") {
-      bufferBar.style.width = `${progress * 100}%`;
-    }
-  }, [download?.torrent?.progress]);
+    const updateBufferBar = async (): Promise<void> => {
+      const details = await unwrap(api.downloads[":id"].$get({ param: { id } }));
+      const bufferBar = document.querySelector(".plyr__progress--buffer") as HTMLElement | null;
+      if (bufferBar && typeof details.torrent?.progress === "number") {
+        bufferBar.style.width = `${details.torrent.progress * 100}%`;
+      }
+    };
+
+    const interval = setInterval(() => {
+      void updateBufferBar();
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [download.torrent?.done, id]);
 
   useEffect(() => {
     if (!download?.mediaId) return;
@@ -174,6 +180,15 @@ function VideoPlayerPage() {
     return tracks;
   }, [download, id, externalSubtitles?.paths, mediaSession?.token]);
 
+  const plyrSource = useMemo(
+    () => ({
+      type: "video" as const,
+      sources: [{ src: videoUrl, type: "video/mp4" }],
+      tracks: subtitleTracks,
+    }),
+    [videoUrl, subtitleTracks],
+  );
+
   return (
     <Container className="max-w-7xl">
       <div className="space-y-4">
@@ -216,16 +231,7 @@ function VideoPlayerPage() {
             crossOrigin="anonymous"
             ref={videoRef}
             onCanPlay={handleVideoReady}
-            source={{
-              type: "video",
-              sources: [
-                {
-                  src: videoUrl,
-                  type: "video/mp4",
-                },
-              ],
-              tracks: subtitleTracks,
-            }}
+            source={plyrSource}
             options={{
               controls: [
                 "play-large",

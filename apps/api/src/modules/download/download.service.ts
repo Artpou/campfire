@@ -107,8 +107,24 @@ export class DownloadService extends IdentifiableService<Download> {
   }
 
   async pause(id: string): Promise<{ success: true }> {
-    const activeTorrent = torrentClient.getActiveTorrent(id);
-    if (!activeTorrent) throw new NotFoundError("Active torrent not found");
+    const item = await this.get(id);
+    if (!item) throw new NotFoundError("Download");
+
+    const activeTorrent = torrentClient.resolveTorrent(id, item.torrent?.infoHash);
+
+    if (!activeTorrent) {
+      if (item.torrent?.paused) return { success: true };
+
+      const pausedData = {
+        ...item.torrent,
+        paused: true,
+        downloadSpeed: 0,
+        uploadSpeed: 0,
+      } as TorrentLiveData;
+      await db.update(download).set({ torrent: pausedData }).where(eq(download.id, id));
+      logger.info("DOWNLOAD", `Paused (no active session): ${item.torrent?.name || id}`);
+      return { success: true };
+    }
 
     torrentClient.markDestroying(id);
 
@@ -125,25 +141,24 @@ export class DownloadService extends IdentifiableService<Download> {
 
   async resume(id: string): Promise<{ success: true }> {
     const item = await this.get(id);
-    if (!item) throw new NotFoundError("Download not found");
+    if (!item) throw new NotFoundError("Download");
     if (!item.torrent?.paused) throw new BadRequestError("Torrent is not paused");
     if (!item.torrent.magnetURI) throw new BadRequestError("No magnet URI found");
+
+    await torrentClient.attachTorrent(id, item.torrent.magnetURI, DOWNLOAD_PATH, item.torrent.infoHash);
 
     await db
       .update(download)
       .set({ torrent: { ...item.torrent, paused: false } as TorrentLiveData })
       .where(eq(download.id, id));
 
-    const torrent = torrentClient.safeAdd(item.torrent.magnetURI, { path: DOWNLOAD_PATH });
-    torrentClient.setupTorrentHandlers(torrent, id);
-
-    logger.info("DOWNLOAD", `Resumed torrent: ${torrent.name || id}`);
+    logger.info("DOWNLOAD", `Resumed torrent: ${item.torrent.name || id}`);
     return { success: true };
   }
 
   async delete(id: string): Promise<{ success: true }> {
     const item = await this.get(id);
-    if (!item) throw new NotFoundError("Download not found");
+    if (!item) throw new NotFoundError("Download");
 
     const torrentName = item.torrent?.name;
     const torrent =

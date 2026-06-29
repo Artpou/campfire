@@ -8,4 +8,4 @@ export {
   type StremioPresetDefinition,
   type StremioPresetName,
 } from "./stremio-presets";
-export { parseString, slugify, toLatin } from "./string";
+export { parseString, sanitizeFileName, slugify, toLatin } from "./string";

@@ -1,3 +1,5 @@
+import { sanitizeFileName } from "@seedarr/shared";
+
 import { BadRequestError, NotFoundError, ServiceUnavailableError } from "@/errors/error";
 import { assertWithinDownloads, getDownloadsRoot } from "@/helpers/path.helper";
 import { AuthenticatedService } from "@/modules/auth/auth.service";
@@ -15,17 +17,6 @@ function getApiKey(): string {
     throw new ServiceUnavailableError("SUBDL (missing API key)");
   }
   return key;
-}
-
-/**
- * Sanitize a string for use in a filename (remove invalid chars, collapse spaces).
- */
-function sanitizeFileName(name: string): string {
-  return name
-    .replace(/[/\\?*:|"<>]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 200);
 }
 
 export class SubtitleService extends AuthenticatedService {

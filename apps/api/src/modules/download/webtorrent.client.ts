@@ -6,6 +6,7 @@ import { ServiceUnavailableError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { download } from "@/modules/download/download.schema";
+import { waitForTorrentMetadata } from "@/modules/download/torrent-ready.helper";
 import { extractTorrentLiveData } from "./webtorrent.helper";
 
 const SYNC_THROTTLE_MS = 1_500;
@@ -19,6 +20,7 @@ class WebTorrentManager {
 
   private destroyingIds = new Set<string>();
   private lastSyncTimestamps = new Map<string, number>();
+  private handlersAttached = new Set<string>();
 
   markDestroying(id: string): void {
     this.destroyingIds.add(id);
@@ -91,6 +93,21 @@ class WebTorrentManager {
     return this.activeTorrents.get(id);
   }
 
+  resolveTorrent(downloadId: string, infoHash?: string): WebTorrent.Torrent | undefined {
+    const byId = this.activeTorrents.get(downloadId);
+    if (byId) return byId;
+
+    if (!infoHash) return undefined;
+
+    const byHash = this.findByInfoHash(infoHash);
+    if (byHash) {
+      this.activeTorrents.set(downloadId, byHash);
+      return byHash;
+    }
+
+    return undefined;
+  }
+
   findByInfoHash(infoHash: string): WebTorrent.Torrent | undefined {
     if (!this.client) return undefined;
     return this.client.torrents.find((t) => t.infoHash === infoHash);
@@ -99,6 +116,28 @@ class WebTorrentManager {
   deleteActiveTorrent(id: string): void {
     this.activeTorrents.delete(id);
     this.lastSyncTimestamps.delete(id);
+    this.handlersAttached.delete(id);
+  }
+
+  async attachTorrent(
+    downloadId: string,
+    magnetURI: string,
+    downloadPath: string,
+    infoHash?: string,
+  ): Promise<WebTorrent.Torrent> {
+    const existing = this.resolveTorrent(downloadId, infoHash);
+    if (existing) {
+      this.setupTorrentHandlers(existing, downloadId);
+      if (!existing.ready) await waitForTorrentMetadata(existing, 15_000);
+      this.activeTorrents.set(downloadId, existing);
+      return existing;
+    }
+
+    const torrent = this.safeAdd(magnetURI, { path: downloadPath });
+    this.setupTorrentHandlers(torrent, downloadId);
+    if (!torrent.ready) await waitForTorrentMetadata(torrent, 15_000);
+    this.activeTorrents.set(downloadId, torrent);
+    return torrent;
   }
 
   safeAdd(source: string | Buffer, opts: { path: string }): WebTorrent.Torrent {
@@ -114,6 +153,13 @@ class WebTorrentManager {
   }
 
   setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: string): void {
+    if (torrent.ready) {
+      this.activeTorrents.set(downloadId, torrent);
+    }
+
+    if (this.handlersAttached.has(downloadId)) return;
+    this.handlersAttached.add(downloadId);
+
     const syncDb = async (force: boolean, extraFields?: Record<string, unknown>) => {
       if (this.destroyingIds.has(downloadId)) return;
 
@@ -123,9 +169,18 @@ class WebTorrentManager {
       }
 
       this.lastSyncTimestamps.set(downloadId, Date.now());
+
+      const current = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
+      const liveData = extractTorrentLiveData(torrent);
+      if (current?.torrent?.paused && extraFields?.paused !== false) {
+        liveData.paused = true;
+        liveData.downloadSpeed = 0;
+        liveData.uploadSpeed = 0;
+      }
+
       await db
         .update(download)
-        .set({ torrent: { ...extractTorrentLiveData(torrent), ...extraFields } })
+        .set({ torrent: { ...liveData, ...extraFields } })
         .where(eq(download.id, downloadId));
     };
 
@@ -190,10 +245,8 @@ class WebTorrentManager {
 
       try {
         logger.debug("WEBTORRENT", `Restoring: ${item.torrent.name}`);
-        const restored = this.safeAdd(item.torrent.magnetURI, { path: downloadPath });
-        this.setupTorrentHandlers(restored, item.id);
-
-        this.activeTorrents.set(item.id, restored);
+        const restored = await this.attachTorrent(item.id, item.torrent.magnetURI, downloadPath, item.torrent.infoHash);
+        logger.debug("WEBTORRENT", `Restored: ${restored.name}`);
       } catch (error) {
         logger.error("WEBTORRENT", `Failed to restore: ${item.torrent?.name}`, error);
       }

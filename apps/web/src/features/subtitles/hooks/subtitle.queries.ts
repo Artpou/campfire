@@ -1,6 +1,8 @@
+import { t } from "@lingui/core/macro";
 import type { SubdlSearchResponse } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { downloadQueries } from "@/features/torrent/hooks/download.queries";
 
@@ -35,6 +37,12 @@ export function useDownloadSubtitle() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [...downloadQueries.key, variables.downloadId] });
       queryClient.invalidateQueries({ queryKey: [...subtitleQueries.key, "external", variables.downloadId] });
+      toast.success(t`Subtitle added`);
+    },
+    onError: (error) => {
+      toast.error(t`Could not add subtitle`, {
+        description: error instanceof Error ? error.message : undefined,
+      });
     },
   });
 }
