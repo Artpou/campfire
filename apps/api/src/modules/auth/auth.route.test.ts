@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { hashPassword } from "@/auth/password.util";
 import { user } from "@/modules/user/user.schema";
 import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
 
@@ -62,6 +63,32 @@ describe("Auth Routes", () => {
         401,
       );
     });
+
+    it("sets session cookie and returns user on success", async () => {
+      testDbRef.current
+        ?.insert(user)
+        .values({
+          id: "u1",
+          username: "alice",
+          password: hashPassword("password123"),
+          role: "member",
+          createdAt: new Date(),
+        })
+        .run();
+
+      const res = await authRoutes.request("/login", json("POST", { username: "alice", password: "password123" }));
+      expect(res.status).toBe(200);
+
+      const setCookie = res.headers.get("set-cookie");
+      expect(setCookie).toMatch(/session=/);
+
+      const body = await bodyOf(res);
+      expect(body.username).toBe("alice");
+
+      const meRes = await authRoutes.request("/me", { headers: { Cookie: setCookie ?? "" } });
+      expect(meRes.status).toBe(200);
+      expect((await bodyOf(meRes)).username).toBe("alice");
+    });
   });
 
   describe("POST /logout", () => {
@@ -74,6 +101,23 @@ describe("Auth Routes", () => {
   describe("GET /me", () => {
     it("returns 401 without session", async () => {
       expect((await authRoutes.request("/me")).status).toBe(401);
+    });
+  });
+
+  describe("GET /media-session", () => {
+    it("returns a short-lived media token when authenticated", async () => {
+      const registerRes = await authRoutes.request(
+        "/register",
+        json("POST", { username: "bob", password: "password123" }),
+      );
+      const setCookie = registerRes.headers.get("set-cookie");
+
+      const res = await authRoutes.request("/media-session", { headers: { Cookie: setCookie ?? "" } });
+      expect(res.status).toBe(200);
+
+      const body = await bodyOf(res);
+      expect(typeof body.token).toBe("string");
+      expect(body.token.length).toBeGreaterThan(0);
     });
   });
 });

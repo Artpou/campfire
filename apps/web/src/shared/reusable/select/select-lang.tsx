@@ -1,7 +1,7 @@
 import { Trans } from "@lingui/react/macro";
-import { cn } from "@seedarr/ui/cn";
 import { EarthIcon } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { Flag } from "@/shared/components/flag";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 

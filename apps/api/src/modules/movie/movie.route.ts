@@ -1,9 +1,11 @@
 import { zValidator } from "@hono/zod-validator";
 
+import { tmdbRateLimiter } from "@/middlewares/rate-limiter.middleware";
 import { tmdbDiscoverDto, tmdbIdDto, tmdbKeywordsDto, tmdbListDto, tmdbSearchDto } from "@/types";
 import { MovieService } from "./movie.service";
 
 export const movieRoutes = MovieService.createTMDBRouter("movie")
+  .use(tmdbRateLimiter)
   .get("/trending", zValidator("query", tmdbListDto), async (c) => {
     return c.json(await c.var.service.trending());
   })

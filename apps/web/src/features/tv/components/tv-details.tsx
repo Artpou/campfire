@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { TMDBTvDetails } from "@seedarr/sdk";
 import { ClockPlusIcon, ExternalLinkIcon, HeartIcon } from "lucide-react";
@@ -30,7 +31,7 @@ export function TvDetails({ tv, isLiked, isInWatchList, onToggleLike, onToggleWa
           variant={isLiked ? "default" : "outline"}
           rounded
           onClick={onToggleLike}
-          aria-label="Like"
+          aria-label={t`Like`}
         >
           <HeartIcon fill={isLiked ? "currentColor" : "none"} />
         </Button>
@@ -39,7 +40,7 @@ export function TvDetails({ tv, isLiked, isInWatchList, onToggleLike, onToggleWa
           variant={isInWatchList ? "default" : "outline"}
           rounded
           onClick={onToggleWatchList}
-          aria-label="Watchlist"
+          aria-label={t`Watchlist`}
         >
           <ClockPlusIcon fill={isInWatchList ? "currentColor" : "none"} />
         </Button>

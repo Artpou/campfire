@@ -6,6 +6,7 @@ import { ClockPlusIcon, HeartIcon, InfoIcon } from "lucide-react";
 
 import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
+import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/shared/ui/sheet";
@@ -28,9 +29,9 @@ export const Route = createFileRoute("/_app/movies/$id/")({
 
 function MoviePage() {
   const params = Route.useParams();
-  const context = Route.useRouteContext();
   const [sheetOpen, setSheetOpen] = useState(false);
-  const { data } = useSuspenseQuery(movieQueries.details(params.id, context.language));
+  const locale = useTmdbLocale();
+  const { data } = useSuspenseQuery(movieQueries.details(params.id, locale));
 
   const toggleLike = useToggleLike();
   const toggleWatchList = useToggleWatchList();

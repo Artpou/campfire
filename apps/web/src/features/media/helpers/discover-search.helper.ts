@@ -1,11 +1,23 @@
 import { parseNumber, parseString, todayIsoDate } from "@seedarr/shared";
-import type { SortOption, TvShowQueryOptions } from "tmdb-ts";
 
 import type { MovieFiltersValue } from "@/features/movies/components/movie-filters-sheet";
 import type { TvFiltersValue } from "@/features/tv/components/tv-filters-sheet";
 
 const MEDIA_SELECTED = ["home", "cinema", "top-rated", "upcoming"] as const;
 type MediaSelected = (typeof MEDIA_SELECTED)[number];
+
+type DiscoverSort = "vote_average.desc" | "popularity.desc";
+
+type DiscoverQueryOptions = {
+  sort_by?: DiscoverSort;
+  with_genres?: string;
+  with_watch_providers?: string;
+  with_original_language?: string;
+  with_keywords?: string;
+  "with_runtime.gte"?: number;
+  "with_runtime.lte"?: number;
+  "vote_average.gte"?: number;
+};
 
 type SearchRecord = Record<string, unknown>;
 
@@ -63,7 +75,7 @@ export function validateTvDiscoverSearch(search: SearchRecord): Partial<TvDiscov
   };
 }
 
-function sortByForSelected(selected: MediaSelected): SortOption | undefined {
+function sortByForSelected(selected: MediaSelected): DiscoverSort | undefined {
   if (selected === "top-rated") return "vote_average.desc";
   if (selected === "upcoming") return "popularity.desc";
   return undefined;
@@ -88,7 +100,10 @@ export function buildMovieDiscoverOptions(search: Partial<MovieDiscoverSearch>) 
   };
 }
 
-export function buildTvDiscoverOptions(search: Partial<TvDiscoverSearch>): TvShowQueryOptions {
+export function buildTvDiscoverOptions(search: Partial<TvDiscoverSearch>): DiscoverQueryOptions & {
+  "first_air_date.gte"?: string;
+  "first_air_date.lte"?: string;
+} {
   const selected = getMediaSelected(search.selected);
   const today = todayIsoDate();
 

@@ -2,13 +2,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { TorrentLiveData } from "@/modules/download/download.schema";
 import { download } from "@/modules/download/download.schema";
-import { user } from "@/modules/user/user.schema";
+import { createAuthGuardMock, seedTestUser } from "@/tests/route-test.helper";
 import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
+import { Readable } from "node:stream";
 
-const { fakeUser, testDbRef } = vi.hoisted(() => {
+const { fakeUser, testDbRef, mockGetStreamForDownload } = vi.hoisted(() => {
   const fakeUser = { id: "user-1", username: "testuser", role: "member" as const, createdAt: new Date("2024-01-01") };
   const testDbRef = { current: null as TestDb | null };
-  return { fakeUser, testDbRef };
+  const mockGetStreamForDownload = vi.fn();
+  return { fakeUser, testDbRef, mockGetStreamForDownload };
 });
 
 const sampleTorrent = (overrides: Partial<TorrentLiveData> = {}): TorrentLiveData =>
@@ -46,9 +48,11 @@ vi.mock("@/db/db", () => ({
   },
 }));
 vi.mock("@/modules/auth/auth.guard", () => ({
-  authGuard: async (c: unknown, next: () => Promise<void>) => {
-    (c as { set: (k: string, v: unknown) => void }).set("user", fakeUser);
-    await next();
+  authGuard: createAuthGuardMock(fakeUser),
+}));
+vi.mock("@/modules/download/download-stream.service", () => ({
+  DownloadStreamService: class {
+    getStreamForDownload = mockGetStreamForDownload;
   },
 }));
 vi.mock("@/modules/download/webtorrent.client", () => {
@@ -131,10 +135,8 @@ function startDownloadPayload(magnetUri: string, name: string) {
 describe("Download Routes", () => {
   beforeEach(() => {
     testDbRef.current = createTestDb();
-    testDbRef.current
-      .insert(user)
-      .values({ id: fakeUser.id, username: fakeUser.username, password: "x", role: "member", createdAt: new Date() })
-      .run();
+    seedTestUser(testDbRef.current, fakeUser);
+    mockGetStreamForDownload.mockReset();
   });
 
   describe("GET / - list downloads", () => {
@@ -231,6 +233,49 @@ describe("Download Routes", () => {
 
       const body = await bodyOf(await downloadRoutes.request("/dl-del", { method: "DELETE" }));
       expect(body.success).toBe(true);
+    });
+  });
+
+  describe("GET /:id/stream", () => {
+    it("returns 404 when no video file is available", async () => {
+      testDbRef.current
+        ?.insert(download)
+        .values({
+          id: "dl-stream",
+          userId: fakeUser.id,
+          torrent: sampleTorrent({ name: "NoVideo", done: true }),
+          createdAt: new Date(),
+        })
+        .run();
+
+      mockGetStreamForDownload.mockResolvedValue(undefined);
+
+      expect((await downloadRoutes.request("/dl-stream/stream")).status).toBe(404);
+    });
+
+    it("streams video with content-type header", async () => {
+      testDbRef.current
+        ?.insert(download)
+        .values({
+          id: "dl-stream",
+          userId: fakeUser.id,
+          torrent: sampleTorrent({ name: "Movie.mp4", done: true }),
+          createdAt: new Date(),
+        })
+        .run();
+
+      mockGetStreamForDownload.mockResolvedValue({
+        stream: Readable.from(Buffer.from("fake-video")),
+        size: 10,
+        fileName: "Movie.mp4",
+        filePath: "/tmp/Movie.mp4",
+      });
+
+      const res = await downloadRoutes.request("/dl-stream/stream");
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toBe("video/mp4");
+      expect(res.headers.get("accept-ranges")).toBe("bytes");
+      await expect(res.text()).resolves.toBe("fake-video");
     });
   });
 });

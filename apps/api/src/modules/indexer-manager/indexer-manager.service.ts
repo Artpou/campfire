@@ -3,7 +3,7 @@ import { count, eq, inArray } from "drizzle-orm";
 import { db } from "@/db/db";
 import { BadRequestError, NotFoundError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
-import { isPrivateHost } from "@/helpers/url.helper";
+import { assertSafeIndexerUrl, isPrivateHost } from "@/helpers/url.helper";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { IdentifiableService } from "@/modules/auth/auth.service";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
@@ -113,6 +113,7 @@ export class IndexerManagerService extends IdentifiableService<IndexerManager> {
     let values: typeof indexerManager.$inferInsert;
 
     if (data.type === "SELF_HOSTED") {
+      assertSafeIndexerUrl(data.indexerUrl);
       values = {
         indexerType: data.indexerType,
         indexerUrl: data.indexerUrl,
@@ -149,7 +150,10 @@ export class IndexerManagerService extends IdentifiableService<IndexerManager> {
 
     const updateData: Partial<typeof indexerManager.$inferInsert> = {};
 
-    if (data.indexerUrl) updateData.indexerUrl = data.indexerUrl;
+    if (data.indexerUrl) {
+      assertSafeIndexerUrl(data.indexerUrl);
+      updateData.indexerUrl = data.indexerUrl;
+    }
     if (data.indexerApiKey) updateData.indexerApiKey = data.indexerApiKey;
     if (data.disabled !== undefined) updateData.disabled = data.disabled;
 

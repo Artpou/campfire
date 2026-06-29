@@ -5,7 +5,7 @@ import { type APITypes, Plyr } from "plyr-react";
 import "plyr-react/plyr.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { api, getBaseUrl, unwrap, withSessionParam } from "@seedarr/sdk";
+import { api, getBaseUrl, unwrap, withMediaTokenParam } from "@seedarr/sdk";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { SubtitlesIcon } from "lucide-react";
 
@@ -43,7 +43,7 @@ function VideoPlayerPage() {
   const { data: mediaSession } = useSuspenseQuery(mediaSessionQueries.get());
 
   const videoRef = useRef<APITypes>(null);
-  const videoUrl = withSessionParam(`${getBaseUrl()}/downloads/${id}/stream`, mediaSession?.session);
+  const videoUrl = withMediaTokenParam(`${getBaseUrl()}/downloads/${id}/stream`, mediaSession?.token);
 
   const [subtitleDialogOpen, setSubtitleDialogOpen] = useState(false);
   const hasInitialSeeked = useRef(false);
@@ -136,9 +136,9 @@ function VideoPlayerPage() {
             kind: "captions",
             label: label.slice(0, 20),
             srclang,
-            src: withSessionParam(
+            src: withMediaTokenParam(
               `${getBaseUrl()}/downloads/${id}/subtitles/${encodeURIComponent(file.path)}`,
-              mediaSession?.session,
+              mediaSession?.token,
             ),
             default: index === 0 && tracks.length === 0,
           });
@@ -160,9 +160,9 @@ function VideoPlayerPage() {
         kind: "captions",
         label: label.slice(0, 20),
         srclang: `ext-${i}`,
-        src: withSessionParam(
+        src: withMediaTokenParam(
           `${getBaseUrl()}/downloads/${id}/subtitles/${encodeURIComponent(filePath)}`,
-          mediaSession?.session,
+          mediaSession?.token,
         ),
         default: tracks.length === 0,
       });
@@ -172,7 +172,7 @@ function VideoPlayerPage() {
       tracks[0].default = true;
     }
     return tracks;
-  }, [download, id, externalSubtitles?.paths, mediaSession?.session]);
+  }, [download, id, externalSubtitles?.paths, mediaSession?.token]);
 
   return (
     <Container className="max-w-7xl">

@@ -9,7 +9,7 @@ import "./styles.css";
 
 import { useLingui } from "@lingui/react";
 
-import { getI18nInstance, getInitialCountry, getLanguageFromCountry } from "@/shared/helpers/i18n.helper";
+import { getI18nMessages, getInitialCountry, getLanguageFromCountry } from "@/shared/helpers/i18n.helper";
 import { LinguiClientProvider } from "@/shared/lingui-client-provider";
 
 import { queryClient, router } from "@/router";
@@ -29,11 +29,10 @@ function InnerApp() {
 function App() {
   const initialCountry = getInitialCountry();
   const uiLanguage = getLanguageFromCountry(initialCountry);
-
-  const i18n = getI18nInstance(uiLanguage);
+  const messages = getI18nMessages(uiLanguage);
 
   return (
-    <LinguiClientProvider initialLocale={initialCountry} initialMessages={i18n.messages}>
+    <LinguiClientProvider initialLocale={initialCountry} initialMessages={messages}>
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <InnerApp />

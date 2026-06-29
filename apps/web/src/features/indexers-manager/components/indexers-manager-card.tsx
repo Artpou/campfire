@@ -2,10 +2,10 @@ import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import { api, type IndexerManager, type StremioManifest, type UpdateIndexerManagerInput, unwrap } from "@seedarr/sdk";
-import { cn } from "@seedarr/ui/cn";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { SettingsIcon, TrashIcon } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { DialogDelete } from "@/shared/components/dialog/dialog-delete";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
@@ -46,8 +46,6 @@ export function IndexersManagerCard({ manager }: IndexersManagerCardProps) {
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: indexerManagerQueries.key });
-    queryClient.invalidateQueries({ queryKey: ["torrent-indexers"] });
-    queryClient.invalidateQueries({ queryKey: ["indexer-manager"] });
   };
 
   const updateMutation = useMutation({

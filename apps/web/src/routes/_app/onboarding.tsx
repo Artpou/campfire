@@ -4,11 +4,11 @@ import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { CreateIndexerManagerInput } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
-import { cn } from "@seedarr/ui/cn";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { ZapIcon } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
@@ -24,8 +24,6 @@ export const Route = createFileRoute("/_app/onboarding")({
 
     const countManagers = await unwrap(api["indexer-manager"].count.$get());
     if (countManagers > 0) throw redirect({ to: "/" });
-
-    useAuth.getState().setOnboarded();
   },
   component: OnboardingPage,
 });
@@ -47,6 +45,7 @@ function OnboardingPage() {
     onSuccess: async () => {
       const data = await unwrap(api.auth.me.$get());
       useAuth.getState().setUser(data);
+      useAuth.getState().setOnboarded();
       queryClient.invalidateQueries({ queryKey: ["indexer-manager"] });
       navigate({ to: "/" });
     },
@@ -132,7 +131,14 @@ function OnboardingPage() {
               </div>
 
               <div className="flex justify-center pt-2">
-                <Button variant="outline" onClick={() => navigate({ to: "/" })} className="text-muted-foreground">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    useAuth.getState().setOnboarded();
+                    navigate({ to: "/" });
+                  }}
+                  className="text-muted-foreground"
+                >
                   <Trans>Skip for now</Trans>
                 </Button>
               </div>
@@ -191,7 +197,14 @@ function OnboardingPage() {
                   <Trans>Back</Trans>
                 </Button>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => navigate({ to: "/" })} className="text-muted-foreground">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      useAuth.getState().setOnboarded();
+                      navigate({ to: "/" });
+                    }}
+                    className="text-muted-foreground"
+                  >
                     <Trans>Skip for now</Trans>
                   </Button>
                   {configType !== "preset" && (

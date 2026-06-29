@@ -2,16 +2,15 @@ import { useMemo } from "react";
 
 import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
-import type { TMDBTvDetails, TMDBWatchProvider } from "@seedarr/sdk";
+import type { TMDBTvDetails } from "@seedarr/sdk";
 import { formatRuntime } from "@seedarr/shared";
-import { ClockIcon, ExternalLinkIcon, PlusIcon } from "lucide-react";
+import { ClockIcon, PlusIcon } from "lucide-react";
 import type { WatchLocale } from "tmdb-ts";
 
-import { cn } from "@/lib/utils";
 import { Flag } from "@/shared/components/flag";
+import { ProviderIcon } from "@/shared/components/provider-icon";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { Badge } from "@/shared/ui/badge";
-import { Button } from "@/shared/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,73 +21,10 @@ import {
 } from "@/shared/ui/dropdown-menu";
 
 import { MediaRating } from "@/features/media/components/media-rating";
-import { getBackdropUrl } from "@/features/media/helpers/media.helper";
 
 interface TvInfoProps {
   tv: TMDBTvDetails;
 }
-
-const ProviderIcon = ({
-  provider,
-  tvName,
-  fullButton = false,
-}: {
-  provider: TMDBWatchProvider;
-  tvName: string;
-  fullButton?: boolean;
-}) => {
-  const redirectUrl = useMemo(() => {
-    const encodedName = encodeURIComponent(tvName);
-    switch (provider.provider_name.toLowerCase()) {
-      case "netflix":
-        return `https://www.netflix.com/search?q=${encodedName}`;
-      case "disney plus":
-        return `https://www.disneyplus.com/`;
-      case "canal+":
-        return `https://www.canalplus.fr/`;
-      case "hbo max":
-        return `https://www.hbomax.com/`;
-      case "amazon prime video":
-        return `https://www.primevideo.com/search?phrase=${encodedName}`;
-      case "apple tv+":
-        return `https://www.apple.com/apple-tv-plus/`;
-      case "peacock":
-        return `https://www.peacocktv.com/`;
-      case "paramount+":
-        return `https://www.paramountplus.com/`;
-    }
-  }, [provider.provider_name, tvName]);
-
-  if (fullButton && !redirectUrl) return null;
-
-  if (fullButton) {
-    return (
-      <Button variant="secondary" onClick={() => window.open(redirectUrl, "_blank")}>
-        <ExternalLinkIcon className="size-4 mr-1" />
-        <Trans>Watch on</Trans> {provider.provider_name}
-      </Button>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => !!redirectUrl && window.open(redirectUrl, "_blank")}
-      className={cn(
-        "relative size-12 rounded-full border-2 border-border shadow-sm transition-all",
-        redirectUrl && "cursor-pointer hover:border-primary/50 hover:scale-105",
-      )}
-      title={provider.provider_name}
-      disabled={!redirectUrl}
-    >
-      <img
-        src={getBackdropUrl(provider.logo_path, "original")}
-        alt={provider.provider_name}
-        className="size-full rounded-full object-cover"
-      />
-    </button>
-  );
-};
 
 export function TvInfo({ tv }: TvInfoProps) {
   const { i18n } = useLingui();
@@ -214,7 +150,7 @@ export function TvInfo({ tv }: TvInfoProps) {
 
         <div className="flex items-center gap-1.5 border-l border-white/10 pl-4">
           {firstProviders.map((provider) => (
-            <ProviderIcon key={provider.provider_id} provider={provider} tvName={tv.name ?? ""} />
+            <ProviderIcon key={provider.provider_id} provider={provider} name={tv.name ?? ""} />
           ))}
           {firstProviders.length < uniqueProviders.flatrate.length + uniqueProviders.buyRent.length && (
             <DropdownMenu>
@@ -235,7 +171,7 @@ export function TvInfo({ tv }: TvInfoProps) {
                     </DropdownMenuLabel>
                     <div className="flex flex-wrap gap-2 p-2">
                       {uniqueProviders.flatrate.map((provider) => (
-                        <ProviderIcon key={provider.provider_id} provider={provider} tvName={tv.name ?? ""} />
+                        <ProviderIcon key={provider.provider_id} provider={provider} name={tv.name ?? ""} />
                       ))}
                     </div>
                   </DropdownMenuGroup>
@@ -249,7 +185,7 @@ export function TvInfo({ tv }: TvInfoProps) {
                       </DropdownMenuLabel>
                       <div className="flex flex-wrap gap-2 p-2">
                         {uniqueProviders.buyRent.map((provider) => (
-                          <ProviderIcon key={provider.provider_id} provider={provider} tvName={tv.name ?? ""} />
+                          <ProviderIcon key={provider.provider_id} provider={provider} name={tv.name ?? ""} />
                         ))}
                       </div>
                     </DropdownMenuGroup>
@@ -258,7 +194,7 @@ export function TvInfo({ tv }: TvInfoProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          {firstProviders.length > 0 && <ProviderIcon provider={firstProviders[0]} tvName={tv.name ?? ""} fullButton />}
+          {firstProviders.length > 0 && <ProviderIcon provider={firstProviders[0]} name={tv.name ?? ""} fullButton />}
         </div>
       </div>
     </div>

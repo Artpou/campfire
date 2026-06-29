@@ -1,4 +1,4 @@
-import z from "zod";
+import { z } from "zod";
 
 export interface Paginate<T> {
   results: T[];
@@ -6,7 +6,6 @@ export interface Paginate<T> {
   hasMore: boolean;
 }
 
-// pagination schema
 export const paginationDto = z.object({
   page: z.coerce.number().int().min(1).default(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20).optional(),

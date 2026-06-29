@@ -1,5 +1,6 @@
 import { msg } from "@lingui/core/macro";
-import { Trans, useLingui } from "@lingui/react/macro";
+import { Trans } from "@lingui/react";
+import { Trans as TransMacro } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, isRedirect, Link, Outlet, redirect, useLocation } from "@tanstack/react-router";
@@ -14,31 +15,6 @@ import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-conta
 import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";
 import { indexerManagerQueries } from "@/features/torrent/hooks/indexer.queries";
-
-const navItems = [
-  {
-    title: msg`Movies`,
-    url: "/movies",
-    icon: FilmIcon,
-  },
-  {
-    title: msg`TV Shows`,
-    url: "/tv",
-    icon: TvIcon,
-  },
-  {
-    title: msg`Library`,
-    url: "/downloads",
-    icon: LibraryIcon,
-    minRole: "member" as const,
-  },
-  {
-    title: msg`Lists`,
-    url: "/lists",
-    icon: ListIcon,
-    matchPrefix: "/lists",
-  },
-];
 
 const authQueryOptions = {
   queryKey: ["auth", "me"],
@@ -76,15 +52,26 @@ export const Route = createFileRoute("/_app")({
   component: AuthenticatedLayout,
 });
 
+const MOBILE_NAV = [
+  { title: msg({ id: "nav.movies", message: "Movies" }), url: "/movies", icon: FilmIcon },
+  { title: msg({ id: "nav.tv-shows", message: "TV Shows" }), url: "/tv", icon: TvIcon },
+  {
+    title: msg({ id: "nav.library", message: "Library" }),
+    url: "/downloads",
+    icon: LibraryIcon,
+    minRole: "member" as const,
+  },
+  { title: msg({ id: "nav.lists", message: "Lists" }), url: "/lists", icon: ListIcon, matchPrefix: "/lists" },
+];
+
 function AuthenticatedLayout() {
   const location = useLocation();
-  const { t } = useLingui();
   const { isAdmin, hasRole } = useRole();
   const { data: count = 0 } = useSuspenseQuery(indexerManagerQueries.count());
 
   const isIndexerMisconfigured = isAdmin && count === 0;
 
-  const visibleNavItems = navItems.filter((item) => {
+  const visibleNavItems = MOBILE_NAV.filter((item) => {
     if (item.minRole && !hasRole(item.minRole)) return false;
     return true;
   });
@@ -98,7 +85,7 @@ function AuthenticatedLayout() {
         >
           <AlertTriangleIcon className="size-4 shrink-0" />
           <span className="text-sm">
-            <Trans>Torrent indexer is not configured. Click here to set up your indexer.</Trans>
+            <TransMacro>Torrent indexer is not configured. Click here to set up your indexer.</TransMacro>
           </span>
         </Link>
       )}
@@ -123,7 +110,9 @@ function AuthenticatedLayout() {
                 )}
               >
                 <item.icon className="size-5" />
-                <span className="text-xs font-medium">{t(item.title)}</span>
+                <span className="text-xs font-medium">
+                  <Trans id={item.title.id} />
+                </span>
               </Link>
             );
           })}

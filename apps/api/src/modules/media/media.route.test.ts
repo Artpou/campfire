@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { media } from "@/modules/media/media.schema";
-import { user } from "@/modules/user/user.schema";
+import { createAuthGuardMock, seedTestUser } from "@/tests/route-test.helper";
 import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
 
 const { fakeUser, testDbRef } = vi.hoisted(() => {
@@ -16,10 +16,7 @@ vi.mock("@/db/db", () => ({
   },
 }));
 vi.mock("@/modules/auth/auth.guard", () => ({
-  authGuard: async (c: unknown, next: () => Promise<void>) => {
-    (c as { set: (k: string, v: unknown) => void }).set("user", fakeUser);
-    await next();
-  },
+  authGuard: createAuthGuardMock(fakeUser),
 }));
 
 const { mediaRoutes } = await import("./media.route");
@@ -27,10 +24,7 @@ const { mediaRoutes } = await import("./media.route");
 describe("Media Routes", () => {
   beforeEach(() => {
     testDbRef.current = createTestDb();
-    testDbRef.current
-      .insert(user)
-      .values({ id: fakeUser.id, username: fakeUser.username, password: "x", role: "member", createdAt: new Date() })
-      .run();
+    seedTestUser(testDbRef.current, fakeUser);
   });
 
   describe("POST / - upsert", () => {

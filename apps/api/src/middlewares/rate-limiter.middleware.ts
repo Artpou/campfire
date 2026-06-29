@@ -27,3 +27,19 @@ export const downloadStartRateLimiter = rateLimiter({
   statusCode: 429,
   keyGenerator,
 });
+
+export const tmdbRateLimiter = rateLimiter({
+  windowMs: Math.floor(ms("1m")),
+  limit: 60,
+  message: { error: "Too many TMDB requests. Please try again in 1 minute." },
+  statusCode: 429,
+  keyGenerator,
+});
+
+export const subtitleRateLimiter = rateLimiter({
+  windowMs: Math.floor(ms("1m")),
+  limit: 30,
+  message: { error: "Too many subtitle requests. Please try again in 1 minute." },
+  statusCode: 429,
+  keyGenerator,
+});

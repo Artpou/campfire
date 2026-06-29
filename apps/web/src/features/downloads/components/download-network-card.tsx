@@ -75,7 +75,9 @@ export function DownloadNetworkCard({ type, value = 0 }: DownloadNetworkCardProp
           <p className="text-xs text-muted-foreground">
             <Trans>Connected Peers</Trans>
           </p>
-          <p className="text-lg font-bold">{value} peers</p>
+          <p className="text-lg font-bold">
+            <Trans>{value} peers</Trans>
+          </p>
         </div>
       </div>
     </Card>

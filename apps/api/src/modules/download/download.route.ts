@@ -1,10 +1,9 @@
 import { zValidator } from "@hono/zod-validator";
 import { stream } from "hono/streaming";
 
-import { paginationDto } from "@/shared/pagination.dto";
-import { downloadFilePathParamDto, stringIdParamDto } from "@/shared/param.dto";
-
 import { BadRequestError, NotFoundError } from "@/errors/error";
+import { downloadFilePathParamDto, stringIdParamDto } from "@/helpers/param.dto";
+import { getDownloadsRoot, resolveWithinDownloads } from "@/helpers/path.helper";
 import { srt2webvtt } from "@/helpers/subtitle.helper";
 import { convertMkvToMp4Stream } from "@/helpers/video.helper";
 import { downloadStartRateLimiter } from "@/middlewares/rate-limiter.middleware";
@@ -15,8 +14,6 @@ import { requireDownloadOwnership } from "./download.guard";
 import type { TorrentLiveData } from "./download.schema";
 import { DownloadService } from "./download.service";
 import { DownloadStreamService } from "./download-stream.service";
-
-const DOWNLOAD_PATH = process.env.DOWNLOADS_PATH || "./downloads";
 
 function getDownloadId(c: { req: { valid: (target: "param") => { id: string } } }): string {
   return c.req.valid("param").id;
@@ -32,8 +29,8 @@ function getContentType(fileName: string): string {
 }
 
 export const downloadRoutes = DownloadService.createRouter()
-  .get("/", zValidator("query", paginationDto), async (c) => {
-    return c.json(await c.var.service.getMany(c.req.valid("query")));
+  .get("/", async (c) => {
+    return c.json(await c.var.service.getMany());
   })
   .get("/stats", async (c) => {
     return c.json(await c.var.service.getStats());
@@ -51,7 +48,7 @@ export const downloadRoutes = DownloadService.createRouter()
     const download = await c.var.service.get(getDownloadId(c));
     if (!download) throw new NotFoundError("Download");
 
-    const streamService = new DownloadStreamService(DOWNLOAD_PATH);
+    const streamService = new DownloadStreamService();
     const result = await streamService.getStreamForDownload(download);
     if (!result) throw new NotFoundError("Video file");
 
@@ -110,12 +107,9 @@ export const downloadRoutes = DownloadService.createRouter()
     if (!download) throw new NotFoundError("Download");
 
     const filePath = decodeURIComponent(rawFilePath);
-    const path = await import("node:path");
     const fs = await import("node:fs");
-    const baseDir = path.resolve(DOWNLOAD_PATH, download.torrent?.name ?? "");
-    const fullPath = path.resolve(baseDir, filePath);
+    const fullPath = resolveWithinDownloads(download.torrent?.name ?? "", filePath);
 
-    if (!fullPath.startsWith(baseDir + path.sep)) throw new BadRequestError("Invalid file path");
     if (!fs.existsSync(fullPath)) throw new NotFoundError("File");
 
     let contentType = "application/octet-stream";
@@ -135,7 +129,8 @@ export const downloadRoutes = DownloadService.createRouter()
 
     const path = await import("node:path");
     const fs = await import("node:fs/promises");
-    const folderPath = path.join(DOWNLOAD_PATH, download.torrent?.name ?? "");
+    const downloadsRoot = getDownloadsRoot();
+    const folderPath = resolveWithinDownloads(download.torrent?.name ?? "");
 
     const torrentFiles = (download.torrent?.files ?? []) as TorrentLiveData["files"];
     const torrentPaths = new Set(
@@ -154,7 +149,7 @@ export const downloadRoutes = DownloadService.createRouter()
       }
       for (const e of entries) {
         const full = path.join(dir, e.name);
-        const rel = path.relative(DOWNLOAD_PATH, full).replace(/\\/g, "/");
+        const rel = path.relative(downloadsRoot, full).replace(/\\/g, "/");
         if (e.isDirectory()) {
           await scan(full);
         } else if (/\.(srt|vtt)$/i.test(e.name) && !torrentPaths.has(rel)) {
@@ -177,12 +172,8 @@ export const downloadRoutes = DownloadService.createRouter()
       throw new BadRequestError("Only .srt and .vtt files are supported");
     }
 
-    const path = await import("node:path");
     const fs = await import("node:fs/promises");
-    const downloadFolder = path.resolve(DOWNLOAD_PATH, download.torrent?.name ?? "");
-    const fullPath = path.resolve(downloadFolder, filePath);
-
-    if (!fullPath.startsWith(downloadFolder + path.sep)) throw new BadRequestError("Invalid file path");
+    const fullPath = resolveWithinDownloads(download.torrent?.name ?? "", filePath);
 
     try {
       await fs.access(fullPath);

@@ -2,7 +2,6 @@ import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { ActivityLog } from "@seedarr/sdk";
-import { api, unwrap } from "@seedarr/sdk";
 import { useQuery } from "@tanstack/react-query";
 import { InfoIcon } from "lucide-react";
 
@@ -11,6 +10,8 @@ import { Button } from "@/shared/ui/button";
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/shared/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
+
+import { activityLogQueries } from "@/features/settings/hooks/activity-log.queries";
 
 function getTypeBadgeVariant(type: string): "destructive" | "outline" | "secondary" {
   if (type === "ERROR") return "destructive";
@@ -30,10 +31,7 @@ function parseMetadata(metadata: string | null): Record<string, unknown> | null 
 export function SettingsActivityTab() {
   const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null);
 
-  const { data: logs } = useQuery({
-    queryKey: ["activity-logs"],
-    queryFn: () => unwrap(api["activity-logs"].$get({ query: { limit: "50" } })),
-  });
+  const { data: logs } = useQuery(activityLogQueries.list());
 
   const results = logs?.results ?? [];
   const parsedMetadata = selectedLog ? parseMetadata(selectedLog.metadata) : null;

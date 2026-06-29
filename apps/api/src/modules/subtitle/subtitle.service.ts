@@ -1,8 +1,9 @@
 import { BadRequestError, NotFoundError, ServiceUnavailableError } from "@/errors/error";
+import { assertWithinDownloads, getDownloadsRoot } from "@/helpers/path.helper";
 import { AuthenticatedService } from "@/modules/auth/auth.service";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import type { SubdlSearchResponse, SubstitlesSearchQuery } from "./subtitle.dto";
+import type { SubdlSearchResponse, SubtitlesSearchQuery } from "./subtitle.dto";
 
 const SUBDL_API_BASE = "https://api.subdl.com/api/v1";
 const SUBDL_DL_BASE = "https://dl.subdl.com";
@@ -31,7 +32,7 @@ export class SubtitleService extends AuthenticatedService {
   /**
    * Fetch subtitles list from SUBDL API.
    */
-  async search(query: SubstitlesSearchQuery): Promise<SubdlSearchResponse> {
+  async search(query: SubtitlesSearchQuery): Promise<SubdlSearchResponse> {
     const apiKey = getApiKey();
     const params = new URLSearchParams({
       api_key: apiKey,
@@ -58,7 +59,8 @@ export class SubtitleService extends AuthenticatedService {
     language: string,
     mediaTitle: string,
   ): Promise<{ relativePath: string }> {
-    const downloadsPath = process.env.DOWNLOADS_PATH || "./downloads";
+    assertWithinDownloads(downloadFolderPath);
+    const downloadsPath = getDownloadsRoot();
     let fullZipUrl: string;
     if (url.startsWith("http")) {
       const parsed = new URL(url);
@@ -92,6 +94,7 @@ export class SubtitleService extends AuthenticatedService {
     const safeLang = sanitizeFileName(language).slice(0, 10);
     const fileName = `${safeTitle}.${safeLang}${ext}`;
     const destPath = path.join(downloadFolderPath, fileName);
+    assertWithinDownloads(destPath);
 
     await fs.mkdir(downloadFolderPath, { recursive: true });
     const content = await subtitleEntry.buffer();

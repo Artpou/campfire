@@ -1,4 +1,3 @@
-import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
 import { PopcornIcon, RadioIcon, SofaIcon, StarIcon } from "lucide-react";
@@ -26,30 +25,30 @@ export function MediaSortTabs({ value, type, onChange }: MediaSortTabsProps) {
 
   const sortOptions = [
     {
-      value: "home",
+      value: "home" as const,
       icon: <SofaIcon className="text-foreground" />,
-      label: msg`At Home`,
+      label: t`At Home`,
     },
     {
-      value: "top-rated",
+      value: "top-rated" as const,
       icon: <StarIcon className="text-foreground" />,
-      label: msg`Top Rated`,
+      label: t`Top Rated`,
     },
     ...(type === "movie" && !isMobile
       ? [
           {
-            value: "cinema",
+            value: "cinema" as const,
             icon: <PopcornIcon className="text-foreground" />,
-            label: msg`In Cinema`,
+            label: t`In Cinema`,
           },
         ]
       : []),
     ...(!isMobile
       ? [
           {
-            value: "upcoming",
+            value: "upcoming" as const,
             icon: <RadioIcon className="text-foreground" />,
-            label: msg`Upcoming`,
+            label: t`Upcoming`,
           },
         ]
       : []),
@@ -61,7 +60,7 @@ export function MediaSortTabs({ value, type, onChange }: MediaSortTabsProps) {
         {sortOptions.map(({ value, icon, label }) => (
           <TabsTrigger key={value} value={value} size="lg">
             {icon}
-            {t(label)}
+            {label}
           </TabsTrigger>
         ))}
       </TabsList>

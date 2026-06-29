@@ -2,7 +2,6 @@ import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { User } from "@seedarr/sdk";
-import { api, unwrap } from "@seedarr/sdk";
 import { useQuery } from "@tanstack/react-query";
 import { UserPlusIcon } from "lucide-react";
 
@@ -11,20 +10,14 @@ import { Button } from "@/shared/ui/button";
 import { useRole } from "@/features/auth/hooks/use-role";
 import { UserFormModal } from "@/features/user/components/user-form-modal";
 import { UsersTable } from "@/features/user/components/users-table";
+import { userQueries } from "@/features/user/hooks/user.queries";
 
 export function SettingsUsersTab() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const { isAdmin } = useRole();
 
-  const {
-    data: users = [],
-    isLoading,
-    refetch,
-  } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => unwrap(api.users.$get()),
-  });
+  const { data: users = [], isLoading, refetch } = useQuery(userQueries.list());
 
   const handleCreateUser = () => {
     setEditingUser(null);

@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import type { Download, DownloadTorrentInput } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { type QueryState, queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -41,10 +42,10 @@ export function useDownloadDelete() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: downloadQueries.key });
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
-      toast.success("Download deleted");
+      toast.success(t`Download deleted`);
     },
     onError: (error) => {
-      toast.error("Could not delete download", {
+      toast.error(t`Could not delete download`, {
         description: error instanceof Error ? error.message : undefined,
       });
     },
@@ -59,10 +60,10 @@ export function useDownloadPause() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: downloadQueries.key });
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
-      toast.success("Download paused");
+      toast.success(t`Download paused`);
     },
     onError: (error) => {
-      toast.error("Could not pause download", {
+      toast.error(t`Could not pause download`, {
         description: error instanceof Error ? error.message : undefined,
       });
     },
@@ -77,10 +78,10 @@ export function useDownloadResume() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: downloadQueries.key });
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
-      toast.success("Download resumed");
+      toast.success(t`Download resumed`);
     },
     onError: (error) => {
-      toast.error("Could not resume download", {
+      toast.error(t`Could not resume download`, {
         description: error instanceof Error ? error.message : undefined,
       });
     },

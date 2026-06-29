@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import type { ListMediaQuery, Media, Paginate } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import {
@@ -101,12 +102,12 @@ export function useToggleLike() {
     mutationFn: (media: Media) => unwrap(api.media[":id"].like.$post({ param: { id: media.id.toString() } })),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
-      toast.success(data.likes > 0 ? "Added to your likes" : "Removed from your likes", {
+      toast.success(data.likes > 0 ? t`Added to your likes` : t`Removed from your likes`, {
         description: data.title,
       });
     },
     onError: (error) => {
-      toast.error("Could not update likes", {
+      toast.error(t`Could not update likes`, {
         description: error instanceof Error ? error.message : undefined,
       });
     },
@@ -119,12 +120,12 @@ export function useToggleWatchList() {
     mutationFn: (media: Media) => unwrap(api.media[":id"].watchlist.$post({ param: { id: media.id.toString() } })),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
-      toast.success(data.watchList > 0 ? "Added to watch list" : "Removed from watch list", {
+      toast.success(data.watchList > 0 ? t`Added to watch list` : t`Removed from watch list`, {
         description: data.title,
       });
     },
     onError: (error) => {
-      toast.error("Could not update watch list", {
+      toast.error(t`Could not update watch list`, {
         description: error instanceof Error ? error.message : undefined,
       });
     },

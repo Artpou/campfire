@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { download, type TorrentLiveData } from "@/modules/download/download.schema";
-import { user } from "@/modules/user/user.schema";
+import { createAuthGuardMock, seedTestUser } from "@/tests/route-test.helper";
 import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
 
 const { fakeUser, testDbRef } = vi.hoisted(() => {
@@ -16,10 +16,7 @@ vi.mock("@/db/db", () => ({
   },
 }));
 vi.mock("@/modules/auth/auth.guard", () => ({
-  authGuard: async (c: unknown, next: () => Promise<void>) => {
-    (c as { set: (k: string, v: unknown) => void }).set("user", fakeUser);
-    await next();
-  },
+  authGuard: createAuthGuardMock(fakeUser),
 }));
 vi.mock("@/modules/auth/role.guard", () => ({
   requireRole: () => async (_c: unknown, next: () => Promise<void>) => {
@@ -44,10 +41,7 @@ const { subtitleRoutes } = await import("./subtitle.route");
 describe("Subtitle Routes", () => {
   beforeEach(() => {
     testDbRef.current = createTestDb();
-    testDbRef.current
-      .insert(user)
-      .values({ id: fakeUser.id, username: fakeUser.username, password: "x", role: "member", createdAt: new Date() })
-      .run();
+    seedTestUser(testDbRef.current, fakeUser);
   });
 
   describe("GET /search", () => {

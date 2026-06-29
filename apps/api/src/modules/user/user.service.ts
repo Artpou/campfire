@@ -14,6 +14,15 @@ const userColumns = {
   createdAt: true,
 } as const;
 
+function isUniqueConstraintError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const message = error.message.toLowerCase();
+  if (message.includes("unique constraint") || message.includes("sqlite_constraint_unique")) {
+    return true;
+  }
+  return isUniqueConstraintError(error.cause);
+}
+
 export class UserService extends IdentifiableService<User> {
   constructor(user?: User) {
     super(user as User);
@@ -49,14 +58,36 @@ export class UserService extends IdentifiableService<User> {
   }
 
   async register(username: string, hashedPassword: string): Promise<User> {
-    const existing = await this.getByUsername(username);
+    const existingOwner = await db.query.user.findFirst({
+      where: eq(user.role, "owner"),
+      columns: { id: true },
+    });
+    if (existingOwner) {
+      throw new ForbiddenError("Registration is closed. Contact an administrator.");
+    }
+
+    const existing = await db.query.user.findFirst({
+      where: eq(user.username, username),
+      columns: { id: true },
+    });
     if (existing) throw new ConflictError("Username already exists");
 
-    await db.insert(user).values({ username, password: hashedPassword, role: "owner" });
+    try {
+      const [created] = await db.insert(user).values({ username, password: hashedPassword, role: "owner" }).returning({
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        createdAt: user.createdAt,
+      });
 
-    const created = await this.getByUsername(username);
-    if (!created) throw new ConflictError("Failed to create user");
-    return created;
+      if (!created) throw new ConflictError("Failed to create user");
+      return created;
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        throw new ForbiddenError("Registration is closed. Contact an administrator.");
+      }
+      throw error;
+    }
   }
 
   async create(caller: User, input: CreateUserInput): Promise<User> {

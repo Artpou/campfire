@@ -50,6 +50,13 @@
       "when": 1782501538300,
       "tag": "0006_clever_crystal",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1782724499584,
+      "tag": "0007_tan_jack_flag",
+      "breakpoints": true
     }
   ]
 }

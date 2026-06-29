@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 import { user } from "@/modules/user/user.schema";
 
@@ -51,27 +51,31 @@ export interface TorrentLiveData {
   }[];
 }
 
-export const download = sqliteTable("download", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  userId: text("userId")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  mediaId: integer("mediaId"),
+export const download = sqliteTable(
+  "download",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    mediaId: integer("mediaId"),
 
-  origin: text("origin"),
-  quality: text("quality"),
-  language: text("language"),
+    origin: text("origin"),
+    quality: text("quality"),
+    language: text("language"),
 
-  createdAt: integer("createdAt", { mode: "timestamp" })
-    .notNull()
-    .$defaultFn(() => new Date()),
+    createdAt: integer("createdAt", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
 
-  streamType: text("stream_type", { enum: streamTypeEnum }).notNull().default("TORRENT"),
-  indexerManagerId: text("indexer_manager_id"),
+    streamType: text("stream_type", { enum: streamTypeEnum }).notNull().default("TORRENT"),
+    indexerManagerId: text("indexer_manager_id"),
 
-  torrent: text("torrent", { mode: "json" }).$type<TorrentLiveData>(),
+    torrent: text("torrent", { mode: "json" }).$type<TorrentLiveData>(),
 
-  error: text("error"),
-});
+    error: text("error"),
+  },
+  (table) => [index("download_userId_idx").on(table.userId)],
+);

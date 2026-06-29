@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { msg } from "@lingui/core/macro";
+import { Trans } from "@lingui/react";
 import { useLingui } from "@lingui/react/macro";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { FilmIcon, ListIcon, MonitorIcon, SearchIcon, SettingsIcon, TvIcon } from "lucide-react";
@@ -15,11 +16,13 @@ interface AppTopbarProps {
   isAuthenticated?: boolean;
 }
 
-const navLinks = [
-  { title: msg`Movies`, url: "/movies", icon: FilmIcon },
-  { title: msg`TV Shows`, url: "/tv", icon: TvIcon },
-  { title: msg`Library`, url: "/downloads", icon: MonitorIcon },
-];
+const NAV_LINKS = [
+  { title: msg({ id: "nav.movies", message: "Movies" }), url: "/movies", icon: FilmIcon },
+  { title: msg({ id: "nav.tv-shows", message: "TV Shows" }), url: "/tv", icon: TvIcon },
+  { title: msg({ id: "nav.library", message: "Library" }), url: "/downloads", icon: MonitorIcon },
+] as const;
+
+const LISTS_LINK = msg({ id: "nav.lists", message: "Lists" });
 
 export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -58,7 +61,7 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
               </Link>
 
               <nav className="hidden lg:flex items-center gap-1">
-                {navLinks.map((item) => {
+                {NAV_LINKS.map((item) => {
                   if (item.url === "/downloads" && !hasRole("member")) return null;
 
                   const isActive = location.pathname.startsWith(item.url);
@@ -71,7 +74,7 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
                     >
                       <Link to={item.url} search={{}}>
                         <item.icon className="size-4" />
-                        {t(item.title)}
+                        <Trans id={item.title.id} />
                       </Link>
                     </Button>
                   );
@@ -84,7 +87,7 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
                 >
                   <Link to="/lists" search={{ tab: "watch-list" }}>
                     <ListIcon className="size-4" />
-                    {t(msg`Lists`)}
+                    <Trans id={LISTS_LINK.id} />
                   </Link>
                 </Button>
               </nav>
@@ -95,7 +98,7 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
                 variant="ghost"
                 size="icon"
                 className="sm:hidden"
-                onClick={() => navigate({ to: "/search", search: { q: "", type: "movie" } })}
+                onClick={() => navigate({ to: "/search", search: { q: "", type: "all" } })}
                 aria-label={t`Search`}
               >
                 <SearchIcon className="size-5" />
@@ -103,14 +106,14 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
               <Button
                 variant="outline"
                 className="hidden sm:flex relative w-full max-w-xs h-9 justify-start px-3 font-normal text-muted-foreground"
-                onClick={() => navigate({ to: "/search", search: { q: "", type: "movie" } })}
+                onClick={() => navigate({ to: "/search", search: { q: "", type: "all" } })}
                 aria-label={t`Search`}
               >
                 <SearchIcon className="size-4 mr-2 shrink-0" />
                 {t`Search...`}
               </Button>
 
-              <Button variant="ghost" size="icon" asChild aria-label={t(msg`Settings`)}>
+              <Button variant="ghost" size="icon" asChild aria-label={t`Settings`}>
                 <Link to="/settings" search={{}}>
                   <SettingsIcon className="size-5" />
                 </Link>

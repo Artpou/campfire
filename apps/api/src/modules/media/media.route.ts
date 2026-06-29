@@ -1,7 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 
-import { mediaIdParamDto } from "@/shared/param.dto";
-
+import { mediaIdParamDto } from "@/helpers/param.dto";
 import { listMediaDto, mediaInsertSchema, updateProgressDto } from "./media.dto";
 import { MediaService } from "./media.service";
 

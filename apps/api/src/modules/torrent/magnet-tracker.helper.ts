@@ -3,7 +3,7 @@
  * Embedded so magnet enrichment works offline; refresh periodically from:
  * https://cdn.jsdelivr.net/gh/ngosang/trackerslist@master/trackers_best.txt
  */
-export const PUBLIC_TRACKERS_BEST = [
+const PUBLIC_TRACKERS_BEST = [
   "udp://zer0day.ch:1337/announce",
   "udp://tracker.publictracker.xyz:6969/announce",
   "http://tracker.opentrackr.org:1337/announce",

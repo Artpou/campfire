@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { HoverCard, HoverCardContent, HoverCardPortal, HoverCardTrigger } from "@radix-ui/react-hover-card";
 import type { Media } from "@seedarr/sdk";
@@ -13,7 +14,7 @@ import { Card } from "@/shared/ui/card";
 import { Progress } from "@/shared/ui/progress";
 
 import { DownloadProgressCircular } from "@/features/downloads/components/download-progress-circular";
-import { getPosterUrl } from "@/features/media/helpers/media.helper";
+import { getPosterUrl, getWatchProgressPercent, hasWatchProgress } from "@/features/media/helpers/media.helper";
 import { MediaCardPreview } from "./media-card-preview";
 
 type MediaCardProps = {
@@ -37,8 +38,8 @@ export function MediaCard({ media, mode = "default", className, playable, withTy
       : ({ to: "/movies/$id", params: { id: media.id.toString() } } as const);
 
   const playDownloadId = media.download?.id ?? media.progress?.downloadId ?? undefined;
-  const watchProgressPercent = media.progress?.position != null ? media.progress.position / media.progress.duration : 0;
-  const showWatchProgress = media.progress?.position != null && media.progress.position <= 95;
+  const watchProgressPercent = getWatchProgressPercent(media);
+  const showWatchProgress = hasWatchProgress(media);
 
   const handlePlay = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -95,7 +96,7 @@ export function MediaCard({ media, mode = "default", className, playable, withTy
 
         {withType && (
           <div className="absolute top-2 right-2 flex gap-1">
-            <Button variant="outline" size="icon" aria-label={media.type === "movie" ? "Movie" : "TV"}>
+            <Button variant="outline" size="icon" aria-label={media.type === "movie" ? t`Movie` : t`TV`}>
               {media.type === "movie" ? <FilmIcon /> : <TvIcon />}
             </Button>
           </div>
@@ -103,7 +104,7 @@ export function MediaCard({ media, mode = "default", className, playable, withTy
 
         {playable && (
           <div className="absolute top-2 right-2 flex gap-1">
-            <Button asChild variant="outline" size="icon" aria-label="Details">
+            <Button asChild variant="outline" size="icon" aria-label={t`Details`}>
               <Link to={media.type === "tv" ? "/tv/$id" : "/movies/$id"} params={{ id: media.id.toString() }}>
                 <InfoIcon />
               </Link>

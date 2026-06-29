@@ -17,6 +17,12 @@ export default defineConfig({
     globals: true,
     environment: "happy-dom",
     include: ["src/**/*.test.ts"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "lcov"],
+      include: ["src/**/*.ts", "src/**/*.tsx"],
+      exclude: ["src/**/*.test.ts", "src/**/test*", "src/**/*.d.ts"],
+    },
   },
   resolve: {
     alias: {

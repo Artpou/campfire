@@ -4,13 +4,13 @@ import type WebTorrent from "webtorrent";
 import { db } from "@/db/db";
 import { BadRequestError, NotFoundError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
+import { resolveWithinDownloads } from "@/helpers/path.helper";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { IdentifiableService } from "@/modules/auth/auth.service";
 import { download } from "@/modules/download/download.schema";
 import { media } from "@/modules/media/media.schema";
 import { resolveTorrentSource } from "@/modules/torrent/torrent-source.helper";
 import fs from "node:fs/promises";
-import path from "node:path";
 import type { Download, DownloadStats, DownloadTorrentInput, TorrentLiveData } from "./download.dto";
 import { waitForTorrentMetadata } from "./torrent-ready.helper";
 import { torrentClient } from "./webtorrent.client";
@@ -29,9 +29,9 @@ function destroyTorrent(torrent: WebTorrent.Torrent, opts: { destroyStore: boole
 }
 
 export class DownloadService extends IdentifiableService<Download> {
-  async getMany({ ids }: { ids?: string[] }): Promise<Download[]> {
+  async getMany(params?: { ids?: string[] }): Promise<Download[]> {
     return await db.query.download.findMany({
-      where: and(eq(download.userId, this.user.id), ids ? inArray(download.id, ids) : undefined),
+      where: and(eq(download.userId, this.user.id), params?.ids ? inArray(download.id, params.ids) : undefined),
     });
   }
 
@@ -160,10 +160,14 @@ export class DownloadService extends IdentifiableService<Download> {
 
       setTimeout(() => torrentClient.unmarkDestroying(id), 5_000);
     } else if (torrentName) {
-      const targetPath = path.join(DOWNLOAD_PATH, torrentName);
-      fs.rm(targetPath, { recursive: true, force: true })
-        .then(() => logger.info("DOWNLOAD", `FS deleted: ${targetPath}`))
-        .catch((err) => logger.error("DOWNLOAD", `FS delete failed for ${targetPath}`, err));
+      try {
+        const targetPath = resolveWithinDownloads(torrentName);
+        fs.rm(targetPath, { recursive: true, force: true })
+          .then(() => logger.info("DOWNLOAD", `FS deleted: ${targetPath}`))
+          .catch((err) => logger.error("DOWNLOAD", `FS delete failed for ${targetPath}`, err));
+      } catch (error) {
+        logger.error("DOWNLOAD", `Refusing to delete path outside downloads: ${torrentName}`, error);
+      }
     }
 
     await db.delete(download).where(eq(download.id, id));

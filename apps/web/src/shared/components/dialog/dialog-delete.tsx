@@ -27,13 +27,13 @@ export function DialogDelete({ open, setOpen, validate, title, description }: Di
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={() => setOpen(false)}>
-            <Trans>Annuler</Trans>
+            <Trans>Cancel</Trans>
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={validate}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            <Trans>Supprimer</Trans>
+            <Trans>Delete</Trans>
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

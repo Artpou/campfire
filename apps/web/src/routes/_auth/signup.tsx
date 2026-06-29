@@ -43,9 +43,14 @@ function Signup() {
 
   const password = watch("password");
 
+  const { setUser } = useAuth();
+
   const { mutate: signup, isPending } = useMutation({
     mutationFn: (data: RegisterInput) => unwrap(api.auth.register.$post({ json: data })),
-    onSuccess: () => navigate({ to: "/" }),
+    onSuccess: (user) => {
+      setUser({ ...user, countIndexerManagers: 0 });
+      navigate({ to: "/" });
+    },
     onError: (err: unknown) => {
       setError(err instanceof Error ? err.message : t(msg`An error occurred`));
     },

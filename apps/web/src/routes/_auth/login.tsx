@@ -38,9 +38,14 @@ function Login() {
     formState: { errors },
   } = useForm<LoginInput>();
 
+  const { setUser } = useAuth();
+
   const { mutate: login, isPending } = useMutation({
     mutationFn: (data: LoginInput) => unwrap(api.auth.login.$post({ json: data })),
-    onSuccess: () => navigate({ to: "/" }),
+    onSuccess: (user) => {
+      setUser({ ...user, countIndexerManagers: 0 });
+      navigate({ to: "/" });
+    },
     onError: (err: unknown) => {
       setError(err instanceof Error ? err.message : t(msg`An error occurred`));
     },

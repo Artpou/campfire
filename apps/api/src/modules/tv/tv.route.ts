@@ -1,6 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 
 import { NotFoundError } from "@/errors/error";
+import { tmdbRateLimiter } from "@/middlewares/rate-limiter.middleware";
 import {
   tmdbDiscoverDto,
   tmdbIdDto,
@@ -12,7 +13,7 @@ import {
 import { TVService } from "./tv.service";
 
 export const tvRoutes = TVService.createTMDBRouter("tv")
-
+  .use(tmdbRateLimiter)
   .get("/trending", zValidator("query", tmdbListDto), async (c) => {
     return c.json(await c.var.service.trending());
   })

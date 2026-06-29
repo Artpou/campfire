@@ -1,9 +1,9 @@
-"use client";
-
 import { useState } from "react";
 
-import { type Messages, setupI18n } from "@lingui/core";
+import type { Messages } from "@lingui/core";
 import { I18nProvider } from "@lingui/react";
+
+import { activateI18n, i18n } from "@/i18n";
 
 export function LinguiClientProvider({
   children,
@@ -14,11 +14,9 @@ export function LinguiClientProvider({
   initialLocale: string;
   initialMessages: Messages;
 }) {
-  const [i18n] = useState(() => {
-    return setupI18n({
-      locale: initialLocale,
-      messages: { [initialLocale]: initialMessages },
-    });
+  useState(() => {
+    activateI18n(initialLocale, initialMessages);
+    return true;
   });
 
   return <I18nProvider i18n={i18n}>{children}</I18nProvider>;

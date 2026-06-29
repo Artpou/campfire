@@ -6,6 +6,7 @@ import { ClockPlusIcon, HeartIcon, InfoIcon } from "lucide-react";
 
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
+import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/shared/ui/sheet";
@@ -33,9 +34,9 @@ export const Route = createFileRoute("/_app/tv/$id/")({
 
 function TVPage() {
   const params = Route.useParams();
-  const context = Route.useRouteContext();
   const [sheetOpen, setSheetOpen] = useState(false);
-  const { data } = useSuspenseQuery(tvQueries.details(params.id, context.language));
+  const locale = useTmdbLocale();
+  const { data } = useSuspenseQuery(tvQueries.details(params.id, locale));
 
   const toggleLike = useToggleLike();
   const toggleWatchList = useToggleWatchList();

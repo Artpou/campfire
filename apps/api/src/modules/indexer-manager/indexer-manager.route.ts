@@ -1,7 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 
-import { stringIdParamDto } from "@/shared/param.dto";
-
+import { stringIdParamDto } from "@/helpers/param.dto";
 import { requireRole } from "@/modules/auth/role.guard";
 import { createIndexerManagerDto, updateIndexerManagerDto } from "./indexer-manager.dto";
 import { IndexerManagerService } from "./indexer-manager.service";

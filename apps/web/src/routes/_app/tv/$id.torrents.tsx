@@ -8,6 +8,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
+import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Container } from "@/shared/ui/container";
 import { Label } from "@/shared/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
@@ -56,12 +57,12 @@ const ALL_EPISODES = "all";
 
 function TVTorrentsPage() {
   const params = Route.useParams();
-  const context = Route.useRouteContext();
   const search = Route.useSearch();
   const navigate = useNavigate();
   const { t } = useLingui();
 
-  const { data: tvData } = useSuspenseQuery(tvQueries.details(params.id, context.language));
+  const locale = useTmdbLocale();
+  const { data: tvData } = useSuspenseQuery(tvQueries.details(params.id, locale));
   const { data: managers } = useSuspenseQuery(indexerQueries.list({ withDisabled: false }));
   const { torrents, sources, indexerStats, isLoading } = useTorrents(tvData.media, managers, {
     season: search.season,
@@ -76,7 +77,7 @@ function TVTorrentsPage() {
   const selectedSeason = search.season ?? validSeasons[0]?.season_number;
 
   const { data: seasonDetails } = useQuery({
-    ...tvQueries.season(Number(params.id), selectedSeason ?? 1, context.language),
+    ...tvQueries.season(Number(params.id), selectedSeason ?? 1, locale),
     enabled: !!selectedSeason,
   });
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ActivityIcon, HardDriveIcon, LogOutIcon, RssIcon, SettingsIcon, UsersIcon, WrenchIcon } from "lucide-react";
 
@@ -29,6 +30,7 @@ function SettingsPage() {
   const { isAdmin } = useRole();
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const logout = useAuth((s) => s.logout);
 
   const tabs = [
@@ -48,6 +50,7 @@ function SettingsPage() {
       // continue even if server logout fails
     }
     logout();
+    queryClient.clear();
     navigate({ to: "/login" });
   };
 

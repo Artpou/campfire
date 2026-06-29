@@ -1,3 +1,4 @@
+import { STREMIO_PRESET_NAMES, STREMIO_PRESETS, type StremioPresetName } from "@seedarr/shared";
 import { createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -31,17 +32,12 @@ const stremioAddonSchema = z.object({
   manifestUrl: z.string().url().max(2048),
 });
 
-export const STREMIO_PRESETS = {
-  torrentio: "https://torrentio.strem.fun/manifest.json",
-  comet: "https://comet.elfhosted.com/manifest.json",
-  mediafusion: "https://mediafusion.elfhosted.com/manifest.json",
-} as const;
-
-export type PresetName = keyof typeof STREMIO_PRESETS;
+export { STREMIO_PRESETS };
+export type PresetName = StremioPresetName;
 
 const presetSchema = z.object({
   type: z.literal("PRESET"),
-  preset: z.enum(["torrentio", "comet", "mediafusion"]),
+  preset: z.enum(STREMIO_PRESET_NAMES),
 });
 
 export const createIndexerManagerDto = z.discriminatedUnion("type", [

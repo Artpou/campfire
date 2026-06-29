@@ -86,7 +86,7 @@ export function DownloadFilesList({ className, files, title, defaultExpanded = t
               </Badge>
               {subtitleCount > 0 && (
                 <Badge variant="secondary" className="text-xs">
-                  {subtitleCount} subtitles
+                  <Trans>{subtitleCount} subtitles</Trans>
                 </Badge>
               )}
             </div>

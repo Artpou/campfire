@@ -1,5 +1,5 @@
 import { msg } from "@lingui/core/macro";
-import { useLingui } from "@lingui/react/macro";
+import { Trans } from "@lingui/react";
 import type { Media } from "@seedarr/sdk";
 import { useNavigate } from "@tanstack/react-router";
 import { FilmIcon, LayoutGridIcon, TvIcon } from "lucide-react";
@@ -13,13 +13,12 @@ interface MediaTypeTabsProps {
 }
 
 const TAB_OPTIONS = [
-  { value: "all" as const, icon: LayoutGridIcon, label: msg`All` },
-  { value: "movie" as const, icon: FilmIcon, label: msg`Movies` },
-  { value: "tv" as const, icon: TvIcon, label: msg`TV Shows` },
-];
+  { value: "all" as const, icon: LayoutGridIcon, label: msg({ id: "media-type.all", message: "All" }) },
+  { value: "movie" as const, icon: FilmIcon, label: msg({ id: "media-type.movies", message: "Movies" }) },
+  { value: "tv" as const, icon: TvIcon, label: msg({ id: "media-type.tv-shows", message: "TV Shows" }) },
+] as const;
 
 export function MediaTypeTabs({ value }: MediaTypeTabsProps) {
-  const { t } = useLingui();
   const navigate = useNavigate();
 
   return (
@@ -31,7 +30,9 @@ export function MediaTypeTabs({ value }: MediaTypeTabsProps) {
         {TAB_OPTIONS.map(({ value: val, icon: Icon, label }) => (
           <TabsTrigger key={val} value={val ?? "all"} size="lg">
             <Icon className="size-4 text-foreground" />
-            <span className="font-medium">{t(label)}</span>
+            <span className="font-medium">
+              <Trans id={label.id} />
+            </span>
           </TabsTrigger>
         ))}
       </TabsList>

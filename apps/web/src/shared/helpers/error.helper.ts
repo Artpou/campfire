@@ -1,9 +1,10 @@
+import { t } from "@lingui/core/macro";
 import { ApiError } from "@seedarr/sdk";
 import { isNotFound } from "@tanstack/react-router";
 
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
-  return "Something went wrong";
+  return t`Something went wrong`;
 }
 
 export function isRouteNotFound(error: unknown): boolean {

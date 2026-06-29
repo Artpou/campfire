@@ -8,6 +8,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
+import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Container } from "@/shared/ui/container";
 
 import { movieQueries } from "@/features/movies/hooks/movie.queries";
@@ -32,10 +33,10 @@ export const Route = createFileRoute("/_app/movies/$id/torrents")({
 
 function MovieTorrentsPage() {
   const params = Route.useParams();
-  const context = Route.useRouteContext();
   const { t } = useLingui();
 
-  const { data: movie } = useSuspenseQuery(movieQueries.details(params.id, context.language));
+  const locale = useTmdbLocale();
+  const { data: movie } = useSuspenseQuery(movieQueries.details(params.id, locale));
   const { data: managers } = useSuspenseQuery(indexerQueries.list({ withDisabled: false }));
   const { torrents, sources, indexerStats, isLoading } = useTorrents(movie.media, managers);
 

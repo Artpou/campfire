@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { user } from "@/modules/user/user.schema";
-import { bodyOf, createTestDb, type TestDb } from "@/tests/test.helper";
+import { createAuthGuardMock, seedTestUser } from "@/tests/route-test.helper";
+import type { TestDb } from "@/tests/test.helper";
+import { bodyOf, createTestDb } from "@/tests/test.helper";
 
 const { fakeUser, testDbRef } = vi.hoisted(() => {
   const fakeUser = { id: "user-1", username: "testuser", role: "member" as const, createdAt: new Date("2024-01-01") };
@@ -15,10 +16,7 @@ vi.mock("@/db/db", () => ({
   },
 }));
 vi.mock("@/modules/auth/auth.guard", () => ({
-  authGuard: async (c: unknown, next: () => Promise<void>) => {
-    (c as { set: (k: string, v: unknown) => void }).set("user", fakeUser);
-    await next();
-  },
+  authGuard: createAuthGuardMock(fakeUser),
 }));
 
 const mockFetch = vi.fn();
@@ -85,10 +83,7 @@ const { tvRoutes } = await import("./tv.route");
 describe("TV Routes", () => {
   beforeEach(() => {
     testDbRef.current = createTestDb();
-    testDbRef.current
-      .insert(user)
-      .values({ id: fakeUser.id, username: fakeUser.username, password: "x", role: "member", createdAt: new Date() })
-      .run();
+    seedTestUser(testDbRef.current, fakeUser);
 
     mockFetch.mockImplementation(async (input: string | URL | Request) => {
       const url = input.toString();

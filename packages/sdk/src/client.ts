@@ -10,10 +10,10 @@ export const getBaseUrl = () => {
   return "";
 };
 
-export function withSessionParam(url: string, session?: string): string {
-  if (!session) return url;
+export function withMediaTokenParam(url: string, token?: string): string {
+  if (!token) return url;
   const separator = url.includes("?") ? "&" : "?";
-  return `${url}${separator}session=${encodeURIComponent(session)}`;
+  return `${url}${separator}token=${encodeURIComponent(token)}`;
 }
 
 export class ApiError extends Error {

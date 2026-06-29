@@ -1,5 +1,6 @@
 export type { Language, Resolution, Source } from "@ctrl/video-filename-parser";
 
+export type { Paginate, PaginationQuery } from "../helpers/pagination.dto";
 export type { ListActivityLogsQuery } from "../modules/activity-log/activity-log.dto";
 export type { ActivityLogAction, ActivityLogType } from "../modules/activity-log/activity-log.schema";
 export type { LoginInput, RegisterInput } from "../modules/auth/auth.dto";
@@ -19,7 +20,7 @@ export type {
   UpdateProgressQuery,
 } from "../modules/media/media.dto";
 export type { movieIdQuery } from "../modules/movie/movie.dto";
-export type { DownloadSubtitleInput, SubdlSubtitle, SubstitlesSearchQuery } from "../modules/subtitle/subtitle.dto";
+export type { DownloadSubtitleInput, SubdlSubtitle, SubtitlesSearchQuery } from "../modules/subtitle/subtitle.dto";
 export type {
   TMDBCastMember,
   TMDBCredits,
@@ -47,4 +48,3 @@ export type {
 export type { TorrentInspectFile, torrentInspectQuery, torrentListQuery } from "../modules/torrent/torrent.dto";
 export type { CreateUserInput, UpdateUserInput } from "../modules/user/user.dto";
 export type { UserRole } from "../modules/user/user.schema";
-export type { Paginate, PaginationQuery } from "../shared/pagination.dto";

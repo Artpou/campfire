@@ -1,4 +1,4 @@
-import { type Messages, setupI18n } from "@lingui/core";
+import type { Messages } from "@lingui/core";
 import type { AvailableLanguage } from "tmdb-ts";
 
 // @ts-expect-error - Compiled message files don't have type definitions
@@ -11,11 +11,12 @@ const LOCALE_STORAGE_KEY = "locale";
 export const UI_LOCALES = ["en", "fr"] as const;
 
 function getStoredCountry(): string | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === "undefined" || typeof localStorage === "undefined") return null;
   return localStorage.getItem(LOCALE_STORAGE_KEY);
 }
 
 export function setStoredCountry(country: string): void {
+  if (typeof localStorage === "undefined") return;
   localStorage.setItem(LOCALE_STORAGE_KEY, country);
 }
 
@@ -32,7 +33,13 @@ export function getInitialCountry(): string {
   if (stored) return stored;
 
   const browserLocale = navigator.language || "en-US";
-  return browserLocale.split("-")[1] || "US";
+  const [language, region] = browserLocale.split("-");
+
+  if (region) return region.toUpperCase();
+  if (language === "fr") return "FR";
+  if (language === "en") return "US";
+
+  return "US";
 }
 
 const allMessages: Record<string, Messages> = {
@@ -40,15 +47,8 @@ const allMessages: Record<string, Messages> = {
   fr: frMessages,
 };
 
-/**
- * Create a new i18n instance for the given locale.
- * Used for SSR and client-side rendering.
- */
-export function getI18nInstance(locale: string) {
-  return setupI18n({
-    locale,
-    messages: { [locale]: allMessages[locale] || allMessages.en },
-  });
+export function getI18nMessages(language: string): Messages {
+  return allMessages[language] || allMessages.en;
 }
 
 /**

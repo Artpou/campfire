@@ -5,8 +5,9 @@ import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { SESSION_COOKIE_NAME, sessionCookieOptions } from "@/auth/auth.constants";
 import { hashPassword, verifyPassword } from "@/auth/password.util";
 import { createSession, deleteOtherSessions, deleteSession, resolveAuthenticatedSession } from "@/auth/session.util";
-import { ForbiddenError, NotFoundError, UnauthorizedError } from "@/errors/error";
+import { NotFoundError, UnauthorizedError } from "@/errors/error";
 import { authRateLimiter } from "@/middlewares/rate-limiter.middleware";
+import { createMediaToken } from "@/modules/auth/media-token.service";
 import { IndexerManagerService } from "@/modules/indexer-manager/indexer-manager.service";
 import { ActivityLogService } from "../activity-log/activity-log.service";
 import { UserService } from "../user/user.service";
@@ -21,9 +22,6 @@ export const authRoutes = new Hono()
   .post("/register", authRateLimiter, zValidator("json", registerDto), async (c) => {
     const { username, password } = c.req.valid("json");
     const userService = new UserService();
-
-    const hasOwner = await userService.hasOwner();
-    if (hasOwner) throw new ForbiddenError("Registration is closed. Contact an administrator.");
 
     const newUser = await userService.register(username, hashPassword(password));
     const sessionToken = await createSession(newUser.id);
@@ -85,7 +83,10 @@ export const authRoutes = new Hono()
   .get("/media-session", async (c) => {
     const sessionToken = getCookie(c, SESSION_COOKIE_NAME);
     if (typeof sessionToken !== "string") throw new UnauthorizedError("Not authenticated");
-    return c.json({ session: sessionToken });
+    const resolved = await resolveAuthenticatedSession(sessionToken);
+    if (!resolved) throw new UnauthorizedError("Invalid session");
+    const token = await createMediaToken(resolved.user.id);
+    return c.json({ token });
   })
   .get("/me", async (c) => {
     const sessionToken = getCookie(c, SESSION_COOKIE_NAME);

@@ -1,4 +1,5 @@
 import { BadRequestError } from "@/errors/error";
+import { assertPublicHttpUrl } from "@/helpers/url.helper";
 import { enrichMagnetUri } from "./magnet-tracker.helper";
 
 const MAX_REDIRECT_DEPTH = 5;
@@ -6,8 +7,8 @@ const MAX_REDIRECT_DEPTH = 5;
 export async function resolveTorrentSource(uri: string, depth = 0): Promise<string | Buffer> {
   if (uri.startsWith("magnet:")) return enrichMagnetUri(uri);
   if (depth > MAX_REDIRECT_DEPTH) throw new BadRequestError("Too many redirects");
-  if (!uri.startsWith("http://") && !uri.startsWith("https://"))
-    throw new BadRequestError("Invalid torrent URI scheme");
+
+  assertPublicHttpUrl(uri);
 
   const response = await fetch(uri, {
     redirect: "manual",
@@ -20,6 +21,7 @@ export async function resolveTorrentSource(uri: string, depth = 0): Promise<stri
     if (location.startsWith("magnet:")) return enrichMagnetUri(location);
 
     const resolved = new URL(location, uri).toString();
+    assertPublicHttpUrl(resolved);
     return resolveTorrentSource(resolved, depth + 1);
   }
 

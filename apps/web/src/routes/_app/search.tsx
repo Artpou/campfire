@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { Media } from "@seedarr/sdk";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useDebounce } from "@uidotdev/usehooks";
-import { FilmIcon, SearchIcon, TvIcon } from "lucide-react";
+import { FilmIcon, LayoutGridIcon, SearchIcon, TvIcon } from "lucide-react";
 
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
@@ -16,9 +15,13 @@ import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { MediaCarousel } from "@/features/media/components/media-carousel";
 import { MediaGrid } from "@/features/media/components/media-grid";
-import { getMediaType } from "@/features/media/helpers/media.helper";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
-import { shouldLoadSearchResults, validateSearchRouteSearch } from "@/routes/helpers/search-route.helper";
+import {
+  filterSearchResultsByType,
+  type SearchRouteType,
+  shouldLoadSearchResults,
+  validateSearchRouteSearch,
+} from "@/routes/helpers/search-route.helper";
 
 export const Route = createFileRoute("/_app/search")({
   component: SearchPage,
@@ -63,8 +66,16 @@ function SearchPage() {
   const { data: trendingTv = [] } = useSuspenseQuery(mediaQueries.trending("tv", locale));
 
   const filteredResults = useMemo(() => {
-    return searchResults.filter((m: Media) => m.type === type);
+    return filterSearchResultsByType(searchResults, type);
   }, [searchResults, type]);
+
+  const handleTypeChange = (value: string) => {
+    navigate({
+      to: "/search",
+      search: { q, type: value as SearchRouteType },
+      replace: true,
+    });
+  };
 
   return (
     <Container>
@@ -81,20 +92,19 @@ function SearchPage() {
               autoFocus
             />
           </div>
-          <Tabs
-            value={type}
-            onValueChange={(v) =>
-              navigate({ to: "/search", search: { q, type: getMediaType(v) || "movie" }, replace: true })
-            }
-          >
-            <TabsList>
-              <TabsTrigger value="movie">
+          <Tabs value={type} onValueChange={handleTypeChange}>
+            <TabsList size="lg">
+              <TabsTrigger value="all" size="lg">
+                <LayoutGridIcon className="size-4" />
+                <Trans>All</Trans>
+              </TabsTrigger>
+              <TabsTrigger value="movie" size="lg">
                 <FilmIcon className="size-4" />
                 <Trans>Movies</Trans>
               </TabsTrigger>
-              <TabsTrigger value="tv">
+              <TabsTrigger value="tv" size="lg">
                 <TvIcon className="size-4" />
-                <Trans>TV</Trans>
+                <Trans>TV Shows</Trans>
               </TabsTrigger>
             </TabsList>
           </Tabs>

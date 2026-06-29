@@ -7,6 +7,7 @@ import { setStoredCountry, UI_LOCALES } from "@/shared/helpers/i18n.helper";
 import { Badge } from "@/shared/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 
+import { i18n } from "@/i18n";
 // @ts-expect-error - Compiled message files don't have type definitions
 import { messages as enMessages } from "@/locales/en/messages.mjs";
 // @ts-expect-error - Compiled message files don't have type definitions
@@ -48,8 +49,8 @@ const MESSAGES_MAP = {
 };
 
 export function LanguageDropdown() {
-  const { i18n } = useLingui();
-  const currentCountry = i18n.locale;
+  const { i18n: lingui } = useLingui();
+  const currentCountry = lingui.locale;
 
   const locales = useMemo(() => {
     const all = TMDB_COUNTRIES.map((country) => {
@@ -97,7 +98,7 @@ export function LanguageDropdown() {
     // Load UI messages if language is supported, otherwise keep current
     if (UI_LOCALES.includes(language as (typeof UI_LOCALES)[number])) {
       const messages = MESSAGES_MAP[language as keyof typeof MESSAGES_MAP];
-      i18n.load(language, messages);
+      i18n.load(country, messages);
     }
     i18n.activate(country);
     setStoredCountry(country);

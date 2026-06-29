@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { user } from "@/modules/user/user.schema";
+import { createAuthGuardMock } from "@/tests/route-test.helper";
 import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
 
 const { adminUser, testDbRef } = vi.hoisted(() => {
@@ -15,10 +16,7 @@ vi.mock("@/db/db", () => ({
   },
 }));
 vi.mock("@/modules/auth/auth.guard", () => ({
-  authGuard: async (c: unknown, next: () => Promise<void>) => {
-    (c as { set: (k: string, v: unknown) => void }).set("user", adminUser);
-    await next();
-  },
+  authGuard: createAuthGuardMock(adminUser),
 }));
 
 const { userRoutes } = await import("./user.route");

@@ -1,7 +1,7 @@
 import { Trans } from "@lingui/react/macro";
 import type { Resolution } from "@seedarr/sdk";
-import { cn } from "@seedarr/ui/cn";
 
+import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 
 export const QUALITY_LEVELS = [null, "480P", "720P", "1080P", "2160P", "4K"] as (Resolution | null)[];

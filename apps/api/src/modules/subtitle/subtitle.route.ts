@@ -1,15 +1,15 @@
 import { zValidator } from "@hono/zod-validator";
 
 import { ForbiddenError, NotFoundError } from "@/errors/error";
+import { resolveWithinDownloads } from "@/helpers/path.helper";
+import { subtitleRateLimiter } from "@/middlewares/rate-limiter.middleware";
 import { DownloadService } from "@/modules/download/download.service";
 import { SubtitleService } from "@/modules/subtitle/subtitle.service";
-import * as path from "node:path";
-import { downloadSubtitleDto, substitlesSearchDto } from "./subtitle.dto";
-
-const DOWNLOAD_PATH = process.env.DOWNLOADS_PATH || "./downloads";
+import { downloadSubtitleDto, subtitlesSearchDto } from "./subtitle.dto";
 
 export const subtitleRoutes = SubtitleService.createRouter()
-  .get("/search", zValidator("query", substitlesSearchDto), async (c) => {
+  .use(subtitleRateLimiter)
+  .get("/search", zValidator("query", subtitlesSearchDto), async (c) => {
     return c.json(await c.var.service.search(c.req.valid("query")));
   })
   .post("/download", zValidator("json", downloadSubtitleDto), async (c) => {
@@ -23,7 +23,7 @@ export const subtitleRoutes = SubtitleService.createRouter()
       throw new ForbiddenError("Unauthorized to add subtitles to this download");
     }
 
-    const downloadFolderPath = path.join(DOWNLOAD_PATH, download.torrent?.name ?? "");
+    const downloadFolderPath = resolveWithinDownloads(download.torrent?.name ?? "");
     const { relativePath } = await c.var.service.download(downloadFolderPath, url, language, mediaTitle);
     return c.json({ relativePath });
   });

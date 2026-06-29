@@ -1,6 +1,4 @@
-import { msg } from "@lingui/core/macro";
-import { useLingui } from "@lingui/react";
-import { Trans } from "@lingui/react/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
@@ -19,15 +17,15 @@ export const Route = createFileRoute("/_app/lists")({
     Promise.all([context.queryClient.ensureInfiniteQueryData(mediaQueries.list({ filter: deps.tab }))]),
 });
 
-const tabLabels: Record<ListsTab, ReturnType<typeof msg>> = {
-  "watch-list": msg`Watch List`,
-  like: msg`Liked`,
-};
-
 function ListsPage() {
   const { tab } = Route.useSearch();
   const navigate = useNavigate();
-  const { _ } = useLingui();
+  const { t } = useLingui();
+
+  const tabLabels: Record<ListsTab, string> = {
+    "watch-list": t`Watch List`,
+    like: t`Liked`,
+  };
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery({
     ...mediaQueries.list({ filter: tab }),
@@ -53,7 +51,7 @@ function ListsPage() {
             <TabsList size="lg">
               {listsTabValues.map((value) => (
                 <TabsTrigger key={value} value={value} size="lg">
-                  {_(tabLabels[value])}
+                  {tabLabels[value]}
                 </TabsTrigger>
               ))}
             </TabsList>

@@ -1,4 +1,4 @@
-import z from "zod";
+import { z } from "zod";
 
 export const stringIdParamDto = z.object({
   id: z.string().min(1),

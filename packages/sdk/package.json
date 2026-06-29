@@ -16,10 +16,10 @@
     "tsc": "tsc --noEmit"
   },
   "dependencies": {
-    "@seedarr/api": "workspace:*",
     "hono": "catalog:"
   },
   "devDependencies": {
+    "@seedarr/api": "workspace:*",
     "typescript": "catalog:"
   }
 }

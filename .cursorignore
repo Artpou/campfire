@@ -1,0 +1,21 @@
+# node_modules
+**/node_modules/
+.pnpm-store/
+
+# turbo
+.turbo/
+
+# vite & build
+**/dist/
+**/.vite/
+**/build/
+**/out/
+
+# logs
+*.log
+pnpm-debug.log*
+
+# system & ide
+.DS_Store
+.vscode/
+.idea/

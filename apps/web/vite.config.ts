@@ -11,7 +11,7 @@ const isKnip = process.env.KNIP === "true" || process.env.KNIP === "1";
 const config = defineConfig({
   envDir: "../../",
   plugins: [
-    tanstackRouter(),
+    tanstackRouter({ autoCodeSplitting: true }),
     checker({ 
       typescript: { tsconfigPath: "./tsconfig.json", buildMode: true },
     }),

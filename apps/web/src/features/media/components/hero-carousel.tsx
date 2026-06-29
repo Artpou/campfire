@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
+import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
 import { formatRuntime } from "@seedarr/shared";
@@ -227,7 +228,7 @@ export function HeroCarousel({ type }: HeroCarouselProps) {
 
   return (
     <section
-      aria-label="Hero carousel"
+      aria-label={t`Hero carousel`}
       className="relative -mt-14"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -248,7 +249,7 @@ export function HeroCarousel({ type }: HeroCarouselProps) {
       {!!data?.length && data.length > 1 && (
         <div className="absolute md:bottom-2 left-0 right-0 z-10">
           <div className="container mx-auto max-w-6xl px-4 md:px-6 flex items-center justify-center">
-            <div className="flex items-center gap-1.5" role="tablist" aria-label="Carousel navigation">
+            <div className="flex items-center gap-1.5" role="tablist" aria-label={t`Carousel navigation`}>
               {data.map((item, index) => (
                 <button
                   key={`dot-${item.type}-${item.id}`}

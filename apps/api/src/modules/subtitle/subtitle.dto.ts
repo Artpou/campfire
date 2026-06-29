@@ -1,11 +1,11 @@
 import { z } from "zod";
 
-export const substitlesSearchDto = z.object({
+export const subtitlesSearchDto = z.object({
   tmdb_id: z.string().max(32),
   languages: z.string().max(128),
   type: z.enum(["movie", "tv"]).optional(),
 });
-export type SubstitlesSearchQuery = z.infer<typeof substitlesSearchDto>;
+export type SubtitlesSearchQuery = z.infer<typeof subtitlesSearchDto>;
 
 export const downloadSubtitleDto = z.object({
   downloadId: z.string().max(128),

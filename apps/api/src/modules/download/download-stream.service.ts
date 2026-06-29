@@ -1,3 +1,4 @@
+import { assertWithinDownloads, resolveWithinDownloads } from "@/helpers/path.helper";
 import * as path from "node:path";
 import type { Download } from "./download.dto";
 import { torrentClient } from "./webtorrent.client";
@@ -11,19 +12,20 @@ export interface StreamResult {
 }
 
 export class DownloadStreamService {
-  constructor(private downloadPath: string) {}
-
   async getStreamForDownload(download: Download): Promise<StreamResult | undefined> {
     const activeTorrent = torrentClient.getActiveTorrent(download.id);
     if (activeTorrent) {
       const videoFile = findLargestVideoFile(activeTorrent);
       if (!videoFile) return undefined;
 
+      const filePath = path.join(activeTorrent.path, videoFile.path);
+      assertWithinDownloads(filePath);
+
       return {
         stream: videoFile.createReadStream(),
         size: videoFile.length,
         fileName: videoFile.name,
-        filePath: path.join(activeTorrent.path, videoFile.path),
+        filePath,
       };
     }
 
@@ -58,6 +60,7 @@ export class DownloadStreamService {
           .filter((file) => file.isFile() && videoExtensions.test(file.name))
           .map(async (file) => {
             const filePath = path.join(file.parentPath || fullPath, file.name);
+            assertWithinDownloads(filePath);
             const fileStats = await fs.stat(filePath);
             return { path: filePath, name: file.name, size: fileStats.size };
           }),
@@ -77,7 +80,8 @@ export class DownloadStreamService {
   }
 
   private getFullPath(download: Download, relativePath?: string): string {
-    const basePath = path.join(this.downloadPath, download.torrent?.name ?? "");
-    return relativePath ? path.join(basePath, relativePath) : basePath;
+    const segments = [download.torrent?.name ?? ""];
+    if (relativePath) segments.push(relativePath);
+    return resolveWithinDownloads(...segments);
   }
 }
