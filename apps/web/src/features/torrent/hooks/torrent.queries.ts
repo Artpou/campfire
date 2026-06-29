@@ -6,12 +6,19 @@ import { queryOptions, useQueries } from "@tanstack/react-query";
 
 export const torrentQueries = {
   key: ["torrent"] as const,
-  inspect: (magnetUri: string | null) =>
+  inspect: (magnetUri: string | null, indexerSeeders?: number) =>
     queryOptions({
-      queryKey: [...torrentQueries.key, "inspect", magnetUri],
+      queryKey: [...torrentQueries.key, "inspect", magnetUri, indexerSeeders],
       queryFn: () => {
         if (!magnetUri) throw new Error("No magnet URI provided");
-        return unwrap(api.torrents.inspect.$get({ query: { magnet: magnetUri } }));
+        return unwrap(
+          api.torrents.inspect.$get({
+            query: {
+              magnet: magnetUri,
+              ...(indexerSeeders !== undefined ? { indexerSeeders: String(indexerSeeders) } : {}),
+            },
+          }),
+        );
       },
       enabled: !!magnetUri,
     }),

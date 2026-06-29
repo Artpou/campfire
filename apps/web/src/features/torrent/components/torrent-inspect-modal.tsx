@@ -1,6 +1,7 @@
 import { Trans } from "@lingui/react/macro";
 import type { Torrent } from "@seedarr/sdk";
 import { useQuery } from "@tanstack/react-query";
+import { CheckCircle2Icon, TriangleAlertIcon } from "lucide-react";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
 import { Skeleton } from "@/shared/ui/skeleton";
@@ -34,7 +35,7 @@ function detectLanguage(name: string): string | null {
 }
 
 export function TorrentInspectModal({ open, onOpenChange, torrent, magnetUri }: TorrentInspectModalProps) {
-  const { data: inspectData, isLoading, error } = useQuery(torrentQueries.inspect(magnetUri));
+  const { data: inspectData, isLoading, error } = useQuery(torrentQueries.inspect(magnetUri, torrent?.seeders));
 
   const name = inspectData?.name || torrent?.title;
   const quality = name ? detectQuality(name) : null;
@@ -67,6 +68,47 @@ export function TorrentInspectModal({ open, onOpenChange, torrent, magnetUri }: 
 
         {inspectData && (
           <div className="space-y-4">
+            {inspectData.peersFound > 0 ? (
+              <div className="flex gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4">
+                <CheckCircle2Icon className="mt-0.5 size-4 shrink-0 text-emerald-500" />
+                <div className="space-y-1">
+                  <p className="font-medium">
+                    <Trans>{inspectData.peersFound} peers connected</Trans>
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    <Trans>This torrent looks reachable from Seedarr.</Trans>
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4">
+                <TriangleAlertIcon className="mt-0.5 size-4 shrink-0 text-destructive" />
+                <div className="space-y-1">
+                  <p className="font-medium text-destructive">
+                    <Trans>No peers detected</Trans>
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {inspectData.indexerSeeders != null && inspectData.indexerSeeders > 0 ? (
+                      <Trans>
+                        The indexer reports {inspectData.indexerSeeders} seeders, but Seedarr found no reachable peers.
+                        The download will likely stall — try another release.
+                      </Trans>
+                    ) : (
+                      <Trans>
+                        Seedarr found no reachable peers. The download will likely stall — try another release.
+                      </Trans>
+                    )}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {inspectData.trackers.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                <Trans>No trackers found in this torrent — peer discovery relies on DHT only.</Trans>
+              </p>
+            )}
+
             <DownloadMetadata origin={torrent?.tracker} quality={quality} language={language} />
             <DownloadFilesList files={inspectData.files} collapsible defaultExpanded />
           </div>

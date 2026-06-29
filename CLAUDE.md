@@ -28,6 +28,13 @@ Download
  ├── origin, quality, language (from torrent search metadata)
  └── error: string | null
 
+ActivityLog
+ ├── userId FK → User
+ ├── type: INFO | SUCCESS | WARNING | ERROR
+ ├── action: USER_LOGIN | DOWNLOAD_START | ...
+ ├── title, metadata (JSON)
+ └── createdAt
+
 IndexerManager → multiple configs (Jackett, Prowlarr, Stremio addons/presets)
 ```
 
@@ -37,7 +44,7 @@ IndexerManager → multiple configs (Jackett, Prowlarr, Stremio addons/presets)
 
 - **Package Manager**: pnpm v9+ (workspaces + catalog)
 - **Monorepo**: Turbo
-- **Runtime**: Node.js v18+ (tsx for API)
+- **Runtime**: Node.js v22+ (tsx for API)
 - **API**: Hono with TypeScript (port 3002)
 - **Web**: React 19 + TanStack Router + Vite (port 3000)
 - **Database**: SQLite — libsql (prod), better-sqlite3 (tests)
@@ -46,6 +53,7 @@ IndexerManager → multiple configs (Jackett, Prowlarr, Stremio addons/presets)
 - **Styling**: Tailwind CSS v4 + Radix UI primitives (shadcn pattern)
 - **State**: TanStack Query (server) + Zustand (auth + user preferences)
 - **Torrent**: WebTorrent
+- **Transcode**: fluent-ffmpeg (MKV→MP4)
 - **Video Player**: Plyr (plyr-react)
 - **Linting**: Biome (not ESLint/Prettier)
 - **i18n**: Lingui v5 (en, fr)
@@ -97,13 +105,13 @@ apps/
 │       │       ├── [module].service.ts  # Business logic
 │       │       └── [module].route.test.ts
 │       ├── helpers/        # Shared utilities
-│       ├── errors/         # HTTPException subclasses (401/403/404/400/409/503)
-│       ├── middlewares/    # Logger, rate limiter
+│       ├── errors/         # HTTPException subclasses in single file (401/403/404/400/409/503)
+│       ├── middlewares/    # Logger, rate limiter, CSRF, error handler
 │       ├── auth/           # Password (scrypt) + session utils
 │       └── db/             # Drizzle config, schema aggregation, migrations
 └── web/                    # React frontend
     └── src/
-        ├── features/       # Feature modules (media, movies, tv, torrent, downloads, subtitles, user, indexers-manager)
+        ├── features/       # Feature modules (media, movies, tv, torrent, downloads, subtitles, user, indexers-manager, person, settings)
         │   └── [feature]/
         │       ├── components/
         │       ├── hooks/          # *.queries.ts (queryOptions + mutations)
@@ -128,7 +136,7 @@ pnpm lint:fix     # Auto-fix with Biome
 pnpm db:generate  # Generate Drizzle migrations
 pnpm db:migrate   # Apply migrations
 pnpm db:push      # Push schema directly (dev only)
-pnpm db:studio    # Open Drizzle Studio
+pnpm --filter @seedarr/api db:studio   # Open Drizzle Studio
 ```
 
 **Always run `pnpm check` before committing.**
@@ -141,7 +149,8 @@ pnpm db:studio    # Open Drizzle Studio
 AuthenticatedService        → user in context, createRouter() factory
 ├── IdentifiableService<T>  → get/getMany/list with pagination
 │   ├── DownloadService, MediaService, UserService, IndexerManagerService
-│   └── TMDBService<S>      → MovieService, TVService
+│   └── TMDBService<S>      → MovieService, TVService (createTMDBRouter)
+├── ActivityLogService
 └── TorrentService, SubtitleService
 ```
 
@@ -162,6 +171,7 @@ Each module has `{module}.dto.ts`: Zod schemas for validation, TypeScript types 
 - First registration creates **owner**; subsequent registrations are forbidden
 - Session cookie (httpOnly, 7 days) + `?session=` query fallback for `<video>` elements
 - Role hierarchy: owner(4) > admin(3) > member(2) > viewer(1)
+- Session rotation after 24h + in-memory session cache (60s TTL)
 
 ### Streaming
 

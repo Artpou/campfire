@@ -1,6 +1,7 @@
 import type { Download, DownloadTorrentInput } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { type QueryState, queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 
@@ -31,6 +32,7 @@ export function useStartDownload() {
     },
   });
 }
+
 export function useDownloadDelete() {
   const queryClient = useQueryClient();
 
@@ -39,9 +41,16 @@ export function useDownloadDelete() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: downloadQueries.key });
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
+      toast.success("Download deleted");
+    },
+    onError: (error) => {
+      toast.error("Could not delete download", {
+        description: error instanceof Error ? error.message : undefined,
+      });
     },
   });
 }
+
 export function useDownloadPause() {
   const queryClient = useQueryClient();
 
@@ -50,9 +59,16 @@ export function useDownloadPause() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: downloadQueries.key });
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
+      toast.success("Download paused");
+    },
+    onError: (error) => {
+      toast.error("Could not pause download", {
+        description: error instanceof Error ? error.message : undefined,
+      });
     },
   });
 }
+
 export function useDownloadResume() {
   const queryClient = useQueryClient();
 
@@ -61,6 +77,12 @@ export function useDownloadResume() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: downloadQueries.key });
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
+      toast.success("Download resumed");
+    },
+    onError: (error) => {
+      toast.error("Could not resume download", {
+        description: error instanceof Error ? error.message : undefined,
+      });
     },
   });
 }

@@ -24,6 +24,7 @@ interface JackettSearchItem {
   Link: string;
   Guid: string;
   Details: string;
+  MagnetUri?: string;
 }
 
 interface JackettSearchResponse {
@@ -105,6 +106,7 @@ export class JackettAdapter extends IndexerAdapter {
       peers: result.Peers || 0,
       link: result.Link,
       guid: result.Guid,
+      magnetUrl: result.MagnetUri,
       detailsUrl: result.Details,
       indexerType: "jackett" as const,
       mediaInfos: filenameParse(result.Title),

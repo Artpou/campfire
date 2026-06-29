@@ -4,14 +4,15 @@ import type WebTorrent from "webtorrent";
 import { db } from "@/db/db";
 import { BadRequestError, NotFoundError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
-import { isPrivateHost } from "@/helpers/url.helper";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { IdentifiableService } from "@/modules/auth/auth.service";
 import { download } from "@/modules/download/download.schema";
 import { media } from "@/modules/media/media.schema";
+import { resolveTorrentSource } from "@/modules/torrent/torrent-source.helper";
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { Download, DownloadStats, DownloadTorrentInput, TorrentLiveData } from "./download.dto";
+import { waitForTorrentMetadata } from "./torrent-ready.helper";
 import { torrentClient } from "./webtorrent.client";
 import { extractTorrentLiveData } from "./webtorrent.helper";
 
@@ -57,12 +58,15 @@ export class DownloadService extends IdentifiableService<Download> {
   }
 
   async start(input: DownloadTorrentInput): Promise<Download> {
-    const torrentSource = await this.resolveTorrentSource(input.magnetUri);
-    const uri = typeof torrentSource === "string" ? torrentSource : input.magnetUri;
-    logger.debug("DOWNLOAD", `Resolved torrent source: ${uri}`);
+    const torrentSource = await resolveTorrentSource(input.magnetUri);
+    logger.debug("DOWNLOAD", `Resolved torrent source (magnet: ${torrentSource})`);
 
-    const torrent = torrentClient.safeAdd(uri, { path: DOWNLOAD_PATH });
+    const torrent = torrentClient.safeAdd(torrentSource, { path: DOWNLOAD_PATH });
+
     try {
+      const metadataTimeout = typeof torrentSource === "string" ? 10_000 : 5_000;
+      await waitForTorrentMetadata(torrent, metadataTimeout);
+
       const [newMedia] = await db
         .insert(media)
         .values(input.media)
@@ -88,7 +92,7 @@ export class DownloadService extends IdentifiableService<Download> {
         type: "SUCCESS",
         action: "DOWNLOAD_START",
         title: `Download started: ${input.name || "Torrent"}`,
-        metadata: { downloadId: newDownload.id, mediaId: newMedia.id, uri },
+        metadata: { downloadId: newDownload.id, mediaId: newMedia.id, magnetUri: input.magnetUri },
       });
 
       return newDownload;
@@ -173,32 +177,5 @@ export class DownloadService extends IdentifiableService<Download> {
     });
 
     return { success: true };
-  }
-
-  private static readonly MAX_REDIRECT_DEPTH = 5;
-
-  private async resolveTorrentSource(uri: string, depth = 0): Promise<string | Buffer> {
-    if (uri.startsWith("magnet:")) return uri;
-    if (depth > DownloadService.MAX_REDIRECT_DEPTH) throw new BadRequestError("Too many redirects");
-    if (!uri.startsWith("http://") && !uri.startsWith("https://"))
-      throw new BadRequestError("Invalid torrent URI scheme");
-
-    const parsed = new URL(uri);
-    if (isPrivateHost(parsed.hostname))
-      throw new BadRequestError("Torrent source URLs cannot point to private networks");
-
-    const response = await fetch(uri, { redirect: "manual" });
-
-    if (response.status >= 300 && response.status < 400) {
-      const location = response.headers.get("location");
-      if (!location) throw new BadRequestError("Redirect without Location header");
-      if (location.startsWith("magnet:")) return location;
-
-      const resolved = new URL(location, uri).toString();
-      return this.resolveTorrentSource(resolved, depth + 1);
-    }
-
-    if (!response.ok) throw new BadRequestError(`Failed to fetch .torrent file (${response.status})`);
-    return Buffer.from(await response.arrayBuffer());
   }
 }

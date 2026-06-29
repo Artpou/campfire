@@ -1,13 +1,48 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { useShallow } from "zustand/react/shallow";
 
 type Theme = "light" | "dark";
 
+interface ThemeStore {
+  theme: Theme;
+  toggleTheme: () => void;
+  setTheme: (theme: Theme) => void;
+}
+
+function readLegacyTheme(): Theme | null {
+  const legacy = localStorage.getItem("theme");
+  if (legacy === "light" || legacy === "dark") return legacy;
+  return null;
+}
+
+export const useThemeStore = create<ThemeStore>()(
+  persist(
+    (set) => ({
+      theme: readLegacyTheme() ?? "dark",
+      toggleTheme: () => set((state) => ({ theme: state.theme === "light" ? "dark" : "light" })),
+      setTheme: (theme) => set({ theme }),
+    }),
+    {
+      name: "seedarr-theme",
+    },
+  ),
+);
+
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const stored = localStorage.getItem("theme") as Theme | null;
-    if (stored) return stored;
-    return "dark";
-  });
+  return useThemeStore(
+    useShallow((state) => ({
+      theme: state.theme,
+      toggleTheme: state.toggleTheme,
+      setTheme: state.setTheme,
+    })),
+  );
+}
+
+export function useThemeSync(): void {
+  const theme = useThemeStore((state) => state.theme);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -15,12 +50,10 @@ export function useTheme() {
     if (theme === "light") {
       root.classList.add("light");
     }
-    localStorage.setItem("theme", theme);
+
+    const legacy = localStorage.getItem("theme");
+    if (legacy === "light" || legacy === "dark") {
+      localStorage.removeItem("theme");
+    }
   }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
-  };
-
-  return { theme, toggleTheme, setTheme };
 }

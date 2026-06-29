@@ -12,9 +12,8 @@
     }
   },
   "scripts": {
-    "build": "rm -f tsconfig.tsbuildinfo && tsc --build",
-    "dev:types": "tsc --build --watch --preserveWatchOutput",
-    "tsc": "tsc --build"
+    "build:types": "tsc --build --force",
+    "tsc": "tsc --noEmit"
   },
   "dependencies": {
     "@seedarr/api": "workspace:*",

@@ -80,14 +80,13 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
     return Array.from(langs).sort();
   }, [torrents]);
 
-  /**
-   * Extract the best download URI from a torrent object
-   * Priority: guid (if magnet) > downloadUrl > magnetUrl > link
-   */
   const getTorrentUri = (torrent: Torrent): string => {
-    if (torrent.guid?.startsWith("magnet:")) return torrent.guid;
     if (torrent.downloadUrl) return torrent.downloadUrl;
+    if (torrent.link.startsWith("http://") || torrent.link.startsWith("https://")) return torrent.link;
+    if (torrent.magnetUrl?.includes("tr=")) return torrent.magnetUrl;
+    if (torrent.guid?.startsWith("magnet:") && torrent.guid.includes("tr=")) return torrent.guid;
     if (torrent.magnetUrl) return torrent.magnetUrl;
+    if (torrent.guid?.startsWith("magnet:")) return torrent.guid;
     return torrent.link;
   };
 
@@ -100,6 +99,9 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
 
   const handleAddDownload = async (torrent: Torrent) => {
     const magnetUri = getTorrentUri(torrent);
+    const toastId = toast.loading(t`Starting download…`, {
+      description: torrent.title,
+    });
 
     try {
       await startDownload.mutateAsync({
@@ -110,10 +112,15 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
         quality: torrent.mediaInfos?.resolution,
         language: torrent.mediaInfos?.languages?.[0],
       });
+      toast.success(t`Download started`, {
+        id: toastId,
+        description: torrent.title,
+      });
       navigate({ to: "/downloads" });
     } catch (error) {
       const message = error instanceof Error ? error.message : t`Unknown error`;
       toast.error(t`Download failed`, {
+        id: toastId,
         description: message,
       });
     }

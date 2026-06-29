@@ -16,6 +16,6 @@
     "allowImportingTsExtensions": true,
     "resolvePackageJsonExports": true
   },
-  "include": ["src/**/*.ts", "env.d.ts"],
+  "include": ["src/**/*.ts", "src/env.d.ts"],
   "references": [{ "path": "../../apps/api" }]
 }

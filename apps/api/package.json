@@ -2,7 +2,6 @@
   "name": "@seedarr/api",
   "version": "1.0.0",
   "private": true,
-  "main": "./src/app.ts",
   "types": "./dist/app.d.ts",
   "exports": {
     ".": {
@@ -11,7 +10,7 @@
     },
     "./export/inputs": {
       "types": "./dist/export/inputs.d.ts",
-      "default": "./src/export/inputs.d.ts"
+      "default": "./src/export/inputs.ts"
     },
     "./export/schemas": {
       "types": "./dist/export/schemas.d.ts",
@@ -24,9 +23,9 @@
   },
   "scripts": {
     "dev": "tsx watch --include 'src/**' src/server.ts",
-    "tsc": "tsc --build",
-    "build": "rm -f tsconfig.tsbuildinfo && tsc --build",
-    "build:runtime": "tsup",
+    "build:types": "tsc --build --force",
+    "tsc": "tsc --noEmit",
+    "build": "tsup",
     "start": "node dist-server/server.mjs",
     "lint": "biome check .",
     "lint:fix": "biome check --write --unsafe .",

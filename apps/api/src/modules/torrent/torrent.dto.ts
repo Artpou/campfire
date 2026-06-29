@@ -35,7 +35,16 @@ export interface TorrentInspectResult {
   infoHash: string;
   files: TorrentInspectFile[];
   totalSize: number;
+  trackers: string[];
+  peersFound: number;
+  indexerSeeders?: number;
 }
+
+export const torrentInspectDto = z.object({
+  magnet: z.string().min(1).max(8192),
+  indexerSeeders: z.coerce.number().int().nonnegative().optional(),
+});
+export type torrentInspectQuery = z.infer<typeof torrentInspectDto>;
 
 export const torrentListDto = z.object({
   indexerManagerId: z.string(),
@@ -45,8 +54,3 @@ export const torrentListDto = z.object({
   episode: z.number().int().positive().optional(),
 });
 export type torrentListQuery = z.infer<typeof torrentListDto>;
-
-export const torrentInspectDto = z.object({
-  magnet: z.string().min(1).max(8192),
-});
-export type torrentInspectQuery = z.infer<typeof torrentInspectDto>;

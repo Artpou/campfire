@@ -8,6 +8,7 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { toPaginationQuery } from "@/shared/helpers/pagination.helper";
 
@@ -98,17 +99,34 @@ export function useToggleLike() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (media: Media) => unwrap(api.media[":id"].like.$post({ param: { id: media.id.toString() } })),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
+      toast.success(data.likes > 0 ? "Added to your likes" : "Removed from your likes", {
+        description: data.title,
+      });
+    },
+    onError: (error) => {
+      toast.error("Could not update likes", {
+        description: error instanceof Error ? error.message : undefined,
+      });
     },
   });
 }
+
 export function useToggleWatchList() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (media: Media) => unwrap(api.media[":id"].watchlist.$post({ param: { id: media.id.toString() } })),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
+      toast.success(data.watchList > 0 ? "Added to watch list" : "Removed from watch list", {
+        description: data.title,
+      });
+    },
+    onError: (error) => {
+      toast.error("Could not update watch list", {
+        description: error instanceof Error ? error.message : undefined,
+      });
     },
   });
 }

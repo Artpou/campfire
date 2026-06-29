@@ -8,13 +8,13 @@
     },
     "build": {
       "dependsOn": ["^build", "db:generate"],
-      "outputs": ["dist/**", ".next/**", "build/**"]
+      "outputs": ["dist/**", "dist-server/**"]
+    },
+    "build:types": {
+      "dependsOn": ["^build:types"],
+      "outputs": ["dist/**"]
     },
     "dev": {
-      "cache": false,
-      "persistent": true
-    },
-    "dev:types": {
       "cache": false,
       "persistent": true
     },
@@ -23,8 +23,8 @@
       "persistent": true
     },
     "tsc": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "dependsOn": ["^build:types"],
+      "outputs": []
     },
     "lint": { "outputs": [] },
     "lint:fix": { "outputs": [] },

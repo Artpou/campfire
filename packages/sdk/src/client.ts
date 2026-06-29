@@ -1,3 +1,5 @@
+/// <reference path="./env.d.ts" />
+
 import type { AppType } from "@seedarr/api";
 import { type ApplyGlobalResponse, type ClientResponse, hc, parseResponse } from "hono/client";
 

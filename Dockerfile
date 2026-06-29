@@ -22,7 +22,6 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 RUN pnpm --filter @seedarr/api build
-RUN pnpm --filter @seedarr/api build:runtime
 RUN pnpm --filter web build
 
 RUN pnpm --filter @seedarr/api --prod deploy --legacy /app/isolated

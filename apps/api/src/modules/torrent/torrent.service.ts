@@ -6,6 +6,10 @@ import { torrentClient } from "@/modules/download/webtorrent.client";
 import { IndexerManagerService } from "@/modules/indexer-manager/indexer-manager.service";
 import type { User } from "@/types";
 import type { Torrent, TorrentInspectResult, torrentInspectQuery, torrentListQuery } from "./torrent.dto";
+import { probeTorrentPeers } from "./torrent-peer.helper";
+import { resolveTorrentSource } from "./torrent-source.helper";
+
+const METADATA_TIMEOUT_MS = 30_000;
 
 export class TorrentService extends AuthenticatedService {
   private readonly managerService: IndexerManagerService;
@@ -25,38 +29,53 @@ export class TorrentService extends AuthenticatedService {
   }
 
   async inspectTorrent(query: torrentInspectQuery): Promise<TorrentInspectResult> {
-    const { magnet } = query;
+    const source = await resolveTorrentSource(query.magnet);
     const client = torrentClient.getClient();
 
     return new Promise((resolve, reject) => {
       let torrent: WebTorrent.Torrent | null = null;
+      let settled = false;
 
       const timeoutId = setTimeout(() => {
         if (torrent) torrent.destroy();
         reject(new ServiceUnavailableError("Torrent metadata fetch"));
-      }, 30000);
+      }, METADATA_TIMEOUT_MS);
 
-      torrent = client.add(magnet, { path: "/tmp" });
-
-      torrent.on("metadata", () => {
-        if (!torrent) return;
+      const finish = async (activeTorrent: WebTorrent.Torrent) => {
+        if (settled) return;
+        settled = true;
         clearTimeout(timeoutId);
 
-        for (const file of torrent.files) file.deselect();
+        for (const file of activeTorrent.files) file.deselect();
+
+        const peersFound = await probeTorrentPeers(activeTorrent);
 
         const result: TorrentInspectResult = {
-          name: torrent.name,
-          infoHash: torrent.infoHash,
-          files: torrent.files.map((file) => ({
+          name: activeTorrent.name,
+          infoHash: activeTorrent.infoHash,
+          files: activeTorrent.files.map((file) => ({
             name: file.name,
             path: file.path,
             length: file.length,
           })),
-          totalSize: torrent.length,
+          totalSize: activeTorrent.length,
+          trackers: activeTorrent.announce ?? [],
+          peersFound,
+          indexerSeeders: query.indexerSeeders,
         };
 
-        torrent.destroy();
+        activeTorrent.destroy();
         resolve(result);
+      };
+
+      torrent = client.add(source, { path: "/tmp" });
+
+      torrent.on("metadata", () => {
+        if (!torrent) return;
+        finish(torrent).catch((err) => {
+          torrent?.destroy();
+          reject(err);
+        });
       });
 
       torrent.on("error", (err) => {
@@ -65,6 +84,13 @@ export class TorrentService extends AuthenticatedService {
         const message = err instanceof Error ? err.message : String(err);
         reject(new ServiceUnavailableError(`Torrent error: ${message}`));
       });
+
+      if (torrent.ready) {
+        finish(torrent).catch((err) => {
+          torrent?.destroy();
+          reject(err);
+        });
+      }
     });
   }
 }

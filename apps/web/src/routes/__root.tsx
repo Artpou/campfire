@@ -4,6 +4,7 @@ import { createRootRouteWithContext, Navigate, Outlet, ScrollRestoration } from 
 import { Toaster } from "sonner";
 
 import { RouteErrorHandler } from "@/shared/components/route-error";
+import { useThemeStore, useThemeSync } from "@/shared/hooks/use-theme";
 
 import type { SeedarrRouterContext } from "@/router";
 
@@ -29,11 +30,14 @@ export const Route = createRootRouteWithContext<SeedarrRouterContext>()({
 });
 
 function RootComponent() {
+  useThemeSync();
+  const theme = useThemeStore((state) => state.theme);
+
   return (
     <>
       <ScrollRestoration />
       <Outlet />
-      <Toaster richColors position="bottom-right" />
+      <Toaster richColors position="bottom-right" theme={theme} />
       <TanStackDevtools />
     </>
   );

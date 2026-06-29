@@ -101,12 +101,16 @@ class WebTorrentManager {
     this.lastSyncTimestamps.delete(id);
   }
 
-  safeAdd(uri: string, opts: { path: string }): WebTorrent.Torrent {
+  safeAdd(source: string | Buffer, opts: { path: string }): WebTorrent.Torrent {
     const client = this.getClient();
-    const existing = client.torrents.find((t) => t.magnetURI === uri || (t.infoHash && uri.includes(t.infoHash)));
-    if (existing) return existing;
+    if (typeof source === "string") {
+      const existing = client.torrents.find(
+        (t) => t.magnetURI === source || (t.infoHash && source.includes(t.infoHash)),
+      );
+      if (existing) return existing;
+    }
 
-    return client.add(uri, opts);
+    return client.add(source, opts);
   }
 
   setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: string): void {

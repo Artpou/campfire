@@ -17,11 +17,11 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
     "composite": true,
     "declaration": true,
     "declarationMap": true,
     "emitDeclarationOnly": true,
-    "verbatimModuleSyntax": true,
     "outDir": "./dist",
     "rootDir": "./src"
   },
