@@ -122,7 +122,7 @@ apps/
 packages/
 ├── sdk/                    # @seedarr/sdk — Hono RPC client, unwrap, types re-export
 ├── shared/                 # @seedarr/shared — formatBytes, formatTime, slugify, toLatin
-└── ui/                     # @seedarr/ui — cn() only
+└── shared/                 # @seedarr/shared — formatBytes, presets, slugify, toLatin
 ```
 
 ## Dev Workflow
@@ -130,7 +130,7 @@ packages/
 ```bash
 pnpm dev          # Start both API + web (+ Drizzle Studio)
 pnpm --filter @seedarr/api dev   # API only (port 3002)
-pnpm --filter web dev            # Web only (port 3000)
+pnpm --filter @seedarr/web dev            # Web only (port 3000)
 pnpm check        # Full validation: tsc + lint + test + knip
 pnpm lint:fix     # Auto-fix with Biome
 pnpm db:generate  # Generate Drizzle migrations
@@ -169,7 +169,7 @@ Each module has `{module}.dto.ts`: Zod schemas for validation, TypeScript types 
 ### Auth
 
 - First registration creates **owner**; subsequent registrations are forbidden
-- Session cookie (httpOnly, 7 days) + `?session=` query fallback for `<video>` elements
+- Session cookie (httpOnly, 7 days) + short-lived `?token=` media token for `<video>` elements
 - Role hierarchy: owner(4) > admin(3) > member(2) > viewer(1)
 - Session rotation after 24h + in-memory session cache (60s TTL)
 

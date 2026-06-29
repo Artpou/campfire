@@ -4,7 +4,7 @@ Thank you for your interest in contributing! This guide covers how to set up the
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) v18.0.0 or higher
+- [Node.js](https://nodejs.org/) v22+
 - [pnpm](https://pnpm.io/) v9.0.0 or higher
 - (Optional) [FFmpeg](https://ffmpeg.org/) for MKV → MP4 transcoding
 - (Optional) A [TMDB API key](https://www.themoviedb.org/settings/api)
@@ -94,8 +94,7 @@ Thank you for your interest in contributing! This guide covers how to set up the
 
 packages/
 ├── sdk/                          # @seedarr/sdk — Hono RPC client & types
-├── shared/                       # @seedarr/shared — shared utilities
-└── ui/                           # @seedarr/ui — UI helpers
+└── shared/                       # @seedarr/shared — cross-app utilities
 ```
 
 ### Key Directories
@@ -112,10 +111,10 @@ packages/
 pnpm dev
 
 # Run API only
-pnpm dev:api
+pnpm --filter @seedarr/api dev
 
 # Run web only
-pnpm dev:web
+pnpm --filter @seedarr/web dev
 
 # Full validation (run before committing)
 pnpm check
