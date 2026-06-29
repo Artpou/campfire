@@ -1,5 +1,5 @@
 {
-  "name": "web",
+  "name": "@seedarr/web",
   "private": true,
   "type": "module",
   "scripts": {
@@ -32,7 +32,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@seedarr/sdk": "workspace:*",
     "@seedarr/shared": "workspace:*",
-    "@seedarr/ui": "workspace:*",
+    "clsx": "catalog:",
     "@tailwindcss/vite": "^4.0.6",
     "@tanstack/react-devtools": "^0.8.0",
     "@tanstack/react-query": "^5.90.7",
@@ -52,6 +52,7 @@
     "react-hook-form": "^7.66.0",
     "recharts": "^3.6.0",
     "sonner": "^2.0.7",
+    "tailwind-merge": "catalog:",
     "tailwindcss": "^4.1.18",
     "tmdb-ts": "catalog:",
     "vite-plugin-checker": "^0.14.1",

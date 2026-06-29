@@ -14,7 +14,6 @@ COPY apps/api/package.json ./apps/api/
 COPY apps/web/package.json ./apps/web/
 COPY packages/sdk/package.json ./packages/sdk/
 COPY packages/shared/package.json ./packages/shared/
-COPY packages/ui/package.json ./packages/ui/
 
 ENV HUSKY=0
 RUN pnpm install --frozen-lockfile
@@ -22,7 +21,7 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 RUN pnpm --filter @seedarr/api build
-RUN pnpm --filter web build
+RUN pnpm --filter @seedarr/web build
 
 RUN pnpm --filter @seedarr/api --prod deploy --legacy /app/isolated
 
