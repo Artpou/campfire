@@ -1,4 +1,3 @@
-import type { TV } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import type { TvShowQueryOptions } from "tmdb-ts";
@@ -20,7 +19,7 @@ export const tvQueries = {
     queryOptions({
       queryKey: [...tvQueries.key, "full", id, locale],
       queryFn: async () => {
-        const data = await unwrap<TV>(api.tv[":id"].$get({ param: { id }, query: { locale } }));
+        const data = await unwrap(api.tv[":id"].$get({ param: { id }, query: { locale } }));
         queryClient.setQueryData(["media", Number(id)], data.media);
         return data;
       },

@@ -2,6 +2,7 @@
 
 import type { AppType } from "@seedarr/api";
 import { type ApplyGlobalResponse, type ClientResponse, hc, parseResponse } from "hono/client";
+import type { ClientErrorStatusCode, ContentfulStatusCode, ServerErrorStatusCode } from "hono/utils/http-status";
 
 export const getBaseUrl = () => {
   if (import.meta.env.DEV) {
@@ -65,14 +66,27 @@ function toApiError(error: unknown): ApiError {
   return new ApiError("API Error", 0);
 }
 
+type SuccessStatusCode = Exclude<ContentfulStatusCode, ClientErrorStatusCode | ServerErrorStatusCode>;
+
+/** Success body from a `ClientResponse` union (excludes typed 4xx/5xx branches). */
+type UnwrapResult<T> = T extends ClientResponse<infer R, infer S, infer _F>
+  ? S extends SuccessStatusCode
+    ? R
+    : never
+  : never;
+
 /**
  * Parse a Hono client response with type safety.
  * Uses `parseResponse()` from hono/client; errors are normalized to `ApiError`.
  * Global error shapes (401/403/404/500) are available via `AppRpcType` for manual handling.
+ *
+ * Accepts the full `ClientResponse` union (incl. typed 400 validation failures from
+ * `@hono/zod-validator`) and returns only the success body, matching `parseResponse`.
+ * Do not pass an explicit type argument — it is the response union, not the JSON body.
  */
-export async function unwrap<R>(response: ClientResponse<R> | Promise<ClientResponse<R>>): Promise<R> {
+export async function unwrap<T extends ClientResponse<unknown>>(response: T | Promise<T>): Promise<UnwrapResult<T>> {
   try {
-    return (await parseResponse(response)) as R;
+    return (await parseResponse(response)) as UnwrapResult<T>;
   } catch (error) {
     throw toApiError(error);
   }

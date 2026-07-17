@@ -1,5 +1,4 @@
 import { t } from "@lingui/core/macro";
-import type { SubdlSearchResponse } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -11,15 +10,14 @@ export const subtitleQueries = {
   external: (downloadId: string) =>
     queryOptions({
       queryKey: [...subtitleQueries.key, "external", downloadId],
-      queryFn: () =>
-        unwrap<{ paths: string[] }>(api.downloads[":id"]["external-subtitles"].$get({ param: { id: downloadId } })),
+      queryFn: () => unwrap(api.downloads[":id"]["external-subtitles"].$get({ param: { id: downloadId } })),
     }),
 
   search: (tmdbId: string, languages: string, type?: "movie" | "tv") =>
     queryOptions({
       queryKey: [...subtitleQueries.key, "search", tmdbId, languages, type],
       queryFn: () =>
-        unwrap<SubdlSearchResponse>(
+        unwrap(
           api.subtitles.search.$get({
             query: { tmdb_id: tmdbId, languages, ...(type && { type }) },
           }),

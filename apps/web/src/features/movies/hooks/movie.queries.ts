@@ -1,4 +1,4 @@
-import type { Movie, tmdbDiscoverQuery } from "@seedarr/sdk";
+import type { tmdbDiscoverQuery } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 
@@ -20,7 +20,7 @@ export const movieQueries = {
     queryOptions({
       queryKey: ["movie-full", id, locale],
       queryFn: async () => {
-        const data = await unwrap<Movie>(api.movies[":id"].$get({ param: { id }, query: { locale } }));
+        const data = await unwrap(api.movies[":id"].$get({ param: { id }, query: { locale } }));
         queryClient.setQueryData(["media", Number(id)], data.media);
         return data;
       },
