@@ -137,7 +137,7 @@ export function MediaFiltersSheet({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant={buttonVariant} size="icon-lg" className="relative" aria-label="Filters">
+        <Button variant={buttonVariant} size="icon-lg" className="relative" aria-label={t(msg`Filters`)}>
           <FilterIcon />
           {activeCount > 0 && (
             <Badge className="absolute -top-1 -right-1 size-5 rounded-full p-0 text-[10px]">{activeCount}</Badge>

@@ -4,9 +4,9 @@ import { persist } from "zustand/middleware";
 
 interface AuthStore {
   user: AuthUser | null;
-  onboarded: boolean;
+  ownerOnboardingCompleted: boolean;
   setUser: (user: AuthUser | null) => void;
-  setOnboarded: () => void;
+  setOwnerOnboardingCompleted: () => void;
   logout: () => void;
 }
 
@@ -14,9 +14,9 @@ export const useAuth = create<AuthStore>()(
   persist(
     (set) => ({
       user: null,
-      onboarded: false,
+      ownerOnboardingCompleted: false,
       setUser: (user) => set({ user }),
-      setOnboarded: () => set({ onboarded: true }),
+      setOwnerOnboardingCompleted: () => set({ ownerOnboardingCompleted: true }),
       logout: () => set({ user: null }),
     }),
     {

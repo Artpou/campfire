@@ -1,13 +1,12 @@
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import { createFileRoute, redirect } from "@tanstack/react-router";
-import { type APITypes, Plyr } from "plyr-react";
-import "plyr-react/plyr.css";
-import { useEffect, useMemo, useRef, useState } from "react";
-
 import { api, getBaseUrl, unwrap, withMediaTokenParam } from "@seedarr/sdk";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { SubtitlesIcon } from "lucide-react";
+import type { APITypes } from "plyr-react";
 
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
@@ -16,17 +15,19 @@ import { mediaSessionQueries } from "@/shared/hooks/media-session.queries";
 import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
 
+import { hasMinRole } from "@/features/auth/helpers/role.helper";
 import { getTorrentFiles } from "@/features/downloads/helpers/downloads.helper";
 import { SubtitleSearchDialog } from "@/features/subtitles/components/subtitle-search-dialog";
 import { subtitleQueries } from "@/features/subtitles/hooks/subtitle.queries";
-import { downloadQueries } from "@/features/torrent/hooks/download.queries";
+import { downloadQueries, refetchDownloadInterval } from "@/features/torrent/hooks/download.queries";
 
-const ROLE_LEVELS = { owner: 4, admin: 3, member: 2, viewer: 1 } as const;
+import "plyr-react/plyr.css";
+
+const LazyPlyr = lazy(() => import("plyr-react").then((mod) => ({ default: mod.Plyr })));
 
 export const Route = createFileRoute("/_app/downloads/$id/play")({
   beforeLoad: ({ context }) => {
-    const role = context.user?.role;
-    if (!role || ROLE_LEVELS[role] < ROLE_LEVELS.member) {
+    if (!hasMinRole(context.user?.role, "member")) {
       throw redirect({ to: "/movies" });
     }
   },
@@ -43,7 +44,10 @@ export const Route = createFileRoute("/_app/downloads/$id/play")({
 function VideoPlayerPage() {
   const { id } = Route.useParams();
   const { t } = useLingui();
-  const { data: download } = useSuspenseQuery(downloadQueries.details(id));
+  const { data: download } = useSuspenseQuery({
+    ...downloadQueries.details(id),
+    refetchInterval: refetchDownloadInterval,
+  });
   const { data: externalSubtitles } = useSuspenseQuery(subtitleQueries.external(id));
   const { data: mediaSession } = useSuspenseQuery(mediaSessionQueries.get());
 
@@ -52,24 +56,6 @@ function VideoPlayerPage() {
 
   const [subtitleDialogOpen, setSubtitleDialogOpen] = useState(false);
   const hasInitialSeeked = useRef(false);
-
-  useEffect(() => {
-    if (download.torrent?.done) return;
-
-    const updateBufferBar = async (): Promise<void> => {
-      const details = await unwrap(api.downloads[":id"].$get({ param: { id } }));
-      const bufferBar = document.querySelector(".plyr__progress--buffer") as HTMLElement | null;
-      if (bufferBar && typeof details.torrent?.progress === "number") {
-        bufferBar.style.width = `${details.torrent.progress * 100}%`;
-      }
-    };
-
-    const interval = setInterval(() => {
-      void updateBufferBar();
-    }, 1500);
-
-    return () => clearInterval(interval);
-  }, [download.torrent?.done, id]);
 
   useEffect(() => {
     if (!download?.mediaId) return;
@@ -276,33 +262,35 @@ function VideoPlayerPage() {
             } as React.CSSProperties
           }
         >
-          <Plyr
-            crossOrigin="anonymous"
-            ref={videoRef}
-            onLoadedMetadata={handleVideoReady}
-            onCanPlay={handleVideoReady}
-            source={plyrSource}
-            options={{
-              controls: [
-                "play-large",
-                "restart",
-                "rewind",
-                "play",
-                "fast-forward",
-                "progress",
-                "current-time",
-                "duration",
-                "mute",
-                "volume",
-                "captions",
-                "settings",
-                "pip",
-                "airplay",
-                "fullscreen",
-              ],
-              settings: ["captions", "quality", "speed"],
-            }}
-          />
+          <Suspense fallback={<SeedarrLoaderContainer />}>
+            <LazyPlyr
+              crossOrigin="anonymous"
+              ref={videoRef}
+              onLoadedMetadata={handleVideoReady}
+              onCanPlay={handleVideoReady}
+              source={plyrSource}
+              options={{
+                controls: [
+                  "play-large",
+                  "restart",
+                  "rewind",
+                  "play",
+                  "fast-forward",
+                  "progress",
+                  "current-time",
+                  "duration",
+                  "mute",
+                  "volume",
+                  "captions",
+                  "settings",
+                  "pip",
+                  "airplay",
+                  "fullscreen",
+                ],
+                settings: ["captions", "quality", "speed"],
+              }}
+            />
+          </Suspense>
         </div>
 
         <style>{`

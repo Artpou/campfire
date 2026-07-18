@@ -69,7 +69,7 @@ export function useTorrents(media: Media, managers: IndexerManager[], { season, 
 
   return useQueries({
     queries: sources.map(({ indexerManagerId, indexerId }) => ({
-      queryKey: [...torrentQueries.key, media, indexerManagerId, indexerId, season, episode],
+      queryKey: [...torrentQueries.key, media.id, media.type, indexerManagerId, indexerId, season, episode],
       queryFn: async () => {
         if (!media) return [];
 

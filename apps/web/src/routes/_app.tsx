@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_app")({
 
       const isAdmin = user.role === "admin" || user.role === "owner";
       const noIndexers = user.countIndexerManagers === 0;
-      const alreadyOnboarded = useAuth.getState().onboarded;
+      const alreadyOnboarded = useAuth.getState().ownerOnboardingCompleted;
 
       if (isAdmin && noIndexers && !alreadyOnboarded && !location.pathname.startsWith("/onboarding")) {
         throw redirect({ to: "/onboarding" });

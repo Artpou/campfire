@@ -48,9 +48,9 @@ async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<R
   return res;
 }
 
-export type ApiClient = ReturnType<typeof hc<AppType>>;
+export type ApiClient = ReturnType<typeof hc<AppRpcType>>;
 
-export const createApiClient = (...args: Parameters<typeof hc>): ApiClient => hc<AppType>(...args);
+export const createApiClient = (...args: Parameters<typeof hc>): ApiClient => hc<AppRpcType>(...args);
 
 export const api: ApiClient = createApiClient(getBaseUrl(), {
   init: { credentials: "include" },

@@ -24,6 +24,7 @@ import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
 
+import { hasMinRole } from "@/features/auth/helpers/role.helper";
 import { DownloadActionButtons } from "@/features/downloads/components/download-action-buttons";
 import { DownloadFilesList } from "@/features/downloads/components/download-files-list";
 import { DownloadMetadata } from "@/features/downloads/components/download-metadata";
@@ -44,13 +45,10 @@ import {
   useDownloadTransfer,
 } from "@/features/torrent/hooks/download.queries";
 
-const ROLE_LEVELS = { owner: 4, admin: 3, member: 2, viewer: 1 } as const;
-
 export const Route = createFileRoute("/_app/downloads/$id/")({
   component: DownloadDetailPage,
   beforeLoad: ({ context }) => {
-    const role = context.user?.role;
-    if (!role || ROLE_LEVELS[role] < ROLE_LEVELS.member) {
+    if (!hasMinRole(context.user?.role, "member")) {
       throw redirect({ to: "/movies" });
     }
   },

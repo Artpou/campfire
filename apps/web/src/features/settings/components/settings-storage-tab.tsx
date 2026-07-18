@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
@@ -51,19 +51,21 @@ export function SettingsStorageTab() {
   const [initialized, setInitialized] = useState(false);
   const [enabling, setEnabling] = useState(false);
 
-  if (!initialized && config && !isLoading) {
-    const proto = (config.protocol as Protocol) || "ftp";
-    setEnabled(config.enabled);
-    setProtocol(proto);
-    setHost(config.host);
-    setPort(config.port ?? DEFAULT_PORTS[proto]);
-    setSecure(config.secure ?? false);
-    setMoviePath(config.moviePath ?? "");
-    setTvPath(config.tvPath ?? "");
-    setUsername(config.username ?? "");
-    setDeleteLocalAfterTransfer(config.deleteLocalAfterTransfer ?? false);
-    setInitialized(true);
-  }
+  useEffect(() => {
+    if (!initialized && config && !isLoading) {
+      const proto = (config.protocol as Protocol) || "ftp";
+      setEnabled(config.enabled);
+      setProtocol(proto);
+      setHost(config.host);
+      setPort(config.port ?? DEFAULT_PORTS[proto]);
+      setSecure(config.secure ?? false);
+      setMoviePath(config.moviePath ?? "");
+      setTvPath(config.tvPath ?? "");
+      setUsername(config.username ?? "");
+      setDeleteLocalAfterTransfer(config.deleteLocalAfterTransfer ?? false);
+      setInitialized(true);
+    }
+  }, [initialized, config, isLoading]);
 
   const hasRequiredFields = Boolean(host);
   const connectionPayload = {

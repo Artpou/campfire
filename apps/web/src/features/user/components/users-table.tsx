@@ -1,6 +1,7 @@
 import { useState } from "react";
 
-import { Trans } from "@lingui/react/macro";
+import { msg } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import type { User, UserRole } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { useMutation } from "@tanstack/react-query";
@@ -59,7 +60,15 @@ const roleConfig: Record<
   },
 };
 
+const ROLE_LABELS: Record<UserRole, ReturnType<typeof msg>> = {
+  owner: msg`Owner`,
+  admin: msg`Admin`,
+  member: msg`Member`,
+  viewer: msg`Viewer`,
+};
+
 export function UsersTable({ users, isLoading, onEditUser, onRefetch }: UsersTableProps) {
+  const { t } = useLingui();
   const { role } = useRole();
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
@@ -106,7 +115,11 @@ export function UsersTable({ users, isLoading, onEditUser, onRefetch }: UsersTab
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div>
+        <Trans>Loading...</Trans>
+      </div>
+    );
   }
 
   return (
@@ -152,7 +165,7 @@ export function UsersTable({ users, isLoading, onEditUser, onRefetch }: UsersTab
                         }}
                       >
                         <RoleIcon className="size-3.5" />
-                        {user.role}
+                        {t(ROLE_LABELS[user.role])}
                       </Badge>
                     </TableCell>
                     <TableCell>{formatDate(user.createdAt)}</TableCell>

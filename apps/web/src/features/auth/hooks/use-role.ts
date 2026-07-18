@@ -1,21 +1,12 @@
 import type { UserRole } from "@seedarr/sdk";
 
 import { useAuth } from "../auth-store";
-
-const roleHierarchy: Record<UserRole, number> = {
-  owner: 4,
-  admin: 3,
-  member: 2,
-  viewer: 1,
-};
+import { hasMinRole } from "../helpers/role.helper";
 
 export function useRole() {
   const user = useAuth((state) => state.user);
 
-  const hasRole = (minRole: UserRole): boolean => {
-    if (!user) return false;
-    return roleHierarchy[user.role] >= roleHierarchy[minRole];
-  };
+  const hasRole = (minRole: UserRole): boolean => hasMinRole(user?.role, minRole);
 
   return {
     role: user?.role,

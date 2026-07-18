@@ -12,6 +12,7 @@ import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
 import { Input } from "@/shared/ui/input";
 
+import { hasMinRole } from "@/features/auth/helpers/role.helper";
 import { DownloadsStatsPanel } from "@/features/downloads/components/downloads-stats-panel";
 import { downloadStatsQueries } from "@/features/downloads/hooks/download-stats.queries";
 import { MediaCard } from "@/features/media/components/media-card";
@@ -19,13 +20,10 @@ import { MediaTypeTabs } from "@/features/media/components/media-type-tabs";
 import { mediaQueries, refetchMediaInterval } from "@/features/media/hooks/media.queries";
 import { validateDownloadsSearch } from "@/routes/helpers/downloads-route.helper";
 
-const ROLE_LEVELS = { owner: 4, admin: 3, member: 2, viewer: 1 } as const;
-
 export const Route = createFileRoute("/_app/downloads/")({
   component: DownloadsPage,
   beforeLoad: ({ context }) => {
-    const role = context.user?.role;
-    if (!role || ROLE_LEVELS[role] < ROLE_LEVELS.member) {
+    if (!hasMinRole(context.user?.role, "member")) {
       throw redirect({ to: "/movies" });
     }
   },
@@ -86,7 +84,7 @@ function DownloadsPage() {
             <div className="flex items-center gap-6 flex-wrap flex-1">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">
-                  <Trans>Medias</Trans>
+                  <Trans>Media</Trans>
                 </span>
                 <span className="text-lg font-bold">{stats.count}</span>
               </div>
@@ -111,7 +109,7 @@ function DownloadsPage() {
 
             <Button variant="outline" size="sm" onClick={() => setStatsOpen(true)}>
               <InfoIcon className="size-4" />
-              <Trans>More infos</Trans>
+              <Trans>More info</Trans>
             </Button>
           </div>
         )}

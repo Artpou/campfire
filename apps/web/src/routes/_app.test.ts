@@ -9,7 +9,7 @@ const authState = vi.hoisted(() => ({
     createdAt: string;
     countIndexerManagers: number;
   } | null,
-  onboarded: false,
+  ownerOnboardingCompleted: false,
 }));
 
 vi.mock("@/features/auth/auth-store", () => ({
@@ -19,8 +19,8 @@ vi.mock("@/features/auth/auth-store", () => ({
       setUser: (user: typeof authState.user) => {
         authState.user = user;
       },
-      setOnboarded: () => {
-        authState.onboarded = true;
+      setOwnerOnboardingCompleted: () => {
+        authState.ownerOnboardingCompleted = true;
       },
       logout: () => {
         authState.user = null;
@@ -62,7 +62,7 @@ const memberUser = {
 describe("_app route beforeLoad", () => {
   beforeEach(() => {
     authState.user = null;
-    authState.onboarded = false;
+    authState.ownerOnboardingCompleted = false;
   });
 
   it("returns user when authenticated", async () => {
@@ -116,7 +116,7 @@ describe("_app route beforeLoad", () => {
   });
 
   it("skips onboarding redirect when user marked onboarded", async () => {
-    authState.onboarded = true;
+    authState.ownerOnboardingCompleted = true;
     const ensureQueryData = vi.fn().mockResolvedValue(ownerWithoutIndexers);
 
     const result = await beforeLoad?.({

@@ -1,12 +1,51 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 
 import type { Download } from "@seedarr/sdk";
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, YAxis } from "recharts";
 
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { Card } from "@/shared/ui/card";
 
 import { getDownloadStatus } from "@/features/downloads/helpers/downloads.helper";
+
+const LazyRecharts = lazy(() =>
+  import("recharts").then((mod) => ({
+    default: ({ data, status }: { data: NetworkDataPoint[]; status: ReturnType<typeof getDownloadStatus> }) => {
+      const { Area, AreaChart, CartesianGrid, ResponsiveContainer, YAxis } = mod;
+      const color =
+        status === "completed" ? "var(--blue)" : status === "downloading" ? "var(--primary)" : "var(--warning)";
+      const dataKey = status === "completed" ? "upload" : "download";
+
+      return (
+        <ResponsiveContainer>
+          <AreaChart data={data}>
+            <defs>
+              <linearGradient id="colorData" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={color} stopOpacity={0.3} />
+                <stop offset="95%" stopColor={color} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+            <YAxis
+              className="text-xs"
+              tick={{ fill: "var(--muted-foreground)" }}
+              label={{ value: "MB/s", angle: -90, position: "insideLeft" }}
+            />
+            <Area
+              type="monotone"
+              dataKey={dataKey}
+              stroke={color}
+              strokeWidth={2}
+              fill="url(#colorData)"
+              name={dataKey === "upload" ? "Upload" : "Download"}
+              animationDuration={300}
+              animationEasing="ease-in-out"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      );
+    },
+  })),
+);
 
 interface NetworkDataPoint {
   time: string;
@@ -52,60 +91,9 @@ export function DownloadNetworkChart({ download }: DownloadNetworkChartProps) {
   return (
     <Card className="p-0 pl-2 pt-2">
       <div className="h-32">
-        <ResponsiveContainer>
-          <AreaChart data={networkHistory}>
-            <defs>
-              {status === "completed" ? (
-                <linearGradient id="colorData" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--blue)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="var(--blue)" stopOpacity={0} />
-                </linearGradient>
-              ) : (
-                <linearGradient id="colorData" x1="0" y1="0" x2="0" y2="1">
-                  <stop
-                    offset="5%"
-                    stopColor={status === "downloading" ? "var(--primary)" : "var(--warning)"}
-                    stopOpacity={0.3}
-                  />
-                  <stop
-                    offset="95%"
-                    stopColor={status === "downloading" ? "var(--primary)" : "var(--warning)"}
-                    stopOpacity={0}
-                  />
-                </linearGradient>
-              )}
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-            <YAxis
-              className="text-xs"
-              tick={{ fill: "var(--muted-foreground)" }}
-              label={{ value: "MB/s", angle: -90, position: "insideLeft" }}
-            />
-            {status === "completed" ? (
-              <Area
-                type="monotone"
-                dataKey="upload"
-                stroke="var(--blue)"
-                strokeWidth={2}
-                fill="url(#colorData)"
-                name="Upload"
-                animationDuration={300}
-                animationEasing="ease-in-out"
-              />
-            ) : (
-              <Area
-                type="monotone"
-                dataKey="download"
-                stroke={status === "downloading" ? "var(--primary)" : "var(--warning)"}
-                strokeWidth={2}
-                fill="url(#colorData)"
-                name="Download"
-                animationDuration={300}
-                animationEasing="ease-in-out"
-              />
-            )}
-          </AreaChart>
-        </ResponsiveContainer>
+        <Suspense fallback={<SeedarrLoader className="my-11" size={40} />}>
+          <LazyRecharts data={networkHistory} status={status} />
+        </Suspense>
       </div>
     </Card>
   );

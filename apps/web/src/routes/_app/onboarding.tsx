@@ -19,8 +19,8 @@ import { INDEXER_DEFAULTS, STREMIO_PRESETS } from "@/features/indexers-manager/i
 
 export const Route = createFileRoute("/_app/onboarding")({
   beforeLoad: async () => {
-    const onboarded = useAuth.getState().onboarded;
-    if (onboarded) throw redirect({ to: "/" });
+    const alreadyOnboarded = useAuth.getState().ownerOnboardingCompleted;
+    if (alreadyOnboarded) throw redirect({ to: "/" });
 
     const countManagers = await unwrap(api["indexer-manager"].count.$get());
     if (countManagers > 0) throw redirect({ to: "/" });
@@ -45,7 +45,7 @@ function OnboardingPage() {
     onSuccess: async () => {
       const data = await unwrap(api.auth.me.$get());
       useAuth.getState().setUser(data);
-      useAuth.getState().setOnboarded();
+      useAuth.getState().setOwnerOnboardingCompleted();
       queryClient.invalidateQueries({ queryKey: ["indexer-manager"] });
       navigate({ to: "/" });
     },
@@ -134,7 +134,7 @@ function OnboardingPage() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    useAuth.getState().setOnboarded();
+                    useAuth.getState().setOwnerOnboardingCompleted();
                     navigate({ to: "/" });
                   }}
                   className="text-muted-foreground"
@@ -200,7 +200,7 @@ function OnboardingPage() {
                   <Button
                     variant="outline"
                     onClick={() => {
-                      useAuth.getState().setOnboarded();
+                      useAuth.getState().setOwnerOnboardingCompleted();
                       navigate({ to: "/" });
                     }}
                     className="text-muted-foreground"
