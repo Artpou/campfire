@@ -8,7 +8,9 @@
     "apps/web": {
       "ignore": ["src/shared/ui/*.tsx", "lingui.config.ts"]
     },
-    "apps/api": {},
+    "apps/api": {
+      "ignoreBinaries": ["ffmpeg"]
+    },
     "packages/sdk": {},
     "packages/shared": {}
   }

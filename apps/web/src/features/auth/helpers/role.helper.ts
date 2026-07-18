@@ -1,6 +1,6 @@
 import type { UserRole } from "@seedarr/sdk";
 
-export const ROLE_LEVELS: Record<UserRole, number> = {
+const ROLE_LEVELS: Record<UserRole, number> = {
   owner: 4,
   admin: 3,
   member: 2,
