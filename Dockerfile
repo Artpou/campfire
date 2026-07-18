@@ -41,7 +41,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -r
 
 COPY --from=builder /app/isolated ./
 COPY --from=builder /app/apps/api/dist-server ./dist-server
-COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/apps/api/drizzle.config.ts ./drizzle.config.ts
 COPY --from=builder /app/apps/api/src/db ./src/db
 COPY --from=builder /app/apps/api/src/modules ./src/modules
