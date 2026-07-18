@@ -4,7 +4,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
 import { formatBytes } from "@seedarr/shared";
 import { useQuery, useSuspenseInfiniteQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { ArrowDownIcon, ArrowUpIcon, InfoIcon } from "lucide-react";
 
 import { Button } from "@/shared/ui/button";
@@ -19,8 +19,16 @@ import { MediaTypeTabs } from "@/features/media/components/media-type-tabs";
 import { mediaQueries, refetchMediaInterval } from "@/features/media/hooks/media.queries";
 import { validateDownloadsSearch } from "@/routes/helpers/downloads-route.helper";
 
+const ROLE_LEVELS = { owner: 4, admin: 3, member: 2, viewer: 1 } as const;
+
 export const Route = createFileRoute("/_app/downloads/")({
   component: DownloadsPage,
+  beforeLoad: ({ context }) => {
+    const role = context.user?.role;
+    if (!role || ROLE_LEVELS[role] < ROLE_LEVELS.member) {
+      throw redirect({ to: "/movies" });
+    }
+  },
   validateSearch: validateDownloadsSearch,
   loaderDeps: ({ search }) => search,
   loader: ({ context, deps }) =>

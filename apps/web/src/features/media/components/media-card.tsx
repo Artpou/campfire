@@ -104,10 +104,20 @@ export function MediaCard({ media, mode = "default", className, playable, withTy
 
         {playable && (
           <div className="absolute top-2 right-2 flex gap-1">
-            <Button asChild variant="outline" size="icon" aria-label={t`Details`}>
-              <Link to={media.type === "tv" ? "/tv/$id" : "/movies/$id"} params={{ id: media.id.toString() }}>
-                <InfoIcon />
-              </Link>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label={t`Details`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                navigate({
+                  to: media.type === "tv" ? "/tv/$id" : "/movies/$id",
+                  params: { id: media.id.toString() },
+                });
+              }}
+            >
+              <InfoIcon />
             </Button>
           </div>
         )}

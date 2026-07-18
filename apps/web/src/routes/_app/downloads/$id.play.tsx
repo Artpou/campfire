@@ -1,6 +1,6 @@
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { type APITypes, Plyr } from "plyr-react";
 import "plyr-react/plyr.css";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -21,7 +21,15 @@ import { SubtitleSearchDialog } from "@/features/subtitles/components/subtitle-s
 import { subtitleQueries } from "@/features/subtitles/hooks/subtitle.queries";
 import { downloadQueries } from "@/features/torrent/hooks/download.queries";
 
+const ROLE_LEVELS = { owner: 4, admin: 3, member: 2, viewer: 1 } as const;
+
 export const Route = createFileRoute("/_app/downloads/$id/play")({
+  beforeLoad: ({ context }) => {
+    const role = context.user?.role;
+    if (!role || ROLE_LEVELS[role] < ROLE_LEVELS.member) {
+      throw redirect({ to: "/movies" });
+    }
+  },
   loader: ({ context, params }) =>
     Promise.all([
       context.queryClient.ensureQueryData(downloadQueries.details(params.id)),

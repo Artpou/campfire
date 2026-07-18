@@ -4,7 +4,7 @@ import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { ApiError } from "@seedarr/sdk";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { InfoIcon } from "lucide-react";
 import { toast } from "sonner";
 
@@ -44,8 +44,16 @@ import {
   useDownloadTransfer,
 } from "@/features/torrent/hooks/download.queries";
 
+const ROLE_LEVELS = { owner: 4, admin: 3, member: 2, viewer: 1 } as const;
+
 export const Route = createFileRoute("/_app/downloads/$id/")({
   component: DownloadDetailPage,
+  beforeLoad: ({ context }) => {
+    const role = context.user?.role;
+    if (!role || ROLE_LEVELS[role] < ROLE_LEVELS.member) {
+      throw redirect({ to: "/movies" });
+    }
+  },
   loader: async ({ context, params }) => {
     const download = await context.queryClient.ensureQueryData(downloadQueries.details(params.id));
     if (!download?.mediaId) throw new Error("Media ID not found");
