@@ -2,8 +2,7 @@ import { useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import { ApiError } from "@seedarr/sdk";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { InfoIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -35,6 +34,7 @@ import { DownloadTransferProgress } from "@/features/downloads/components/downlo
 import { getDownloadStatus, getTorrentFiles } from "@/features/downloads/helpers/downloads.helper";
 import { MediaCard } from "@/features/media/components/media-card";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
+import { storageConfigQueries } from "@/features/settings/hooks/storage-config.queries";
 import {
   downloadQueries,
   refetchDownloadInterval,
@@ -68,7 +68,6 @@ function DownloadDetailPage() {
   const navigate = useNavigate();
   const { t } = useLingui();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showReplaceConfirm, setShowReplaceConfirm] = useState(false);
 
   const { data: download } = useSuspenseQuery({
     ...downloadQueries.details(id),
@@ -77,6 +76,7 @@ function DownloadDetailPage() {
 
   // biome-ignore lint/style/noNonNullAssertion: mediaId is guaranteed to be not null
   const { data: media } = useSuspenseQuery(mediaQueries.details(download.mediaId!));
+  const { data: storageConfig } = useQuery(storageConfigQueries.get());
   const deleteTorrent = useDownloadDelete();
   const pauseTorrent = useDownloadPause();
   const resumeTorrent = useDownloadResume();
@@ -85,6 +85,8 @@ function DownloadDetailPage() {
   const status = getDownloadStatus(download);
   const { downloadSpeed, uploadSpeed, numPeers } = download.torrent ?? {};
   const isTransferring = Boolean(download.torrent?.transferring || transferDownload.isPending);
+  const availableOnServer = Boolean(download.remoteLocation);
+  const remoteStorageEnabled = Boolean(storageConfig?.enabled);
 
   const handleDeleteConfirm = async () => {
     await deleteTorrent.mutateAsync(id);
@@ -93,17 +95,9 @@ function DownloadDetailPage() {
   const handlePause = async () => await pauseTorrent.mutateAsync(id);
   const handleResume = async () => await resumeTorrent.mutateAsync(id);
 
-  const startTransfer = async (replace = false) => {
-    try {
-      await transferDownload.mutateAsync({ id, replace });
-      setShowReplaceConfirm(false);
-      toast.success(t`Transfer started`);
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 409) {
-        setShowReplaceConfirm(true);
-        return;
-      }
-    }
+  const startTransfer = async () => {
+    await transferDownload.mutateAsync(id);
+    toast.success(t`Transfer started`);
   };
 
   return (
@@ -144,8 +138,9 @@ function DownloadDetailPage() {
               <DownloadActionButtons
                 download={download}
                 onDelete={() => setShowDeleteConfirm(true)}
-                onTransfer={() => startTransfer(false)}
+                onTransfer={startTransfer}
                 isTransferring={isTransferring}
+                remoteStorageEnabled={remoteStorageEnabled}
                 isMobile={true}
               />
             </div>
@@ -164,7 +159,9 @@ function DownloadDetailPage() {
               </div>
             )}
 
-            {download.torrent?.files && <DownloadFilesList files={getTorrentFiles(download)} />}
+            {download.torrent?.files && (
+              <DownloadFilesList files={getTorrentFiles(download)} availableOnServer={availableOnServer} />
+            )}
           </Card>
         </div>
 
@@ -173,8 +170,9 @@ function DownloadDetailPage() {
             <DownloadActionButtons
               download={download}
               onDelete={() => setShowDeleteConfirm(true)}
-              onTransfer={() => startTransfer(false)}
+              onTransfer={startTransfer}
               isTransferring={isTransferring}
+              remoteStorageEnabled={remoteStorageEnabled}
             />
           </div>
 
@@ -211,29 +209,6 @@ function DownloadDetailPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               <Trans>Delete</Trans>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={showReplaceConfirm} onOpenChange={setShowReplaceConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              <Trans>File already exists</Trans>
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              <Trans>
-                A file or folder with this name already exists on the remote server. Do you want to replace it?
-              </Trans>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={transferDownload.isPending}>
-              <Trans>Cancel</Trans>
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={() => startTransfer(true)} disabled={transferDownload.isPending}>
-              <Trans>Replace</Trans>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,8 +1,5 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-export const storageLocationEnum = ["LOCAL", "REMOTE"] as const;
-export type StorageLocation = (typeof storageLocationEnum)[number];
-
 export const storageConfig = sqliteTable("storageConfig", {
   id: text("id")
     .primaryKey()
@@ -12,8 +9,6 @@ export const storageConfig = sqliteTable("storageConfig", {
   host: text("host").notNull(),
   port: integer("port").notNull().default(21),
   secure: integer("secure", { mode: "boolean" }).notNull().default(false),
-  share: text("share"),
-  remotePath: text("remote_path"),
   moviePath: text("movie_path"),
   tvPath: text("tv_path"),
   username: text("username"),

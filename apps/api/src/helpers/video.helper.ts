@@ -17,7 +17,9 @@ export function getVideoInputFormat(fileName: string): string | undefined {
   return INPUT_FORMAT_BY_EXT[extname(fileName).toLowerCase()];
 }
 
-export function shouldTranscodeForPlayback(fileName: string): boolean {
+/** Remux MKV only when we don't have a seekable file on disk (live torrent stream). */
+export function shouldTranscodeForPlayback(fileName: string, hasFilePath = false): boolean {
+  if (hasFilePath) return false;
   return fileName.toLowerCase().endsWith(".mkv");
 }
 

@@ -10,6 +10,7 @@ interface DownloadActionButtonsProps {
   onDelete: () => void;
   onTransfer?: () => void;
   isTransferring?: boolean;
+  remoteStorageEnabled?: boolean;
   isMobile?: boolean;
 }
 
@@ -18,9 +19,12 @@ export function DownloadActionButtons({
   onDelete,
   onTransfer,
   isTransferring = false,
+  remoteStorageEnabled = false,
   isMobile = false,
 }: DownloadActionButtonsProps) {
-  const showTransfer = Boolean(download.torrent?.done && onTransfer);
+  const isComplete = Boolean(download.torrent?.done);
+  const showTransfer =
+    isComplete && onTransfer && remoteStorageEnabled && !download.remoteLocation && !download.torrent?.transferring;
 
   return (
     <div className="flex flex-col gap-2">
@@ -41,19 +45,16 @@ export function DownloadActionButtons({
         </Button>
       </div>
 
+      {download.torrent?.transferring && (
+        <Button variant="secondary" size="lg" className="w-full" disabled>
+          <Loader2Icon className="size-5 animate-spin" />
+          <Trans>Transfer to server</Trans>
+        </Button>
+      )}
+
       {showTransfer && (
-        <Button
-          variant="secondary"
-          size="lg"
-          className="w-full"
-          onClick={onTransfer}
-          disabled={isTransferring || download.torrent?.transferring}
-        >
-          {isTransferring || download.torrent?.transferring ? (
-            <Loader2Icon className="size-5 animate-spin" />
-          ) : (
-            <ServerIcon className="size-5" />
-          )}
+        <Button variant="secondary" size="lg" className="w-full" onClick={onTransfer} disabled={isTransferring}>
+          {isTransferring ? <Loader2Icon className="size-5 animate-spin" /> : <ServerIcon className="size-5" />}
           <Trans>Transfer to server</Trans>
         </Button>
       )}

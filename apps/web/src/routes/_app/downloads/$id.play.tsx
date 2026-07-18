@@ -74,18 +74,30 @@ function VideoPlayerPage() {
   useEffect(() => {
     if (!download?.mediaId) return;
 
-    const patchInterval = setInterval(async () => {
+    const saveProgress = async (): Promise<void> => {
       const plyr = videoRef.current?.plyr;
-      if (!plyr || plyr.paused) return;
+      if (!plyr || typeof plyr.currentTime !== "number" || !Number.isFinite(plyr.currentTime)) return;
+      if (plyr.currentTime < 1) return;
 
       await api.media[":id"].progress.$patch({
-        param: { id: download?.mediaId?.toString() ?? "" },
-        json: { position: Math.floor(plyr.currentTime), duration: Math.floor(plyr.duration), downloadId: id },
+        param: { id: String(download.mediaId) },
+        json: {
+          position: Math.floor(plyr.currentTime),
+          duration: Math.floor(plyr.duration || 0),
+          downloadId: id,
+        },
       });
+    };
+
+    const patchInterval = setInterval(() => {
+      const plyr = videoRef.current?.plyr;
+      if (!plyr || plyr.paused) return;
+      void saveProgress();
     }, 5000);
 
     return () => {
       clearInterval(patchInterval);
+      void saveProgress();
     };
   }, [download?.mediaId, id]);
 
@@ -95,13 +107,29 @@ function VideoPlayerPage() {
     const plyr = videoRef.current?.plyr;
     if (!plyr || typeof plyr.currentTime !== "number") return;
 
-    hasInitialSeeked.current = true;
-
     const media = await unwrap(api.media[":id"].$get({ param: { id: download.mediaId.toString() } }));
-    setTimeout(() => {
-      if (!media.progress?.position) return;
-      plyr.currentTime = media.progress.position;
-    }, 500);
+    const position = media.progress?.position;
+    if (!position || position < 1) {
+      hasInitialSeeked.current = true;
+      return;
+    }
+
+    const trySeek = (attempt: number): void => {
+      if (hasInitialSeeked.current) return;
+      try {
+        plyr.currentTime = position;
+        // Confirm seek landed (remote streams may ignore the first attempt).
+        if (Math.abs(plyr.currentTime - position) < 2 || attempt >= 8) {
+          hasInitialSeeked.current = true;
+          return;
+        }
+      } catch {
+        // retry
+      }
+      window.setTimeout(() => trySeek(attempt + 1), 250);
+    };
+
+    trySeek(0);
   };
 
   const subtitleTracks = useMemo(() => {
@@ -188,13 +216,26 @@ function VideoPlayerPage() {
     return tracks;
   }, [download, id, externalSubtitles?.paths, mediaSession?.token]);
 
+  const videoMimeType = useMemo(() => {
+    const files = download.torrent?.files ?? [];
+    const videos = files.filter((f) => /\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v)$/i.test(f.name));
+    const largest = videos.sort((a, b) => b.length - a.length)[0];
+    const name = largest?.name ?? download.torrent?.name ?? "";
+    const lower = name.toLowerCase();
+    if (lower.endsWith(".webm")) return "video/webm";
+    if (lower.endsWith(".avi")) return "video/x-msvideo";
+    if (lower.endsWith(".mov")) return "video/quicktime";
+    if (lower.endsWith(".mkv")) return "video/x-matroska";
+    return "video/mp4";
+  }, [download.torrent?.files, download.torrent?.name]);
+
   const plyrSource = useMemo(
     () => ({
       type: "video" as const,
-      sources: [{ src: videoUrl, type: "video/mp4" }],
+      sources: [{ src: videoUrl, type: videoMimeType }],
       tracks: subtitleTracks,
     }),
-    [videoUrl, subtitleTracks],
+    [videoUrl, subtitleTracks, videoMimeType],
   );
 
   return (
@@ -238,6 +279,7 @@ function VideoPlayerPage() {
           <Plyr
             crossOrigin="anonymous"
             ref={videoRef}
+            onLoadedMetadata={handleVideoReady}
             onCanPlay={handleVideoReady}
             source={plyrSource}
             options={{

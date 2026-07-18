@@ -2,7 +2,31 @@ import { logger } from "@/helpers/logger.helper";
 import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { PassThrough, Transform } from "node:stream";
 import { StorageAdapter, type StorageConnectionOptions } from "./storage.adapter";
+
+function createByteLimiter(maxBytes: number): Transform {
+  let remaining = maxBytes;
+  return new Transform({
+    transform(chunk, _encoding, callback) {
+      if (remaining <= 0) {
+        callback();
+        return;
+      }
+      const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      if (buf.length <= remaining) {
+        remaining -= buf.length;
+        callback(null, buf);
+        if (remaining === 0) this.push(null);
+        return;
+      }
+      const slice = buf.subarray(0, remaining);
+      remaining = 0;
+      callback(null, slice);
+      this.push(null);
+    },
+  });
+}
 
 export class FtpAdapter extends StorageAdapter {
   private async createClient(opts: StorageConnectionOptions) {
@@ -33,21 +57,6 @@ export class FtpAdapter extends StorageAdapter {
       const message = error instanceof Error ? error.message : String(error);
       logger.error("FTP", `Connection test failed: ${message}`);
       return { success: false, error: message };
-    }
-  }
-
-  async exists(remotePath: string, opts: StorageConnectionOptions): Promise<boolean> {
-    const client = await this.createClient(opts);
-    try {
-      const fullPath = this.buildRemotePath(remotePath);
-      const parent = path.posix.dirname(fullPath);
-      const name = path.posix.basename(fullPath);
-      const items = await client.list(parent);
-      return items.some((item) => item.name === name);
-    } catch {
-      return false;
-    } finally {
-      client.close();
     }
   }
 
@@ -120,5 +129,48 @@ export class FtpAdapter extends StorageAdapter {
     } finally {
       client.close();
     }
+  }
+
+  async createReadStream(
+    remotePath: string,
+    opts: StorageConnectionOptions,
+    range?: { start: number; end: number },
+  ): Promise<{ stream: NodeJS.ReadableStream; size: number; cleanup?: () => void }> {
+    const client = await this.createClient(opts);
+    const fullPath = this.buildRemotePath(remotePath);
+    const size = await client.size(fullPath);
+
+    const sink = new PassThrough();
+    const output = range ? sink.pipe(createByteLimiter(range.end - range.start + 1)) : sink;
+    let closed = false;
+
+    const cleanup = () => {
+      if (closed) return;
+      closed = true;
+      try {
+        client.close();
+      } catch {}
+    };
+
+    const downloadPromise = range ? client.downloadTo(sink, fullPath, range.start) : client.downloadTo(sink, fullPath);
+
+    downloadPromise
+      .then(() => {
+        if (!sink.writableEnded) sink.end();
+        cleanup();
+      })
+      .catch((err: unknown) => {
+        sink.destroy(err instanceof Error ? err : new Error(String(err)));
+        cleanup();
+      });
+
+    output.on("close", cleanup);
+    output.on("end", cleanup);
+
+    return {
+      stream: output,
+      size: range ? range.end - range.start + 1 : size,
+      cleanup,
+    };
   }
 }

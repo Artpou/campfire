@@ -7,11 +7,36 @@ import { ActivityLogService } from "@/modules/activity-log/activity-log.service"
 import { download } from "@/modules/download/download.schema";
 import { media } from "@/modules/media/media.schema";
 import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
+import fs from "node:fs/promises";
 
 const activeTransfers = new Set<string>();
 
 export function isTransferInProgress(downloadId: string): boolean {
   return activeTransfers.has(downloadId);
+}
+
+async function resolveMediaType(mediaId: number | null | undefined): Promise<"movie" | "tv" | null> {
+  if (!mediaId) return null;
+  const mediaRow = await db.query.media.findFirst({ where: eq(media.id, mediaId) });
+  return mediaRow?.type ?? null;
+}
+
+/** Mark transfer started in DB so the UI can poll immediately (auto + manual). */
+export async function markTransferStarting(downloadId: string): Promise<void> {
+  const dl = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
+  if (!dl?.torrent) return;
+
+  await db
+    .update(download)
+    .set({
+      torrent: {
+        ...dl.torrent,
+        transferring: true,
+        transferProgress: 0,
+      },
+      error: null,
+    })
+    .where(eq(download.id, downloadId));
 }
 
 export async function runRemoteTransfer(
@@ -33,35 +58,17 @@ export async function runRemoteTransfer(
     const localPath = resolveWithinDownloads(torrentName);
     const userId = dl.userId;
 
-    let mediaType: "movie" | "tv" | null = null;
-    if (dl.mediaId) {
-      const mediaRow = await db.query.media.findFirst({ where: eq(media.id, dl.mediaId) });
-      mediaType = mediaRow?.type ?? null;
-    }
-
+    const mediaType = await resolveMediaType(dl.mediaId);
     const remotePath = await remoteStorageService.resolveTransferPath(torrentName, mediaType);
 
-    if (options?.replace) {
-      const exists = await remoteStorageService.exists(remotePath);
-      if (exists) {
-        logger.info("TRANSFER", `Replacing existing remote path: ${remotePath}`);
-        await remoteStorageService.remove(remotePath);
-      }
+    if (!dl.torrent.transferring) {
+      await markTransferStarting(downloadId);
     }
 
-    await db
-      .update(download)
-      .set({
-        torrent: {
-          ...dl.torrent,
-          transferring: true,
-          transferProgress: 0,
-          transferred: false,
-        },
-        error: null,
-        storageLocation: "REMOTE",
-      })
-      .where(eq(download.id, downloadId));
+    if (options?.replace || dl.remoteLocation) {
+      logger.info("TRANSFER", `Replacing existing remote path: ${remotePath}`);
+      await remoteStorageService.remove(remotePath);
+    }
 
     logger.info("TRANSFER", `Transferring to remote: ${remotePath}`);
 
@@ -89,19 +96,18 @@ export async function runRemoteTransfer(
             ...after.torrent,
             transferring: false,
             transferProgress: 1,
-            transferred: true,
-            remotePath,
           },
+          remoteLocation: remotePath,
           error: null,
-          storageLocation: "REMOTE",
         })
         .where(eq(download.id, downloadId));
     }
 
+    logger.info("TRANSFER", `Transfer complete: ${torrentName} -> ${remotePath}`);
+
     const shouldDeleteLocal =
       options?.isAutoTransfer === true && (await remoteStorageService.shouldDeleteLocalAfterTransfer());
     if (shouldDeleteLocal) {
-      const fs = await import("node:fs/promises");
       await fs.rm(localPath, { recursive: true, force: true });
       logger.info("TRANSFER", `Deleted local files after transfer: ${torrentName}`);
     } else {

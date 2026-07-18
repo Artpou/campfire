@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Trans } from "@lingui/react/macro";
 import type { TorrentInspectFile } from "@seedarr/sdk";
 import { formatBytes } from "@seedarr/shared";
-import { ChevronDownIcon, ChevronUpIcon, FileIcon, VideoIcon } from "lucide-react";
+import { CheckCircle2Icon, ChevronDownIcon, ChevronUpIcon, FileIcon, VideoIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Flag } from "@/shared/components/flag";
@@ -16,6 +16,7 @@ interface DownloadFilesListProps {
   title?: string;
   collapsible?: boolean;
   defaultExpanded?: boolean;
+  availableOnServer?: boolean;
 }
 
 type FileType = "video" | "subtitle" | "other";
@@ -51,7 +52,13 @@ function sortFiles(files: TorrentInspectFile[]): TorrentInspectFile[] {
   });
 }
 
-export function DownloadFilesList({ className, files, title, defaultExpanded = true }: DownloadFilesListProps) {
+export function DownloadFilesList({
+  className,
+  files,
+  title,
+  defaultExpanded = true,
+  availableOnServer = false,
+}: DownloadFilesListProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   if (!files || files.length === 0) return null;
@@ -79,18 +86,24 @@ export function DownloadFilesList({ className, files, title, defaultExpanded = t
           <h3 className="text-base font-semibold">
             {title || <Trans>Files</Trans>} ({files.length})
           </h3>
-          {videoType.length > 0 && (
-            <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1">
+            {videoType.length > 0 && (
               <Badge variant="secondary" className="text-xs">
                 {videoType}
               </Badge>
-              {subtitleCount > 0 && (
-                <Badge variant="secondary" className="text-xs">
-                  <Trans>{subtitleCount} subtitles</Trans>
-                </Badge>
-              )}
-            </div>
-          )}
+            )}
+            {availableOnServer && (
+              <Badge variant="secondary" className="text-xs flex items-center gap-1 text-green-600">
+                <CheckCircle2Icon className="size-3" />
+                <Trans>Available on server</Trans>
+              </Badge>
+            )}
+            {subtitleCount > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                <Trans>{subtitleCount} subtitles</Trans>
+              </Badge>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">{formatBytes(totalSize)}</span>

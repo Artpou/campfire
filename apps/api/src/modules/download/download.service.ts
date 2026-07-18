@@ -12,17 +12,10 @@ import { media } from "@/modules/media/media.schema";
 import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
 import { resolveTorrentSource } from "@/modules/torrent/torrent-source.helper";
 import fs from "node:fs/promises";
-import type {
-  Download,
-  DownloadStats,
-  DownloadTorrentInput,
-  TorrentLiveData,
-  TransferDownloadInput,
-} from "./download.dto";
-import { isTransferInProgress, runRemoteTransfer } from "./download-transfer.helper";
-import { waitForTorrentMetadata } from "./torrent-ready.helper";
+import type { Download, DownloadStats, DownloadTorrentInput, TorrentLiveData } from "./download.dto";
+import { isTransferInProgress, markTransferStarting, runRemoteTransfer } from "./download-storage.helper";
 import { torrentClient } from "./webtorrent.client";
-import { extractTorrentLiveData } from "./webtorrent.helper";
+import { extractTorrentLiveData, waitForTorrentMetadata } from "./webtorrent.helper";
 
 const DOWNLOAD_PATH = process.env.DOWNLOADS_PATH || "./downloads";
 
@@ -38,15 +31,18 @@ function destroyTorrent(torrent: WebTorrent.Torrent, opts: { destroyStore: boole
 
 export class DownloadService extends IdentifiableService<Download> {
   async getMany(params?: { ids?: string[] }): Promise<Download[]> {
-    return await db.query.download.findMany({
+    return db.query.download.findMany({
       where: and(eq(download.userId, this.user.id), params?.ids ? inArray(download.id, params.ids) : undefined),
     });
   }
 
+  /** Alias used by routes that previously avoided storage enrichment. */
+  async findMany(params?: { ids?: string[] }): Promise<Download[]> {
+    return this.getMany(params);
+  }
+
   async getStats(): Promise<DownloadStats> {
-    const downloads = await db.query.download.findMany({
-      where: eq(download.userId, this.user.id),
-    });
+    const downloads = await this.getMany();
 
     let totalSize = 0;
     let downloadSpeed = 0;
@@ -73,14 +69,11 @@ export class DownloadService extends IdentifiableService<Download> {
   }
 
   async start(input: DownloadTorrentInput): Promise<Download | { status: "REMOTE_UNAVAILABLE" }> {
-    let storageLocation = input.storageLocation ?? "LOCAL";
+    const { preferLocal, ...downloadInput } = input;
 
-    if (!input.storageLocation) {
+    if (!preferLocal) {
       const { enabled, available } = await this.checkRemoteAvailability();
-      if (enabled) {
-        if (!available) return { status: "REMOTE_UNAVAILABLE" };
-        storageLocation = "REMOTE";
-      }
+      if (enabled && !available) return { status: "REMOTE_UNAVAILABLE" };
     }
 
     const torrentSource = await resolveTorrentSource(input.magnetUri);
@@ -98,27 +91,29 @@ export class DownloadService extends IdentifiableService<Download> {
         .onConflictDoUpdate({ target: media.id, set: input.media })
         .returning();
 
+      const liveData = extractTorrentLiveData(torrent);
+      if (preferLocal) liveData.skipAutoTransfer = true;
+
       const [newDownload] = await db
         .insert(download)
         .values({
-          ...input,
+          ...downloadInput,
           userId: this.user.id,
           mediaId: newMedia.id,
-          storageLocation,
-          torrent: extractTorrentLiveData(torrent),
+          torrent: liveData,
         })
         .returning();
 
       torrentClient.setupTorrentHandlers(torrent, newDownload.id);
 
-      logger.info("DOWNLOAD", `Started in background: ${input.name || torrent.infoHash} (storage: ${storageLocation})`);
+      logger.info("DOWNLOAD", `Started in background: ${input.name || torrent.infoHash}`);
 
       ActivityLogService.log({
         userId: this.user.id,
         type: "SUCCESS",
         action: "DOWNLOAD_START",
         title: `Download started: ${input.name || "Torrent"}`,
-        metadata: { downloadId: newDownload.id, mediaId: newMedia.id, magnetUri: input.magnetUri, storageLocation },
+        metadata: { downloadId: newDownload.id, mediaId: newMedia.id, magnetUri: input.magnetUri, preferLocal },
       });
 
       return newDownload;
@@ -133,7 +128,7 @@ export class DownloadService extends IdentifiableService<Download> {
   }
 
   async pause(id: string): Promise<{ success: true }> {
-    const item = await this.get(id);
+    const [item] = await this.findMany({ ids: [id] });
     if (!item) throw new NotFoundError("Download");
 
     const activeTorrent = torrentClient.resolveTorrent(id, item.torrent?.infoHash);
@@ -166,7 +161,7 @@ export class DownloadService extends IdentifiableService<Download> {
   }
 
   async resume(id: string): Promise<{ success: true }> {
-    const item = await this.get(id);
+    const [item] = await this.findMany({ ids: [id] });
     if (!item) throw new NotFoundError("Download");
     if (!item.torrent?.paused) throw new BadRequestError("Torrent is not paused");
     if (!item.torrent.magnetURI) throw new BadRequestError("No magnet URI found");
@@ -182,46 +177,25 @@ export class DownloadService extends IdentifiableService<Download> {
     return { success: true };
   }
 
-  async transfer(id: string, input: TransferDownloadInput): Promise<{ success: true } | { status: "ALREADY_EXISTS" }> {
-    const item = await this.get(id);
+  async transfer(id: string): Promise<{ success: true }> {
+    const [item] = await this.findMany({ ids: [id] });
     if (!item) throw new NotFoundError("Download");
     if (!item.torrent?.done) throw new BadRequestError("Download is not complete");
     if (!item.torrent.name) throw new BadRequestError("No torrent name found");
+    if (item.remoteLocation) throw new BadRequestError("Already present on remote server");
     if (item.torrent.transferring || isTransferInProgress(id)) {
       throw new BadRequestError("Transfer already in progress");
     }
 
-    const configured = await remoteStorageService.isConfigured();
-    if (!configured) throw new BadRequestError("Remote storage is not configured");
+    const enabled = await remoteStorageService.isEnabled();
+    if (!enabled) throw new BadRequestError("Remote storage is not enabled");
 
     const available = await remoteStorageService.isAvailable();
     if (!available) throw new BadRequestError("Remote storage server is unavailable");
 
-    if (!input.replace) {
-      let mediaType: "movie" | "tv" | null = null;
-      if (item.mediaId) {
-        const mediaRow = await db.query.media.findFirst({ where: eq(media.id, item.mediaId) });
-        mediaType = mediaRow?.type ?? null;
-      }
-      const remotePath = await remoteStorageService.resolveTransferPath(item.torrent.name, mediaType);
-      const exists = await remoteStorageService.exists(remotePath);
-      if (exists) return { status: "ALREADY_EXISTS" };
-    }
+    await markTransferStarting(id);
 
-    await db
-      .update(download)
-      .set({
-        torrent: {
-          ...item.torrent,
-          transferring: true,
-          transferProgress: 0,
-          transferred: false,
-        },
-        error: null,
-      })
-      .where(eq(download.id, id));
-
-    runRemoteTransfer(id, { replace: input.replace }).catch((err) => {
+    runRemoteTransfer(id, { replace: true }).catch((err) => {
       logger.error("DOWNLOAD", `Remote transfer failed for "${item.torrent?.name}": ${err}`);
     });
 
@@ -229,7 +203,7 @@ export class DownloadService extends IdentifiableService<Download> {
   }
 
   async delete(id: string): Promise<{ success: true }> {
-    const item = await this.get(id);
+    const [item] = await this.findMany({ ids: [id] });
     if (!item) throw new NotFoundError("Download");
 
     const torrentName = item.torrent?.name;
@@ -257,10 +231,10 @@ export class DownloadService extends IdentifiableService<Download> {
       }
     }
 
-    if (item.storageLocation === "REMOTE" && item.torrent?.transferred && item.torrent.remotePath) {
+    if (item.remoteLocation) {
       remoteStorageService
-        .remove(item.torrent.remotePath)
-        .then(() => logger.info("DOWNLOAD", `Deleted remote file: ${item.torrent?.remotePath}`))
+        .remove(item.remoteLocation)
+        .then(() => logger.info("DOWNLOAD", `Deleted remote file: ${item.remoteLocation}`))
         .catch((err) => logger.warn("DOWNLOAD", `Failed to delete remote file: ${err}`));
     }
 

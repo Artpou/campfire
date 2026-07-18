@@ -50,11 +50,6 @@ class RemoteStorageService {
     return config?.enabled === true;
   }
 
-  async isConfigured(): Promise<boolean> {
-    const opts = await this.getConnectionOptions();
-    return opts !== null;
-  }
-
   async isAvailable(): Promise<boolean> {
     try {
       const opts = await this.getConnectionOptions();
@@ -70,14 +65,6 @@ class RemoteStorageService {
   async testConnection(opts: StorageConnectionOptions): Promise<{ success: boolean; error?: string }> {
     const adapter = getAdapter(opts.protocol);
     return adapter.testConnection(opts);
-  }
-
-  async exists(remotePath: string): Promise<boolean> {
-    assertSafePath(remotePath);
-    const opts = await this.getConnectionOptions();
-    if (!opts) return false;
-    const adapter = getAdapter(opts.protocol);
-    return adapter.exists(remotePath, opts);
   }
 
   async transferDirectory(localDir: string, remoteDir: string, onProgress?: (progress: number) => void): Promise<void> {
@@ -99,6 +86,17 @@ class RemoteStorageService {
     if (!opts) return;
     const adapter = getAdapter(opts.protocol);
     return adapter.remove(remotePath, opts);
+  }
+
+  async createReadStream(
+    remotePath: string,
+    range?: { start: number; end: number },
+  ): Promise<{ stream: NodeJS.ReadableStream; size: number; cleanup?: () => void } | null> {
+    assertSafePath(remotePath);
+    const opts = await this.getConnectionOptions();
+    if (!opts) return null;
+    const adapter = getAdapter(opts.protocol);
+    return adapter.createReadStream(remotePath, opts, range);
   }
 }
 

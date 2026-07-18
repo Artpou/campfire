@@ -1,20 +1,9 @@
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-import { storageLocationEnum } from "@/modules/storage-config/storage-config.schema";
 import { user } from "@/modules/user/user.schema";
 
 export const torrentStatusEnum = ["queued", "downloading", "completed", "failed", "paused"] as const;
 export type TorrentStatus = (typeof torrentStatusEnum)[number];
-
-export const streamTypeEnum = ["TORRENT", "DIRECT_URL"] as const;
-export type StreamType = (typeof streamTypeEnum)[number];
-
-export interface DirectUrlData {
-  infoHash?: string;
-  title: string;
-  tracker: string;
-  size: number;
-}
 
 export interface TorrentLiveData {
   infoHash: string;
@@ -43,10 +32,11 @@ export interface TorrentLiveData {
   createdBy?: string;
   comment?: string;
   maxWebConns: number;
-  transferred?: boolean;
+  /** Ephemeral — transfer in progress (UI progress bar). */
   transferring?: boolean;
   transferProgress?: number;
-  remotePath?: string;
+  /** Skip auto-transfer when user chose local-only at start. */
+  skipAutoTransfer?: boolean;
   files: {
     name: string;
     path: string;
@@ -75,9 +65,8 @@ export const download = sqliteTable(
       .notNull()
       .$defaultFn(() => new Date()),
 
-    streamType: text("stream_type", { enum: streamTypeEnum }).notNull().default("TORRENT"),
-    indexerManagerId: text("indexer_manager_id"),
-    storageLocation: text("storage_location", { enum: storageLocationEnum }).notNull().default("LOCAL"),
+    /** Set when a remote transfer completes — null means local-only (or not yet transferred). */
+    remoteLocation: text("remote_location"),
 
     torrent: text("torrent", { mode: "json" }).$type<TorrentLiveData>(),
 

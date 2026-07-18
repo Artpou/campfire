@@ -1,6 +1,7 @@
 /** biome-ignore-all lint/correctness/noUnusedVariables: we want to exclude some properties */
 import type WebTorrent from "webtorrent";
 
+import { BadRequestError } from "@/errors/error";
 import type { TorrentLiveData } from "./download.dto";
 
 export const extractTorrentLiveData = (torrent: WebTorrent.Torrent): TorrentLiveData => ({
@@ -47,4 +48,46 @@ export function findLargestVideoFile(torrent: WebTorrent.Torrent): WebTorrent.To
     .sort((a, b) => b.length - a.length);
 
   return videoFiles[0] || null;
+}
+
+export function waitForTorrentMetadata(torrent: WebTorrent.Torrent, timeoutMs: number): Promise<void> {
+  if (torrent.ready) return Promise.resolve();
+
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(
+        new BadRequestError(
+          "Could not load torrent metadata — no reachable peers. Try another release or inspect first.",
+        ),
+      );
+    }, timeoutMs);
+
+    const cleanup = () => {
+      clearTimeout(timer);
+      torrent.off("metadata", onMetadata);
+      torrent.off("ready", onReady);
+      torrent.off("error", onError);
+    };
+
+    const onMetadata = () => {
+      cleanup();
+      resolve();
+    };
+
+    const onReady = () => {
+      cleanup();
+      resolve();
+    };
+
+    const onError = (err: Error | string) => {
+      cleanup();
+      const message = err instanceof Error ? err.message : String(err);
+      reject(new BadRequestError(message));
+    };
+
+    torrent.once("metadata", onMetadata);
+    torrent.once("ready", onReady);
+    torrent.once("error", onError);
+  });
 }

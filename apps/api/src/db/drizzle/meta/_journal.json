@@ -85,6 +85,20 @@
       "when": 1784375303941,
       "tag": "0011_robust_calypso",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1784380000000,
+      "tag": "0012_download_remote_location",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1784381000000,
+      "tag": "0013_drop_storage_legacy_paths",
+      "breakpoints": true
     }
   ]
 }

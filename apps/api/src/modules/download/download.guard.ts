@@ -1,9 +1,12 @@
+import { and, eq } from "drizzle-orm";
 import type { Context, Next } from "hono";
 
+import { db } from "@/db/db";
 import { BadRequestError, ForbiddenError, NotFoundError } from "@/errors/error";
+import { download } from "@/modules/download/download.schema";
 import type { HonoAuthenticatedVariables } from "../auth/auth.guard";
-import { DownloadService } from "./download.service";
 
+/** Ownership check without remote FTP enrichment (keeps stream/pause/transfer fast). */
 export async function requireDownloadOwnership(
   c: Context<{ Variables: HonoAuthenticatedVariables }>,
   next: Next,
@@ -12,10 +15,13 @@ export async function requireDownloadOwnership(
   if (!downloadId) throw new BadRequestError("Missing download id");
   const user = c.get("user");
 
-  const download = await new DownloadService(user).get(downloadId);
-  if (!download) throw new NotFoundError("Download");
+  const row = await db.query.download.findFirst({
+    where: and(eq(download.id, downloadId)),
+    columns: { id: true, userId: true },
+  });
+  if (!row) throw new NotFoundError("Download");
 
-  if (download.userId !== user.id && !["owner", "admin"].includes(user.role)) {
+  if (row.userId !== user.id && !["owner", "admin"].includes(user.role)) {
     throw new ForbiddenError();
   }
 

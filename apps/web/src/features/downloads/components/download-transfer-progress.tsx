@@ -10,10 +10,7 @@ interface DownloadTransferProgressProps {
 }
 
 export function DownloadTransferProgress({ download }: DownloadTransferProgressProps) {
-  const progress = download.torrent?.transferProgress;
-  const hasProgress = typeof progress === "number";
-
-  if (!hasProgress) return null;
+  const progress = download.torrent?.transferProgress ?? 0;
 
   return (
     <div>

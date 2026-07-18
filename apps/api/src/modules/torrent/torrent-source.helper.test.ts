@@ -20,22 +20,33 @@ describe("resolveTorrentSource", () => {
     expect(result).toContain("tr=");
   });
 
-  it("rejects private http URLs", async () => {
-    await expect(resolveTorrentSource("http://127.0.0.1/file.torrent")).rejects.toThrow(/private networks/);
+  it("allows local Prowlarr download URLs", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(new Uint8Array([1, 2, 3]), { status: 200 })));
+
+    const result = await resolveTorrentSource("http://localhost:9696/2/download?apikey=secret&link=abc&file=Movie");
+    expect(Buffer.isBuffer(result)).toBe(true);
   });
 
-  it("rejects redirects to private networks", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(
+  it("rejects cloud metadata URLs", async () => {
+    await expect(resolveTorrentSource("http://169.254.169.254/latest")).rejects.toThrow(/cloud metadata/);
+  });
+
+  it("follows redirects to local indexer URLs", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
         new Response(null, {
           status: 302,
-          headers: { Location: "http://192.168.1.1/file.torrent" },
+          headers: { Location: "http://127.0.0.1:9696/dl/file.torrent" },
         }),
-      ),
-    );
+      )
+      .mockResolvedValueOnce(new Response(new Uint8Array([1, 2, 3]), { status: 200 }));
 
-    await expect(resolveTorrentSource("https://example.com/file.torrent")).rejects.toThrow(/private networks/);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await resolveTorrentSource("https://example.com/redirect.torrent");
+    expect(Buffer.isBuffer(result)).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("follows redirects to public URLs", async () => {

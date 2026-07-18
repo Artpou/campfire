@@ -1,6 +1,6 @@
 import { t } from "@lingui/core/macro";
 import type { Download, DownloadTorrentInput } from "@seedarr/sdk";
-import { ApiError, api, unwrap } from "@seedarr/sdk";
+import { api, unwrap } from "@seedarr/sdk";
 import { type QueryState, queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -93,13 +93,11 @@ export function useDownloadTransfer() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, replace }: { id: string; replace?: boolean }) =>
-      unwrap(api.downloads[":id"].transfer.$post({ param: { id }, json: { replace: replace ?? false } })),
+    mutationFn: (id: string) => unwrap(api.downloads[":id"].transfer.$post({ param: { id } })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: downloadQueries.key });
     },
     onError: (error) => {
-      if (error instanceof ApiError && error.status === 409) return;
       toast.error(t`Could not transfer to remote server`, {
         description: error instanceof Error ? error.message : undefined,
       });

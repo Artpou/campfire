@@ -12,7 +12,6 @@ export interface StorageConnectionOptions {
 
 export abstract class StorageAdapter {
   abstract testConnection(opts: StorageConnectionOptions): Promise<{ success: boolean; error?: string }>;
-  abstract exists(remotePath: string, opts: StorageConnectionOptions): Promise<boolean>;
   abstract transferDirectory(
     localDir: string,
     remoteDir: string,
@@ -20,4 +19,9 @@ export abstract class StorageAdapter {
     onProgress?: (progress: number) => void,
   ): Promise<void>;
   abstract remove(remotePath: string, opts: StorageConnectionOptions): Promise<void>;
+  abstract createReadStream(
+    remotePath: string,
+    opts: StorageConnectionOptions,
+    range?: { start: number; end: number },
+  ): Promise<{ stream: NodeJS.ReadableStream; size: number; cleanup?: () => void }>;
 }

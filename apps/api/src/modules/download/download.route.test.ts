@@ -55,18 +55,20 @@ vi.mock("@/helpers/video.helper", () => ({
   shouldTranscodeForPlayback: vi.fn((fileName: string) => fileName.endsWith(".mkv")),
   convertToFragmentedMp4Stream: vi.fn((input: Readable) => ({ stream: input, destroy: vi.fn() })),
 }));
-vi.mock("@/modules/download/download-stream.service", () => ({
-  DownloadStreamService: class {
-    getStreamForDownload = mockGetStreamForDownload;
-  },
-}));
+vi.mock("@/modules/download/download-stream.service", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./download-stream.service")>();
+  return {
+    DownloadStreamService: class extends actual.DownloadStreamService {
+      getStreamForDownload = mockGetStreamForDownload;
+    },
+  };
+});
 vi.mock("@/modules/storage-config/remote-storage.service", () => ({
   remoteStorageService: {
     shouldDeleteLocalAfterTransfer: vi.fn().mockResolvedValue(false),
     isEnabled: vi.fn().mockResolvedValue(false),
-    isConfigured: vi.fn().mockResolvedValue(false),
     isAvailable: vi.fn().mockResolvedValue(true),
-    exists: vi.fn().mockResolvedValue(false),
+    remove: vi.fn().mockResolvedValue(undefined),
   },
 }));
 vi.mock("@/modules/download/webtorrent.client", () => {

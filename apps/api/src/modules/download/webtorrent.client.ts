@@ -6,9 +6,9 @@ import { ServiceUnavailableError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { download } from "@/modules/download/download.schema";
-import { waitForTorrentMetadata } from "@/modules/download/torrent-ready.helper";
-import { runRemoteTransfer } from "./download-transfer.helper";
-import { extractTorrentLiveData } from "./webtorrent.helper";
+import { markTransferStarting, runRemoteTransfer } from "@/modules/download/download-storage.helper";
+import { extractTorrentLiveData, waitForTorrentMetadata } from "@/modules/download/webtorrent.helper";
+import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
 
 const SYNC_THROTTLE_MS = 1_500;
 
@@ -179,9 +179,18 @@ class WebTorrentManager {
         liveData.uploadSpeed = 0;
       }
 
+      // Preserve ephemeral transfer / auto-transfer flags — syncDb must not wipe them.
       await db
         .update(download)
-        .set({ torrent: { ...liveData, ...extraFields } })
+        .set({
+          torrent: {
+            ...liveData,
+            transferring: current?.torrent?.transferring,
+            transferProgress: current?.torrent?.transferProgress,
+            skipAutoTransfer: current?.torrent?.skipAutoTransfer,
+            ...extraFields,
+          },
+        })
         .where(eq(download.id, downloadId));
     };
 
@@ -209,7 +218,11 @@ class WebTorrentManager {
           metadata: { downloadId },
         });
 
-        if (dl?.storageLocation === "REMOTE" && torrent.name) {
+        if (dl?.torrent?.skipAutoTransfer) return;
+
+        const enabled = await remoteStorageService.isEnabled();
+        if (enabled && torrent.name) {
+          await markTransferStarting(downloadId);
           runRemoteTransfer(downloadId, { isAutoTransfer: true }).catch((err) => {
             logger.error("WEBTORRENT", `Remote transfer failed for "${torrent.name}": ${err}`);
           });

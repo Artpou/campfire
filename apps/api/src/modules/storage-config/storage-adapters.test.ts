@@ -28,6 +28,7 @@ const ftpMockClient = {
   size: vi.fn().mockResolvedValue(1024),
   ensureDir: vi.fn().mockResolvedValue(undefined),
   cd: vi.fn().mockResolvedValue(undefined),
+  pwd: vi.fn().mockResolvedValue("/"),
   uploadFrom: vi.fn().mockResolvedValue(undefined),
   trackProgress: vi.fn(),
   remove: vi.fn().mockResolvedValue(undefined),
@@ -42,6 +43,7 @@ vi.mock("basic-ftp", () => ({
     size = ftpMockClient.size;
     ensureDir = ftpMockClient.ensureDir;
     cd = ftpMockClient.cd;
+    pwd = ftpMockClient.pwd;
     uploadFrom = ftpMockClient.uploadFrom;
     trackProgress = ftpMockClient.trackProgress;
     remove = ftpMockClient.remove;
@@ -52,7 +54,6 @@ vi.mock("basic-ftp", () => ({
 
 const webdavMockClient = {
   getDirectoryContents: vi.fn().mockResolvedValue([]),
-  exists: vi.fn().mockResolvedValue(true),
   createDirectory: vi.fn().mockResolvedValue(undefined),
   putFileContents: vi.fn().mockResolvedValue(true),
   deleteFile: vi.fn().mockResolvedValue(undefined),
@@ -72,18 +73,6 @@ describe("FtpAdapter", () => {
     expect(ftpMockClient.list).toHaveBeenCalled();
   });
 
-  it("exists returns true when file is in parent listing", async () => {
-    ftpMockClient.list.mockResolvedValueOnce([{ name: "movie.mkv" }]);
-    const result = await adapter.exists("movie.mkv", ftpOpts);
-    expect(result).toBe(true);
-  });
-
-  it("exists returns false when file is not in parent listing", async () => {
-    ftpMockClient.list.mockResolvedValueOnce([{ name: "other.mkv" }]);
-    const result = await adapter.exists("movie.mkv", ftpOpts);
-    expect(result).toBe(false);
-  });
-
   it("remove does not throw", async () => {
     await expect(adapter.remove("movie.mkv", ftpOpts)).resolves.not.toThrow();
   });
@@ -96,12 +85,6 @@ describe("WebdavAdapter", () => {
     const result = await adapter.testConnection(webdavOpts);
     expect(result.success).toBe(true);
     expect(webdavMockClient.getDirectoryContents).toHaveBeenCalled();
-  });
-
-  it("exists returns true when file exists", async () => {
-    const result = await adapter.exists("movie.mkv", webdavOpts);
-    expect(result).toBe(true);
-    expect(webdavMockClient.exists).toHaveBeenCalled();
   });
 
   it("remove does not throw", async () => {

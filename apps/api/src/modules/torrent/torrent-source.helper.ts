@@ -1,5 +1,6 @@
 import { BadRequestError } from "@/errors/error";
-import { assertPublicHttpUrl } from "@/helpers/url.helper";
+import { logger } from "@/helpers/logger.helper";
+import { assertSafeTorrentFetchUrl, redactUrl } from "@/helpers/url.helper";
 import { enrichMagnetUri } from "./magnet-tracker.helper";
 
 const MAX_REDIRECT_DEPTH = 5;
@@ -8,12 +9,19 @@ export async function resolveTorrentSource(uri: string, depth = 0): Promise<stri
   if (uri.startsWith("magnet:")) return enrichMagnetUri(uri);
   if (depth > MAX_REDIRECT_DEPTH) throw new BadRequestError("Too many redirects");
 
-  await assertPublicHttpUrl(uri);
+  await assertSafeTorrentFetchUrl(uri);
 
-  const response = await fetch(uri, {
-    redirect: "manual",
-    headers: { "User-Agent": "Seedarr/1.0" },
-  });
+  let response: Response;
+  try {
+    response = await fetch(uri, {
+      redirect: "manual",
+      headers: { "User-Agent": "Seedarr/1.0" },
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error("TORRENT", `Failed to fetch torrent from ${redactUrl(uri)}: ${message}`);
+    throw new BadRequestError(`Failed to fetch .torrent file: ${message}`);
+  }
 
   if (response.status >= 300 && response.status < 400) {
     const location = response.headers.get("location");
@@ -21,10 +29,15 @@ export async function resolveTorrentSource(uri: string, depth = 0): Promise<stri
     if (location.startsWith("magnet:")) return enrichMagnetUri(location);
 
     const resolved = new URL(location, uri).toString();
-    await assertPublicHttpUrl(resolved);
+    logger.debug("TORRENT", `Following redirect to ${redactUrl(resolved)}`);
+    await assertSafeTorrentFetchUrl(resolved);
     return resolveTorrentSource(resolved, depth + 1);
   }
 
-  if (!response.ok) throw new BadRequestError(`Failed to fetch .torrent file (${response.status})`);
+  if (!response.ok) {
+    logger.warn("TORRENT", `Torrent fetch failed (${response.status}): ${redactUrl(uri)}`);
+    throw new BadRequestError(`Failed to fetch .torrent file (${response.status})`);
+  }
+
   return Buffer.from(await response.arrayBuffer());
 }

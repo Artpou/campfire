@@ -145,7 +145,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
   const handleUnavailableLocal = async () => {
     if (!pendingDownloadInput) return;
     setUnavailableAction("local");
-    await executeDownload({ ...pendingDownloadInput, storageLocation: "LOCAL" });
+    await executeDownload({ ...pendingDownloadInput, preferLocal: true });
     setUnavailableAction(null);
     setUnavailableDialogOpen(false);
     setPendingDownloadInput(null);

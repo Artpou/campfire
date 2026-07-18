@@ -1,6 +1,7 @@
 import { logger } from "@/helpers/logger.helper";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { Readable } from "node:stream";
 import { StorageAdapter, type StorageConnectionOptions } from "./storage.adapter";
 
 export class WebdavAdapter extends StorageAdapter {
@@ -29,16 +30,6 @@ export class WebdavAdapter extends StorageAdapter {
       const message = error instanceof Error ? error.message : String(error);
       logger.error("WEBDAV", `Connection test failed: ${message}`);
       return { success: false, error: message };
-    }
-  }
-
-  async exists(remotePath: string, opts: StorageConnectionOptions): Promise<boolean> {
-    try {
-      const client = await this.createClient(opts);
-      const fullPath = this.buildRemotePath(remotePath);
-      return await client.exists(fullPath);
-    } catch {
-      return false;
     }
   }
 
@@ -118,5 +109,32 @@ export class WebdavAdapter extends StorageAdapter {
     } catch {
       logger.warn("WEBDAV", `Could not remove: ${remotePath}`);
     }
+  }
+
+  async createReadStream(
+    remotePath: string,
+    opts: StorageConnectionOptions,
+    range?: { start: number; end: number },
+  ): Promise<{ stream: NodeJS.ReadableStream; size: number; cleanup?: () => void }> {
+    const client = await this.createClient(opts);
+    const fullPath = this.buildRemotePath(remotePath);
+
+    const rawStat = await client.stat(fullPath);
+    const stat = "data" in rawStat ? rawStat.data : rawStat;
+    const totalSize = stat.size;
+
+    const headers: Record<string, string> = {};
+    if (range) {
+      headers.Range = `bytes=${range.start}-${range.end}`;
+    }
+
+    const webdavStream = client.createReadStream(fullPath, { headers });
+    const nodeStream =
+      webdavStream instanceof Readable ? webdavStream : Readable.from(webdavStream as AsyncIterable<unknown>);
+
+    return {
+      stream: nodeStream,
+      size: range ? range.end - range.start + 1 : totalSize,
+    };
   }
 }

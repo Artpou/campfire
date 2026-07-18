@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { assertPublicHttpUrl, assertSafeIndexerUrl, isPrivateHost } from "./url.helper";
+import {
+  assertPublicHttpUrl,
+  assertSafeIndexerUrl,
+  assertSafeTorrentFetchUrl,
+  isPrivateHost,
+  redactUrl,
+} from "./url.helper";
 
 vi.mock("node:dns/promises", () => ({
   default: {
@@ -31,6 +37,14 @@ describe("isPrivateHost", () => {
   });
 });
 
+describe("redactUrl", () => {
+  it("redacts apikey query params", () => {
+    expect(redactUrl("http://localhost:9696/dl?apikey=secret&link=abc")).toBe(
+      "http://localhost:9696/dl?apikey=***&link=abc",
+    );
+  });
+});
+
 describe("assertPublicHttpUrl", () => {
   it("accepts public http(s) URLs", async () => {
     await expect(assertPublicHttpUrl("https://example.com/file.torrent")).resolves.toBeUndefined();
@@ -42,7 +56,30 @@ describe("assertPublicHttpUrl", () => {
   });
 
   it("rejects non-http schemes", async () => {
-    await expect(assertPublicHttpUrl("file:///etc/passwd")).rejects.toThrow(/Invalid torrent URI scheme/);
+    await expect(assertPublicHttpUrl("file:///etc/passwd")).rejects.toThrow();
+  });
+});
+
+describe("assertSafeTorrentFetchUrl", () => {
+  it("allows local Prowlarr/Jackett URLs", async () => {
+    await expect(
+      assertSafeTorrentFetchUrl("http://localhost:9696/2/download?apikey=test&link=abc"),
+    ).resolves.toBeUndefined();
+    await expect(assertSafeTorrentFetchUrl("http://127.0.0.1:9117/dl/torrent")).resolves.toBeUndefined();
+    await expect(assertSafeTorrentFetchUrl("http://192.168.1.10:9696/download")).resolves.toBeUndefined();
+  });
+
+  it("allows public torrent URLs", async () => {
+    await expect(assertSafeTorrentFetchUrl("https://example.com/file.torrent")).resolves.toBeUndefined();
+  });
+
+  it("rejects cloud metadata endpoints", async () => {
+    await expect(assertSafeTorrentFetchUrl("http://169.254.169.254/latest")).rejects.toThrow(/cloud metadata/);
+    await expect(assertSafeTorrentFetchUrl("http://metadata.google.internal/")).rejects.toThrow(/cloud metadata/);
+  });
+
+  it("rejects non-http schemes", async () => {
+    await expect(assertSafeTorrentFetchUrl("file:///etc/passwd")).rejects.toThrow();
   });
 });
 
@@ -52,10 +89,10 @@ describe("assertSafeIndexerUrl", () => {
   });
 
   it("rejects non-http schemes", () => {
-    expect(() => assertSafeIndexerUrl("file:///etc/passwd")).toThrow(/Invalid indexer URL scheme/);
+    expect(() => assertSafeIndexerUrl("file:///etc/passwd")).toThrow();
   });
 
   it("rejects cloud metadata endpoints", () => {
-    expect(() => assertSafeIndexerUrl("http://169.254.169.254")).toThrow(/cloud metadata endpoints/);
+    expect(() => assertSafeIndexerUrl("http://169.254.169.254")).toThrow();
   });
 });

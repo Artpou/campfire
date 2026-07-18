@@ -1,87 +1,109 @@
 import { BadRequestError } from "@/errors/error";
+import { logger } from "@/helpers/logger.helper";
 import dns from "node:dns/promises";
 
-export function isPrivateHost(ip: string): boolean {
-  const host = ip.toLowerCase().replace(/^\[|\]$/g, "");
+// --- UTILS & HELPERS ---
 
+/** Nettoie le hostname (minuscules + retrait des crochets IPv6) */
+const cleanHost = (host: string) => host.toLowerCase().replace(/^\[|\]$/g, "");
+
+export function isPrivateHost(ip: string): boolean {
+  const host = cleanHost(ip);
   const mapped = host.startsWith("::ffff:") ? host.slice(7) : host;
 
-  if (
-    mapped === "localhost" ||
+  return (
+    ["localhost", "0.0.0.0", "::1", "::", "host.docker.internal", "metadata.google.internal"].includes(mapped) ||
     mapped.startsWith("127.") ||
-    mapped === "0.0.0.0" ||
-    mapped === "::1" ||
-    mapped === "::" ||
-    mapped === "host.docker.internal" ||
-    mapped === "metadata.google.internal" ||
     mapped.startsWith("10.") ||
     mapped.startsWith("192.168.") ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(mapped) ||
-    mapped.endsWith(".local") ||
     mapped.startsWith("169.254.") ||
     mapped.startsWith("fe80:") ||
     mapped.startsWith("fc") ||
-    mapped.startsWith("fd")
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-async function assertResolvedIpIsPublic(hostname: string): Promise<void> {
-  try {
-    const { address } = await dns.lookup(hostname);
-    if (isPrivateHost(address)) {
-      throw new BadRequestError("URL resolves to a private network address");
-    }
-  } catch (error) {
-    if (error instanceof BadRequestError) throw error;
-    throw new BadRequestError("Failed to resolve hostname");
-  }
+    mapped.startsWith("fd") ||
+    mapped.endsWith(".local") ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(mapped)
+  );
 }
 
 function isMetadataEndpoint(hostname: string): boolean {
-  const host = hostname.toLowerCase().replace(/^\[|\]$/g, "");
-  return host === "metadata.google.internal" || host === "169.254.169.254";
+  const host = cleanHost(hostname);
+  return host === "metadata.google.internal" || host.startsWith("169.254.");
 }
 
-export function assertSafeIndexerUrl(url: string): void {
-  let parsed: URL;
+export function redactUrl(url: string): string {
   try {
-    parsed = new URL(url);
+    const parsed = new URL(url);
+    for (const key of [...parsed.searchParams.keys()]) {
+      if (/api[_-]?key|password|token|secret|auth/i.test(key)) {
+        parsed.searchParams.set(key, "***");
+      }
+    }
+    return parsed.toString();
   } catch {
-    throw new BadRequestError("Invalid URL");
+    return url;
   }
+}
 
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new BadRequestError("Invalid indexer URL scheme");
+/** Centralise le parsing d'URL et la validation du protocole HTTP(S) */
+function parseAndValidateUrl(url: string, logContext?: string): URL {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new Error(`Invalid URI scheme (${parsed.protocol})`);
+    }
+    if (!parsed.hostname) throw new Error("Invalid hostname");
+    return parsed;
+  } catch (err) {
+    if (logContext) logger.warn(logContext, `Invalid URL: ${redactUrl(url)}`);
+    const msg = err instanceof Error ? err.message : "Invalid URL";
+    throw new BadRequestError(`${msg}: ${redactUrl(url)}`);
   }
+}
 
-  if (!parsed.hostname) {
-    throw new BadRequestError("Invalid indexer URL hostname");
+/** Centralise la résolution DNS */
+async function resolveIp(hostname: string): Promise<string> {
+  try {
+    const { address } = await dns.lookup(hostname);
+    return address;
+  } catch {
+    throw new BadRequestError(`Failed to resolve hostname: ${hostname}`);
   }
+}
 
+// --- FONCTIONS PRINCIPALES (ASSERTIONS) ---
+
+export function assertSafeIndexerUrl(url: string): void {
+  const parsed = parseAndValidateUrl(url);
   if (isMetadataEndpoint(parsed.hostname)) {
     throw new BadRequestError("Indexer URL cannot point to cloud metadata endpoints");
   }
 }
 
 export async function assertPublicHttpUrl(url: string): Promise<void> {
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    throw new BadRequestError("Invalid URL");
-  }
-
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new BadRequestError("Invalid torrent URI scheme");
-  }
+  const parsed = parseAndValidateUrl(url);
 
   if (isPrivateHost(parsed.hostname)) {
-    throw new BadRequestError("URL cannot point to private networks");
+    logger.warn("URL", `Blocked private network URL: ${redactUrl(url)}`);
+    throw new BadRequestError(`URL cannot point to private networks: ${parsed.hostname}`);
   }
 
-  await assertResolvedIpIsPublic(parsed.hostname);
+  const ip = await resolveIp(parsed.hostname);
+  if (isPrivateHost(ip)) {
+    throw new BadRequestError(`URL resolves to a private network address (${parsed.hostname} -> ${ip})`);
+  }
+}
+
+export async function assertSafeTorrentFetchUrl(url: string): Promise<void> {
+  const parsed = parseAndValidateUrl(url, "TORRENT");
+
+  if (isMetadataEndpoint(parsed.hostname)) {
+    logger.warn("TORRENT", `Blocked torrent fetch URL: ${redactUrl(url)}`);
+    throw new BadRequestError(`URL cannot point to cloud metadata endpoints: ${parsed.hostname}`);
+  }
+
+  const ip = await resolveIp(parsed.hostname);
+  if (isMetadataEndpoint(ip)) {
+    logger.warn("TORRENT", `Blocked torrent fetch URL: ${redactUrl(url)}`);
+    throw new BadRequestError(`URL resolves to cloud metadata endpoint (${parsed.hostname} -> ${ip})`);
+  }
 }
