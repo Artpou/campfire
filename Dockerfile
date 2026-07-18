@@ -23,10 +23,7 @@ COPY . .
 RUN pnpm --filter @seedarr/api build
 RUN pnpm --filter @seedarr/web build
 
-# Prod deps only, then add drizzle-kit (devDep) for runtime migrations
-RUN pnpm --filter @seedarr/api --prod deploy --legacy /app/isolated \
-  && cd /app/isolated \
-  && npm install drizzle-kit@0.31.8 --no-fund --no-audit
+RUN pnpm --filter @seedarr/api --prod deploy --legacy /app/isolated
 
 # Stage 3: Runner
 FROM node:22-slim AS runner
@@ -44,11 +41,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -r
 
 COPY --from=builder /app/isolated ./
 COPY --from=builder /app/apps/api/dist-server ./dist-server
-COPY --from=builder /app/apps/api/drizzle.config.ts ./drizzle.config.ts
-COPY --from=builder /app/apps/api/src/db ./src/db
-COPY --from=builder /app/apps/api/src/modules ./src/modules
+COPY --from=builder /app/apps/api/src/db/drizzle ./src/db/drizzle
 COPY --from=builder /app/apps/web/dist ./web/dist
+COPY --from=builder /app/apps/api/docker-migrate.mjs ./docker-migrate.mjs
 
 EXPOSE 3002
 
-CMD ["sh", "-c", "./node_modules/.bin/drizzle-kit migrate && node dist-server/server.mjs"]
+CMD ["sh", "-c", "node docker-migrate.mjs && node dist-server/server.mjs"]
