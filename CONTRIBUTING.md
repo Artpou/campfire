@@ -37,6 +37,7 @@ Thank you for your interest in contributing! This guide covers how to set up the
 
    ```env
    API_PORT=3002
+   WEB_URL=http://localhost:3000
    VITE_API_URL=http://localhost:3002
    TMDB_API_KEY=your_tmdb_api_key_here
    ```
@@ -68,7 +69,7 @@ Thank you for your interest in contributing! This guide covers how to set up the
 - **Linting**: Biome
 - **Torrent**: WebTorrent
 - **i18n**: Lingui v5 (en, fr)
-- **Testing**: Vitest (API route tests)
+- **Testing**: Vitest (API route tests + web route helper tests)
 
 ## Project Structure
 
@@ -89,7 +90,7 @@ Thank you for your interest in contributing! This guide covers how to set up the
             ├── features/         # Feature-based modules
             ├── shared/           # Shared components and utilities
             ├── routes/           # TanStack Router file-based routes
-            ├── lib/              # Core utilities & API client
+            ├── lib/              # Core utilities (cn)
             └── locales/          # i18n translations (en, fr)
 
 packages/

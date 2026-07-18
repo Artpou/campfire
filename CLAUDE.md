@@ -42,7 +42,7 @@ IndexerManager → multiple configs (Jackett, Prowlarr, Stremio addons/presets)
 
 ## Tech Stack
 
-- **Package Manager**: pnpm v9+ (workspaces + catalog)
+- **Package Manager**: pnpm v11+ (workspaces + catalog)
 - **Monorepo**: Turbo
 - **Runtime**: Node.js v22+ (tsx for API)
 - **API**: Hono with TypeScript (port 3002)
@@ -53,11 +53,11 @@ IndexerManager → multiple configs (Jackett, Prowlarr, Stremio addons/presets)
 - **Styling**: Tailwind CSS v4 + Radix UI primitives (shadcn pattern)
 - **State**: TanStack Query (server) + Zustand (auth + user preferences)
 - **Torrent**: WebTorrent
-- **Transcode**: fluent-ffmpeg (MKV→MP4)
+- **Transcode**: ffmpeg via native child_process (MKV→MP4)
 - **Video Player**: Plyr (plyr-react)
 - **Linting**: Biome (not ESLint/Prettier)
 - **i18n**: Lingui v5 (en, fr)
-- **Testing**: Vitest (API route tests + web route helper tests)
+- **Testing**: Vitest (API route + integration tests, web route helper tests)
 
 ## Coding Standards
 
@@ -111,18 +111,17 @@ apps/
 │       └── db/             # Drizzle config, schema aggregation, migrations
 └── web/                    # React frontend
     └── src/
-        ├── features/       # Feature modules (media, movies, tv, torrent, downloads, subtitles, user, indexers-manager, person, settings)
+        ├── features/       # Feature modules (media, movies, tv, torrent, downloads, subtitles, user, indexers-manager, settings)
         │   └── [feature]/
         │       ├── components/
         │       ├── hooks/          # *.queries.ts (queryOptions + mutations)
-        │       └── [feature]-store.ts
+        │       └── helpers/        # Pure helpers (role, formatting...)
         ├── shared/         # UI primitives (shadcn), app-topbar, hooks, helpers
         ├── routes/         # TanStack Router file-based routes
-        └── lib/            # Core utilities (utils.ts)
+        └── lib/            # Core utilities (cn)
 packages/
 ├── sdk/                    # @seedarr/sdk — Hono RPC client, unwrap, types re-export
-├── shared/                 # @seedarr/shared — formatBytes, formatTime, slugify, toLatin
-└── shared/                 # @seedarr/shared — formatBytes, presets, slugify, toLatin
+└── shared/                 # @seedarr/shared — formatBytes, formatTime, presets, slugify, toLatin
 ```
 
 ## Dev Workflow
@@ -150,7 +149,7 @@ AuthenticatedService        → user in context, createRouter() factory
 ├── IdentifiableService<T>  → get/getMany/list with pagination
 │   ├── DownloadService, MediaService, UserService, IndexerManagerService
 │   └── TMDBService<S>      → MovieService, TVService (createTMDBRouter)
-├── ActivityLogService
+├── ActivityLogService, StorageConfigService
 └── TorrentService, SubtitleService
 ```
 
@@ -185,7 +184,7 @@ Each module has `{module}.dto.ts`: Zod schemas for validation, TypeScript types 
 
 - File-based: `_app.*` (authenticated), `_auth.*` (public)
 - Auth check in `_app.tsx` `beforeLoad` → redirect `/login`
-- Wrap route content in `<Container>`
+- Prefer wrapping route content in `<Container>` (some pages like discover use custom layouts)
 
 ### Data Layer
 
@@ -193,6 +192,7 @@ Each module has `{module}.dto.ts`: Zod schemas for validation, TypeScript types 
 - Colocated `*.queries.ts` per feature (queryOptions + mutations)
 - Colocated query keys per feature: `mediaQueries.key`, `downloadQueries.key`, `movieQueries.key`, etc.
 - Zustand for auth user (persisted) + user preferences (torrent filtering)
+
 ### Type Imports
 
 - **Always** import types from `@seedarr/sdk`
