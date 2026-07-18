@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
-import type { Download, Media, TMDBTvDetails } from "@seedarr/sdk";
+import type { Media, TMDBTvDetails } from "@seedarr/sdk";
 import { formatRuntime } from "@seedarr/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -11,14 +11,16 @@ import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
-import { ProgressCircular } from "@/shared/ui/progress-circular";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { useRole } from "@/features/auth/hooks/use-role";
 import { getDownloadStatus } from "@/features/downloads/helpers/downloads.helper";
 import { getBackdropUrl } from "@/features/media/helpers/media.helper";
+import { downloadQueries } from "@/features/torrent/hooks/download.queries";
+import { TvEpisodeDownloadControls } from "@/features/tv/components/tv-episode-download-controls";
 import { formatSeasonEpisode } from "@/features/tv/helpers/episode.helper";
+import { buildEpisodeDownloadMap, getEpisodesCoveredByDownload } from "@/features/tv/helpers/episode-downloads.helper";
 import { tvQueries } from "@/features/tv/hooks/tv.queries";
 
 interface TvEpisodesSectionProps {
@@ -39,6 +41,17 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
     ...tvQueries.season(tv.id, seasonNumber, locale),
     enabled: validSeasons.length > 0,
   });
+
+  const { data: mediaDownloads = [] } = useQuery(downloadQueries.byMedia(tv.id));
+  const episodeDownloadMap = useMemo(() => buildEpisodeDownloadMap(mediaDownloads), [mediaDownloads]);
+
+  const episodeNameByKey = useMemo(() => {
+    const names = new Map<string, string>();
+    for (const episode of seasonDetails?.episodes ?? []) {
+      names.set(`${seasonNumber}-${episode.episode_number}`, episode.name);
+    }
+    return names;
+  }, [seasonDetails?.episodes, seasonNumber]);
 
   if (validSeasons.length === 0) return null;
 
@@ -67,17 +80,13 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
           </Card>
         ) : (
           episodes.map((episode) => {
-            // const episodeDownload = downloadMap.get(`${seasonNumber}-${episode.episode_number}`);
-            // TODO: fix this by storing in download season + episode number
-            const episodeDownload = {} as Download;
+            const episodeDownload = episodeDownloadMap.get(`${seasonNumber}-${episode.episode_number}`);
             const episodeDownloadId = episodeDownload?.id;
-            const episodeStatus = getDownloadStatus(episodeDownload);
+            const episodeStatus = episodeDownload ? getDownloadStatus(episodeDownload) : null;
             const isDownloaded = episodeStatus === "completed";
             const isDownloading =
               episodeStatus === "downloading" || episodeStatus === "queued" || episodeStatus === "paused";
-            const downloadProgress = episodeDownload.torrent?.progress ?? 0;
-            const showDownloadProgress = isDownloading && downloadProgress < 0.95;
-            const isPaused = episodeStatus === "paused";
+            const hasDownload = !!episodeDownloadId;
 
             const isProgressCompleted =
               !!media?.progress?.duration && media.progress.position >= media.progress.duration * 0.95;
@@ -96,6 +105,12 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
                 : null;
 
             const seCode = formatSeasonEpisode(seasonNumber, episode.episode_number);
+            const coveredEpisodes = episodeDownloadId
+              ? getEpisodesCoveredByDownload(episodeDownloadId, episodeDownloadMap).map((covered) => ({
+                  ...covered,
+                  name: episodeNameByKey.get(`${covered.season}-${covered.episode}`),
+                }))
+              : [];
 
             return (
               <Card key={episode.id} className="p-3 flex flex-col sm:flex-row gap-4 overflow-hidden">
@@ -107,17 +122,7 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
                         alt={episode.name}
                         className="size-full object-cover"
                       />
-                      {showDownloadProgress && (
-                        <div className="absolute top-2 left-2">
-                          <ProgressCircular
-                            value={downloadProgress * 100}
-                            size={40}
-                            strokeWidth={3}
-                            className={isPaused ? "text-orange-500" : "text-primary"}
-                          />
-                        </div>
-                      )}
-                      {hasStarted && media.progress && media.progress.duration > 0 && !showDownloadProgress && (
+                      {hasStarted && media.progress && media.progress.duration > 0 && (
                         <div className="absolute inset-x-0 bottom-0 h-1 bg-muted/60">
                           <div
                             className="h-full bg-green-500"
@@ -134,7 +139,7 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
                     </div>
                   )}
 
-                  {episodeDownloadId && (isDownloaded || isDownloading) && (
+                  {hasDownload && (isDownloaded || isDownloading) && (
                     <Button
                       size="sm"
                       variant={isDownloaded || isDownloading ? "default" : "secondary"}
@@ -148,7 +153,7 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
                     </Button>
                   )}
 
-                  {role !== "viewer" && !isDownloaded && !isDownloading && (
+                  {role !== "viewer" && !hasDownload && (
                     <Button size="sm" className="w-full" asChild>
                       <Link
                         to="/tv/$id/torrents"
@@ -199,6 +204,10 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
                   </div>
                   {episode.overview && (
                     <p className="text-sm text-popover-foreground line-clamp-3">{episode.overview}</p>
+                  )}
+
+                  {role !== "viewer" && episodeDownload && (
+                    <TvEpisodeDownloadControls download={episodeDownload} coveredEpisodes={coveredEpisodes} />
                   )}
                 </div>
               </Card>

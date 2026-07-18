@@ -58,6 +58,7 @@ export class StremioAdapter extends IndexerAdapter {
     let videoId = media.imdbId;
     if (media.type === "tv") {
       const season = query.season ?? 1;
+      // Stremio requires a specific episode; default to E01 when browsing a full season
       const episode = query.episode ?? 1;
       videoId = `${media.imdbId}:${season}:${episode}`;
     }
@@ -80,7 +81,7 @@ export class StremioAdapter extends IndexerAdapter {
         detailsUrl: undefined,
         indexerType: "stremio",
         magnetUrl: `magnet:?xt=urn:btih:${stream.infoHash}`,
-        mediaInfos: filenameParse(displayTitle),
+        mediaInfos: filenameParse(displayTitle, true),
       };
     });
   }

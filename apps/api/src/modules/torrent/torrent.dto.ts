@@ -1,10 +1,10 @@
-import type { ParsedFilename } from "@ctrl/video-filename-parser";
+import type { ParsedFilename, ParsedShow } from "@ctrl/video-filename-parser";
 import { z } from "zod";
 
 import { indexerTypeEnum } from "@/modules/indexer-manager/indexer-manager.schema";
 import { mediaSelectSchema } from "@/types";
 
-type MediaInfos = { [K in keyof ParsedFilename]: ParsedFilename[K] };
+export type MediaInfos = ParsedFilename | ParsedShow;
 
 export const torrentSchema = z.object({
   title: z.string(),

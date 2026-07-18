@@ -2,7 +2,7 @@ import { zValidator } from "@hono/zod-validator";
 import { stream } from "hono/streaming";
 
 import { NotFoundError } from "@/errors/error";
-import { downloadFilePathParamDto, stringIdParamDto } from "@/helpers/param.dto";
+import { downloadFilePathParamDto, downloadMediaIdParamDto, stringIdParamDto } from "@/helpers/param.dto";
 import { toWebStream } from "@/helpers/stream.helper";
 import { downloadStartRateLimiter } from "@/middlewares/rate-limiter.middleware";
 import { downloadTorrentDto } from "./download.dto";
@@ -22,6 +22,10 @@ export const downloadRoutes = DownloadService.createRouter()
   })
   .get("/stats", async (c) => {
     return c.json(await c.var.service.getStats());
+  })
+  .get("/by-media/:mediaId", zValidator("param", downloadMediaIdParamDto), async (c) => {
+    const { mediaId } = c.req.valid("param");
+    return c.json(await c.var.service.getByMediaId(Number(mediaId)));
   })
   .get("/:id", zValidator("param", stringIdParamDto), async (c) => {
     const { id } = c.req.valid("param");

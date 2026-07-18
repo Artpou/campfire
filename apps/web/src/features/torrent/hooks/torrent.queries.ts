@@ -4,6 +4,8 @@ import type { IndexerManager, IndexerType, Media, Torrent } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { queryOptions, useQueries } from "@tanstack/react-query";
 
+import { getSeasonEpisodeRelevance } from "@/features/torrent/helpers/torrent-sort.helper";
+
 export const torrentQueries = {
   key: ["torrent"] as const,
   inspect: (magnetUri: string | null, indexerSeeders?: number) =>
@@ -112,6 +114,10 @@ export function useTorrents(media: Media, managers: IndexerManager[], { season, 
           }));
         })
         .sort((a, b) => {
+          const relevanceDiff =
+            getSeasonEpisodeRelevance(b, season, episode) - getSeasonEpisodeRelevance(a, season, episode);
+          if (relevanceDiff !== 0) return relevanceDiff;
+
           const aHasYear = a.title.includes(year);
           const bHasYear = b.title.includes(year);
           if (aHasYear && !bHasYear) return -1;

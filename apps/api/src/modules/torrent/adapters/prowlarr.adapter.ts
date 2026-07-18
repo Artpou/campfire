@@ -93,7 +93,7 @@ export class ProwlarrAdapter extends IndexerAdapter {
       guid: result.guid,
       detailsUrl: result.infoUrl,
       indexerType: "prowlarr" as const,
-      mediaInfos: filenameParse(result.title),
+      mediaInfos: filenameParse(result.title, query.media.type === "tv"),
     }));
   }
 }

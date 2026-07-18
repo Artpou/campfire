@@ -14,6 +14,17 @@ export const downloadQueries = {
       queryKey: [...downloadQueries.key, id],
       queryFn: () => unwrap(api.downloads[":id"].$get({ param: { id } })),
     }),
+  byMedia: (mediaId: number) =>
+    queryOptions({
+      queryKey: [...downloadQueries.key, "by-media", mediaId],
+      queryFn: () =>
+        unwrap(
+          api.downloads["by-media"][":mediaId"].$get({
+            param: { mediaId: mediaId.toString() },
+          }),
+        ),
+      refetchInterval: ({ state }) => refetchDownloadsByMediaInterval({ state }),
+    }),
 };
 
 export function refetchDownloadInterval({ state }: { state: QueryState<Download> }) {
@@ -21,6 +32,17 @@ export function refetchDownloadInterval({ state }: { state: QueryState<Download>
   if (!data) return false;
   if (data.torrent?.transferring) return 1500;
   return data.torrent?.done ? false : 1500;
+}
+
+function refetchDownloadsByMediaInterval({ state }: { state: QueryState<Download[]> }) {
+  const downloads = state.data;
+  if (!downloads?.length) return false;
+
+  const hasActiveDownload = downloads.some(
+    (download) => download.torrent?.transferring || (download.torrent && !download.torrent.done),
+  );
+
+  return hasActiveDownload ? 5000 : false;
 }
 
 export function useStartDownload() {

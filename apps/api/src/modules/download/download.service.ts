@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import type WebTorrent from "webtorrent";
 
 import { db } from "@/db/db";
@@ -33,6 +33,13 @@ export class DownloadService extends IdentifiableService<Download> {
   async getMany(params?: { ids?: string[] }): Promise<Download[]> {
     return db.query.download.findMany({
       where: and(eq(download.userId, this.user.id), params?.ids ? inArray(download.id, params.ids) : undefined),
+    });
+  }
+
+  async getByMediaId(mediaId: number): Promise<Download[]> {
+    return db.query.download.findMany({
+      where: and(eq(download.userId, this.user.id), eq(download.mediaId, mediaId)),
+      orderBy: desc(download.createdAt),
     });
   }
 

@@ -109,7 +109,7 @@ export class JackettAdapter extends IndexerAdapter {
       magnetUrl: result.MagnetUri,
       detailsUrl: result.Details,
       indexerType: "jackett" as const,
-      mediaInfos: filenameParse(result.Title),
+      mediaInfos: filenameParse(result.Title, query.media.type === "tv"),
     }));
   }
 }
