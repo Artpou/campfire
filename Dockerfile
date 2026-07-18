@@ -23,7 +23,10 @@ COPY . .
 RUN pnpm --filter @seedarr/api build
 RUN pnpm --filter @seedarr/web build
 
-RUN pnpm --filter @seedarr/api --prod deploy --legacy /app/isolated
+# Prod deps only, then add drizzle-kit (devDep) for runtime migrations
+RUN pnpm --filter @seedarr/api --prod deploy --legacy /app/isolated \
+  && cd /app/isolated \
+  && npm install drizzle-kit@0.31.8 --no-fund --no-audit
 
 # Stage 3: Runner
 FROM node:22-slim AS runner
