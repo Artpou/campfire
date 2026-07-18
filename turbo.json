@@ -7,8 +7,12 @@
       "outputs": ["src/db/drizzle/**"]
     },
     "build": {
-      "dependsOn": ["^build", "db:generate"],
+      "dependsOn": ["^build"],
       "outputs": ["dist/**", "dist-server/**"]
+    },
+    "@seedarr/api#build": {
+      "dependsOn": ["^build", "db:generate"],
+      "outputs": ["dist-server/**"]
     },
     "build:types": {
       "dependsOn": ["^build:types"],

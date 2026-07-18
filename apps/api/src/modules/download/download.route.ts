@@ -5,6 +5,7 @@ import { NotFoundError } from "@/errors/error";
 import { downloadFilePathParamDto, downloadMediaIdParamDto, stringIdParamDto } from "@/helpers/param.dto";
 import { toWebStream } from "@/helpers/stream.helper";
 import { downloadStartRateLimiter } from "@/middlewares/rate-limiter.middleware";
+import { requireRole } from "@/modules/auth/role.guard";
 import { downloadTorrentDto } from "./download.dto";
 import { requireDownloadOwnership } from "./download.guard";
 import { DownloadService } from "./download.service";
@@ -33,7 +34,7 @@ export const downloadRoutes = DownloadService.createRouter()
     if (!download) throw new NotFoundError("Download");
     return c.json(download);
   })
-  .post("/", downloadStartRateLimiter, zValidator("json", downloadTorrentDto), async (c) => {
+  .post("/", requireRole("member"), downloadStartRateLimiter, zValidator("json", downloadTorrentDto), async (c) => {
     const result = await c.var.service.start(c.req.valid("json"));
     if ("status" in result && result.status === "REMOTE_UNAVAILABLE") {
       return c.json({ status: "REMOTE_UNAVAILABLE", error: "Remote storage server is unavailable" }, 409);
@@ -86,15 +87,33 @@ export const downloadRoutes = DownloadService.createRouter()
 
     return c.text(vtt);
   })
-  .post("/:id/pause", zValidator("param", stringIdParamDto), requireDownloadOwnership, async (c) => {
-    return c.json(await c.var.service.pause(getDownloadId(c)));
-  })
-  .post("/:id/resume", zValidator("param", stringIdParamDto), requireDownloadOwnership, async (c) => {
-    return c.json(await c.var.service.resume(getDownloadId(c)));
-  })
-  .post("/:id/transfer", zValidator("param", stringIdParamDto), requireDownloadOwnership, async (c) => {
-    return c.json(await c.var.service.transfer(getDownloadId(c)));
-  })
-  .delete("/:id", zValidator("param", stringIdParamDto), requireDownloadOwnership, async (c) => {
+  .post(
+    "/:id/pause",
+    requireRole("member"),
+    zValidator("param", stringIdParamDto),
+    requireDownloadOwnership,
+    async (c) => {
+      return c.json(await c.var.service.pause(getDownloadId(c)));
+    },
+  )
+  .post(
+    "/:id/resume",
+    requireRole("member"),
+    zValidator("param", stringIdParamDto),
+    requireDownloadOwnership,
+    async (c) => {
+      return c.json(await c.var.service.resume(getDownloadId(c)));
+    },
+  )
+  .post(
+    "/:id/transfer",
+    requireRole("member"),
+    zValidator("param", stringIdParamDto),
+    requireDownloadOwnership,
+    async (c) => {
+      return c.json(await c.var.service.transfer(getDownloadId(c)));
+    },
+  )
+  .delete("/:id", requireRole("member"), zValidator("param", stringIdParamDto), requireDownloadOwnership, async (c) => {
     return c.json(await c.var.service.delete(getDownloadId(c)));
   });
