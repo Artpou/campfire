@@ -51,20 +51,23 @@ function deriveBaseUrl(manifestUrl: string): string {
 }
 
 export class IndexerManagerService extends IdentifiableService<IndexerManager> {
-  private prowlarrAdapter?: ProwlarrAdapter;
-  private jackettAdapter?: JackettAdapter;
-  private stremioAdapter?: StremioAdapter;
+  private adapterCache = new Map<string, IndexerAdapter>();
 
   getAdapter(indexerManager: IndexerManager): IndexerAdapter {
+    const cached = this.adapterCache.get(indexerManager.id);
+    if (cached) return cached;
+
+    let adapter: IndexerAdapter;
     if (indexerManager.indexerType === "prowlarr") {
-      if (!this.prowlarrAdapter) this.prowlarrAdapter = new ProwlarrAdapter(indexerManager);
-      return this.prowlarrAdapter;
+      adapter = new ProwlarrAdapter(indexerManager);
     } else if (indexerManager.indexerType === "jackett") {
-      if (!this.jackettAdapter) this.jackettAdapter = new JackettAdapter(indexerManager);
-      return this.jackettAdapter;
+      adapter = new JackettAdapter(indexerManager);
+    } else {
+      adapter = new StremioAdapter(indexerManager);
     }
-    if (!this.stremioAdapter) this.stremioAdapter = new StremioAdapter(indexerManager);
-    return this.stremioAdapter;
+
+    this.adapterCache.set(indexerManager.id, adapter);
+    return adapter;
   }
 
   private async addIndexers(manager: IndexerManager): Promise<IndexerManagerWithIndexers> {

@@ -1,6 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 
 import { mediaIdParamDto } from "@/helpers/param.dto";
+import { requireRole } from "@/modules/auth/role.guard";
 import { listMediaDto, mediaInsertSchema, updateProgressDto } from "./media.dto";
 import { MediaService } from "./media.service";
 
@@ -12,7 +13,7 @@ export const mediaRoutes = MediaService.createRouter()
     const { id } = c.req.valid("param");
     return c.json(await c.var.service.get(id));
   })
-  .post("/", zValidator("json", mediaInsertSchema), async (c) => {
+  .post("/", requireRole("member"), zValidator("json", mediaInsertSchema), async (c) => {
     return c.json(await c.var.service.upsert(c.req.valid("json")));
   })
   .post("/:id/like", zValidator("param", mediaIdParamDto), async (c) => {

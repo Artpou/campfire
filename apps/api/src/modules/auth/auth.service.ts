@@ -35,7 +35,7 @@ export interface Identifiable {
 export abstract class IdentifiableService<T extends Identifiable> extends AuthenticatedService {
   abstract getMany({ ids }: { ids?: string[] }): Promise<T[]>;
 
-  async get(id: string): Promise<T | undefined> {
+  async get(id: string): Promise<T> {
     const result = (await this.getMany({ ids: [id] }))?.[0];
     if (!result) {
       throw new NotFoundError("Item not found");

@@ -1,6 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 
-import { ForbiddenError, NotFoundError } from "@/errors/error";
+import { ForbiddenError } from "@/errors/error";
 import { resolveWithinDownloads } from "@/helpers/path.helper";
 import { subtitleRateLimiter } from "@/middlewares/rate-limiter.middleware";
 import { DownloadService } from "@/modules/download/download.service";
@@ -16,11 +16,9 @@ export const subtitleRoutes = SubtitleService.createRouter()
     const { downloadId, url, language, mediaTitle } = c.req.valid("json");
     const user = c.get("user");
 
-    // TODO: pass in the method of the service
     const download = await new DownloadService(user).get(downloadId);
-    if (!download) throw new NotFoundError("Download");
     if (download.userId !== user.id && !["owner", "admin"].includes(user.role)) {
-      throw new ForbiddenError("Unauthorized to add subtitles to this download");
+      throw new ForbiddenError();
     }
 
     const downloadFolderPath = resolveWithinDownloads(download.torrent?.name ?? "");

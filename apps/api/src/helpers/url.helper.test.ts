@@ -1,6 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { assertPublicHttpUrl, assertSafeIndexerUrl, isPrivateHost } from "./url.helper";
+
+vi.mock("node:dns/promises", () => ({
+  default: {
+    lookup: vi.fn().mockResolvedValue({ address: "93.184.216.34", family: 4 }),
+  },
+}));
 
 describe("isPrivateHost", () => {
   it("detects common private hosts", () => {
@@ -26,17 +32,17 @@ describe("isPrivateHost", () => {
 });
 
 describe("assertPublicHttpUrl", () => {
-  it("accepts public http(s) URLs", () => {
-    expect(() => assertPublicHttpUrl("https://example.com/file.torrent")).not.toThrow();
+  it("accepts public http(s) URLs", async () => {
+    await expect(assertPublicHttpUrl("https://example.com/file.torrent")).resolves.toBeUndefined();
   });
 
-  it("rejects private network URLs", () => {
-    expect(() => assertPublicHttpUrl("http://127.0.0.1/file.torrent")).toThrow(/private networks/);
-    expect(() => assertPublicHttpUrl("http://192.168.0.1/file.torrent")).toThrow(/private networks/);
+  it("rejects private network URLs", async () => {
+    await expect(assertPublicHttpUrl("http://127.0.0.1/file.torrent")).rejects.toThrow(/private networks/);
+    await expect(assertPublicHttpUrl("http://192.168.0.1/file.torrent")).rejects.toThrow(/private networks/);
   });
 
-  it("rejects non-http schemes", () => {
-    expect(() => assertPublicHttpUrl("file:///etc/passwd")).toThrow(/Invalid torrent URI scheme/);
+  it("rejects non-http schemes", async () => {
+    await expect(assertPublicHttpUrl("file:///etc/passwd")).rejects.toThrow(/Invalid torrent URI scheme/);
   });
 });
 

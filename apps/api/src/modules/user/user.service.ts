@@ -32,8 +32,10 @@ export class UserService extends IdentifiableService<User> {
     return db.query.user.findMany({ columns: userColumns });
   }
 
-  async get(id: string): Promise<User | undefined> {
-    return db.query.user.findFirst({ where: eq(user.id, id), columns: userColumns });
+  async get(id: string): Promise<User> {
+    const result = await db.query.user.findFirst({ where: eq(user.id, id), columns: userColumns });
+    if (!result) throw new NotFoundError("User");
+    return result;
   }
 
   async getByUsername(username: string): Promise<User | undefined> {
@@ -111,7 +113,6 @@ export class UserService extends IdentifiableService<User> {
 
   async update(caller: User, id: string, input: UpdateUserInput): Promise<User> {
     const target = await this.get(id);
-    if (!target) throw new NotFoundError("User");
 
     if (target.role === "owner") {
       throw new ForbiddenError("Cannot modify owner account");
@@ -129,14 +130,11 @@ export class UserService extends IdentifiableService<User> {
     if (input.role) data.role = input.role;
 
     await db.update(user).set(data).where(eq(user.id, id));
-    const updated = await this.get(id);
-    if (!updated) throw new NotFoundError("User");
-    return updated;
+    return this.get(id);
   }
 
   async delete(caller: User, id: string): Promise<{ success: true }> {
     const target = await this.get(id);
-    if (!target) throw new NotFoundError("User");
 
     if (target.role === "owner") {
       throw new ForbiddenError("Cannot delete owner account");

@@ -1,28 +1,44 @@
 import { BadRequestError } from "@/errors/error";
+import dns from "node:dns/promises";
 
-export function isPrivateHost(hostname: string): boolean {
-  const host = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+export function isPrivateHost(ip: string): boolean {
+  const host = ip.toLowerCase().replace(/^\[|\]$/g, "");
+
+  const mapped = host.startsWith("::ffff:") ? host.slice(7) : host;
 
   if (
-    host === "localhost" ||
-    host.startsWith("127.") ||
-    host === "0.0.0.0" ||
-    host === "::1" ||
-    host === "host.docker.internal" ||
-    host === "metadata.google.internal" ||
-    host.startsWith("10.") ||
-    host.startsWith("192.168.") ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
-    host.endsWith(".local") ||
-    host.startsWith("169.254.") ||
-    host.startsWith("fe80:") ||
-    host.startsWith("fc") ||
-    host.startsWith("fd")
+    mapped === "localhost" ||
+    mapped.startsWith("127.") ||
+    mapped === "0.0.0.0" ||
+    mapped === "::1" ||
+    mapped === "::" ||
+    mapped === "host.docker.internal" ||
+    mapped === "metadata.google.internal" ||
+    mapped.startsWith("10.") ||
+    mapped.startsWith("192.168.") ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(mapped) ||
+    mapped.endsWith(".local") ||
+    mapped.startsWith("169.254.") ||
+    mapped.startsWith("fe80:") ||
+    mapped.startsWith("fc") ||
+    mapped.startsWith("fd")
   ) {
     return true;
   }
 
   return false;
+}
+
+async function assertResolvedIpIsPublic(hostname: string): Promise<void> {
+  try {
+    const { address } = await dns.lookup(hostname);
+    if (isPrivateHost(address)) {
+      throw new BadRequestError("URL resolves to a private network address");
+    }
+  } catch (error) {
+    if (error instanceof BadRequestError) throw error;
+    throw new BadRequestError("Failed to resolve hostname");
+  }
 }
 
 function isMetadataEndpoint(hostname: string): boolean {
@@ -51,7 +67,7 @@ export function assertSafeIndexerUrl(url: string): void {
   }
 }
 
-export function assertPublicHttpUrl(url: string): void {
+export async function assertPublicHttpUrl(url: string): Promise<void> {
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -66,4 +82,6 @@ export function assertPublicHttpUrl(url: string): void {
   if (isPrivateHost(parsed.hostname)) {
     throw new BadRequestError("URL cannot point to private networks");
   }
+
+  await assertResolvedIpIsPublic(parsed.hostname);
 }

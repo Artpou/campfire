@@ -2,6 +2,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { resolveTorrentSource } from "@/modules/torrent/torrent-source.helper";
 
+vi.mock("node:dns/promises", () => ({
+  default: {
+    lookup: vi.fn().mockResolvedValue({ address: "93.184.216.34", family: 4 }),
+  },
+}));
+
 describe("resolveTorrentSource", () => {
   afterEach(() => {
     vi.unstubAllGlobals();

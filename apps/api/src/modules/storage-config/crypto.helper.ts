@@ -5,7 +5,10 @@ const IV_LENGTH = 12;
 const TAG_LENGTH = 16;
 
 function deriveKey(): Buffer {
-  const secret = process.env.STORAGE_ENCRYPTION_KEY || process.env.DATABASE_URL || "seedarr-default-key";
+  const secret = process.env.STORAGE_ENCRYPTION_KEY;
+  if (!secret) {
+    throw new Error("STORAGE_ENCRYPTION_KEY environment variable is required for storage credential encryption");
+  }
   return crypto.scryptSync(secret, "seedarr-storage-salt", 32);
 }
 

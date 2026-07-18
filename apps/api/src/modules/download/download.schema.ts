@@ -83,5 +83,5 @@ export const download = sqliteTable(
 
     error: text("error"),
   },
-  (table) => [index("download_userId_idx").on(table.userId)],
+  (table) => [index("download_userId_idx").on(table.userId), index("download_mediaId_idx").on(table.mediaId)],
 );

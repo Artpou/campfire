@@ -5,6 +5,7 @@ import { createAuthGuardMock, seedTestUser } from "@/tests/route-test.helper";
 import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
 
 const { fakeUser, testDbRef } = vi.hoisted(() => {
+  process.env.STORAGE_ENCRYPTION_KEY = "test-storage-encryption-key";
   const fakeUser = { id: "user-1", username: "admin", role: "admin" as const, createdAt: new Date("2024-01-01") };
   const testDbRef = { current: null as TestDb | null };
   return { fakeUser, testDbRef };

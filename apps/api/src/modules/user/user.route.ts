@@ -1,6 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
 
-import { NotFoundError } from "@/errors/error";
 import { stringIdParamDto } from "@/helpers/param.dto";
 import { requireRole } from "@/modules/auth/role.guard";
 import { createUserSchema, updateUserSchema } from "./user.dto";
@@ -9,9 +8,7 @@ import { UserService } from "./user.service";
 export const userRoutes = UserService.createRouter()
   .get("/:id", zValidator("param", stringIdParamDto), async (c) => {
     const { id } = c.req.valid("param");
-    const result = await c.var.service.get(id);
-    if (!result) throw new NotFoundError("User");
-    return c.json(result);
+    return c.json(await c.var.service.get(id));
   })
   .use("*", requireRole("admin"))
   .get("/", async (c) => {

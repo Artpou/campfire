@@ -8,7 +8,7 @@ export async function resolveTorrentSource(uri: string, depth = 0): Promise<stri
   if (uri.startsWith("magnet:")) return enrichMagnetUri(uri);
   if (depth > MAX_REDIRECT_DEPTH) throw new BadRequestError("Too many redirects");
 
-  assertPublicHttpUrl(uri);
+  await assertPublicHttpUrl(uri);
 
   const response = await fetch(uri, {
     redirect: "manual",
@@ -21,7 +21,7 @@ export async function resolveTorrentSource(uri: string, depth = 0): Promise<stri
     if (location.startsWith("magnet:")) return enrichMagnetUri(location);
 
     const resolved = new URL(location, uri).toString();
-    assertPublicHttpUrl(resolved);
+    await assertPublicHttpUrl(resolved);
     return resolveTorrentSource(resolved, depth + 1);
   }
 
