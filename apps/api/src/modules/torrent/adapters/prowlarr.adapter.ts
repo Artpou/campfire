@@ -1,9 +1,9 @@
 import { filenameParse } from "@ctrl/video-filename-parser";
 
 import { BadRequestError } from "@/errors/error";
-import { sanitize } from "@/helpers/string.helper";
 import type { Indexer, IndexerManager, IndexerType } from "@/types";
 import type { Torrent, torrentListQuery } from "../torrent.dto";
+import { buildIndexerSearchPlan, searchWithTitleFallback } from "../torrent-search.helper";
 import { IndexerAdapter } from "./indexer.adapter";
 
 interface ProwlarrIndexer {
@@ -55,13 +55,9 @@ export class ProwlarrAdapter extends IndexerAdapter {
   }
 
   async getTorrents(query: torrentListQuery): Promise<Torrent[]> {
-    const searchQueries = [
-      `{ImdbId:${query.media.imdbId}}`,
-      sanitize(query.media.sanitize_title ?? ""),
-      sanitize(query.media.title ?? ""),
-    ].filter(Boolean);
+    const plan = buildIndexerSearchPlan(query.media, (imdbId) => `{ImdbId:${imdbId}}`);
 
-    const fetchPromises = searchQueries.map(async (searchQuery) => {
+    const allResults = await searchWithTitleFallback(plan, async (searchQuery) => {
       const params = new URLSearchParams();
       params.set("limit", "100");
       params.set("query", searchQuery);
@@ -69,8 +65,6 @@ export class ProwlarrAdapter extends IndexerAdapter {
 
       return (await this.fetchApi(`search?${params.toString()}`)) as ProwlarTorrent[];
     });
-
-    const allResults = (await Promise.all(fetchPromises)).flat();
 
     const uniqueTorrentsMap = new Map<string, ProwlarTorrent>();
 

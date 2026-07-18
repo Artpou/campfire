@@ -4,6 +4,7 @@ import { BadRequestError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
 import type { Indexer, IndexerManager, IndexerType } from "@/types";
 import type { Torrent, torrentListQuery } from "../torrent.dto";
+import { buildIndexerSearchPlan, searchWithTitleFallback } from "../torrent-search.helper";
 import { IndexerAdapter } from "./indexer.adapter";
 
 interface JackettIndexer {
@@ -66,11 +67,9 @@ export class JackettAdapter extends IndexerAdapter {
   }
 
   async getTorrents(query: torrentListQuery): Promise<Torrent[]> {
-    const searchQueries = [query.media.imdbId ?? "", query.media.sanitize_title ?? "", query.media.title ?? ""].filter(
-      Boolean,
-    );
+    const plan = buildIndexerSearchPlan(query.media);
 
-    const fetchPromises = searchQueries.map(async (searchQuery) => {
+    const allResults = await searchWithTitleFallback(plan, async (searchQuery) => {
       let path = `indexers/all/results?Query=${encodeURIComponent(searchQuery)}`;
       if (query.indexerId) {
         path += `&Tracker[]=${encodeURIComponent(query.indexerId)}`;
@@ -85,8 +84,6 @@ export class JackettAdapter extends IndexerAdapter {
       }
     });
 
-    const allResults = (await Promise.all(fetchPromises)).flat();
-
     const uniqueTorrentsMap = new Map<string, JackettSearchItem>();
 
     for (const torrent of allResults) {
@@ -96,7 +93,6 @@ export class JackettAdapter extends IndexerAdapter {
       }
     }
 
-    // 5. Mapping final standardisé vers ton format d'application
     return Array.from(uniqueTorrentsMap.values()).map((result) => ({
       title: result.Title,
       tracker: result.Tracker,
