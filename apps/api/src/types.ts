@@ -9,6 +9,7 @@ export * from "./modules/indexer-manager/indexer-manager.dto";
 export type { IndexerPrivacy, IndexerType, StremioManifest } from "./modules/indexer-manager/indexer-manager.schema";
 export * from "./modules/media/media.dto";
 export * from "./modules/movie/movie.dto";
+export * from "./modules/storage-config/storage-config.dto";
 export * from "./modules/subtitle/subtitle.dto";
 export * from "./modules/tmdb/tmdb.dto";
 export * from "./modules/torrent/torrent.dto";

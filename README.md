@@ -57,6 +57,7 @@ Think of it as **Stremio meets Overseerr**, but fully self-hosted and under your
 - Real-time download progress, speed, peers, seeds, and ratio
 - Pause, resume, and manage downloads directly from the UI
 - Quality and language info displayed for each result
+- Optional **remote storage** (FTP/FTPS or WebDAV) — transfer completed downloads to a NAS, Nextcloud, or any remote server
 
 ### Stream & Watch
 

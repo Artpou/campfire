@@ -20,6 +20,11 @@ export type {
   UpdateProgressQuery,
 } from "../modules/media/media.dto";
 export type { movieIdQuery } from "../modules/movie/movie.dto";
+export type {
+  StorageConfigResponse,
+  TestStorageConfigInput,
+  UpsertStorageConfigInput,
+} from "../modules/storage-config/storage-config.dto";
 export type { DownloadSubtitleInput, SubdlSubtitle, SubtitlesSearchQuery } from "../modules/subtitle/subtitle.dto";
 export type {
   TMDBCastMember,

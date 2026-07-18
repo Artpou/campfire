@@ -1,0 +1,15 @@
+meta {
+  name: Storage Status
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/storage-config/status
+  body: none
+  auth: inherit
+}
+
+docs {
+  Requires admin role or higher. Returns whether the configured remote SMB server is currently available.
+}

@@ -8,8 +8,9 @@ import { pipeNodeStream, toWebStream } from "@/helpers/stream.helper";
 import { srt2webvtt } from "@/helpers/subtitle.helper";
 import { convertToFragmentedMp4Stream, getVideoInputFormat, shouldTranscodeForPlayback } from "@/helpers/video.helper";
 import { downloadStartRateLimiter } from "@/middlewares/rate-limiter.middleware";
+import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
 import type { Dirent } from "node:fs";
-import { downloadTorrentDto } from "./download.dto";
+import { downloadTorrentDto, transferDownloadDto } from "./download.dto";
 import { requireDownloadOwnership } from "./download.guard";
 import type { TorrentLiveData } from "./download.schema";
 import { DownloadService } from "./download.service";
@@ -42,69 +43,97 @@ export const downloadRoutes = DownloadService.createRouter()
     return c.json(download);
   })
   .post("/", downloadStartRateLimiter, zValidator("json", downloadTorrentDto), async (c) => {
-    return c.json(await c.var.service.start(c.req.valid("json")));
+    const result = await c.var.service.start(c.req.valid("json"));
+    if ("status" in result && result.status === "REMOTE_UNAVAILABLE") {
+      return c.json({ status: "REMOTE_UNAVAILABLE", error: "Remote storage server is unavailable" }, 409);
+    }
+    return c.json(result);
   })
   .get("/:id/stream", zValidator("param", stringIdParamDto), requireDownloadOwnership, async (c) => {
     const download = await c.var.service.get(getDownloadId(c));
     if (!download) throw new NotFoundError("Download");
 
+    if (download.storageLocation === "REMOTE" && !download.torrent?.done) {
+      const deleteLocal = await remoteStorageService.shouldDeleteLocalAfterTransfer();
+      if (deleteLocal) {
+        throw new BadRequestError("Streaming is unavailable while the file is being downloaded to remote storage");
+      }
+    }
+
     const streamService = new DownloadStreamService();
     const result = await streamService.getStreamForDownload(download);
     if (!result) throw new NotFoundError("Video file");
 
-    const { stream: nodeStream, fileName, size, filePath, torrentFile } = result;
+    const { fileName, size, filePath, torrentFile } = result;
     const contentType = getContentType(fileName);
     const useTranscodedStream = shouldTranscodeForPlayback(fileName);
 
+    const rangeHeader = c.req.header("range");
+    let range: { start: number; end: number } | undefined;
+
+    // Headers must be set before stream() — the response body is locked once created.
+    if (useTranscodedStream) {
+      c.header("Content-Type", "video/mp4");
+    } else if (rangeHeader) {
+      const parts = rangeHeader.replace(/bytes=/, "").split("-");
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : size - 1;
+
+      if (Number.isNaN(start) || start >= size || end >= size || start > end || start < 0) {
+        c.status(416);
+        c.header("Content-Range", `bytes */${size}`);
+        return c.body(null);
+      }
+
+      range = { start, end };
+      c.status(206);
+      c.header("Content-Range", `bytes ${start}-${end}/${size}`);
+      c.header("Accept-Ranges", "bytes");
+      c.header("Content-Length", String(end - start + 1));
+      c.header("Content-Type", contentType);
+    } else {
+      c.header("Content-Type", contentType);
+      c.header("Content-Length", size.toString());
+      c.header("Accept-Ranges", "bytes");
+    }
+
     return stream(c, async (honoStream) => {
       let destroyTranscode: (() => void) | undefined;
+      let activeStream: NodeJS.ReadableStream | undefined;
 
       const cleanup = (): void => {
         destroyTranscode?.();
-        if ("destroy" in nodeStream && typeof nodeStream.destroy === "function") {
-          nodeStream.destroy();
+        if (activeStream && "destroy" in activeStream && typeof activeStream.destroy === "function") {
+          activeStream.destroy();
         }
       };
 
       honoStream.onAbort(cleanup);
 
+      const openSourceStream = async (): Promise<NodeJS.ReadableStream> => {
+        if (torrentFile) {
+          return range ? torrentFile.createReadStream(range) : torrentFile.createReadStream();
+        }
+        if (filePath) {
+          return range
+            ? (await import("node:fs")).createReadStream(filePath, range)
+            : (await import("node:fs")).createReadStream(filePath);
+        }
+        return result.stream;
+      };
+
+      const source = await openSourceStream();
+      activeStream = source;
+
       if (useTranscodedStream) {
-        const transcoded = convertToFragmentedMp4Stream(nodeStream, getVideoInputFormat(fileName));
+        const transcoded = convertToFragmentedMp4Stream(source, getVideoInputFormat(fileName));
         destroyTranscode = transcoded.destroy;
-        c.header("Content-Type", "video/mp4");
+        activeStream = transcoded.stream;
         await pipeNodeStream(honoStream, transcoded.stream);
         return;
       }
 
-      const rangeHeader = c.req.header("range");
-      if (rangeHeader && (torrentFile || filePath)) {
-        const parts = rangeHeader.replace(/bytes=/, "").split("-");
-        const start = parseInt(parts[0], 10);
-        const end = parts[1] ? parseInt(parts[1], 10) : size - 1;
-
-        if (start >= size || end >= size || start > end || start < 0) {
-          c.status(416);
-          c.header("Content-Range", `bytes */${size}`);
-          return;
-        }
-
-        c.status(206);
-        c.header("Content-Range", `bytes ${start}-${end}/${size}`);
-        c.header("Accept-Ranges", "bytes");
-        c.header("Content-Length", String(end - start + 1));
-        c.header("Content-Type", contentType);
-
-        const rangeStream = torrentFile
-          ? torrentFile.createReadStream({ start, end })
-          : (await import("node:fs")).createReadStream(filePath as string, { start, end });
-        await pipeNodeStream(honoStream, rangeStream);
-        return;
-      }
-
-      c.header("Content-Type", contentType);
-      c.header("Content-Length", size.toString());
-      c.header("Accept-Ranges", "bytes");
-      await pipeNodeStream(honoStream, nodeStream);
+      await pipeNodeStream(honoStream, source);
     });
   })
   .get("/:id/file/:filePath", zValidator("param", downloadFilePathParamDto), async (c) => {
@@ -213,6 +242,22 @@ export const downloadRoutes = DownloadService.createRouter()
   .post("/:id/resume", zValidator("param", stringIdParamDto), requireDownloadOwnership, async (c) => {
     return c.json(await c.var.service.resume(getDownloadId(c)));
   })
+  .post(
+    "/:id/transfer",
+    zValidator("param", stringIdParamDto),
+    requireDownloadOwnership,
+    zValidator("json", transferDownloadDto),
+    async (c) => {
+      const result = await c.var.service.transfer(getDownloadId(c), c.req.valid("json"));
+      if ("status" in result && result.status === "ALREADY_EXISTS") {
+        return c.json(
+          { status: "ALREADY_EXISTS", error: "A file with this name already exists on the remote server" },
+          409,
+        );
+      }
+      return c.json(result);
+    },
+  )
   .delete("/:id", zValidator("param", stringIdParamDto), requireDownloadOwnership, async (c) => {
     return c.json(await c.var.service.delete(getDownloadId(c)));
   });

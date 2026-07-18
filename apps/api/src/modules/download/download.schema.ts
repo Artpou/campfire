@@ -1,5 +1,6 @@
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
+import { storageLocationEnum } from "@/modules/storage-config/storage-config.schema";
 import { user } from "@/modules/user/user.schema";
 
 export const torrentStatusEnum = ["queued", "downloading", "completed", "failed", "paused"] as const;
@@ -42,6 +43,10 @@ export interface TorrentLiveData {
   createdBy?: string;
   comment?: string;
   maxWebConns: number;
+  transferred?: boolean;
+  transferring?: boolean;
+  transferProgress?: number;
+  remotePath?: string;
   files: {
     name: string;
     path: string;
@@ -72,6 +77,7 @@ export const download = sqliteTable(
 
     streamType: text("stream_type", { enum: streamTypeEnum }).notNull().default("TORRENT"),
     indexerManagerId: text("indexer_manager_id"),
+    storageLocation: text("storage_location", { enum: storageLocationEnum }).notNull().default("LOCAL"),
 
     torrent: text("torrent", { mode: "json" }).$type<TorrentLiveData>(),
 

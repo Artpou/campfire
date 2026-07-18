@@ -1,0 +1,26 @@
+meta {
+  name: Test Storage Connection
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/storage-config/test
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "protocol": "ftp",
+    "host": "192.168.1.254",
+    "port": 21,
+    "secure": false,
+    "username": "admin",
+    "password": "secret"
+  }
+}
+
+docs {
+  Requires admin role or higher. Tests FTP or WebDAV connectivity. Omit password to reuse the stored encrypted password.
+}

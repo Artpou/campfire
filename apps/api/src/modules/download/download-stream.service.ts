@@ -20,7 +20,6 @@ export class DownloadStreamService {
     if (activeTorrent) {
       const videoFile = findLargestVideoFile(activeTorrent);
       if (!videoFile) return undefined;
-
       return {
         stream: videoFile.createReadStream(),
         size: videoFile.length,
@@ -33,9 +32,7 @@ export class DownloadStreamService {
   }
 
   private async getStreamFromDisk(download: Download): Promise<StreamResult | undefined> {
-    if (download.error) return undefined;
-
-    const fullPath = this.getFullPath(download);
+    const fullPath = resolveWithinDownloads(download.torrent?.name ?? "");
     const fs = await import("node:fs/promises");
     const fsSync = await import("node:fs");
     const videoExtensions = /\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v)$/i;
@@ -46,12 +43,7 @@ export class DownloadStreamService {
       if (stats.isFile()) {
         const fileName = path.basename(fullPath);
         if (!videoExtensions.test(fileName)) return undefined;
-        return {
-          stream: fsSync.createReadStream(fullPath),
-          size: stats.size,
-          fileName,
-          filePath: fullPath,
-        };
+        return { stream: fsSync.createReadStream(fullPath), size: stats.size, fileName, filePath: fullPath };
       }
 
       const files = await fs.readdir(fullPath, { recursive: true, withFileTypes: true });
@@ -77,11 +69,5 @@ export class DownloadStreamService {
     } catch {
       return undefined;
     }
-  }
-
-  private getFullPath(download: Download, relativePath?: string): string {
-    const segments = [download.torrent?.name ?? ""];
-    if (relativePath) segments.push(relativePath);
-    return resolveWithinDownloads(...segments);
   }
 }

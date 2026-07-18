@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 
 import { plural } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { IndexerType, Media, Resolution, Torrent } from "@seedarr/sdk";
+import type { DownloadTorrentInput, IndexerType, Media, Resolution, Torrent } from "@seedarr/sdk";
+import { ApiError } from "@seedarr/sdk";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowDownIcon, ArrowUpIcon, DownloadIcon, InfoIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -18,6 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { indexersManagerImages } from "@/features/indexers-manager/helpers/indexers-manager.helper";
 import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
 import { useStartDownload } from "@/features/torrent/hooks/download.queries";
+import { DownloadUnavailableDialog } from "./download-unavailable-dialog";
 import { TorrentInspectModal } from "./torrent-inspect-modal";
 
 interface TorrentWithMeta extends Torrent {
@@ -44,6 +46,9 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTorrent, setSelectedTorrent] = useState<Torrent | null>(null);
   const [selectedMagnetUri, setSelectedMagnetUri] = useState<string | null>(null);
+  const [unavailableDialogOpen, setUnavailableDialogOpen] = useState(false);
+  const [pendingDownloadInput, setPendingDownloadInput] = useState<DownloadTorrentInput | null>(null);
+  const [unavailableAction, setUnavailableAction] = useState<"retry" | "local" | null>(null);
 
   const filteredTorrents = useMemo(() => {
     const maxSizeBytes = preferenceMaxSize !== null ? preferenceMaxSize * 1024 * 1024 * 1024 : null;
@@ -82,12 +87,12 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
 
   const getTorrentUri = (torrent: Torrent): string => {
     if (torrent.downloadUrl) return torrent.downloadUrl;
-    if (torrent.link.startsWith("http://") || torrent.link.startsWith("https://")) return torrent.link;
+    if (torrent.link?.startsWith("http://") || torrent.link?.startsWith("https://")) return torrent.link;
     if (torrent.magnetUrl?.includes("tr=")) return torrent.magnetUrl;
     if (torrent.guid?.startsWith("magnet:") && torrent.guid.includes("tr=")) return torrent.guid;
     if (torrent.magnetUrl) return torrent.magnetUrl;
     if (torrent.guid?.startsWith("magnet:")) return torrent.guid;
-    return torrent.link;
+    return torrent.link ?? torrent.magnetUrl ?? torrent.guid ?? "";
   };
 
   const handleOpenInspectModal = (torrent: Torrent) => {
@@ -97,33 +102,59 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
     setModalOpen(true);
   };
 
-  const handleAddDownload = async (torrent: Torrent) => {
-    const magnetUri = getTorrentUri(torrent);
-    const toastId = toast.loading(t`Starting download…`, {
-      description: torrent.title,
-    });
+  const executeDownload = async (input: DownloadTorrentInput, toastId?: string | number) => {
+    const id = toastId ?? toast.loading(t`Starting download…`, { description: input.name });
 
     try {
-      await startDownload.mutateAsync({
-        magnetUri,
-        name: torrent.title,
-        media,
-        origin: torrent.tracker,
-        quality: torrent.mediaInfos?.resolution,
-        language: torrent.mediaInfos?.languages?.[0],
-      });
-      toast.success(t`Download started`, {
-        id: toastId,
-        description: torrent.title,
-      });
+      await startDownload.mutateAsync(input);
+      toast.success(t`Download started`, { id, description: input.name });
       navigate({ to: "/downloads" });
     } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        toast.dismiss(id);
+        setPendingDownloadInput(input);
+        setUnavailableDialogOpen(true);
+        return;
+      }
       const message = error instanceof Error ? error.message : t`Unknown error`;
-      toast.error(t`Download failed`, {
-        id: toastId,
-        description: message,
-      });
+      toast.error(t`Download failed`, { id, description: message });
     }
+  };
+
+  const handleAddDownload = async (torrent: Torrent) => {
+    const magnetUri = getTorrentUri(torrent);
+    await executeDownload({
+      magnetUri,
+      name: torrent.title,
+      media,
+      origin: torrent.tracker,
+      quality: torrent.mediaInfos?.resolution,
+      language: torrent.mediaInfos?.languages?.[0],
+    });
+  };
+
+  const handleUnavailableRetry = async () => {
+    if (!pendingDownloadInput) return;
+    setUnavailableAction("retry");
+    await executeDownload(pendingDownloadInput);
+    setUnavailableAction(null);
+    setUnavailableDialogOpen(false);
+    setPendingDownloadInput(null);
+  };
+
+  const handleUnavailableLocal = async () => {
+    if (!pendingDownloadInput) return;
+    setUnavailableAction("local");
+    await executeDownload({ ...pendingDownloadInput, storageLocation: "LOCAL" });
+    setUnavailableAction(null);
+    setUnavailableDialogOpen(false);
+    setPendingDownloadInput(null);
+  };
+
+  const handleUnavailableCancel = () => {
+    setUnavailableDialogOpen(false);
+    setPendingDownloadInput(null);
+    setUnavailableAction(null);
   };
   const showLoader = isLoading && filteredTorrents.length === 0;
   const showEmpty = !isLoading && filteredTorrents.length === 0;
@@ -301,6 +332,15 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
         onOpenChange={setModalOpen}
         torrent={selectedTorrent}
         magnetUri={selectedMagnetUri}
+      />
+
+      <DownloadUnavailableDialog
+        open={unavailableDialogOpen}
+        onRetry={handleUnavailableRetry}
+        onCancel={handleUnavailableCancel}
+        onStoreLocally={handleUnavailableLocal}
+        isRetrying={unavailableAction === "retry"}
+        isStoringLocally={unavailableAction === "local"}
       />
     </div>
   );

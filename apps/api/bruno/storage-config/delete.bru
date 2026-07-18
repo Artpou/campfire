@@ -1,0 +1,15 @@
+meta {
+  name: Delete Storage Config
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/storage-config
+  body: none
+  auth: inherit
+}
+
+docs {
+  Requires admin role or higher. Deletes the SMB storage configuration.
+}

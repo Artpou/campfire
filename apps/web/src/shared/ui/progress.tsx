@@ -9,7 +9,9 @@ function Progress({
   value,
   variant = "default",
   ...props
-}: React.ComponentProps<typeof ProgressPrimitive.Root> & { variant?: "default" | "paused" | "error" | "white" }) {
+}: React.ComponentProps<typeof ProgressPrimitive.Root> & {
+  variant?: "default" | "paused" | "error" | "white" | "transfer";
+}) {
   return (
     <ProgressPrimitive.Root
       data-slot="progress"
@@ -19,6 +21,7 @@ function Progress({
         variant === "paused" && "bg-warning/20 shadow-warning/20",
         variant === "error" && "bg-destructive/20 shadow-destructive/20",
         variant === "white" && "bg-white/20 shadow-white/20",
+        variant === "transfer" && "bg-blue-500/20 shadow-blue-500/20",
         className,
       )}
       {...props}
@@ -31,6 +34,7 @@ function Progress({
           variant === "paused" && "bg-warning",
           variant === "error" && "bg-destructive",
           variant === "white" && "bg-white",
+          variant === "transfer" && "bg-blue-500",
         )}
         style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
       />

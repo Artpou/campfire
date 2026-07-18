@@ -4,7 +4,16 @@ import { Trans } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ActivityIcon, HardDriveIcon, LogOutIcon, RssIcon, SettingsIcon, UsersIcon, WrenchIcon } from "lucide-react";
+import {
+  ActivityIcon,
+  HardDriveIcon,
+  LogOutIcon,
+  RssIcon,
+  ServerIcon,
+  SettingsIcon,
+  UsersIcon,
+  WrenchIcon,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/shared/ui/button";
@@ -18,9 +27,10 @@ import { SettingsActivityTab } from "@/features/settings/components/settings-act
 import { SettingsAdvancedTab } from "@/features/settings/components/settings-advanced-tab";
 import { SettingsGeneralTab } from "@/features/settings/components/settings-general-tab";
 import { SettingsIndexersTab } from "@/features/settings/components/settings-indexers-tab";
+import { SettingsStorageTab } from "@/features/settings/components/settings-storage-tab";
 import { SettingsUsersTab } from "@/features/settings/components/settings-users-tab";
 
-type SettingsTab = "general" | "activity" | "indexers" | "users" | "advanced";
+type SettingsTab = "general" | "activity" | "indexers" | "storage" | "users" | "advanced";
 
 export const Route = createFileRoute("/_app/settings/")({
   component: SettingsPage,
@@ -36,6 +46,7 @@ function SettingsPage() {
   const tabs = [
     { id: "general" as const, label: <Trans>General</Trans>, icon: SettingsIcon, adminOnly: false },
     { id: "indexers" as const, label: <Trans>Indexers</Trans>, icon: RssIcon, adminOnly: true },
+    { id: "storage" as const, label: <Trans>Storage</Trans>, icon: ServerIcon, adminOnly: true },
     { id: "activity" as const, label: <Trans>Activity</Trans>, icon: ActivityIcon, adminOnly: false },
     { id: "users" as const, label: <Trans>Users</Trans>, icon: UsersIcon, adminOnly: true },
     { id: "advanced" as const, label: <Trans>Advanced</Trans>, icon: WrenchIcon, adminOnly: true },
@@ -99,6 +110,7 @@ function SettingsPage() {
           {activeTab === "general" && <SettingsGeneralTab />}
           {activeTab === "activity" && <SettingsActivityTab />}
           {activeTab === "indexers" && isAdmin && <SettingsIndexersTab />}
+          {activeTab === "storage" && isAdmin && <SettingsStorageTab />}
           {activeTab === "users" && isAdmin && <SettingsUsersTab />}
           {activeTab === "advanced" && isAdmin && <SettingsAdvancedTab />}
         </div>

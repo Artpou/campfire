@@ -57,6 +57,34 @@
       "when": 1782724499584,
       "tag": "0007_tan_jack_flag",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1784294746524,
+      "tag": "0008_massive_rogue",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1784299935474,
+      "tag": "0009_tense_stingray",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1784371276089,
+      "tag": "0010_elite_silver_centurion",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1784375303941,
+      "tag": "0011_robust_calypso",
+      "breakpoints": true
     }
   ]
 }

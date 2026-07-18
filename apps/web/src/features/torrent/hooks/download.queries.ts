@@ -1,6 +1,6 @@
 import { t } from "@lingui/core/macro";
 import type { Download, DownloadTorrentInput } from "@seedarr/sdk";
-import { api, unwrap } from "@seedarr/sdk";
+import { ApiError, api, unwrap } from "@seedarr/sdk";
 import { type QueryState, queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -19,7 +19,7 @@ export const downloadQueries = {
 export function refetchDownloadInterval({ state }: { state: QueryState<Download> }) {
   const data = state.data;
   if (!data) return false;
-
+  if (data.torrent?.transferring) return 1500;
   return data.torrent?.done ? false : 1500;
 }
 
@@ -84,6 +84,24 @@ export function useDownloadResume() {
     onError: (error) => {
       toast.error(t`Could not resume download`, {
         description: error instanceof Error ? translateDownloadError(error.message) : undefined,
+      });
+    },
+  });
+}
+
+export function useDownloadTransfer() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, replace }: { id: string; replace?: boolean }) =>
+      unwrap(api.downloads[":id"].transfer.$post({ param: { id }, json: { replace: replace ?? false } })),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: downloadQueries.key });
+    },
+    onError: (error) => {
+      if (error instanceof ApiError && error.status === 409) return;
+      toast.error(t`Could not transfer to remote server`, {
+        description: error instanceof Error ? error.message : undefined,
       });
     },
   });

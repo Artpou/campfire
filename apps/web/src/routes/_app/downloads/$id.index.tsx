@@ -2,9 +2,11 @@ import { useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
+import { ApiError } from "@seedarr/sdk";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { InfoIcon } from "lucide-react";
+import { toast } from "sonner";
 
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
@@ -29,6 +31,7 @@ import { DownloadMetadata } from "@/features/downloads/components/download-metad
 import { DownloadNetworkCard } from "@/features/downloads/components/download-network-card";
 import { DownloadNetworkChart } from "@/features/downloads/components/download-network-chart";
 import { DownloadProgress } from "@/features/downloads/components/download-progress";
+import { DownloadTransferProgress } from "@/features/downloads/components/download-transfer-progress";
 import { getDownloadStatus, getTorrentFiles } from "@/features/downloads/helpers/downloads.helper";
 import { MediaCard } from "@/features/media/components/media-card";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
@@ -38,6 +41,7 @@ import {
   useDownloadDelete,
   useDownloadPause,
   useDownloadResume,
+  useDownloadTransfer,
 } from "@/features/torrent/hooks/download.queries";
 
 export const Route = createFileRoute("/_app/downloads/$id/")({
@@ -50,11 +54,13 @@ export const Route = createFileRoute("/_app/downloads/$id/")({
   },
   pendingComponent: () => <SeedarrLoaderContainer />,
 });
+
 function DownloadDetailPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const { t } = useLingui();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showReplaceConfirm, setShowReplaceConfirm] = useState(false);
 
   const { data: download } = useSuspenseQuery({
     ...downloadQueries.details(id),
@@ -66,9 +72,11 @@ function DownloadDetailPage() {
   const deleteTorrent = useDownloadDelete();
   const pauseTorrent = useDownloadPause();
   const resumeTorrent = useDownloadResume();
+  const transferDownload = useDownloadTransfer();
 
   const status = getDownloadStatus(download);
   const { downloadSpeed, uploadSpeed, numPeers } = download.torrent ?? {};
+  const isTransferring = Boolean(download.torrent?.transferring || transferDownload.isPending);
 
   const handleDeleteConfirm = async () => {
     await deleteTorrent.mutateAsync(id);
@@ -76,6 +84,19 @@ function DownloadDetailPage() {
   };
   const handlePause = async () => await pauseTorrent.mutateAsync(id);
   const handleResume = async () => await resumeTorrent.mutateAsync(id);
+
+  const startTransfer = async (replace = false) => {
+    try {
+      await transferDownload.mutateAsync({ id, replace });
+      setShowReplaceConfirm(false);
+      toast.success(t`Transfer started`);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        setShowReplaceConfirm(true);
+        return;
+      }
+    }
+  };
 
   return (
     <Container>
@@ -112,11 +133,21 @@ function DownloadDetailPage() {
             </div>
 
             <div className="lg:hidden">
-              <DownloadActionButtons download={download} onDelete={() => setShowDeleteConfirm(true)} isMobile={true} />
+              <DownloadActionButtons
+                download={download}
+                onDelete={() => setShowDeleteConfirm(true)}
+                onTransfer={() => startTransfer(false)}
+                isTransferring={isTransferring}
+                isMobile={true}
+              />
             </div>
 
-            {status !== "completed" && (
-              <DownloadProgress download={download} onClick={status === "paused" ? handleResume : handlePause} />
+            {isTransferring ? (
+              <DownloadTransferProgress download={download} />
+            ) : (
+              status !== "completed" && (
+                <DownloadProgress download={download} onClick={status === "paused" ? handleResume : handlePause} />
+              )
             )}
 
             {download.error && (
@@ -131,7 +162,12 @@ function DownloadDetailPage() {
 
         <div className="block space-y-4 overflow-y-auto">
           <div className="hidden lg:block">
-            <DownloadActionButtons download={download} onDelete={() => setShowDeleteConfirm(true)} />
+            <DownloadActionButtons
+              download={download}
+              onDelete={() => setShowDeleteConfirm(true)}
+              onTransfer={() => startTransfer(false)}
+              isTransferring={isTransferring}
+            />
           </div>
 
           <DownloadNetworkChart download={download} />
@@ -167,6 +203,29 @@ function DownloadDetailPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               <Trans>Delete</Trans>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showReplaceConfirm} onOpenChange={setShowReplaceConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              <Trans>File already exists</Trans>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              <Trans>
+                A file or folder with this name already exists on the remote server. Do you want to replace it?
+              </Trans>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={transferDownload.isPending}>
+              <Trans>Cancel</Trans>
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => startTransfer(true)} disabled={transferDownload.isPending}>
+              <Trans>Replace</Trans>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

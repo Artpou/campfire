@@ -7,6 +7,7 @@ import { logger } from "@/helpers/logger.helper";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { download } from "@/modules/download/download.schema";
 import { waitForTorrentMetadata } from "@/modules/download/torrent-ready.helper";
+import { runRemoteTransfer } from "./download-transfer.helper";
 import { extractTorrentLiveData } from "./webtorrent.helper";
 
 const SYNC_THROTTLE_MS = 1_500;
@@ -207,6 +208,12 @@ class WebTorrentManager {
           title: `Download completed: ${torrent.name}`,
           metadata: { downloadId },
         });
+
+        if (dl?.storageLocation === "REMOTE" && torrent.name) {
+          runRemoteTransfer(downloadId, { isAutoTransfer: true }).catch((err) => {
+            logger.error("WEBTORRENT", `Remote transfer failed for "${torrent.name}": ${err}`);
+          });
+        }
       } catch (err) {
         logger.error("WEBTORRENT", `Error in done handler for "${torrent.name}": ${err}`);
       }

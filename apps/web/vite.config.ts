@@ -1,6 +1,5 @@
 import tailwindcss from "@tailwindcss/vite";
 import tanstackRouter from "@tanstack/router-plugin/vite";
-import checker from "vite-plugin-checker";
 import viteReact from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vite";
 import viteTsConfigPaths from "vite-tsconfig-paths";
@@ -12,9 +11,7 @@ const config = defineConfig({
   envDir: "../../",
   plugins: [
     tanstackRouter({ autoCodeSplitting: true }),
-    checker({ 
-      typescript: { tsconfigPath: "./tsconfig.json", buildMode: true },
-    }),
+    // TS7 has no programmatic ts.sys API — vite-plugin-checker is unsupported; use `pnpm tsc`
     viteTsConfigPaths({
       projects: ["./tsconfig.json"],
     }),

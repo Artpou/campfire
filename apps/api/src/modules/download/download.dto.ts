@@ -24,5 +24,11 @@ export const downloadTorrentDto = z.object({
   origin: z.string().max(256).optional(),
   quality: z.string().max(64).optional(),
   language: z.string().max(64).optional(),
+  storageLocation: z.enum(["LOCAL", "REMOTE"]).optional(),
 });
 export type DownloadTorrentInput = z.infer<typeof downloadTorrentDto>;
+
+export const transferDownloadDto = z.object({
+  replace: z.boolean().optional().default(false),
+});
+export type TransferDownloadInput = z.infer<typeof transferDownloadDto>;

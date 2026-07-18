@@ -9,9 +9,17 @@ import { ActivityLogService } from "@/modules/activity-log/activity-log.service"
 import { IdentifiableService } from "@/modules/auth/auth.service";
 import { download } from "@/modules/download/download.schema";
 import { media } from "@/modules/media/media.schema";
+import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
 import { resolveTorrentSource } from "@/modules/torrent/torrent-source.helper";
 import fs from "node:fs/promises";
-import type { Download, DownloadStats, DownloadTorrentInput, TorrentLiveData } from "./download.dto";
+import type {
+  Download,
+  DownloadStats,
+  DownloadTorrentInput,
+  TorrentLiveData,
+  TransferDownloadInput,
+} from "./download.dto";
+import { isTransferInProgress, runRemoteTransfer } from "./download-transfer.helper";
 import { waitForTorrentMetadata } from "./torrent-ready.helper";
 import { torrentClient } from "./webtorrent.client";
 import { extractTorrentLiveData } from "./webtorrent.helper";
@@ -57,7 +65,24 @@ export class DownloadService extends IdentifiableService<Download> {
     return { count: downloads.length, totalSize, downloadSpeed, uploadSpeed, peers };
   }
 
-  async start(input: DownloadTorrentInput): Promise<Download> {
+  async checkRemoteAvailability(): Promise<{ available: boolean; enabled: boolean }> {
+    const enabled = await remoteStorageService.isEnabled();
+    if (!enabled) return { available: false, enabled: false };
+    const available = await remoteStorageService.isAvailable();
+    return { available, enabled };
+  }
+
+  async start(input: DownloadTorrentInput): Promise<Download | { status: "REMOTE_UNAVAILABLE" }> {
+    let storageLocation = input.storageLocation ?? "LOCAL";
+
+    if (!input.storageLocation) {
+      const { enabled, available } = await this.checkRemoteAvailability();
+      if (enabled) {
+        if (!available) return { status: "REMOTE_UNAVAILABLE" };
+        storageLocation = "REMOTE";
+      }
+    }
+
     const torrentSource = await resolveTorrentSource(input.magnetUri);
     logger.debug("DOWNLOAD", `Resolved torrent source (magnet: ${torrentSource})`);
 
@@ -79,20 +104,21 @@ export class DownloadService extends IdentifiableService<Download> {
           ...input,
           userId: this.user.id,
           mediaId: newMedia.id,
+          storageLocation,
           torrent: extractTorrentLiveData(torrent),
         })
         .returning();
 
       torrentClient.setupTorrentHandlers(torrent, newDownload.id);
 
-      logger.info("DOWNLOAD", `Started in background: ${input.name || torrent.infoHash}`);
+      logger.info("DOWNLOAD", `Started in background: ${input.name || torrent.infoHash} (storage: ${storageLocation})`);
 
       ActivityLogService.log({
         userId: this.user.id,
         type: "SUCCESS",
         action: "DOWNLOAD_START",
         title: `Download started: ${input.name || "Torrent"}`,
-        metadata: { downloadId: newDownload.id, mediaId: newMedia.id, magnetUri: input.magnetUri },
+        metadata: { downloadId: newDownload.id, mediaId: newMedia.id, magnetUri: input.magnetUri, storageLocation },
       });
 
       return newDownload;
@@ -156,6 +182,52 @@ export class DownloadService extends IdentifiableService<Download> {
     return { success: true };
   }
 
+  async transfer(id: string, input: TransferDownloadInput): Promise<{ success: true } | { status: "ALREADY_EXISTS" }> {
+    const item = await this.get(id);
+    if (!item) throw new NotFoundError("Download");
+    if (!item.torrent?.done) throw new BadRequestError("Download is not complete");
+    if (!item.torrent.name) throw new BadRequestError("No torrent name found");
+    if (item.torrent.transferring || isTransferInProgress(id)) {
+      throw new BadRequestError("Transfer already in progress");
+    }
+
+    const configured = await remoteStorageService.isConfigured();
+    if (!configured) throw new BadRequestError("Remote storage is not configured");
+
+    const available = await remoteStorageService.isAvailable();
+    if (!available) throw new BadRequestError("Remote storage server is unavailable");
+
+    if (!input.replace) {
+      let mediaType: "movie" | "tv" | null = null;
+      if (item.mediaId) {
+        const mediaRow = await db.query.media.findFirst({ where: eq(media.id, item.mediaId) });
+        mediaType = mediaRow?.type ?? null;
+      }
+      const remotePath = await remoteStorageService.resolveTransferPath(item.torrent.name, mediaType);
+      const exists = await remoteStorageService.exists(remotePath);
+      if (exists) return { status: "ALREADY_EXISTS" };
+    }
+
+    await db
+      .update(download)
+      .set({
+        torrent: {
+          ...item.torrent,
+          transferring: true,
+          transferProgress: 0,
+          transferred: false,
+        },
+        error: null,
+      })
+      .where(eq(download.id, id));
+
+    runRemoteTransfer(id, { replace: input.replace }).catch((err) => {
+      logger.error("DOWNLOAD", `Remote transfer failed for "${item.torrent?.name}": ${err}`);
+    });
+
+    return { success: true };
+  }
+
   async delete(id: string): Promise<{ success: true }> {
     const item = await this.get(id);
     if (!item) throw new NotFoundError("Download");
@@ -183,6 +255,13 @@ export class DownloadService extends IdentifiableService<Download> {
       } catch (error) {
         logger.error("DOWNLOAD", `Refusing to delete path outside downloads: ${torrentName}`, error);
       }
+    }
+
+    if (item.storageLocation === "REMOTE" && item.torrent?.transferred && item.torrent.remotePath) {
+      remoteStorageService
+        .remove(item.torrent.remotePath)
+        .then(() => logger.info("DOWNLOAD", `Deleted remote file: ${item.torrent?.remotePath}`))
+        .catch((err) => logger.warn("DOWNLOAD", `Failed to delete remote file: ${err}`));
     }
 
     await db.delete(download).where(eq(download.id, id));

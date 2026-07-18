@@ -32,7 +32,6 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@seedarr/sdk": "workspace:*",
     "@seedarr/shared": "workspace:*",
-    "clsx": "catalog:",
     "@tailwindcss/vite": "^4.0.6",
     "@tanstack/react-devtools": "^0.8.0",
     "@tanstack/react-query": "^5.90.7",
@@ -41,6 +40,7 @@
     "@tanstack/router-plugin": "^1.143.6",
     "@uidotdev/usehooks": "^2.4.1",
     "class-variance-authority": "^0.7.1",
+    "clsx": "catalog:",
     "embla-carousel-react": "^8.6.0",
     "embla-carousel-wheel-gestures": "^8.1.0",
     "langs": "^2.0.0",
@@ -55,7 +55,6 @@
     "tailwind-merge": "catalog:",
     "tailwindcss": "^4.1.18",
     "tmdb-ts": "catalog:",
-    "vite-plugin-checker": "^0.14.1",
     "vite-tsconfig-paths": "^5.1.4",
     "zustand": "^5.0.9"
   },

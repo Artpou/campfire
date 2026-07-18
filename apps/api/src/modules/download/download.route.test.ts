@@ -60,6 +60,15 @@ vi.mock("@/modules/download/download-stream.service", () => ({
     getStreamForDownload = mockGetStreamForDownload;
   },
 }));
+vi.mock("@/modules/storage-config/remote-storage.service", () => ({
+  remoteStorageService: {
+    shouldDeleteLocalAfterTransfer: vi.fn().mockResolvedValue(false),
+    isEnabled: vi.fn().mockResolvedValue(false),
+    isConfigured: vi.fn().mockResolvedValue(false),
+    isAvailable: vi.fn().mockResolvedValue(true),
+    exists: vi.fn().mockResolvedValue(false),
+  },
+}));
 vi.mock("@/modules/download/webtorrent.client", () => {
   const makeFakeTorrent = () => ({
     on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
@@ -275,7 +284,6 @@ describe("Download Routes", () => {
         stream: Readable.from(Buffer.from("fake-video")),
         size: 10,
         fileName: "Movie.mp4",
-        filePath: "/tmp/Movie.mp4",
       });
 
       const res = await downloadRoutes.request("/dl-stream/stream");
@@ -338,7 +346,7 @@ describe("Download Routes", () => {
       });
       expect(res.status).toBe(200);
       expect(res.headers.get("content-type")).toBe("video/mp4");
-      expect(mockCreateReadStream).not.toHaveBeenCalled();
+      expect(mockCreateReadStream).toHaveBeenCalledWith();
     });
   });
 });
