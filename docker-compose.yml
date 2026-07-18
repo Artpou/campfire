@@ -11,6 +11,9 @@ services:
       - DOWNLOADS_PATH=/downloads
       - API_PORT=3002
       - WEB_URL=http://localhost:5551
+      # Encrypts FTP/WebDAV passwords at rest. Change once and keep stable —
+      # rotating this key makes existing stored credentials undecryptable.
+      - STORAGE_ENCRYPTION_KEY=${STORAGE_ENCRYPTION_KEY:-change-me-to-a-long-random-secret}
     volumes:
       - db_data:/data
       - downloads:/downloads
