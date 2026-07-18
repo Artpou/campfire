@@ -1,8 +1,7 @@
-import ffmpeg from "fluent-ffmpeg";
-
 import { logger } from "@/helpers/logger.helper";
+import { type ChildProcess, spawn } from "node:child_process";
 import { extname } from "node:path";
-import { PassThrough, type Readable } from "node:stream";
+import { PassThrough } from "node:stream";
 
 const INPUT_FORMAT_BY_EXT: Record<string, string> = {
   ".mkv": "matroska",
@@ -46,28 +45,68 @@ export function convertToFragmentedMp4Stream(
 ): FragmentedMp4Stream {
   const outputStream = new PassThrough();
 
-  let command = ffmpeg(inputStream as Readable);
-  if (inputFormat) {
-    command = command.inputFormat(inputFormat);
+  const args = [
+    "-probesize",
+    "32M",
+    "-analyzeduration",
+    "10M",
+    "-fflags",
+    "+genpts+discardcorrupt",
+    ...(inputFormat ? ["-f", inputFormat] : []),
+    "-i",
+    "pipe:0",
+    "-c:v",
+    "copy",
+    "-c:a",
+    "copy",
+    "-movflags",
+    "frag_keyframe+empty_moov+default_base_moof",
+    "-f",
+    "mp4",
+    "pipe:1",
+  ];
+
+  const ffmpeg: ChildProcess = spawn("ffmpeg", args, {
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+
+  if (ffmpeg.stdin) {
+    (inputStream as NodeJS.ReadableStream).pipe(ffmpeg.stdin);
+    ffmpeg.stdin.on("error", (err) => {
+      if (isStreamAbortError(err)) return;
+      logger.error("VIDEO", `ffmpeg stdin error: ${err.message}`);
+    });
   }
 
-  command
-    .inputOptions(["-probesize", "32M", "-analyzeduration", "10M", "-fflags", "+genpts+discardcorrupt"])
-    .outputFormat("mp4")
-    .outputOptions(["-c:v copy", "-c:a copy", "-movflags frag_keyframe+empty_moov+default_base_moof", "-f mp4"])
-    .on("error", (err) => {
-      if (isStreamAbortError(err)) return;
-      logger.error("VIDEO", `Error converting to fragmented MP4: ${err}`);
-      outputStream.destroy(err);
-    });
+  if (ffmpeg.stdout) {
+    ffmpeg.stdout.pipe(outputStream, { end: true });
+  }
 
-  command.pipe(outputStream, { end: true });
+  if (ffmpeg.stderr) {
+    ffmpeg.stderr.on("data", (data: Buffer) => {
+      const msg = data.toString().trim();
+      if (msg) logger.debug("FFMPEG", msg);
+    });
+  }
+
+  ffmpeg.on("error", (err) => {
+    if (isStreamAbortError(err)) return;
+    logger.error("VIDEO", `ffmpeg process error: ${err.message}`);
+    outputStream.destroy(err);
+  });
+
+  ffmpeg.on("close", (code) => {
+    if (code && code !== 0 && code !== 255) {
+      logger.error("VIDEO", `ffmpeg exited with code ${code}`);
+    }
+    outputStream.end();
+  });
 
   const destroy = (): void => {
-    command.kill("SIGKILL");
+    ffmpeg.kill("SIGKILL");
     outputStream.destroy();
     if ("destroy" in inputStream && typeof inputStream.destroy === "function") {
-      inputStream.destroy();
+      (inputStream as { destroy: () => void }).destroy();
     }
   };
 
