@@ -5,15 +5,22 @@ services:
       - "5551:3002"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    env_file:
+      - path: .env
+        required: false
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/data/seedarr.db
       - DOWNLOADS_PATH=/downloads
       - API_PORT=3002
       - WEB_URL=http://localhost:5551
+      - TMDB_API_KEY=${TMDB_API_KEY:-29f788393063cd24bfb885d7d6ee9ae4}
+      - SUBDL_API_KEY=${SUBDL_API_KEY:-Ae8t-PLGROMrTitTPJGfOye7Z17RWaVN}
       # Encrypts FTP/WebDAV passwords at rest. Change once and keep stable —
       # rotating this key makes existing stored credentials undecryptable.
       - STORAGE_ENCRYPTION_KEY=${STORAGE_ENCRYPTION_KEY:-change-me-to-a-long-random-secret}
+      - RESUME_DOWNLOADS=${RESUME_DOWNLOADS:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
     volumes:
       - db_data:/data
       - downloads:/downloads
