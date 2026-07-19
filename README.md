@@ -105,7 +105,7 @@ Think of it as **Stremio meets Overseerr**, but fully self-hosted and under your
 
 ### Docker (recommended)
 
-> **Beta:** images are published automatically on every push to `main`. Use the `beta` tag for the latest build, or pin a specific version (e.g. `ghcr.io/artpou/seedarr:0.1.0-beta.0`).
+> **Beta:** images are published automatically on every push to `main` as a **multi-arch** manifest (`linux/amd64` + `linux/arm64`). Use the `beta` tag for the latest build, or pin a specific version (e.g. `ghcr.io/artpou/seedarr:0.1.0-beta.0`). Docker pulls the matching architecture automatically (PC, NAS, Freebox, Raspberry Pi, etc.).
 
 ```bash
 mkdir seedarr && cd seedarr
