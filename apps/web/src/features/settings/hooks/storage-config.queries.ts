@@ -11,6 +11,12 @@ export const storageConfigQueries = {
       queryKey: [...storageConfigQueries.key],
       queryFn: () => unwrap(api["storage-config"].$get()),
     }),
+  /** Lightweight flag for members (transfer button). No host/credentials. */
+  enabled: () =>
+    queryOptions({
+      queryKey: [...storageConfigQueries.key, "enabled"] as const,
+      queryFn: () => unwrap(api["storage-config"].enabled.$get()),
+    }),
 };
 
 export type TestStorageConnectionInput = {
@@ -29,6 +35,7 @@ export function useUpsertStorageConfig() {
     mutationFn: (input: UpsertStorageConfigInput) => unwrap(api["storage-config"].$put({ json: input })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: storageConfigQueries.key });
+      queryClient.invalidateQueries({ queryKey: [...storageConfigQueries.key, "enabled"] });
       toast.success(t`Storage configuration saved`);
     },
     onError: (error) => {

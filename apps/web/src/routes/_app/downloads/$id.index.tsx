@@ -74,7 +74,7 @@ function DownloadDetailPage() {
 
   // biome-ignore lint/style/noNonNullAssertion: mediaId is guaranteed to be not null
   const { data: media } = useSuspenseQuery(mediaQueries.details(download.mediaId!));
-  const { data: storageConfig } = useQuery(storageConfigQueries.get());
+  const { data: storageEnabled } = useQuery(storageConfigQueries.enabled());
   const deleteTorrent = useDownloadDelete();
   const pauseTorrent = useDownloadPause();
   const resumeTorrent = useDownloadResume();
@@ -84,7 +84,7 @@ function DownloadDetailPage() {
   const { downloadSpeed, uploadSpeed, numPeers } = download.torrent ?? {};
   const isTransferring = Boolean(download.torrent?.transferring || transferDownload.isPending);
   const availableOnServer = Boolean(download.remoteLocation);
-  const remoteStorageEnabled = Boolean(storageConfig?.enabled);
+  const remoteStorageEnabled = Boolean(storageEnabled?.enabled);
 
   const handleDeleteConfirm = async () => {
     await deleteTorrent.mutateAsync(id);

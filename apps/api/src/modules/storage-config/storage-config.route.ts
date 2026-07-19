@@ -11,6 +11,11 @@ const service = new StorageConfigService();
 
 export const storageConfigRoutes = new Hono()
   .use("*", authGuard)
+  // Members need this to show the "Transfer to server" button (no secrets).
+  .get("/enabled", requireRole("member"), async (c) => {
+    const { remoteStorageService } = await import("./remote-storage.service");
+    return c.json({ enabled: await remoteStorageService.isEnabled() });
+  })
   .use("*", requireRole("admin"))
   .get("/", async (c) => {
     const config = await service.get();

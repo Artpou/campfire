@@ -5,6 +5,8 @@ import { Loader2Icon, PlayIcon, ServerIcon, Trash2Icon } from "lucide-react";
 
 import { Button } from "@/shared/ui/button";
 
+import { getDownloadStatus } from "@/features/downloads/helpers/downloads.helper";
+
 interface DownloadActionButtonsProps {
   download: Download;
   onDelete: () => void;
@@ -22,9 +24,16 @@ export function DownloadActionButtons({
   remoteStorageEnabled = false,
   isMobile = false,
 }: DownloadActionButtonsProps) {
-  const isComplete = Boolean(download.torrent?.done);
+  const status = getDownloadStatus(download);
+  const isComplete = status === "completed";
+  // finished + feature on + not already on server + not mid-transfer
   const showTransfer =
-    isComplete && onTransfer && remoteStorageEnabled && !download.remoteLocation && !download.torrent?.transferring;
+    isComplete &&
+    Boolean(onTransfer) &&
+    remoteStorageEnabled &&
+    !download.remoteLocation &&
+    !download.torrent?.transferring &&
+    !isTransferring;
 
   return (
     <div className="flex flex-col gap-2">
@@ -40,7 +49,7 @@ export function DownloadActionButtons({
         <Button size="lg" asChild className="flex-1">
           <Link to="/downloads/$id/play" params={{ id: download.id }}>
             <PlayIcon className="mr-2 size-5" />
-            {download.torrent?.done ? <Trans>Play</Trans> : <Trans>Streaming</Trans>}
+            {isComplete ? <Trans>Play</Trans> : <Trans>Streaming</Trans>}
           </Link>
         </Button>
       </div>

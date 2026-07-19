@@ -45,6 +45,22 @@ describe("Storage Config Routes", () => {
     seedTestUser(testDbRef.current, fakeUser);
   });
 
+  describe("GET /enabled", () => {
+    it("returns enabled false when storage is off", async () => {
+      const { remoteStorageService } = await import("./remote-storage.service");
+      vi.mocked(remoteStorageService.isEnabled).mockResolvedValueOnce(false);
+      const body = await bodyOf(await storageConfigRoutes.request("/enabled"));
+      expect(body).toEqual({ enabled: false });
+    });
+
+    it("returns enabled true when storage feature is on", async () => {
+      const { remoteStorageService } = await import("./remote-storage.service");
+      vi.mocked(remoteStorageService.isEnabled).mockResolvedValueOnce(true);
+      const body = await bodyOf(await storageConfigRoutes.request("/enabled"));
+      expect(body).toEqual({ enabled: true });
+    });
+  });
+
   describe("GET /", () => {
     it("returns null when no config exists", async () => {
       const body = await bodyOf(await storageConfigRoutes.request("/"));
