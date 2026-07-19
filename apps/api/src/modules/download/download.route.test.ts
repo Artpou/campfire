@@ -52,7 +52,7 @@ vi.mock("@/modules/auth/auth.guard", () => ({
 }));
 vi.mock("@/helpers/video.helper", () => ({
   getVideoInputFormat: vi.fn(() => "matroska"),
-  shouldTranscodeForPlayback: vi.fn((fileName: string) => fileName.endsWith(".mkv")),
+  shouldTranscodeForPlayback: vi.fn(() => false),
   convertToFragmentedMp4Stream: vi.fn((input: Readable) => ({ stream: input, destroy: vi.fn() })),
 }));
 vi.mock("@/modules/download/download-stream.service", async (importOriginal) => {
@@ -323,13 +323,13 @@ describe("Download Routes", () => {
       await expect(res.text()).resolves.toBe("range-chunk");
     });
 
-    it("transcodes active mkv torrent streams via ffmpeg", async () => {
+    it("serves active mkv torrent streams with byte ranges (no ffmpeg remux)", async () => {
       const mockCreateReadStream = vi.fn(() => Readable.from(Buffer.from("torrent-chunk")));
 
       testDbRef.current
         ?.insert(download)
         .values({
-          id: "dl-stream-transcode",
+          id: "dl-stream-mkv",
           userId: fakeUser.id,
           torrent: sampleTorrent({ name: "Movie.mkv", done: false }),
           createdAt: new Date(),
@@ -343,12 +343,12 @@ describe("Download Routes", () => {
         torrentFile: { createReadStream: mockCreateReadStream },
       });
 
-      const res = await downloadRoutes.request("/dl-stream-transcode/stream", {
+      const res = await downloadRoutes.request("/dl-stream-mkv/stream", {
         headers: { Range: "bytes=0-99" },
       });
-      expect(res.status).toBe(200);
-      expect(res.headers.get("content-type")).toBe("video/mp4");
-      expect(mockCreateReadStream).toHaveBeenCalledWith();
+      expect(res.status).toBe(206);
+      expect(res.headers.get("content-type")).toBe("video/x-matroska");
+      expect(mockCreateReadStream).toHaveBeenCalledWith({ start: 0, end: 99 });
     });
   });
 });

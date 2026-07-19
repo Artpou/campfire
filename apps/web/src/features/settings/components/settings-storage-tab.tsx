@@ -77,19 +77,21 @@ export function SettingsStorageTab() {
     password: password || undefined,
   };
 
+  const configPayload = (overrides: Partial<{ enabled: boolean; deleteLocalAfterTransfer: boolean }> = {}) => ({
+    enabled: overrides.enabled ?? enabled,
+    protocol,
+    host,
+    port,
+    secure,
+    moviePath: moviePath || undefined,
+    tvPath: tvPath || undefined,
+    username: username || undefined,
+    password: password || undefined,
+    deleteLocalAfterTransfer: overrides.deleteLocalAfterTransfer ?? deleteLocalAfterTransfer,
+  });
+
   const handleSave = () => {
-    upsertMutation.mutate({
-      enabled,
-      protocol,
-      host,
-      port,
-      secure,
-      moviePath: moviePath || undefined,
-      tvPath: tvPath || undefined,
-      username: username || undefined,
-      password: password || undefined,
-      deleteLocalAfterTransfer,
-    });
+    upsertMutation.mutate(configPayload());
   };
 
   const handleTest = () => {
@@ -98,6 +100,7 @@ export function SettingsStorageTab() {
 
   const handleToggleAutoTransfer = async () => {
     if (enabled) {
+      await upsertMutation.mutateAsync(configPayload({ enabled: false }));
       setEnabled(false);
       return;
     }
@@ -107,12 +110,19 @@ export function SettingsStorageTab() {
     setEnabling(true);
     try {
       const result = await testMutation.mutateAsync(connectionPayload);
-      if (result.success) {
-        setEnabled(true);
-      }
+      if (!result.success) return;
+      await upsertMutation.mutateAsync(configPayload({ enabled: true }));
+      setEnabled(true);
     } finally {
       setEnabling(false);
     }
+  };
+
+  const handleToggleDeleteLocal = async () => {
+    if (!hasRequiredFields) return;
+    const next = !deleteLocalAfterTransfer;
+    await upsertMutation.mutateAsync(configPayload({ deleteLocalAfterTransfer: next }));
+    setDeleteLocalAfterTransfer(next);
   };
 
   const handleProtocolChange = (value: string) => {
@@ -375,7 +385,7 @@ export function SettingsStorageTab() {
             variant={enabled ? "secondary" : "default"}
             size="sm"
             onClick={handleToggleAutoTransfer}
-            disabled={!hasRequiredFields || enabling || testMutation.isPending}
+            disabled={!hasRequiredFields || enabling || testMutation.isPending || upsertMutation.isPending}
           >
             {(enabling || (testMutation.isPending && !enabled)) && <Loader2Icon className="size-4 animate-spin" />}
             {enabled ? <Trans>Disable</Trans> : <Trans>Enable</Trans>}
@@ -402,8 +412,10 @@ export function SettingsStorageTab() {
             <Button
               variant={deleteLocalAfterTransfer ? "secondary" : "default"}
               size="sm"
-              onClick={() => setDeleteLocalAfterTransfer(!deleteLocalAfterTransfer)}
+              onClick={handleToggleDeleteLocal}
+              disabled={!hasRequiredFields || upsertMutation.isPending}
             >
+              {upsertMutation.isPending && <Loader2Icon className="size-4 animate-spin" />}
               {deleteLocalAfterTransfer ? <Trans>Disable</Trans> : <Trans>Enable</Trans>}
             </Button>
           </div>

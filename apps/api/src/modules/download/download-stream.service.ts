@@ -65,6 +65,17 @@ function playbackLocation(source: StreamResult): { origin: "remote" | "local" | 
 
 export class DownloadStreamService {
   async getStreamForDownload(download: Download): Promise<StreamResult | undefined> {
+    // Completed downloads: prefer seekable disk file (no ffmpeg remux).
+    if (download.torrent?.done) {
+      const fromDisk = await this.getStreamFromDisk(download);
+      if (fromDisk) return fromDisk;
+    }
+
+    if (download.remoteLocation) {
+      const remote = this.tryRemoteSource(download);
+      if (remote) return remote;
+    }
+
     const activeTorrent = torrentClient.getActiveTorrent(download.id);
     if (activeTorrent) {
       const videoFile = findLargestVideoFile(activeTorrent);
@@ -75,11 +86,6 @@ export class DownloadStreamService {
         fileName: videoFile.name,
         torrentFile: videoFile,
       };
-    }
-
-    if (download.remoteLocation) {
-      const remote = this.tryRemoteSource(download);
-      if (remote) return remote;
     }
 
     return this.getStreamFromDisk(download);

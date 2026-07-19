@@ -16,10 +16,13 @@ export function getVideoInputFormat(fileName: string): string | undefined {
   return INPUT_FORMAT_BY_EXT[extname(fileName).toLowerCase()];
 }
 
-/** Remux MKV only when we don't have a seekable file on disk (live torrent stream). */
-export function shouldTranscodeForPlayback(fileName: string, hasFilePath = false): boolean {
-  if (hasFilePath) return false;
-  return fileName.toLowerCase().endsWith(".mkv");
+/**
+ * Remux MKV→fMP4 is disabled: it breaks seek/timeline (non-monotonic DTS).
+ * Completed files are served from disk with HTTP ranges; live torrents use
+ * WebTorrent range streams with native Matroska content-type.
+ */
+export function shouldTranscodeForPlayback(_fileName: string, _hasFilePath = false): boolean {
+  return false;
 }
 
 function isStreamAbortError(error: unknown): boolean {

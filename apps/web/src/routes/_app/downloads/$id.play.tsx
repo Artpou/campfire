@@ -19,7 +19,7 @@ import { hasMinRole } from "@/features/auth/helpers/role.helper";
 import { getTorrentFiles } from "@/features/downloads/helpers/downloads.helper";
 import { SubtitleSearchDialog } from "@/features/subtitles/components/subtitle-search-dialog";
 import { subtitleQueries } from "@/features/subtitles/hooks/subtitle.queries";
-import { downloadQueries, refetchDownloadInterval } from "@/features/torrent/hooks/download.queries";
+import { downloadQueries } from "@/features/torrent/hooks/download.queries";
 
 import "plyr-react/plyr.css";
 
@@ -44,10 +44,7 @@ export const Route = createFileRoute("/_app/downloads/$id/play")({
 function VideoPlayerPage() {
   const { id } = Route.useParams();
   const { t } = useLingui();
-  const { data: download } = useSuspenseQuery({
-    ...downloadQueries.details(id),
-    refetchInterval: refetchDownloadInterval,
-  });
+  const { data: download } = useSuspenseQuery(downloadQueries.details(id));
   const { data: externalSubtitles } = useSuspenseQuery(subtitleQueries.external(id));
   const { data: mediaSession } = useSuspenseQuery(mediaSessionQueries.get());
 

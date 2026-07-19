@@ -13,15 +13,9 @@ describe("getVideoInputFormat", () => {
 });
 
 describe("shouldTranscodeForPlayback", () => {
-  it("transcodes mkv live streams without a file path", () => {
-    expect(shouldTranscodeForPlayback("movie.mkv")).toBe(true);
-  });
-
-  it("does not transcode mkv when a seekable file is available", () => {
+  it("never remuxes (keeps seekable timelines)", () => {
+    expect(shouldTranscodeForPlayback("movie.mkv")).toBe(false);
     expect(shouldTranscodeForPlayback("movie.mkv", true)).toBe(false);
-  });
-
-  it("does not transcode mp4", () => {
     expect(shouldTranscodeForPlayback("movie.mp4")).toBe(false);
   });
 });
