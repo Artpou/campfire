@@ -33,11 +33,14 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV SEEDARR_VERSION=$VERSION
 ENV SEEDARR_CHANNEL=$CHANNEL
+ENV WEB_DIST_PATH=/app/web/dist
 
 LABEL org.opencontainers.image.version=$VERSION
 LABEL org.opencontainers.image.source=https://github.com/Artpou/seedarr
 
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+# Static ffmpeg (~50 MB) instead of apt packages (~250–500 MB of shared libs)
+COPY --from=mwader/static-ffmpeg:8.1.1 /ffmpeg /usr/local/bin/
+COPY --from=mwader/static-ffmpeg:8.1.1 /ffprobe /usr/local/bin/
 
 COPY --from=builder /app/isolated ./
 COPY --from=builder /app/apps/api/dist-server ./dist-server
@@ -47,4 +50,4 @@ COPY --from=builder /app/apps/api/docker-migrate.mjs ./docker-migrate.mjs
 
 EXPOSE 3002
 
-CMD ["sh", "-c", "node docker-migrate.mjs && node dist-server/server.mjs"]
+CMD ["sh", "-c", "node docker-migrate.mjs && exec node dist-server/server.mjs"]

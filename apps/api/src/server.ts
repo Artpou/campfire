@@ -10,7 +10,8 @@ import { torrentClient } from "./modules/download/webtorrent.client";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const startTime = Date.now();
-const WEB_DIST_PATH = path.resolve(__dirname, "../web/dist");
+/** Docker: /app/web/dist — local prod: apps/api/../web/dist via dist-server layout */
+const WEB_DIST_PATH = process.env.WEB_DIST_PATH || path.resolve(__dirname, "../web/dist");
 
 const serverApp =
   process.env.NODE_ENV === "production"
