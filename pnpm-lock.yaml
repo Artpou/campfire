@@ -155,7 +155,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: ^4.1.8
-        version: 4.1.8(@types/node@24.10.4)(@vitest/coverage-v8@4.1.9(vitest@4.1.9))(happy-dom@20.10.6(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@7.3.0(@types/node@24.10.4)(jiti@2.7.0)(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.9.0))
+        version: 4.1.8(@types/node@24.10.4)(@vitest/coverage-v8@4.1.9)(happy-dom@20.10.6(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@7.3.0(@types/node@24.10.4)(jiti@2.7.0)(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.9.0))
 
   apps/web:
     dependencies:
@@ -287,8 +287,8 @@ importers:
         specifier: ^5.7.0
         version: 5.7.0(babel-plugin-macros@3.1.0)(typescript@7.0.2)
       '@lingui/swc-plugin':
-        specifier: ^6.4.0
-        version: 6.5.0(@lingui/core@5.7.0(@lingui/babel-plugin-lingui-macro@5.7.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(babel-plugin-macros@3.1.0))(typescript@7.0.2)
+        specifier: ~5.11.0
+        version: 5.11.0(@lingui/core@5.7.0(@lingui/babel-plugin-lingui-macro@5.7.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(babel-plugin-macros@3.1.0))
       '@lingui/vite-plugin':
         specifier: ^5.7.0
         version: 5.7.0(babel-plugin-macros@3.1.0)(typescript@7.0.2)(vite@7.3.0(@types/node@24.10.4)(jiti@2.7.0)(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.9.0))
@@ -327,7 +327,7 @@ importers:
         version: 7.3.0(@types/node@24.10.4)(jiti@2.7.0)(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.9.0)
       vitest:
         specifier: ^4.1.8
-        version: 4.1.8(@types/node@24.10.4)(@vitest/coverage-v8@4.1.9(vitest@4.1.9))(happy-dom@20.10.6(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@7.3.0(@types/node@24.10.4)(jiti@2.7.0)(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.9.0))
+        version: 4.1.8(@types/node@24.10.4)(@vitest/coverage-v8@4.1.9)(happy-dom@20.10.6(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@7.3.0(@types/node@24.10.4)(jiti@2.7.0)(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.9.0))
 
   packages/sdk:
     dependencies:
@@ -1174,10 +1174,10 @@ packages:
       babel-plugin-macros:
         optional: true
 
-  '@lingui/swc-plugin@6.5.0':
-    resolution: {integrity: sha512-cFbcAHvr6WqOjoQJmormXULzHa6MZSCYDqjXLR80YrraOefBj8qeSSylwFm0gJ7BlOm6N7lASwRRGOGEy4hBOA==}
+  '@lingui/swc-plugin@5.11.0':
+    resolution: {integrity: sha512-0PBYyozQOiA4WtxKPsnCyrbA9da9zOYehyZjvrv56Kzt9w81xbgnNjuAQZyjIX7UYuqFFE48GvzBqnB5SLLOFA==}
     peerDependencies:
-      '@lingui/core': 5 || 6
+      '@lingui/core': '5'
       '@swc/core': '*'
       next: '*'
     peerDependenciesMeta:
@@ -6124,12 +6124,9 @@ snapshots:
       '@lingui/babel-plugin-lingui-macro': 5.7.0(babel-plugin-macros@3.1.0)(typescript@7.0.2)
       babel-plugin-macros: 3.1.0
 
-  '@lingui/swc-plugin@6.5.0(@lingui/core@5.7.0(@lingui/babel-plugin-lingui-macro@5.7.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(babel-plugin-macros@3.1.0))(typescript@7.0.2)':
+  '@lingui/swc-plugin@5.11.0(@lingui/core@5.7.0(@lingui/babel-plugin-lingui-macro@5.7.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(babel-plugin-macros@3.1.0))':
     dependencies:
-      '@lingui/conf': 5.7.0(typescript@7.0.2)
       '@lingui/core': 5.7.0(@lingui/babel-plugin-lingui-macro@5.7.0(babel-plugin-macros@3.1.0)(typescript@7.0.2))(babel-plugin-macros@3.1.0)
-    transitivePeerDependencies:
-      - typescript
 
   '@lingui/vite-plugin@5.7.0(babel-plugin-macros@3.1.0)(typescript@7.0.2)(vite@7.3.0(@types/node@24.10.4)(jiti@2.7.0)(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.9.0))':
     dependencies:
@@ -10007,7 +10004,7 @@ snapshots:
       tsx: 4.21.0
       yaml: 2.9.0
 
-  vitest@4.1.8(@types/node@24.10.4)(@vitest/coverage-v8@4.1.9(vitest@4.1.9))(happy-dom@20.10.6(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@7.3.0(@types/node@24.10.4)(jiti@2.7.0)(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.9.0)):
+  vitest@4.1.8(@types/node@24.10.4)(@vitest/coverage-v8@4.1.9)(happy-dom@20.10.6(bufferutil@4.1.0)(utf-8-validate@6.0.6))(vite@7.3.0(@types/node@24.10.4)(jiti@2.7.0)(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.9.0)):
     dependencies:
       '@vitest/expect': 4.1.8
       '@vitest/mocker': 4.1.8(vite@7.3.0(@types/node@24.10.4)(jiti@2.7.0)(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.9.0))

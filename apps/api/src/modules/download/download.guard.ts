@@ -3,6 +3,7 @@ import type { Context, Next } from "hono";
 
 import { db } from "@/db/db";
 import { BadRequestError, ForbiddenError, NotFoundError } from "@/errors/error";
+import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import { download } from "@/modules/download/download.schema";
 import type { HonoAuthenticatedVariables } from "../auth/auth.guard";
 
@@ -21,7 +22,8 @@ export async function requireDownloadOwnership(
   });
   if (!row) throw new NotFoundError("Download");
 
-  if (row.userId !== user.id && !["owner", "admin"].includes(user.role)) {
+  // Members+ share instance downloads; viewers can only access their own
+  if (row.userId !== user.id && ROLE_LEVELS[user.role] < ROLE_LEVELS.member) {
     throw new ForbiddenError();
   }
 

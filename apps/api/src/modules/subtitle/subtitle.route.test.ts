@@ -18,11 +18,15 @@ vi.mock("@/db/db", () => ({
 vi.mock("@/modules/auth/auth.guard", () => ({
   authGuard: createAuthGuardMock(fakeUser),
 }));
-vi.mock("@/modules/auth/role.guard", () => ({
-  requireRole: () => async (_c: unknown, next: () => Promise<void>) => {
-    await next();
-  },
-}));
+vi.mock("@/modules/auth/role.guard", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/modules/auth/role.guard")>();
+  return {
+    ...actual,
+    requireRole: () => async (_c: unknown, next: () => Promise<void>) => {
+      await next();
+    },
+  };
+});
 vi.mock("./subtitle.service", async (importOriginal) => {
   // biome-ignore lint/suspicious/noExplicitAny: test mock
   const mod = (await importOriginal()) as any;

@@ -177,6 +177,37 @@ describe("Download Routes", () => {
       expect(body).toHaveLength(1);
       expect(body[0].torrent.name).toBe("Test");
     });
+
+    it("returns downloads from all users for members", async () => {
+      const db = testDbRef.current;
+      if (!db) throw new Error("test db not initialized");
+      seedTestUser(db, {
+        id: "user-2",
+        username: "other",
+        role: "member",
+        createdAt: new Date("2024-01-02"),
+      });
+      db.insert(download)
+        .values([
+          {
+            id: "dl-mine",
+            userId: fakeUser.id,
+            torrent: sampleTorrent({ name: "Mine" }),
+            createdAt: new Date(),
+          },
+          {
+            id: "dl-theirs",
+            userId: "user-2",
+            torrent: sampleTorrent({ name: "Theirs" }),
+            createdAt: new Date(),
+          },
+        ])
+        .run();
+
+      const body = await bodyOf(await downloadRoutes.request("/"));
+      expect(body).toHaveLength(2);
+      expect(body.map((d: { id: string }) => d.id).sort()).toEqual(["dl-mine", "dl-theirs"]);
+    });
   });
 
   describe("GET /:id", () => {

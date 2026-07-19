@@ -60,7 +60,7 @@
   },
   "devDependencies": {
     "@lingui/cli": "^5.7.0",
-    "@lingui/swc-plugin": "^6.4.0",
+    "@lingui/swc-plugin": "~5.11.0",
     "@lingui/vite-plugin": "^5.7.0",
     "@types/langs": "^2.0.5",
     "@types/ms": "catalog:",

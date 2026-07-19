@@ -7,6 +7,7 @@ import { logger } from "@/helpers/logger.helper";
 import { resolveWithinDownloads } from "@/helpers/path.helper";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { IdentifiableService } from "@/modules/auth/auth.service";
+import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import { download } from "@/modules/download/download.schema";
 import { media } from "@/modules/media/media.schema";
 import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
@@ -30,15 +31,22 @@ function destroyTorrent(torrent: WebTorrent.Torrent, opts: { destroyStore: boole
 }
 
 export class DownloadService extends IdentifiableService<Download> {
+  /** Members and above share the instance download list; viewers stay scoped to their own. */
+  private canSeeAllDownloads(): boolean {
+    return this.roleLevel >= ROLE_LEVELS.member;
+  }
+
   async getMany(params?: { ids?: string[] }): Promise<Download[]> {
+    const ownerFilter = this.canSeeAllDownloads() ? undefined : eq(download.userId, this.user.id);
     return db.query.download.findMany({
-      where: and(eq(download.userId, this.user.id), params?.ids ? inArray(download.id, params.ids) : undefined),
+      where: and(ownerFilter, params?.ids ? inArray(download.id, params.ids) : undefined),
     });
   }
 
   async getByMediaId(mediaId: number): Promise<Download[]> {
+    const ownerFilter = this.canSeeAllDownloads() ? undefined : eq(download.userId, this.user.id);
     return db.query.download.findMany({
-      where: and(eq(download.userId, this.user.id), eq(download.mediaId, mediaId)),
+      where: and(ownerFilter, eq(download.mediaId, mediaId)),
       orderBy: desc(download.createdAt),
     });
   }

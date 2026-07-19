@@ -6,18 +6,24 @@ import { countSubquery } from "@/helpers/drizzle.helper";
 import type { Paginate } from "@/helpers/pagination.dto";
 import { paginate, toPaginate } from "@/helpers/pagination.helper";
 import { IdentifiableService } from "@/modules/auth/auth.service";
+import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import { download } from "@/modules/download/download.schema";
 import { media, userLikes, userWatchList, watchProgress } from "@/modules/media/media.schema";
 import type { ListMediaQuery, MediaEnriched, MediaInsert, UpdateProgressQuery } from "./media.dto";
 
 export class MediaService extends IdentifiableService<MediaEnriched> {
+  private canSeeAllDownloads(): boolean {
+    return this.roleLevel >= ROLE_LEVELS.member;
+  }
+
   async getMany(pagination: Partial<ListMediaQuery>): Promise<MediaEnriched[]> {
     const paginationOpts = pagination.page && pagination.limit ? paginate(pagination) : {};
+    const downloadOwnerFilter = this.canSeeAllDownloads() ? undefined : eq(download.userId, this.user.id);
     const rows = await db.query.media.findMany({
       where: pagination.ids ? inArray(media.id, pagination.ids?.map(Number) ?? []) : undefined,
       with: {
         downloads: {
-          where: and(eq(download.userId, this.user.id)),
+          where: downloadOwnerFilter,
           orderBy: desc(download.createdAt),
           limit: 1,
         },
@@ -55,12 +61,13 @@ export class MediaService extends IdentifiableService<MediaEnriched> {
       } as const;
 
       const table = FILTER_TABLE_MAP[filter];
+      const scopeToUser = filter !== "downloaded" || !this.canSeeAllDownloads();
       conditions.push(
         exists(
           db
             .select()
             .from(table)
-            .where(and(eq(table.userId, this.user.id), eq(table.mediaId, media.id))),
+            .where(and(scopeToUser ? eq(table.userId, this.user.id) : undefined, eq(table.mediaId, media.id))),
         ),
       );
     }
