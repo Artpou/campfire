@@ -94,32 +94,65 @@ function VideoPlayerPage() {
 
   useEffect(() => {
     if (!isHls) return;
-    const plyr = videoRef.current?.plyr;
-    const video = plyr?.media as HTMLVideoElement | undefined;
-    if (!video) return;
 
-    if (!Hls.isSupported()) {
-      video.src = streamUrl;
-      return;
-    }
+    // Wait for Plyr to mount the underlying <video>.
+    const tryAttach = (): (() => void) | undefined => {
+      const plyr = videoRef.current?.plyr;
+      const video = plyr?.media as HTMLVideoElement | undefined;
+      if (!video) return undefined;
 
-    const hls = new Hls({ startLevel: -1 });
-    hlsRef.current = hls;
-    hls.loadSource(streamUrl);
-    hls.attachMedia(video);
+      // Chrome / Firefox / Edge / Android — MSE via hls.js
+      if (Hls.isSupported()) {
+        const hls = new Hls({ startLevel: -1 });
+        hlsRef.current = hls;
+        hls.loadSource(streamUrl);
+        hls.attachMedia(video);
 
-    hls.on(Hls.Events.ERROR, (_event, data) => {
-      if (data.fatal && !errorToastedRef.current) {
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          if (data.fatal && !errorToastedRef.current) {
+            errorToastedRef.current = true;
+            toast.error(t(msg`Playback failed`), {
+              description: t(msg`HLS stream error: ${data.details}`),
+            });
+          }
+        });
+
+        return () => {
+          hls.destroy();
+          hlsRef.current = null;
+        };
+      }
+
+      // Safari iOS / macOS — native HLS (no MSE)
+      if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        video.src = streamUrl;
+        return () => {
+          video.removeAttribute("src");
+          video.load();
+        };
+      }
+
+      if (!errorToastedRef.current) {
         errorToastedRef.current = true;
         toast.error(t(msg`Playback failed`), {
-          description: t(msg`HLS stream error: ${data.details}`),
+          description: t(msg`This browser does not support HLS playback.`),
         });
       }
-    });
+      return undefined;
+    };
+
+    let cleanup = tryAttach();
+    // Plyr may not be ready on first paint — retry briefly.
+    const timer = cleanup
+      ? undefined
+      : setInterval(() => {
+          cleanup = tryAttach();
+          if (cleanup) clearInterval(timer);
+        }, 100);
 
     return () => {
-      hls.destroy();
-      hlsRef.current = null;
+      if (timer) clearInterval(timer);
+      cleanup?.();
     };
   }, [isHls, streamUrl, t]);
 

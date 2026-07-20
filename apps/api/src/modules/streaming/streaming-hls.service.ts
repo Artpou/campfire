@@ -1,4 +1,5 @@
 import { logger } from "@/helpers/logger.helper";
+import { buildHlsFfmpegCodecArgs, type PlaybackPlan } from "@/helpers/video.helper";
 import { type ChildProcess, spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import * as os from "node:os";
@@ -7,13 +8,15 @@ import * as path from "node:path";
 const HLS_SEGMENT_DURATION = 6;
 const SEGMENT_CACHE_TTL_MS = 30 * 60 * 1000;
 
-interface HlsSession {
+export interface HlsSession {
   downloadId: string;
   inputPath: string;
   duration: number;
   segmentCount: number;
   cacheDir: string;
   lastAccess: number;
+  video: PlaybackPlan["video"];
+  audio: PlaybackPlan["audio"];
 }
 
 const sessions = new Map<string, HlsSession>();
@@ -26,6 +29,10 @@ async function ensureSessionDir(downloadId: string): Promise<string> {
   const dir = getSessionDir(downloadId);
   await fs.mkdir(dir, { recursive: true });
   return dir;
+}
+
+function sessionKey(downloadId: string, video: string, audio: string): string {
+  return `${downloadId}:${video}:${audio}`;
 }
 
 export function buildHlsPlaylist(duration: number, segmentCount: number): string {
@@ -48,14 +55,28 @@ export function buildHlsPlaylist(duration: number, segmentCount: number): string
   return lines.join("\n");
 }
 
-export async function getOrCreateSession(downloadId: string, inputPath: string, duration: number): Promise<HlsSession> {
-  const existing = sessions.get(downloadId);
+export async function getOrCreateSession(
+  downloadId: string,
+  inputPath: string,
+  duration: number,
+  plan: Pick<PlaybackPlan, "video" | "audio">,
+): Promise<HlsSession> {
+  const key = sessionKey(downloadId, plan.video, plan.audio);
+  const existing = sessions.get(key);
   if (existing && existing.inputPath === inputPath) {
     existing.lastAccess = Date.now();
     return existing;
   }
 
-  const cacheDir = await ensureSessionDir(downloadId);
+  // Drop stale sessions for this download (codec plan changed).
+  for (const [k, s] of sessions) {
+    if (s.downloadId === downloadId) {
+      sessions.delete(k);
+      fs.rm(s.cacheDir, { recursive: true, force: true }).catch(() => {});
+    }
+  }
+
+  const cacheDir = await ensureSessionDir(`${downloadId}-${plan.video}-${plan.audio}`);
   const segmentCount = Math.ceil(duration / HLS_SEGMENT_DURATION);
 
   const session: HlsSession = {
@@ -65,9 +86,11 @@ export async function getOrCreateSession(downloadId: string, inputPath: string, 
     segmentCount,
     cacheDir,
     lastAccess: Date.now(),
+    video: plan.video,
+    audio: plan.audio,
   };
 
-  sessions.set(downloadId, session);
+  sessions.set(key, session);
   return session;
 }
 
@@ -83,6 +106,7 @@ export async function generateSegment(session: HlsSession, index: number): Promi
 
   const startTime = index * HLS_SEGMENT_DURATION;
   const segmentDuration = Math.min(HLS_SEGMENT_DURATION + 1, session.duration - startTime + 1);
+  const codecArgs = buildHlsFfmpegCodecArgs(session);
 
   const args = [
     "-ss",
@@ -91,16 +115,11 @@ export async function generateSegment(session: HlsSession, index: number): Promi
     session.inputPath,
     "-t",
     String(segmentDuration),
-    "-c:v",
-    "copy",
-    "-c:a",
-    "copy",
+    ...codecArgs,
     "-avoid_negative_ts",
     "make_zero",
     "-f",
     "mpegts",
-    "-movflags",
-    "+faststart",
     "pipe:1",
   ];
 
@@ -119,7 +138,7 @@ export async function generateSegment(session: HlsSession, index: number): Promi
       reject(err);
     });
 
-    ffmpeg.on("close", async (code) => {
+    ffmpeg.on("close", (code) => {
       if (code !== 0) {
         logger.error("HLS", `ffmpeg segment ${index} exited ${code}: ${stderr.slice(-200)}`);
         reject(new Error(`ffmpeg exited with code ${code}`));
@@ -135,67 +154,14 @@ export async function generateSegment(session: HlsSession, index: number): Promi
   });
 }
 
-export async function generateSegmentFromStream(
-  inputStream: NodeJS.ReadableStream,
-  inputFormat: string | undefined,
-): Promise<Buffer> {
-  const formatArgs = inputFormat ? ["-f", inputFormat] : [];
-  const args = [
-    ...formatArgs,
-    "-i",
-    "pipe:0",
-    "-c:v",
-    "copy",
-    "-c:a",
-    "copy",
-    "-avoid_negative_ts",
-    "make_zero",
-    "-f",
-    "mpegts",
-    "pipe:1",
-  ];
-
-  return new Promise<Buffer>((resolve, reject) => {
-    const ffmpeg: ChildProcess = spawn("ffmpeg", args, { stdio: ["pipe", "pipe", "pipe"] });
-    const chunks: Buffer[] = [];
-
-    if (ffmpeg.stdin) {
-      inputStream.pipe(ffmpeg.stdin);
-      ffmpeg.stdin.on("error", () => {
-        /* ignore pipe errors */
-      });
-    }
-
-    ffmpeg.stdout?.on("data", (chunk: Buffer) => chunks.push(chunk));
-    ffmpeg.stderr?.on("data", () => {
-      /* discard */
-    });
-
-    ffmpeg.on("error", reject);
-    ffmpeg.on("close", (code) => {
-      if (code !== 0) {
-        reject(new Error(`ffmpeg exited with code ${code}`));
-        return;
-      }
-      resolve(Buffer.concat(chunks));
-    });
-  });
-}
-
-function cleanupSession(downloadId: string): void {
-  const session = sessions.get(downloadId);
-  if (!session) return;
-  sessions.delete(downloadId);
-  fs.rm(session.cacheDir, { recursive: true, force: true }).catch(() => {});
-}
-
 function startCleanupTimer(): NodeJS.Timeout {
   return setInterval(() => {
     const now = Date.now();
     for (const [id, session] of sessions) {
       if (now - session.lastAccess > SEGMENT_CACHE_TTL_MS) {
         logger.debug("HLS", `Cleaning up stale session: ${id}`);
-        cleanupSession(id);
+        sessions.delete(id);
+        fs.rm(session.cacheDir, { recursive: true, force: true }).catch(() => {});
       }
     }
   }, 60_000);

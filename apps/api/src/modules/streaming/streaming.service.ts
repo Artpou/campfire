@@ -10,8 +10,12 @@ import { pipeNodeStream } from "@/helpers/stream.helper";
 import {
   convertToFragmentedMp4Stream,
   getVideoInputFormat,
-  probeVideoDuration,
-  shouldTranscodeForPlayback,
+  hasMoovAtStart,
+  type PlaybackPlan,
+  probeVideoStreams,
+  type RemuxInput,
+  resolvePlaybackPlan,
+  type VideoProbe,
 } from "@/helpers/video.helper";
 import type { Download } from "@/modules/download/download.dto";
 import type { TorrentLiveData } from "@/modules/download/download.schema";
@@ -30,12 +34,7 @@ import {
   parseRangeHeader,
   VIDEO_EXTENSIONS,
 } from "./streaming.helper";
-import {
-  buildHlsPlaylist,
-  generateSegment,
-  generateSegmentFromStream,
-  getOrCreateSession,
-} from "./streaming-hls.service";
+import { buildHlsPlaylist, generateSegment, getOrCreateSession } from "./streaming-hls.service";
 import { acquireStreamLease } from "./streaming-lease";
 
 export interface StreamSource {
@@ -56,6 +55,20 @@ export interface PlaybackInfo {
   duration: number | null;
   seekable: boolean;
   origin: "local" | "remote" | "torrent";
+  videoCodec: string | null;
+  audioCodec: string | null;
+}
+
+export interface DirectStreamResult {
+  status: 200 | 206 | 416;
+  headers: Record<string, string>;
+  /** Absent when status=416 (nothing to pipe). */
+  pipe?: (honoStream: StreamingApi) => Promise<void>;
+}
+
+export interface LiveStreamResult {
+  headers: Record<string, string>;
+  pipe: (honoStream: StreamingApi) => Promise<void>;
 }
 
 export interface DownloadFilePayload {
@@ -65,6 +78,8 @@ export interface DownloadFilePayload {
 }
 
 export class StreamingService {
+  // ── Source resolution ──────────────────────────────────────────────
+
   async resolveSource(download: Download): Promise<StreamSource | undefined> {
     if (download.remoteLocation) {
       const remote = this.tryRemoteSource(download);
@@ -91,38 +106,38 @@ export class StreamingService {
     return this.resolveFromDisk(download);
   }
 
+  // ── Public API ─────────────────────────────────────────────────────
+
   async getPlaybackInfo(download: Download): Promise<PlaybackInfo> {
     const source = await this.resolveSource(download);
     if (!source) throw new NotFoundError("Video file");
 
-    const needsRemux = shouldTranscodeForPlayback(source.fileName);
     const origin: PlaybackInfo["origin"] = source.isRemote ? "remote" : source.filePath ? "local" : "torrent";
+    const hasCompleteFile = Boolean(source.filePath || source.remotePath);
+    const { probe, plan } = await this.resolvePlan(download, source, hasCompleteFile);
 
-    const hasFile = Boolean(source.filePath || source.remotePath);
-    const mode: PlaybackMode = needsRemux ? (hasFile ? "hls" : "live") : "direct";
-    const seekable = mode === "hls" || mode === "direct";
-
-    const cached = download.torrent?.durationSeconds;
-    if (cached != null && cached > 0) return { mode, duration: cached, seekable, origin };
-
-    const duration = await this.probeSourceDuration(source);
-    if (duration != null) await this.cacheDuration(download.id, download.torrent, duration);
-
-    return { mode, duration: duration ?? null, seekable, origin };
+    return {
+      mode: plan.mode,
+      duration: probe?.duration ?? download.torrent?.durationSeconds ?? null,
+      seekable: plan.mode !== "live",
+      origin,
+      videoCodec: probe?.videoCodec ?? download.torrent?.videoCodec ?? null,
+      audioCodec: probe?.audioCodec ?? download.torrent?.audioCodec ?? null,
+    };
   }
 
   async getHlsPlaylist(download: Download): Promise<string> {
     const source = await this.resolveSource(download);
     if (!source) throw new NotFoundError("Video file");
-    if (!source.filePath && !source.remotePath) throw new BadRequestError("HLS requires a complete file");
 
-    const duration = download.torrent?.durationSeconds ?? (await this.probeSourceDuration(source));
+    const input = await this.resolveHlsInput(source);
+    if (!input) throw new BadRequestError("HLS requires a seekable source (local file or remote storage)");
+
+    const { probe, plan } = await this.resolvePlan(download, source, true);
+    const duration = probe?.duration ?? download.torrent?.durationSeconds;
     if (!duration || duration <= 0) throw new BadRequestError("Cannot determine video duration for HLS");
 
-    const inputPath = source.filePath ?? "";
-    if (!inputPath) throw new BadRequestError("HLS from remote not yet supported — file must be local");
-
-    const session = await getOrCreateSession(download.id, inputPath, duration);
+    const session = await getOrCreateSession(download.id, input, duration, plan);
     return buildHlsPlaylist(session.duration, session.segmentCount);
   }
 
@@ -130,33 +145,20 @@ export class StreamingService {
     const source = await this.resolveSource(download);
     if (!source) throw new NotFoundError("Video file");
 
-    const duration = download.torrent?.durationSeconds ?? (await this.probeSourceDuration(source));
+    const input = await this.resolveHlsInput(source);
+    if (!input) throw new BadRequestError("HLS requires a seekable source");
+
+    const { probe, plan } = await this.resolvePlan(download, source, true);
+    const duration = probe?.duration ?? download.torrent?.durationSeconds;
     if (!duration || duration <= 0) throw new NotFoundError("Video duration unavailable");
 
-    if (source.filePath) {
-      const session = await getOrCreateSession(download.id, source.filePath, duration);
-      if (index < 0 || index >= session.segmentCount) throw new NotFoundError("Segment out of range");
-      return generateSegment(session, index);
-    }
-
-    if (source.remotePath) {
-      const remote = await remoteStorageService.createReadStream(source.remotePath);
-      if (!remote) throw new NotFoundError("Remote file unavailable");
-      try {
-        return await generateSegmentFromStream(remote.stream, getVideoInputFormat(source.fileName));
-      } finally {
-        remote.cleanup?.();
-      }
-    }
-
-    throw new BadRequestError("HLS requires a seekable source");
+    const session = await getOrCreateSession(download.id, input, duration, plan);
+    if (index < 0 || index >= session.segmentCount) throw new NotFoundError("Segment out of range");
+    return generateSegment(session, index);
   }
 
-  async pipeDirectStream(
-    download: Download,
-    rangeHeader: string | undefined,
-    honoStream: StreamingApi,
-  ): Promise<{ status: 200 | 206 | 416; headers: Record<string, string> }> {
+  /** Prepare headers + pipe closure for byte-range direct streaming. */
+  async prepareDirectStream(download: Download, rangeHeader: string | undefined): Promise<DirectStreamResult> {
     const source = await this.resolveSource(download);
     if (!source) throw new NotFoundError("Video file");
 
@@ -165,64 +167,26 @@ export class StreamingService {
       return { status: 416, headers: { "Content-Range": `bytes */${source.size}` } };
     }
 
-    const headers = buildStreamHeaders(source.fileName, source.size, range);
-    const releaseLease = acquireStreamLease(download.id);
-    const cleanups: Array<() => void> = [];
-
-    honoStream.onAbort(() => {
-      for (const fn of cleanups) fn();
-      releaseLease();
-    });
-
-    try {
-      const input = await this.openInput(source, range, cleanups);
-      if (!input) {
-        releaseLease();
-        throw new NotFoundError("Stream source unavailable");
-      }
-      await pipeNodeStream(honoStream, input);
-    } finally {
-      releaseLease();
-    }
-
-    return { status: range ? 206 : 200, headers };
+    return {
+      status: range ? 206 : 200,
+      headers: buildStreamHeaders(source.fileName, source.size, range),
+      pipe: (honoStream) => this.pipeSource(download.id, source, range, honoStream),
+    };
   }
 
-  async pipeLiveStream(download: Download, honoStream: StreamingApi): Promise<Record<string, string>> {
+  /** Prepare headers + pipe closure for live fMP4 remux (active torrents). */
+  async prepareLiveStream(download: Download): Promise<LiveStreamResult> {
     const source = await this.resolveSource(download);
     if (!source) throw new NotFoundError("Video file");
 
-    const releaseLease = acquireStreamLease(download.id);
-    const cleanups: Array<() => void> = [];
-
-    honoStream.onAbort(() => {
-      for (const fn of cleanups) fn();
-      releaseLease();
-    });
-
-    try {
-      const input = await this.openInput(source, undefined, cleanups);
-      if (!input) {
-        releaseLease();
-        throw new NotFoundError("Stream source unavailable");
-      }
-
-      const remuxInput = source.filePath ? { filePath: source.filePath } : { stream: input };
-      if (source.filePath && "destroy" in input && typeof input.destroy === "function") input.destroy();
-
-      const transcoded = convertToFragmentedMp4Stream(remuxInput, {
-        inputFormat: getVideoInputFormat(source.fileName),
-      });
-      cleanups.push(transcoded.destroy);
-      await pipeNodeStream(honoStream, transcoded.stream);
-    } finally {
-      releaseLease();
-    }
-
+    const { plan } = await this.resolvePlan(download, source, false);
     const headers: Record<string, string> = { "Content-Type": "video/mp4" };
-    const duration = download.torrent?.durationSeconds;
-    if (duration != null) headers["X-Video-Duration"] = String(duration);
-    return headers;
+    if (download.torrent?.durationSeconds) headers["X-Video-Duration"] = String(download.torrent.durationSeconds);
+
+    return {
+      headers,
+      pipe: (honoStream) => this.pipeLiveSource(download.id, source, plan, honoStream),
+    };
   }
 
   getFile(download: Download, rawFilePath: string): DownloadFilePayload {
@@ -240,29 +204,92 @@ export class StreamingService {
     return { stream: fsSync.createReadStream(fullPath), contentType, size: stats.size };
   }
 
-  // --- Private ---
+  // ── Private: HLS input ─────────────────────────────────────────────
 
-  private tryRemoteSource(item: Download): StreamSource | undefined {
-    if (!item.remoteLocation) return undefined;
-    const info = buildRemoteVideoInfo(item, item.remoteLocation);
-    if (!info) return undefined;
-    return { size: info.size, fileName: info.fileName, remotePath: info.remotePath, isRemote: true };
+  /** Returns a local path OR a remote FFmpeg URL — both seekable by ffmpeg `-ss`. */
+  private async resolveHlsInput(source: StreamSource): Promise<string | undefined> {
+    if (source.filePath) return source.filePath;
+    if (source.remotePath) {
+      const url = await remoteStorageService.buildFfmpegUrl(source.remotePath);
+      return url ?? undefined;
+    }
+    return undefined;
   }
+
+  // ── Private: stream piping ─────────────────────────────────────────
+
+  private async pipeSource(
+    downloadId: string,
+    source: StreamSource,
+    range: ByteRange | undefined,
+    honoStream: StreamingApi,
+  ): Promise<void> {
+    const releaseLease = acquireStreamLease(downloadId);
+    const cleanups: Array<() => void> = [];
+    honoStream.onAbort(() => {
+      for (const fn of cleanups) fn();
+      releaseLease();
+    });
+
+    try {
+      const input = await this.openInput(source, range, cleanups);
+      if (!input) throw new NotFoundError("Stream source unavailable");
+      await pipeNodeStream(honoStream, input);
+    } finally {
+      releaseLease();
+    }
+  }
+
+  private async pipeLiveSource(
+    downloadId: string,
+    source: StreamSource,
+    plan: PlaybackPlan,
+    honoStream: StreamingApi,
+  ): Promise<void> {
+    const releaseLease = acquireStreamLease(downloadId);
+    const cleanups: Array<() => void> = [];
+    honoStream.onAbort(() => {
+      for (const fn of cleanups) fn();
+      releaseLease();
+    });
+
+    try {
+      let remuxInput: RemuxInput;
+      if (source.filePath) {
+        remuxInput = { filePath: source.filePath };
+      } else {
+        const input = await this.openInput(source, undefined, cleanups);
+        if (!input) throw new NotFoundError("Stream source unavailable");
+        remuxInput = { stream: input };
+      }
+
+      const transcoded = convertToFragmentedMp4Stream(remuxInput, {
+        inputFormat: getVideoInputFormat(source.fileName),
+        video: plan.video,
+        audio: plan.audio,
+      });
+      cleanups.push(transcoded.destroy);
+      await pipeNodeStream(honoStream, transcoded.stream);
+    } finally {
+      releaseLease();
+    }
+  }
+
+  // ── Private: input opening ─────────────────────────────────────────
 
   private async openInput(
     source: StreamSource,
     range: ByteRange | undefined,
     cleanups: Array<() => void>,
   ): Promise<NodeJS.ReadableStream | undefined> {
-    if (source.isRemote) {
-      if (!source.remotePath) return undefined;
+    if (source.isRemote && source.remotePath) {
       try {
         const remote = await remoteStorageService.createReadStream(source.remotePath, range);
-        if (!remote) throw new Error("Remote stream unavailable");
+        if (!remote) return undefined;
         if (remote.cleanup) cleanups.push(remote.cleanup);
         return remote.stream;
       } catch (error) {
-        logger.warn("STREAM", `Remote playback failed, falling back to local: ${error}`);
+        logger.warn("STREAM", `Remote read failed: ${error}`);
         return undefined;
       }
     }
@@ -286,45 +313,52 @@ export class StreamingService {
     throw new Error("No local stream source available");
   }
 
-  private async probeSourceDuration(source: StreamSource): Promise<number | undefined> {
-    if (source.filePath) return probeVideoDuration({ filePath: source.filePath });
+  // ── Private: probe & plan ──────────────────────────────────────────
 
-    if (source.remotePath) {
-      try {
-        const remote = await remoteStorageService.createReadStream(source.remotePath);
-        if (!remote) return undefined;
-        try {
-          return await probeVideoDuration({ stream: remote.stream });
-        } finally {
-          remote.cleanup?.();
-          if ("destroy" in remote.stream && typeof remote.stream.destroy === "function") {
-            (remote.stream as NodeJS.ReadableStream & { destroy: () => void }).destroy();
-          }
-        }
-      } catch (error) {
-        logger.warn("STREAM", `Remote duration probe failed: ${error}`);
-        return undefined;
+  private async resolvePlan(
+    download: Download,
+    source: StreamSource,
+    hasCompleteFile: boolean,
+  ): Promise<{ probe: VideoProbe | null; plan: PlaybackPlan }> {
+    const cached = download.torrent;
+    let probe: VideoProbe | null = null;
+
+    if (cached?.videoCodec || cached?.audioCodec || cached?.durationSeconds) {
+      probe = { videoCodec: cached.videoCodec, audioCodec: cached.audioCodec, duration: cached.durationSeconds };
+    }
+
+    if (source.filePath && (!cached?.videoCodec || cached.durationSeconds == null)) {
+      const fresh = await probeVideoStreams({ filePath: source.filePath });
+      if (fresh) {
+        probe = {
+          videoCodec: fresh.videoCodec ?? probe?.videoCodec,
+          audioCodec: fresh.audioCodec ?? probe?.audioCodec,
+          duration: fresh.duration ?? probe?.duration,
+        };
+        await this.cacheProbe(download.id, download.torrent, probe, cached?.moovAtStart);
       }
     }
 
-    return undefined;
+    let moovAtStart = cached?.moovAtStart;
+    if (source.filePath && moovAtStart == null && /\.(mp4|m4v)$/i.test(source.fileName)) {
+      moovAtStart = await hasMoovAtStart(source.filePath);
+      if (probe) await this.cacheProbe(download.id, download.torrent, probe, moovAtStart);
+    }
+
+    return { probe, plan: resolvePlaybackPlan(source.fileName, probe, { hasCompleteFile, moovAtStart }) };
   }
 
-  private async cacheDuration(
-    downloadId: string,
-    torrent: TorrentLiveData | null | undefined,
-    durationSeconds: number,
-  ): Promise<void> {
-    if (!torrent) return;
-    await db
-      .update(downloadTable)
-      .set({ torrent: { ...torrent, durationSeconds } })
-      .where(eq(downloadTable.id, downloadId));
+  // ── Private: source helpers ────────────────────────────────────────
+
+  private tryRemoteSource(item: Download): StreamSource | undefined {
+    if (!item.remoteLocation) return undefined;
+    const info = buildRemoteVideoInfo(item, item.remoteLocation);
+    if (!info) return undefined;
+    return { size: info.size, fileName: info.fileName, remotePath: info.remotePath, isRemote: true };
   }
 
   private async resolveFromDisk(download: Download): Promise<StreamSource | undefined> {
     const fullPath = resolveWithinDownloads(download.torrent?.name ?? "");
-
     try {
       const stats = await fs.stat(fullPath);
       if (stats.isFile()) {
@@ -351,9 +385,29 @@ export class StreamingService {
           return { path: filePath, name: file.name, size: fileStats.size };
         }),
     );
-
     if (videoFiles.length === 0) return undefined;
     const largest = videoFiles.sort((a, b) => b.size - a.size)[0];
     return { size: largest.size, fileName: largest.name, filePath: largest.path };
+  }
+
+  private async cacheProbe(
+    downloadId: string,
+    torrent: TorrentLiveData | null | undefined,
+    probe: VideoProbe,
+    moovAtStart?: boolean,
+  ): Promise<void> {
+    if (!torrent) return;
+    await db
+      .update(downloadTable)
+      .set({
+        torrent: {
+          ...torrent,
+          durationSeconds: probe.duration ?? torrent.durationSeconds,
+          videoCodec: probe.videoCodec ?? torrent.videoCodec,
+          audioCodec: probe.audioCodec ?? torrent.audioCodec,
+          moovAtStart: moovAtStart ?? torrent.moovAtStart,
+        },
+      })
+      .where(eq(downloadTable.id, downloadId));
   }
 }

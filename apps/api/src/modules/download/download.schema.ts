@@ -39,6 +39,11 @@ export interface TorrentLiveData {
   skipAutoTransfer?: boolean;
   /** Cached ffprobe duration (seconds) — survives local delete after remote transfer. */
   durationSeconds?: number;
+  /** Cached ffprobe codecs — avoid re-probing on every playback-info request. */
+  videoCodec?: string;
+  audioCodec?: string;
+  /** Cached MP4 faststart check (moov before mdat). */
+  moovAtStart?: boolean;
   files: {
     name: string;
     path: string;

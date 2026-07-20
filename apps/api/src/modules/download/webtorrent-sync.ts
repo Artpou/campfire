@@ -54,6 +54,9 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
           transferProgress: current?.torrent?.transferProgress,
           skipAutoTransfer: current?.torrent?.skipAutoTransfer,
           durationSeconds: current?.torrent?.durationSeconds,
+          videoCodec: current?.torrent?.videoCodec,
+          audioCodec: current?.torrent?.audioCodec,
+          moovAtStart: current?.torrent?.moovAtStart,
           ...extraFields,
         },
       })

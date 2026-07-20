@@ -55,20 +55,19 @@ export const streamingRoutes = new Hono<{ Variables: HonoVariables }>()
   })
   .get("/:id/direct", zValidator("param", stringIdParamDto), requireDownloadOwnership, async (c) => {
     const download = await getDownload(c.req.valid("param").id);
+    const { status, headers, pipe } = await streamingService.prepareDirectStream(download, c.req.header("range"));
 
-    return stream(c, async (honoStream) => {
-      const { status, headers } = await streamingService.pipeDirectStream(download, c.req.header("range"), honoStream);
-      c.status(status);
-      for (const [key, value] of Object.entries(headers)) c.header(key, value);
-    });
+    c.status(status);
+    for (const [key, value] of Object.entries(headers)) c.header(key, value);
+    if (!pipe) return c.body(null);
+    return stream(c, pipe);
   })
   .get("/:id/live", zValidator("param", stringIdParamDto), requireDownloadOwnership, async (c) => {
     const download = await getDownload(c.req.valid("param").id);
+    const { headers, pipe } = await streamingService.prepareLiveStream(download);
 
-    return stream(c, async (honoStream) => {
-      const headers = await streamingService.pipeLiveStream(download, honoStream);
-      for (const [key, value] of Object.entries(headers)) c.header(key, value);
-    });
+    for (const [key, value] of Object.entries(headers)) c.header(key, value);
+    return stream(c, pipe);
   })
   .get("/:id/file/:filePath", zValidator("param", downloadFilePathParamDto), requireDownloadOwnership, async (c) => {
     const { id, filePath } = c.req.valid("param");
