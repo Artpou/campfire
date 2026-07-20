@@ -1,8 +1,6 @@
-import { eq } from "drizzle-orm";
 import type { StreamingApi } from "hono/utils/stream";
 import type WebTorrent from "webtorrent";
 
-import { db } from "@/db/db";
 import { BadRequestError, NotFoundError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
 import { assertWithinDownloads, getDownloadsRoot, resolveWithinDownloads } from "@/helpers/path.helper";
@@ -15,7 +13,6 @@ import fsSync from "node:fs";
 import * as path from "node:path";
 import type { Download } from "./download.dto";
 import type { TorrentLiveData } from "./download.schema";
-import { download } from "./download.schema";
 import {
   type ByteRange,
   buildRemoteVideoInfo,
@@ -160,9 +157,6 @@ export class DownloadStreamService {
         return;
       } catch (error) {
         logger.warn("STREAM", `Remote playback failed, falling back to local: ${error}`);
-        if (plan.download.remoteLocation) {
-          await db.update(download).set({ remoteLocation: null }).where(eq(download.id, plan.download.id));
-        }
         const local = await this.getStreamFromDisk(plan.download);
         if (!local) return;
         source = local;
