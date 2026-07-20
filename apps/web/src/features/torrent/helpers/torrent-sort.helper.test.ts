@@ -15,6 +15,7 @@ function makeTorrent(mediaInfos: Torrent["mediaInfos"] | Record<string, unknown>
     guid: "guid",
     indexerType: "jackett",
     mediaInfos: mediaInfos as Torrent["mediaInfos"],
+    isStreamable: false,
   };
 }
 

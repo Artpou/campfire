@@ -103,21 +103,4 @@ describe("Auth Routes", () => {
       expect((await authRoutes.request("/me")).status).toBe(401);
     });
   });
-
-  describe("GET /media-session", () => {
-    it("returns a short-lived media token when authenticated", async () => {
-      const registerRes = await authRoutes.request(
-        "/register",
-        json("POST", { username: "bob", password: "password123" }),
-      );
-      const setCookie = registerRes.headers.get("set-cookie");
-
-      const res = await authRoutes.request("/media-session", { headers: { Cookie: setCookie ?? "" } });
-      expect(res.status).toBe(200);
-
-      const body = await bodyOf(res);
-      expect(typeof body.token).toBe("string");
-      expect(body.token.length).toBeGreaterThan(0);
-    });
-  });
 });

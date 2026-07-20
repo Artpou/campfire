@@ -3,7 +3,7 @@ import { filenameParse } from "@ctrl/video-filename-parser";
 import { BadRequestError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
 import type { Indexer, IndexerManager, IndexerType } from "@/types";
-import type { Torrent, torrentListQuery } from "../torrent.dto";
+import type { TorrentResult, torrentListQuery } from "../torrent.dto";
 import { buildIndexerSearchPlan, searchWithTitleFallback } from "../torrent-search.helper";
 import { IndexerAdapter } from "./indexer.adapter";
 
@@ -66,7 +66,7 @@ export class JackettAdapter extends IndexerAdapter {
     }));
   }
 
-  async getTorrents(query: torrentListQuery): Promise<Torrent[]> {
+  async getTorrents(query: torrentListQuery): Promise<TorrentResult[]> {
     const plan = buildIndexerSearchPlan(query.media);
 
     const allResults = await searchWithTitleFallback(plan, async (searchQuery) => {

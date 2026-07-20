@@ -1,12 +1,18 @@
 import { BadRequestError, NotFoundError } from "@/errors/error";
 import { getDownloadsRoot, resolveWithinDownloads } from "@/helpers/path.helper";
-import { srt2webvtt } from "@/helpers/subtitle.helper";
 import type { Download } from "@/modules/download/download.dto";
 import type { TorrentLiveData } from "@/modules/download/download.schema";
 import fs from "node:fs/promises";
 import * as path from "node:path";
 
-const SUBTITLE_EXTENSIONS = /\.(srt|vtt)$/i;
+const SUBTITLE_EXTENSIONS = /\.(srt|vtt|ass|ssa)$/i;
+
+function contentTypeForSubtitle(filePath: string): string {
+  const lower = filePath.toLowerCase();
+  if (lower.endsWith(".vtt")) return "text/vtt; charset=utf-8";
+  if (lower.endsWith(".ass") || lower.endsWith(".ssa")) return "text/x-ssa; charset=utf-8";
+  return "application/x-subrip; charset=utf-8";
+}
 
 export class StreamingSubtitleService {
   async listExternalSubtitles(download: Download): Promise<{ paths: string[] }> {
@@ -41,11 +47,11 @@ export class StreamingSubtitleService {
     return { paths: collected };
   }
 
-  async getSubtitleVtt(download: Download, rawFilePath: string): Promise<string> {
+  /** Serve subtitle file as-is (SRT/ASS/VTT) — movi-player parses client-side. */
+  async getSubtitleFile(download: Download, rawFilePath: string): Promise<{ content: string; contentType: string }> {
     const filePath = decodeURIComponent(rawFilePath);
-    const lower = filePath.toLowerCase();
-    if (!lower.endsWith(".srt") && !lower.endsWith(".vtt")) {
-      throw new BadRequestError("Only .srt and .vtt files are supported");
+    if (!SUBTITLE_EXTENSIONS.test(filePath)) {
+      throw new BadRequestError("Only .srt, .vtt, .ass and .ssa files are supported");
     }
 
     const fullPath = resolveWithinDownloads(download.torrent?.name ?? "", filePath);
@@ -56,7 +62,7 @@ export class StreamingSubtitleService {
     }
 
     const content = await this.decodeSubtitleFile(fullPath);
-    return lower.endsWith(".vtt") ? content : srt2webvtt(content);
+    return { content, contentType: contentTypeForSubtitle(filePath) };
   }
 
   private async decodeSubtitleFile(fullPath: string): Promise<string> {

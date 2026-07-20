@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { Movie, TV } from "@seedarr/sdk";
+import type { Download, Movie, TV } from "@seedarr/sdk";
+import { isPlayableDownload } from "@seedarr/shared";
 import { Link } from "@tanstack/react-router";
 import { ClapperboardIcon, FilmIcon, MagnetIcon, PlayIcon } from "lucide-react";
 
@@ -15,6 +16,7 @@ import { getPosterUrl } from "@/features/media/helpers/media.helper";
 interface MediaPosterProps {
   data: Movie | TV;
   downloadId?: string;
+  download?: Download | null;
   type?: "movie" | "tv";
 }
 
@@ -25,7 +27,7 @@ function getDisplayTitle(data: Movie | TV): string {
   return "";
 }
 
-export function MediaPoster({ data, downloadId, type = "movie" }: MediaPosterProps) {
+export function MediaPoster({ data, downloadId, download, type = "movie" }: MediaPosterProps) {
   const { role } = useRole();
   const { i18n } = useLingui();
 
@@ -34,6 +36,7 @@ export function MediaPoster({ data, downloadId, type = "movie" }: MediaPosterPro
   const displayTitle = getDisplayTitle(data);
   const { media } = data;
   const item = "movie" in data ? data.movie : data.tv;
+  const canPlay = Boolean(downloadId && (!download || isPlayableDownload(download)));
 
   const youtubeTrailer = useMemo(() => {
     const videos = item?.videos?.results;
@@ -70,7 +73,7 @@ export function MediaPoster({ data, downloadId, type = "movie" }: MediaPosterPro
           />
         )}
 
-        {downloadId && (
+        {canPlay && downloadId && (
           <Link
             to="/downloads/$id/play"
             params={{ id: downloadId }}

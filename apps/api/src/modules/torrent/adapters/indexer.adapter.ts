@@ -1,6 +1,6 @@
 import { BadRequestError, ServiceUnavailableError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
-import type { Torrent, torrentListQuery } from "@/modules/torrent/torrent.dto";
+import type { TorrentResult, torrentListQuery } from "@/modules/torrent/torrent.dto";
 import type { Indexer, IndexerManager, IndexerType } from "@/types";
 
 export abstract class IndexerAdapter {
@@ -28,5 +28,5 @@ export abstract class IndexerAdapter {
     return await response.json();
   }
   abstract getIndexers(): Promise<Indexer[]>;
-  abstract getTorrents(query: torrentListQuery): Promise<Torrent[]>;
+  abstract getTorrents(query: torrentListQuery): Promise<TorrentResult[]>;
 }

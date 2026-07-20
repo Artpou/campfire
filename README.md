@@ -61,11 +61,9 @@ Think of it as **Stremio meets Overseerr**, but fully self-hosted and under your
 
 ### Stream & Watch
 
-- **Stream while downloading** — start watching before the download completes
-- Integrated **video player** with full playback controls
-- Automatic **subtitle detection** from downloaded files
-- SRT to VTT conversion with encoding detection
-- MKV to MP4 real-time **transcoding** via FFmpeg
+- **Stream while downloading** — progressive MP4/WebM can play before the download completes
+- Integrated **movi-player** — plays MKV/HEVC/AV1/HDR natively in the browser (no server transcoding)
+- Automatic **subtitle detection** from downloaded files (SRT/ASS/VTT)
 - **Watch progress tracking** — resume where you left off
 
 ### Multi-User & Roles
@@ -142,7 +140,7 @@ pnpm dev
 
 Open **http://localhost:3000** — the API runs on port 3002.
 
-> **Requirements:** Node.js 22.13+, pnpm 9+. Optional: [FFmpeg](https://ffmpeg.org/) for MKV transcoding.
+> **Requirements:** Node.js 22.13+, pnpm 9+. Optional: [FFmpeg](https://ffmpeg.org/) for live remux of progressive MP4 while downloading.
 
 ## Roadmap
 

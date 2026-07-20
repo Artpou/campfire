@@ -1,5 +1,6 @@
 import { Trans } from "@lingui/react/macro";
 import type { Download } from "@seedarr/sdk";
+import { isPlayableDownload } from "@seedarr/shared";
 import { Link } from "@tanstack/react-router";
 import { Loader2Icon, PlayIcon, ServerIcon, Trash2Icon } from "lucide-react";
 
@@ -26,6 +27,7 @@ export function DownloadActionButtons({
 }: DownloadActionButtonsProps) {
   const status = getDownloadStatus(download);
   const isComplete = status === "completed";
+  const canPlay = isPlayableDownload(download);
   // finished + feature on + not already on server + not mid-transfer
   const showTransfer =
     isComplete &&
@@ -46,12 +48,19 @@ export function DownloadActionButtons({
             </span>
           )}
         </Button>
-        <Button size="lg" asChild className="flex-1">
-          <Link to="/downloads/$id/play" params={{ id: download.id }}>
+        {canPlay ? (
+          <Button size="lg" asChild className="flex-1">
+            <Link to="/downloads/$id/play" params={{ id: download.id }}>
+              <PlayIcon className="mr-2 size-5" />
+              {isComplete ? <Trans>Play</Trans> : <Trans>Streaming</Trans>}
+            </Link>
+          </Button>
+        ) : (
+          <Button size="lg" className="flex-1" disabled>
             <PlayIcon className="mr-2 size-5" />
-            {isComplete ? <Trans>Play</Trans> : <Trans>Streaming</Trans>}
-          </Link>
-        </Button>
+            <Trans>Play unavailable</Trans>
+          </Button>
+        )}
       </div>
 
       {download.torrent?.transferring && (

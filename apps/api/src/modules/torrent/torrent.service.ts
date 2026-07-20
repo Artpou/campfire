@@ -1,3 +1,4 @@
+import { isStreamableVideo } from "@seedarr/shared";
 import type WebTorrent from "webtorrent";
 
 import { BadRequestError, NotFoundError, ServiceUnavailableError } from "@/errors/error";
@@ -25,7 +26,11 @@ export class TorrentService extends AuthenticatedService {
     if (manager.disabled) throw new BadRequestError("Indexer manager is disabled");
 
     const adapter = this.managerService.getAdapter(manager);
-    return adapter.getTorrents(query);
+    const torrents = await adapter.getTorrents(query);
+    return torrents.map((torrent) => ({
+      ...torrent,
+      isStreamable: isStreamableVideo(torrent.title),
+    }));
   }
 
   async inspectTorrent(query: torrentInspectQuery): Promise<TorrentInspectResult> {

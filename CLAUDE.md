@@ -38,7 +38,7 @@ ActivityLog
 IndexerManager → multiple configs (Jackett, Prowlarr, Stremio addons/presets)
 ```
 
-**Flow:** Browse TMDB → Search torrents → Start download (upserts Media + creates Download) → WebTorrent streams to disk → Play via `/downloads/:id/stream` (range requests, MKV→MP4 transcode).
+**Flow:** Browse TMDB → Search torrents → Start download (upserts Media + creates Download) → WebTorrent streams to disk → Play via `/streaming/:id/direct` (byte-range; movi-player handles MKV/HEVC natively).
 
 ## Tech Stack
 
@@ -53,8 +53,8 @@ IndexerManager → multiple configs (Jackett, Prowlarr, Stremio addons/presets)
 - **Styling**: Tailwind CSS v4 + Radix UI primitives (shadcn pattern)
 - **State**: TanStack Query (server) + Zustand (auth + user preferences)
 - **Torrent**: WebTorrent
-- **Transcode**: ffmpeg via native child_process (MKV→MP4)
-- **Video Player**: Plyr (plyr-react)
+- **Video Player**: movi-player (WASM — native MKV/HEVC/AV1/HDR in browser)
+- **Live remux** (optional): ffmpeg for progressive MP4 while downloading
 - **Linting**: Biome (not ESLint/Prettier)
 - **i18n**: Lingui v5 (en, fr)
 - **Testing**: Vitest (API route + integration tests, web route helper tests)
@@ -168,15 +168,16 @@ Each module has `{module}.dto.ts`: Zod schemas for validation, TypeScript types 
 ### Auth
 
 - First registration creates **owner**; subsequent registrations are forbidden
-- Session cookie (httpOnly, 7 days) + short-lived `?token=` media token for `<video>` elements
+- Session cookie (httpOnly, 7 days)
 - Role hierarchy: owner(4) > admin(3) > member(2) > viewer(1)
 - Session rotation after 24h + in-memory session cache (60s TTL)
 
 ### Streaming
 
-- `GET /downloads/:id/stream` — byte-range support, MKV→MP4 ffmpeg transcode
-- Active torrents stream from WebTorrent; completed downloads read from disk
-- Subtitles auto-converted SRT→VTT with encoding detection
+- `GET /streaming/:id/direct` — byte-range passthrough (local disk or remote FTP/WebDAV); movi-player demuxes MKV/HEVC in-browser
+- `GET /streaming/:id/live` — continuous fMP4 remux for progressive formats while downloading
+- `GET /streaming/:id/info` — `{ mode: "direct" | "live", duration, seekable, origin }`
+- Subtitles served as-is (SRT/ASS/VTT); parsed client-side by movi-player
 
 ## Frontend Patterns
 

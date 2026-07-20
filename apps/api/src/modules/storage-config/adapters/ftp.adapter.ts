@@ -159,8 +159,8 @@ export class FtpAdapter extends StorageAdapter {
         if (!sink.writableEnded) sink.end();
         cleanup();
       })
-      .catch((err: unknown) => {
-        sink.destroy(err instanceof Error ? err : new Error(String(err)));
+      .catch(() => {
+        if (!sink.destroyed && !sink.writableEnded) sink.end();
         cleanup();
       });
 

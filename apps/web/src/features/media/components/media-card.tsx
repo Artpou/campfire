@@ -4,6 +4,7 @@ import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { HoverCard, HoverCardContent, HoverCardPortal, HoverCardTrigger } from "@radix-ui/react-hover-card";
 import type { Media } from "@seedarr/sdk";
+import { isPlayableDownload } from "@seedarr/shared";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { CheckCircle2Icon, ClapperboardIcon, FilmIcon, InfoIcon, PlayIcon, TvIcon } from "lucide-react";
 
@@ -29,10 +30,11 @@ export function MediaCard({ media, mode = "default", className, playable, withTy
   const navigate = useNavigate();
   const [imgError, setImgError] = useState(false);
 
+  const canPlay = Boolean(playable || (media.download && isPlayableDownload(media.download)));
   const detailLinkProps = media.download?.id
     ? media.type === "tv"
       ? ({ to: "/tv/$id", params: { id: media.id.toString() } } as const)
-      : ({ to: `/downloads/$id${playable ? "/play" : ""}`, params: { id: media.download.id } } as const)
+      : ({ to: `/downloads/$id${canPlay ? "/play" : ""}`, params: { id: media.download.id } } as const)
     : media.type === "tv"
       ? ({ to: "/tv/$id", params: { id: media.id.toString() } } as const)
       : ({ to: "/movies/$id", params: { id: media.id.toString() } } as const);
@@ -44,7 +46,7 @@ export function MediaCard({ media, mode = "default", className, playable, withTy
   const handlePlay = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (playDownloadId) navigate({ to: "/downloads/$id/play", params: { id: playDownloadId } });
+    if (playDownloadId && canPlay) navigate({ to: "/downloads/$id/play", params: { id: playDownloadId } });
   };
 
   if (mode === "minimal") {
@@ -52,9 +54,11 @@ export function MediaCard({ media, mode = "default", className, playable, withTy
       <Card className={cn("overflow-hidden aspect-2/3 relative pt-0 pb-0", className)}>
         <img src={getPosterUrl(media.poster_path, "w342")} alt={media.title} className="size-full object-cover" />
         {showWatchProgress && (
-          <div className="absolute inset-x-0 bottom-0 h-1.5 bg-muted/60 z-10">
-            <div className="h-full bg-green-500" style={{ width: `${watchProgressPercent}%` }} />
-          </div>
+          <Progress
+            value={watchProgressPercent}
+            variant="white"
+            className="absolute z-10 bottom-2 left-2 right-2 w-auto"
+          />
         )}
       </Card>
     );
@@ -122,8 +126,8 @@ export function MediaCard({ media, mode = "default", className, playable, withTy
           </div>
         )}
 
-        {mode === "default" && !playable && (
-          <div className="absolute bottom-2 left-2 right-2 z-10 flex gap-1">
+        {mode === "default" && !playable && canPlay && (
+          <div className={cn("absolute left-2 right-2 z-10 flex gap-1", showWatchProgress ? "bottom-8" : "bottom-2")}>
             <Button size="sm" className="flex-1" onClick={handlePlay}>
               <PlayIcon className="size-3.5 mr-1" />
               {media.download?.torrent?.done ? <Trans>Play</Trans> : <Trans>Streaming</Trans>}
@@ -131,17 +135,13 @@ export function MediaCard({ media, mode = "default", className, playable, withTy
           </div>
         )}
 
-        {mode === "default" &&
-          !!playable &&
-          media.progress &&
-          media.progress.position > 0 &&
-          media.progress.position / media.progress.duration < 0.95 && (
-            <Progress
-              value={(media.progress.position / media.progress.duration) * 100}
-              variant="white"
-              className="absolute z-10 bottom-2 left-1 right-1 w-auto"
-            />
-          )}
+        {showWatchProgress && (
+          <Progress
+            value={watchProgressPercent}
+            variant="white"
+            className="absolute z-10 bottom-2 left-2 right-2 w-auto"
+          />
+        )}
       </Card>
     </Link>
   );

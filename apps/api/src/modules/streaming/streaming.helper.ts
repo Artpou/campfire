@@ -1,6 +1,8 @@
+import { VIDEO_EXTENSIONS } from "@seedarr/shared";
+
 import type { Download } from "@/modules/download/download.dto";
 
-export const VIDEO_EXTENSIONS = /\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v)$/i;
+export { VIDEO_EXTENSIONS };
 
 export interface ByteRange {
   start: number;

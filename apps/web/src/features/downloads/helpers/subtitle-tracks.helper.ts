@@ -1,22 +1,31 @@
 import type { Download } from "@seedarr/sdk";
-import { getBaseUrl, withMediaTokenParam } from "@seedarr/sdk";
 
 import { detectLanguage } from "@/shared/helpers/lang.helper";
 
 import { getTorrentFiles } from "@/features/downloads/helpers/downloads.helper";
 
 const VIDEO_EXTENSIONS = /\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v)$/i;
+const SUBTITLE_EXTENSIONS = /\.(srt|vtt|ass|ssa)$/i;
 
 export interface SubtitleTrack {
-  kind: "captions";
+  kind: "subtitles";
   label: string;
   srclang: string;
   src: string;
   default: boolean;
+  format: "srt" | "vtt" | "ass" | "ssa";
+}
+
+function subtitleFormat(fileName: string): SubtitleTrack["format"] {
+  const lower = fileName.toLowerCase();
+  if (lower.endsWith(".vtt")) return "vtt";
+  if (lower.endsWith(".ass")) return "ass";
+  if (lower.endsWith(".ssa")) return "ssa";
+  return "srt";
 }
 
 function extractLangInfo(fileName: string): { label: string; srclang: string } {
-  const nameWithoutExt = fileName.replace(/\.(srt|vtt)$/i, "");
+  const nameWithoutExt = fileName.replace(/\.(srt|vtt|ass|ssa)$/i, "");
   const match2 = nameWithoutExt.match(/\.([a-z]{2})$/i);
   const match3 = nameWithoutExt.match(/\.([a-z]{3})$/i);
   const justCode2 = nameWithoutExt.match(/^([a-z]{2})$/i);
@@ -29,11 +38,8 @@ function extractLangInfo(fileName: string): { label: string; srclang: string } {
   };
 }
 
-export function buildSubtitleTracks(
-  download: Download,
-  externalPaths: string[],
-  mediaToken: string | undefined,
-): SubtitleTrack[] {
+/** Same-origin relative URLs so movi-player can fetch with session cookies. */
+export function buildSubtitleTracks(download: Download, externalPaths: string[]): SubtitleTrack[] {
   const tracks: SubtitleTrack[] = [];
   const id = download.id;
 
@@ -45,8 +51,7 @@ export function buildSubtitleTracks(
       const videoBaseName = largestVideo.name.replace(/\.[^.]+$/, "");
 
       const subtitleFiles = torrentFiles.filter((f) => {
-        const fileName = f.name.toLowerCase();
-        if (!fileName.endsWith(".srt") && !fileName.endsWith(".vtt")) return false;
+        if (!SUBTITLE_EXTENSIONS.test(f.name)) return false;
         const fileBaseName = f.name.replace(/\.[^.]+$/, "");
         return fileBaseName.startsWith(videoBaseName) || f.path.includes(largestVideo.path.split("/")[0]);
       });
@@ -56,14 +61,12 @@ export function buildSubtitleTracks(
         const fileNameOnly = file.name.split("/").pop() || file.name;
         const { label, srclang } = extractLangInfo(fileNameOnly);
         tracks.push({
-          kind: "captions",
+          kind: "subtitles",
           label,
           srclang: `${srclang}-${i}`,
-          src: withMediaTokenParam(
-            `${getBaseUrl()}/streaming/${id}/subtitles/${encodeURIComponent(file.path)}`,
-            mediaToken,
-          ),
+          src: `/streaming/${id}/subtitles/${encodeURIComponent(file.path)}`,
           default: i === 0 && tracks.length === 0,
+          format: subtitleFormat(fileNameOnly),
         });
       }
     }
@@ -74,11 +77,12 @@ export function buildSubtitleTracks(
     const fileName = filePath.split("/").pop() || filePath;
     const { label } = extractLangInfo(fileName);
     tracks.push({
-      kind: "captions",
+      kind: "subtitles",
       label,
       srclang: `ext-${i}`,
-      src: withMediaTokenParam(`${getBaseUrl()}/streaming/${id}/subtitles/${encodeURIComponent(filePath)}`, mediaToken),
+      src: `/streaming/${id}/subtitles/${encodeURIComponent(filePath)}`,
       default: tracks.length === 0,
+      format: subtitleFormat(fileName),
     });
   }
 

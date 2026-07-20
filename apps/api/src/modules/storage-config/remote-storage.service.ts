@@ -98,25 +98,6 @@ class RemoteStorageService {
     const adapter = getAdapter(opts.protocol);
     return adapter.createReadStream(remotePath, opts, range);
   }
-
-  /** Build a URL that FFmpeg can use directly as `-i` input (supports FTP + HTTP/WebDAV seeking). */
-  async buildFfmpegUrl(remotePath: string): Promise<string | null> {
-    assertSafePath(remotePath);
-    const opts = await this.getConnectionOptions();
-    if (!opts) return null;
-
-    const auth = opts.username
-      ? `${encodeURIComponent(opts.username)}:${encodeURIComponent(opts.password ?? "")}@`
-      : "";
-    const encoded = (remotePath.startsWith("/") ? remotePath : `/${remotePath}`)
-      .split("/")
-      .map((s) => (s ? encodeURIComponent(s) : ""))
-      .join("/");
-
-    if (opts.protocol === "ftp") return `ftp://${auth}${opts.host}:${opts.port}${encoded}`;
-    const scheme = opts.secure ? "https" : "http";
-    return `${scheme}://${auth}${opts.host}:${opts.port}${encoded}`;
-  }
 }
 
 export const remoteStorageService = new RemoteStorageService();
