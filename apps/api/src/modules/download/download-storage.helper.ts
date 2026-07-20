@@ -7,6 +7,7 @@ import { ActivityLogService } from "@/modules/activity-log/activity-log.service"
 import { download } from "@/modules/download/download.schema";
 import { media } from "@/modules/media/media.schema";
 import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
+import { waitUntilNoStreams } from "@/modules/streaming/streaming-lease";
 import fs from "node:fs/promises";
 
 const activeTransfers = new Set<string>();
@@ -108,6 +109,8 @@ export async function runRemoteTransfer(
     const shouldDeleteLocal =
       options?.isAutoTransfer === true && (await remoteStorageService.shouldDeleteLocalAfterTransfer());
     if (shouldDeleteLocal) {
+      // Wait until playback finishes so we don't delete under an open stream.
+      await waitUntilNoStreams(downloadId);
       await fs.rm(localPath, { recursive: true, force: true });
       logger.info("TRANSFER", `Deleted local files after transfer: ${torrentName}`);
     } else {

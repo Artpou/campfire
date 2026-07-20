@@ -18,7 +18,7 @@ vi.mock("@/db/db", () => ({
 vi.mock("@/modules/auth/auth.guard", () => ({
   authGuard: createAuthGuardMock(fakeUser),
 }));
-vi.mock("@/modules/download/webtorrent.client", () => ({
+vi.mock("@/modules/download/webtorrent-manager", () => ({
   torrentClient: { getClient: () => ({ add: vi.fn() }), getActiveTorrent: vi.fn(() => null) },
 }));
 vi.mock("./adapters/jackett.adapter", () => ({

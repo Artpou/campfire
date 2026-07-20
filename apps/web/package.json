@@ -43,6 +43,7 @@
     "clsx": "catalog:",
     "embla-carousel-react": "^8.6.0",
     "embla-carousel-wheel-gestures": "^8.1.0",
+    "hls.js": "^1.6.16",
     "langs": "^2.0.0",
     "lucide-react": "^0.562.0",
     "ms": "catalog:",

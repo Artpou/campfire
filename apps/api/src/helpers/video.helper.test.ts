@@ -13,9 +13,10 @@ describe("getVideoInputFormat", () => {
 });
 
 describe("shouldTranscodeForPlayback", () => {
-  it("never remuxes (keeps seekable timelines)", () => {
-    expect(shouldTranscodeForPlayback("movie.mkv")).toBe(false);
-    expect(shouldTranscodeForPlayback("movie.mkv", true)).toBe(false);
+  it("remuxes mkv only", () => {
+    expect(shouldTranscodeForPlayback("movie.mkv")).toBe(true);
+    expect(shouldTranscodeForPlayback("Movie.MKV")).toBe(true);
     expect(shouldTranscodeForPlayback("movie.mp4")).toBe(false);
+    expect(shouldTranscodeForPlayback("movie.webm")).toBe(false);
   });
 });

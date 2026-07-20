@@ -3,23 +3,24 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { api, getBaseUrl, unwrap, withMediaTokenParam } from "@seedarr/sdk";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import Hls from "hls.js";
 import { SubtitlesIcon } from "lucide-react";
 import type { APITypes } from "plyr-react";
+import { toast } from "sonner";
 
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
-import { detectLanguage } from "@/shared/helpers/lang.helper";
 import { mediaSessionQueries } from "@/shared/hooks/media-session.queries";
 import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
 
 import { hasMinRole } from "@/features/auth/helpers/role.helper";
-import { getTorrentFiles } from "@/features/downloads/helpers/downloads.helper";
+import { buildSubtitleTracks } from "@/features/downloads/helpers/subtitle-tracks.helper";
 import { SubtitleSearchDialog } from "@/features/subtitles/components/subtitle-search-dialog";
 import { subtitleQueries } from "@/features/subtitles/hooks/subtitle.queries";
-import { downloadQueries } from "@/features/torrent/hooks/download.queries";
+import { downloadQueries, refetchDownloadInterval } from "@/features/torrent/hooks/download.queries";
 
 import "plyr-react/plyr.css";
 
@@ -34,6 +35,7 @@ export const Route = createFileRoute("/_app/downloads/$id/play")({
   loader: ({ context, params }) =>
     Promise.all([
       context.queryClient.ensureQueryData(downloadQueries.details(params.id)),
+      context.queryClient.ensureQueryData(downloadQueries.playbackInfo(params.id)),
       context.queryClient.ensureQueryData(subtitleQueries.external(params.id)),
       context.queryClient.ensureQueryData(mediaSessionQueries.get()),
     ]),
@@ -44,15 +46,82 @@ export const Route = createFileRoute("/_app/downloads/$id/play")({
 function VideoPlayerPage() {
   const { id } = Route.useParams();
   const { t } = useLingui();
-  const { data: download } = useSuspenseQuery(downloadQueries.details(id));
+  const queryClient = useQueryClient();
+
+  const { data: download } = useSuspenseQuery({
+    ...downloadQueries.details(id),
+    refetchInterval: refetchDownloadInterval,
+  });
+  const { data: playbackInfo } = useSuspenseQuery({
+    ...downloadQueries.playbackInfo(id),
+    refetchInterval: download.torrent?.done ? false : 3000,
+  });
   const { data: externalSubtitles } = useSuspenseQuery(subtitleQueries.external(id));
   const { data: mediaSession } = useSuspenseQuery(mediaSessionQueries.get());
 
   const videoRef = useRef<APITypes>(null);
-  const videoUrl = withMediaTokenParam(`${getBaseUrl()}/downloads/${id}/stream`, mediaSession?.token);
+  const hlsRef = useRef<Hls | null>(null);
+  const hasInitialSeeked = useRef(false);
+  const errorToastedRef = useRef(false);
 
   const [subtitleDialogOpen, setSubtitleDialogOpen] = useState(false);
-  const hasInitialSeeked = useRef(false);
+
+  const sourceFingerprint = `${download.remoteLocation ?? "local"}:${download.torrent?.done ? "done" : "active"}`;
+  const prevFingerprint = useRef(sourceFingerprint);
+
+  useEffect(() => {
+    if (prevFingerprint.current === sourceFingerprint) return;
+    prevFingerprint.current = sourceFingerprint;
+    void queryClient.invalidateQueries({ queryKey: downloadQueries.playbackInfo(id).queryKey });
+    errorToastedRef.current = false;
+  }, [sourceFingerprint, id, queryClient]);
+
+  const streamUrl = useMemo(() => {
+    const mode = playbackInfo.mode;
+    if (mode === "hls") {
+      const url = `${getBaseUrl()}/streaming/${id}/hls/playlist.m3u8`;
+      return withMediaTokenParam(url, mediaSession?.token);
+    }
+    if (mode === "live") {
+      const url = `${getBaseUrl()}/streaming/${id}/live`;
+      return withMediaTokenParam(url, mediaSession?.token);
+    }
+    const url = `${getBaseUrl()}/streaming/${id}/direct`;
+    return withMediaTokenParam(url, mediaSession?.token);
+  }, [id, playbackInfo.mode, mediaSession?.token]);
+
+  const isHls = playbackInfo.mode === "hls";
+
+  useEffect(() => {
+    if (!isHls) return;
+    const plyr = videoRef.current?.plyr;
+    const video = plyr?.media as HTMLVideoElement | undefined;
+    if (!video) return;
+
+    if (!Hls.isSupported()) {
+      video.src = streamUrl;
+      return;
+    }
+
+    const hls = new Hls({ startLevel: -1 });
+    hlsRef.current = hls;
+    hls.loadSource(streamUrl);
+    hls.attachMedia(video);
+
+    hls.on(Hls.Events.ERROR, (_event, data) => {
+      if (data.fatal && !errorToastedRef.current) {
+        errorToastedRef.current = true;
+        toast.error(t(msg`Playback failed`), {
+          description: t(msg`HLS stream error: ${data.details}`),
+        });
+      }
+    });
+
+    return () => {
+      hls.destroy();
+      hlsRef.current = null;
+    };
+  }, [isHls, streamUrl, t]);
 
   useEffect(() => {
     if (!download?.mediaId) return;
@@ -66,7 +135,7 @@ function VideoPlayerPage() {
         param: { id: String(download.mediaId) },
         json: {
           position: Math.floor(plyr.currentTime),
-          duration: Math.floor(plyr.duration || 0),
+          duration: Math.floor(plyr.duration ?? playbackInfo.duration ?? 0),
           downloadId: id,
         },
       });
@@ -82,13 +151,18 @@ function VideoPlayerPage() {
       clearInterval(patchInterval);
       void saveProgress();
     };
-  }, [download?.mediaId, id]);
+  }, [download?.mediaId, id, playbackInfo.duration]);
 
   const handleVideoReady = async () => {
-    if (hasInitialSeeked.current || !download?.mediaId) return;
+    if (hasInitialSeeked.current) return;
 
     const plyr = videoRef.current?.plyr;
     if (!plyr || typeof plyr.currentTime !== "number") return;
+
+    if (!download?.mediaId) {
+      hasInitialSeeked.current = true;
+      return;
+    }
 
     const media = await unwrap(api.media[":id"].$get({ param: { id: download.mediaId.toString() } }));
     const position = media.progress?.position;
@@ -97,128 +171,43 @@ function VideoPlayerPage() {
       return;
     }
 
-    const trySeek = (attempt: number): void => {
-      if (hasInitialSeeked.current) return;
-      try {
-        plyr.currentTime = position;
-        // Confirm seek landed (remote streams may ignore the first attempt).
-        if (Math.abs(plyr.currentTime - position) < 2 || attempt >= 8) {
-          hasInitialSeeked.current = true;
-          return;
-        }
-      } catch {
-        // retry
-      }
-      window.setTimeout(() => trySeek(attempt + 1), 250);
-    };
-
-    trySeek(0);
+    hasInitialSeeked.current = true;
+    plyr.currentTime = position;
   };
 
-  const subtitleTracks = useMemo(() => {
-    const tracks: {
-      kind: "captions";
-      label: string;
-      srclang: string;
-      src: string;
-      default: boolean;
-    }[] = [];
+  const handlePlaybackError = () => {
+    if (errorToastedRef.current) return;
+    errorToastedRef.current = true;
+    toast.error(t(msg`Playback failed`), {
+      description: isHls
+        ? t(msg`Unsupported codec for the browser (often HEVC/AC3). Try VLC, or use an H.264/AAC file.`)
+        : t(msg`Could not load the video stream. Check that the file is still available.`),
+    });
+  };
 
-    if (download?.torrent?.files) {
-      const videoExtensions = /\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v)$/i;
-      const torrentFiles = getTorrentFiles(download);
-      const videoFiles = torrentFiles.filter((file) => videoExtensions.test(file.name));
-      if (videoFiles.length > 0) {
-        const largestVideo = videoFiles.sort((a, b) => b.length - a.length)[0];
-        const videoBaseName = largestVideo.name.replace(/\.[^.]+$/, "");
-
-        const subtitleFiles = torrentFiles.filter((file) => {
-          const fileName = file.name.toLowerCase();
-          if (!fileName.endsWith(".srt") && !fileName.endsWith(".vtt")) return false;
-          const fileBaseName = file.name.replace(/\.[^.]+$/, "");
-          return fileBaseName.startsWith(videoBaseName) || file.path.includes(largestVideo.path.split("/")[0]);
-        });
-
-        for (let index = 0; index < subtitleFiles.length; index++) {
-          const file = subtitleFiles[index];
-          const fileNameOnly = file.name.split("/").pop() || file.name;
-          const nameWithoutExt = fileNameOnly.replace(/\.(srt|vtt)$/i, "");
-          const match2 = nameWithoutExt.match(/\.([a-z]{2})$/i);
-          const match3 = nameWithoutExt.match(/\.([a-z]{3})$/i);
-          const justCode2 = nameWithoutExt.match(/^([a-z]{2})$/i);
-          const justCode3 = nameWithoutExt.match(/^([a-z]{3})$/i);
-          const langInput = (
-            match2?.[1] ||
-            match3?.[1] ||
-            justCode2?.[1] ||
-            justCode3?.[1] ||
-            nameWithoutExt
-          ).toLowerCase();
-          const detected = detectLanguage(langInput);
-          const label = detected?.name || nameWithoutExt;
-          const srclang = detected?.[1] ? `${detected[1]}-${index}` : `en-${index}`;
-          tracks.push({
-            kind: "captions",
-            label: label.slice(0, 20),
-            srclang,
-            src: withMediaTokenParam(
-              `${getBaseUrl()}/downloads/${id}/subtitles/${encodeURIComponent(file.path)}`,
-              mediaSession?.token,
-            ),
-            default: index === 0 && tracks.length === 0,
-          });
-        }
-      }
-    }
-
-    const externalPaths = externalSubtitles?.paths ?? [];
-    for (let i = 0; i < externalPaths.length; i++) {
-      const filePath = externalPaths[i];
-      const fileName = filePath.split("/").pop() || filePath;
-      const nameWithoutExt = fileName.replace(/\.(srt|vtt)$/i, "");
-      const match2 = nameWithoutExt.match(/\.([a-z]{2})$/i);
-      const match3 = nameWithoutExt.match(/\.([a-z]{3})$/i);
-      const langInput = (match2?.[1] || match3?.[1] || nameWithoutExt).toLowerCase();
-      const detected = detectLanguage(langInput);
-      const label = detected?.name || nameWithoutExt;
-      tracks.push({
-        kind: "captions",
-        label: label.slice(0, 20),
-        srclang: `ext-${i}`,
-        src: withMediaTokenParam(
-          `${getBaseUrl()}/downloads/${id}/subtitles/${encodeURIComponent(filePath)}`,
-          mediaSession?.token,
-        ),
-        default: tracks.length === 0,
-      });
-    }
-
-    if (tracks.length > 0 && !tracks.some((t) => t.default)) {
-      tracks[0].default = true;
-    }
-    return tracks;
-  }, [download, id, externalSubtitles?.paths, mediaSession?.token]);
+  const subtitleTracks = useMemo(
+    () => buildSubtitleTracks(download, externalSubtitles?.paths ?? [], mediaSession?.token),
+    [download, externalSubtitles?.paths, mediaSession?.token],
+  );
 
   const videoMimeType = useMemo(() => {
+    if (isHls) return "application/x-mpegURL";
+    if (playbackInfo.mode === "live") return "video/mp4";
     const files = download.torrent?.files ?? [];
     const videos = files.filter((f) => /\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v)$/i.test(f.name));
     const largest = videos.sort((a, b) => b.length - a.length)[0];
-    const name = largest?.name ?? download.torrent?.name ?? "";
-    const lower = name.toLowerCase();
-    if (lower.endsWith(".webm")) return "video/webm";
-    if (lower.endsWith(".avi")) return "video/x-msvideo";
-    if (lower.endsWith(".mov")) return "video/quicktime";
-    if (lower.endsWith(".mkv")) return "video/x-matroska";
+    const name = (largest?.name ?? download.torrent?.name ?? "").toLowerCase();
+    if (name.endsWith(".webm")) return "video/webm";
     return "video/mp4";
-  }, [download.torrent?.files, download.torrent?.name]);
+  }, [isHls, playbackInfo.mode, download.torrent?.files, download.torrent?.name]);
 
   const plyrSource = useMemo(
     () => ({
       type: "video" as const,
-      sources: [{ src: videoUrl, type: videoMimeType }],
+      sources: [{ src: isHls ? "" : streamUrl, type: videoMimeType }],
       tracks: subtitleTracks,
     }),
-    [videoUrl, subtitleTracks, videoMimeType],
+    [isHls, streamUrl, subtitleTracks, videoMimeType],
   );
 
   return (
@@ -265,6 +254,7 @@ function VideoPlayerPage() {
               ref={videoRef}
               onLoadedMetadata={handleVideoReady}
               onCanPlay={handleVideoReady}
+              onError={handlePlaybackError}
               source={plyrSource}
               options={{
                 controls: [

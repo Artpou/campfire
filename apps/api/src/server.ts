@@ -8,7 +8,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app } from "./app";
 import { logger, startupLogger } from "./helpers/logger.helper";
-import { torrentClient } from "./modules/download/webtorrent.client";
+import { torrentClient } from "./modules/download/webtorrent-manager";
+import { restoreActiveTorrents } from "./modules/download/webtorrent-sync";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const startTime = Date.now();
@@ -65,9 +66,18 @@ const start = async () => {
   await fsPromises.mkdir(downloadsPath, { recursive: true });
   logger.info("STARTUP", `Downloads directory: ${downloadsPath}`);
 
-  torrentClient.initialize(downloadsPath).catch((error) => {
-    logger.error("STARTUP", "WebTorrent initialization failed:", error);
-  });
+  torrentClient
+    .initialize()
+    .then(() => {
+      if (process.env.RESUME_DOWNLOADS === "true") {
+        restoreActiveTorrents().catch((error) => {
+          logger.error("STARTUP", "Failed to restore torrents:", error);
+        });
+      }
+    })
+    .catch((error) => {
+      logger.error("STARTUP", "WebTorrent initialization failed:", error);
+    });
 
   if (!process.env.API_PORT) logger.warn("STARTUP", "API_PORT is not set, using default 3002");
 

@@ -4,13 +4,11 @@ import type { TorrentLiveData } from "@/modules/download/download.schema";
 import { download } from "@/modules/download/download.schema";
 import { createAuthGuardMock, seedTestUser } from "@/tests/route-test.helper";
 import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
-import { Readable } from "node:stream";
 
-const { fakeUser, testDbRef, mockGetStreamForDownload } = vi.hoisted(() => {
+const { fakeUser, testDbRef } = vi.hoisted(() => {
   const fakeUser = { id: "user-1", username: "testuser", role: "member" as const, createdAt: new Date("2024-01-01") };
   const testDbRef = { current: null as TestDb | null };
-  const mockGetStreamForDownload = vi.fn();
-  return { fakeUser, testDbRef, mockGetStreamForDownload };
+  return { fakeUser, testDbRef };
 });
 
 const sampleTorrent = (overrides: Partial<TorrentLiveData> = {}): TorrentLiveData =>
@@ -50,19 +48,6 @@ vi.mock("@/db/db", () => ({
 vi.mock("@/modules/auth/auth.guard", () => ({
   authGuard: createAuthGuardMock(fakeUser),
 }));
-vi.mock("@/helpers/video.helper", () => ({
-  getVideoInputFormat: vi.fn(() => "matroska"),
-  shouldTranscodeForPlayback: vi.fn(() => false),
-  convertToFragmentedMp4Stream: vi.fn((input: Readable) => ({ stream: input, destroy: vi.fn() })),
-}));
-vi.mock("@/modules/download/download-stream.service", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./download-stream.service")>();
-  return {
-    DownloadStreamService: class extends actual.DownloadStreamService {
-      getStreamForDownload = mockGetStreamForDownload;
-    },
-  };
-});
 vi.mock("@/modules/storage-config/remote-storage.service", () => ({
   remoteStorageService: {
     shouldDeleteLocalAfterTransfer: vi.fn().mockResolvedValue(false),
@@ -71,7 +56,7 @@ vi.mock("@/modules/storage-config/remote-storage.service", () => ({
     remove: vi.fn().mockResolvedValue(undefined),
   },
 }));
-vi.mock("@/modules/download/webtorrent.client", () => {
+vi.mock("@/modules/download/webtorrent-manager", () => {
   const makeFakeTorrent = () => ({
     on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
       if (event === "ready") setTimeout(() => cb(), 0);
@@ -108,16 +93,14 @@ vi.mock("@/modules/download/webtorrent.client", () => {
 
   return {
     torrentClient: {
+      downloadPath: "./downloads",
       getClient: () => ({ add: vi.fn(() => makeFakeTorrent()) }),
       getActiveTorrent: vi.fn(() => null),
-      getPausedData: vi.fn(() => undefined),
       deleteActiveTorrent: vi.fn(),
-      setPausedData: vi.fn(),
-      clearPausedData: vi.fn(),
       setActiveTorrent: vi.fn(),
-      setupTorrentHandlers: vi.fn(),
       markDestroying: vi.fn(),
       unmarkDestroying: vi.fn(),
+      isDestroying: vi.fn(() => false),
       findByInfoHash: vi.fn(() => null),
       resolveTorrent: vi.fn(() => null),
       attachTorrent: vi.fn(async () => makeFakeTorrent()),
@@ -125,6 +108,11 @@ vi.mock("@/modules/download/webtorrent.client", () => {
     },
   };
 });
+vi.mock("@/modules/download/webtorrent-sync", () => ({
+  setupTorrentHandlers: vi.fn(),
+  restoreActiveTorrents: vi.fn(),
+  clearHandlersForDownload: vi.fn(),
+}));
 
 const { downloadRoutes } = await import("./download.route");
 
@@ -154,7 +142,6 @@ describe("Download Routes", () => {
   beforeEach(() => {
     testDbRef.current = createTestDb();
     seedTestUser(testDbRef.current, fakeUser);
-    mockGetStreamForDownload.mockReset();
   });
 
   describe("GET / - list downloads", () => {
@@ -282,104 +269,6 @@ describe("Download Routes", () => {
 
       const body = await bodyOf(await downloadRoutes.request("/dl-del", { method: "DELETE" }));
       expect(body.success).toBe(true);
-    });
-  });
-
-  describe("GET /:id/stream", () => {
-    it("returns 404 when no video file is available", async () => {
-      testDbRef.current
-        ?.insert(download)
-        .values({
-          id: "dl-stream",
-          userId: fakeUser.id,
-          torrent: sampleTorrent({ name: "NoVideo", done: true }),
-          createdAt: new Date(),
-        })
-        .run();
-
-      mockGetStreamForDownload.mockResolvedValue(undefined);
-
-      expect((await downloadRoutes.request("/dl-stream/stream")).status).toBe(404);
-    });
-
-    it("streams video with content-type header", async () => {
-      testDbRef.current
-        ?.insert(download)
-        .values({
-          id: "dl-stream",
-          userId: fakeUser.id,
-          torrent: sampleTorrent({ name: "Movie.mp4", done: true }),
-          createdAt: new Date(),
-        })
-        .run();
-
-      mockGetStreamForDownload.mockResolvedValue({
-        stream: Readable.from(Buffer.from("fake-video")),
-        size: 10,
-        fileName: "Movie.mp4",
-      });
-
-      const res = await downloadRoutes.request("/dl-stream/stream");
-      expect(res.status).toBe(200);
-      expect(res.headers.get("content-type")).toBe("video/mp4");
-      expect(res.headers.get("accept-ranges")).toBe("bytes");
-      await expect(res.text()).resolves.toBe("fake-video");
-    });
-
-    it("uses webtorrent for range requests on active mp4 downloads", async () => {
-      const mockCreateReadStream = vi.fn(() => Readable.from(Buffer.from("range-chunk")));
-
-      testDbRef.current
-        ?.insert(download)
-        .values({
-          id: "dl-stream-range",
-          userId: fakeUser.id,
-          torrent: sampleTorrent({ name: "Movie.mp4", done: false }),
-          createdAt: new Date(),
-        })
-        .run();
-
-      mockGetStreamForDownload.mockResolvedValue({
-        stream: Readable.from(Buffer.from("fake-video")),
-        size: 1000,
-        fileName: "Movie.mp4",
-        torrentFile: { createReadStream: mockCreateReadStream },
-      });
-
-      const res = await downloadRoutes.request("/dl-stream-range/stream", {
-        headers: { Range: "bytes=0-99" },
-      });
-      expect(res.status).toBe(206);
-      expect(mockCreateReadStream).toHaveBeenCalledWith({ start: 0, end: 99 });
-      await expect(res.text()).resolves.toBe("range-chunk");
-    });
-
-    it("serves active mkv torrent streams with byte ranges (no ffmpeg remux)", async () => {
-      const mockCreateReadStream = vi.fn(() => Readable.from(Buffer.from("torrent-chunk")));
-
-      testDbRef.current
-        ?.insert(download)
-        .values({
-          id: "dl-stream-mkv",
-          userId: fakeUser.id,
-          torrent: sampleTorrent({ name: "Movie.mkv", done: false }),
-          createdAt: new Date(),
-        })
-        .run();
-
-      mockGetStreamForDownload.mockResolvedValue({
-        stream: Readable.from(Buffer.from("fake-video")),
-        size: 1000,
-        fileName: "Movie.mkv",
-        torrentFile: { createReadStream: mockCreateReadStream },
-      });
-
-      const res = await downloadRoutes.request("/dl-stream-mkv/stream", {
-        headers: { Range: "bytes=0-99" },
-      });
-      expect(res.status).toBe(206);
-      expect(res.headers.get("content-type")).toBe("video/x-matroska");
-      expect(mockCreateReadStream).toHaveBeenCalledWith({ start: 0, end: 99 });
     });
   });
 });

@@ -37,6 +37,8 @@ export interface TorrentLiveData {
   transferProgress?: number;
   /** Skip auto-transfer when user chose local-only at start. */
   skipAutoTransfer?: boolean;
+  /** Cached ffprobe duration (seconds) — survives local delete after remote transfer. */
+  durationSeconds?: number;
   files: {
     name: string;
     path: string;

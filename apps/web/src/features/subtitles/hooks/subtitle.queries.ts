@@ -10,7 +10,7 @@ export const subtitleQueries = {
   external: (downloadId: string) =>
     queryOptions({
       queryKey: [...subtitleQueries.key, "external", downloadId],
-      queryFn: () => unwrap(api.downloads[":id"]["external-subtitles"].$get({ param: { id: downloadId } })),
+      queryFn: () => unwrap(api.streaming[":id"].subtitles.$get({ param: { id: downloadId } })),
     }),
 
   search: (tmdbId: string, languages: string, type?: "movie" | "tv") =>
