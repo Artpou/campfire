@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
-import { isPlayableDownload } from "@seedarr/shared";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { SubtitlesIcon } from "lucide-react";
@@ -28,11 +27,8 @@ export const Route = createFileRoute("/_app/downloads/$id/play")({
     }
   },
   loader: async ({ context, params }) => {
-    const download = await context.queryClient.ensureQueryData(downloadQueries.details(params.id));
-    if (!isPlayableDownload(download)) {
-      throw redirect({ to: "/downloads/$id", params: { id: params.id } });
-    }
     await Promise.all([
+      context.queryClient.ensureQueryData(downloadQueries.details(params.id)),
       context.queryClient.ensureQueryData(downloadQueries.playbackInfo(params.id)),
       context.queryClient.ensureQueryData(subtitleQueries.external(params.id)),
     ]);

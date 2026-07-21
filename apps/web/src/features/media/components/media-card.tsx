@@ -4,7 +4,6 @@ import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { HoverCard, HoverCardContent, HoverCardPortal, HoverCardTrigger } from "@radix-ui/react-hover-card";
 import type { Media } from "@seedarr/sdk";
-import { isPlayableDownload } from "@seedarr/shared";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { CheckCircle2Icon, ClapperboardIcon, FilmIcon, InfoIcon, PlayIcon, TvIcon } from "lucide-react";
 
@@ -30,7 +29,7 @@ export function MediaCard({ media, mode = "default", className, playable, withTy
   const navigate = useNavigate();
   const [imgError, setImgError] = useState(false);
 
-  const canPlay = Boolean(playable || (media.download && isPlayableDownload(media.download)));
+  const canPlay = Boolean(playable || media.download);
   const detailLinkProps = media.download?.id
     ? media.type === "tv"
       ? ({ to: "/tv/$id", params: { id: media.id.toString() } } as const)

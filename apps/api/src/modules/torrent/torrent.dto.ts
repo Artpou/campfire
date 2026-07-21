@@ -20,12 +20,9 @@ export const torrentSchema = z.object({
   downloadUrl: z.string().optional(),
   magnetUrl: z.string().optional(),
   mediaInfos: z.custom<MediaInfos>(),
-  isStreamable: z.boolean(),
 });
 
 export type Torrent = z.infer<typeof torrentSchema>;
-/** Adapter payload before `isStreamable` is attached by TorrentService.list */
-export type TorrentResult = Omit<Torrent, "isStreamable">;
 
 export interface TorrentInspectFile {
   name: string;

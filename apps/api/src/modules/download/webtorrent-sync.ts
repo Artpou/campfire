@@ -1,3 +1,4 @@
+import { VIDEO_EXTENSIONS } from "@seedarr/shared";
 import { eq } from "drizzle-orm";
 import type WebTorrent from "webtorrent";
 
@@ -8,7 +9,6 @@ import { probeVideoDuration } from "@/helpers/video.helper";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { download } from "@/modules/download/download.schema";
 import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
-import { VIDEO_EXTENSIONS } from "@/modules/streaming/streaming.helper";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { markTransferStarting, runRemoteTransfer } from "./download-storage.helper";

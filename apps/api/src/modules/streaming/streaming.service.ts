@@ -1,4 +1,4 @@
-import { isPlayableDownload, isStreamableVideo } from "@seedarr/shared";
+import { VIDEO_EXTENSIONS } from "@seedarr/shared";
 import { eq } from "drizzle-orm";
 import type { StreamingApi } from "hono/utils/stream";
 import type WebTorrent from "webtorrent";
@@ -30,7 +30,6 @@ import {
   buildStreamHeaders,
   isFsNotFoundError,
   parseRangeHeader,
-  VIDEO_EXTENSIONS,
 } from "./streaming.helper";
 import { acquireStreamLease } from "./streaming-lease";
 
@@ -67,12 +66,6 @@ export interface LiveStreamResult {
 }
 
 export class StreamingService {
-  private assertPlayable(download: Download): void {
-    if (!isPlayableDownload(download)) {
-      throw new BadRequestError("This format can only be played once the download is complete");
-    }
-  }
-
   async resolveSource(download: Download): Promise<StreamSource | undefined> {
     if (download.remoteLocation) {
       const remote = this.tryRemoteSource(download);
@@ -100,13 +93,13 @@ export class StreamingService {
   }
 
   async getPlaybackInfo(download: Download): Promise<PlaybackInfo> {
-    this.assertPlayable(download);
     const source = await this.resolveSource(download);
     if (!source) throw new NotFoundError("Video file");
 
     const origin: PlaybackInfo["origin"] = source.isRemote ? "remote" : source.filePath ? "local" : "torrent";
-    const hasCompleteFile = Boolean(source.filePath || source.remotePath);
-    const mode: PlaybackMode = hasCompleteFile ? "direct" : "live";
+    // Prefer byte-range direct whenever we have a seekable handle (disk, remote, or active torrent file).
+    const canDirect = Boolean(source.filePath || source.remotePath || source.torrentFile);
+    const mode: PlaybackMode = canDirect ? "direct" : "live";
     const duration = await this.resolveDuration(download, source);
 
     logger.info("STREAM", `playback info ${download.id}: mode=${mode} origin=${origin} file=${source.fileName}`);
@@ -121,7 +114,6 @@ export class StreamingService {
 
   /** Prepare headers + pipe closure for byte-range direct streaming. */
   async prepareDirectStream(download: Download, rangeHeader: string | undefined): Promise<DirectStreamResult> {
-    this.assertPlayable(download);
     const source = await this.resolveSource(download);
     if (!source) throw new NotFoundError("Video file");
     if (!source.filePath && !source.remotePath && !source.torrentFile) {
@@ -145,14 +137,10 @@ export class StreamingService {
     };
   }
 
-  /** Prepare headers + pipe closure for live fMP4 remux (active torrents, streamable formats). */
+  /** Live fMP4 remux for sources without a seekable handle (fallback while downloading). */
   async prepareLiveStream(download: Download): Promise<LiveStreamResult> {
-    this.assertPlayable(download);
     const source = await this.resolveSource(download);
     if (!source) throw new NotFoundError("Video file");
-    if (!isStreamableVideo(source.fileName)) {
-      throw new BadRequestError("Live streaming is only available for progressive video formats");
-    }
 
     logger.info("STREAM", `live remux ${download.id}: file=${source.fileName}`);
     const headers: Record<string, string> = { "Content-Type": "video/mp4" };

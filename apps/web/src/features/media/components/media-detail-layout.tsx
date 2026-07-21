@@ -105,7 +105,7 @@ export function MediaDetailLayout({
           </div>
 
           <div className="lg:w-1/4 max-w-[250px] justify-items-center">
-            <MediaPoster data={posterData} downloadId={downloadId} download={media?.download} type={posterType} />
+            <MediaPoster data={posterData} downloadId={downloadId} type={posterType} />
           </div>
           <div className="lg:w-3/4">{infoSection}</div>
           <div className="hidden xl:block w-[300px]">{detailsSection}</div>

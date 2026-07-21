@@ -3,7 +3,7 @@ import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
-import { formatRuntime, isPlayableDownload } from "@seedarr/shared";
+import { formatRuntime } from "@seedarr/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ClockIcon, MagnetIcon, PlayIcon } from "lucide-react";
@@ -51,7 +51,6 @@ function getPlayLinkProps(media: Media) {
   const download = media.download;
   const downloadId = download?.id ?? media.progress?.downloadId;
   if (!downloadId) return null;
-  if (download && !isPlayableDownload(download)) return null;
   return { to: "/downloads/$id/play", params: { id: downloadId } } as const;
 }
 

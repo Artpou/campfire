@@ -9,11 +9,4 @@ export {
   type StremioPresetName,
 } from "./stremio-presets";
 export { parseString, sanitizeFileName, slugify, toLatin } from "./string";
-export {
-  isPlayableDownload,
-  isStreamableVideo,
-  isVideoFile,
-  type PlayableDownloadInput,
-  STREAMABLE_VIDEO_EXTENSIONS,
-  VIDEO_EXTENSIONS,
-} from "./video";
+export { isVideoFile, VIDEO_EXTENSIONS } from "./video";

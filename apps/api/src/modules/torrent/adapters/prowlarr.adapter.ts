@@ -2,7 +2,7 @@ import { filenameParse } from "@ctrl/video-filename-parser";
 
 import { BadRequestError } from "@/errors/error";
 import type { Indexer, IndexerManager, IndexerType } from "@/types";
-import type { TorrentResult, torrentListQuery } from "../torrent.dto";
+import type { Torrent, torrentListQuery } from "../torrent.dto";
 import { buildIndexerSearchPlan, searchWithTitleFallback } from "../torrent-search.helper";
 import { IndexerAdapter } from "./indexer.adapter";
 
@@ -54,7 +54,7 @@ export class ProwlarrAdapter extends IndexerAdapter {
       }));
   }
 
-  async getTorrents(query: torrentListQuery): Promise<TorrentResult[]> {
+  async getTorrents(query: torrentListQuery): Promise<Torrent[]> {
     const plan = buildIndexerSearchPlan(query.media, (imdbId) => `{ImdbId:${imdbId}}`);
 
     const allResults = await searchWithTitleFallback(plan, async (searchQuery) => {

@@ -2,8 +2,6 @@ import { VIDEO_EXTENSIONS } from "@seedarr/shared";
 
 import type { Download } from "@/modules/download/download.dto";
 
-export { VIDEO_EXTENSIONS };
-
 export interface ByteRange {
   start: number;
   end: number;
