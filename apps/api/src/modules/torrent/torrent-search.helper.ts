@@ -45,8 +45,8 @@ export async function searchWithTitleFallback<T>(
   if (firstWave.length === 0 && plan.fallbackTitles.length === 0) return [];
 
   const [imdbResults, primaryTitleResults] = await Promise.all([
-    plan.imdbQuery ? search(plan.imdbQuery) : Promise.resolve([] as T[]),
-    plan.primaryTitle ? search(plan.primaryTitle) : Promise.resolve([] as T[]),
+    plan.imdbQuery ? search(plan.imdbQuery) : Promise.resolve([]),
+    plan.primaryTitle ? search(plan.primaryTitle) : Promise.resolve([]),
   ]);
 
   if (primaryTitleResults.length > 0 || plan.fallbackTitles.length === 0) {

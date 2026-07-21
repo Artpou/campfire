@@ -25,6 +25,7 @@ function isUniqueConstraintError(error: unknown): boolean {
 
 export class UserService extends IdentifiableService<User> {
   constructor(user?: User) {
+    // userService can be instantiated without a user
     super(user as User);
   }
 

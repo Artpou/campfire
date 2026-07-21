@@ -1,7 +1,6 @@
 import { db } from "@/db/db";
 import { NotFoundError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
-import type { StorageProtocol } from "./adapters/storage.adapter";
 import { decrypt, encrypt } from "./crypto.helper";
 import { remoteStorageService } from "./remote-storage.service";
 import type { StorageConfigResponse, TestStorageConfigInput, UpsertStorageConfigInput } from "./storage-config.dto";
@@ -80,7 +79,7 @@ export class StorageConfigService {
     const password = input.password || (existing?.password ? decrypt(existing.password) : undefined);
 
     return remoteStorageService.testConnection({
-      protocol: input.protocol as StorageProtocol,
+      protocol: input.protocol,
       host: input.host,
       port: input.port,
       username: input.username,

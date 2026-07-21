@@ -50,7 +50,6 @@ export class DownloadService extends IdentifiableService<Download> {
     });
   }
 
-  /** Alias used by routes that previously avoided storage enrichment. */
   async findMany(params?: { ids?: string[] }): Promise<Download[]> {
     return this.getMany(params);
   }
@@ -153,9 +152,8 @@ export class DownloadService extends IdentifiableService<Download> {
       const pausedData = {
         ...item.torrent,
         paused: true,
-        downloadSpeed: 0,
-        uploadSpeed: 0,
       } as TorrentLiveData;
+
       await db.update(download).set({ torrent: pausedData }).where(eq(download.id, id));
       logger.info("DOWNLOAD", `Paused (no active session): ${item.torrent?.name || id}`);
       return { success: true };

@@ -48,6 +48,6 @@ export class ActivityLogService extends AuthenticatedService {
       ...paginationOpts,
     });
 
-    return toPaginate(items as ActivityLog[], query);
+    return toPaginate(items, query);
   }
 }

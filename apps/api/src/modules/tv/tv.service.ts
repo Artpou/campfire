@@ -1,5 +1,5 @@
 import type { MediaEnriched } from "@/modules/media/media.dto";
-import type { TMDBItem, TMDBSeasonDetails, TMDBTvDetails } from "@/modules/tmdb/tmdb.dto";
+import type { TMDBSeasonDetails, TMDBTvDetails } from "@/modules/tmdb/tmdb.dto";
 import { tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
 import { TMDBService } from "@/modules/tmdb/tmdb.service";
 import type { TV } from "@/modules/tv/tv.dto";
@@ -14,7 +14,7 @@ export class TVService extends TMDBService<TV> {
       appendToResponse: "watch/providers,videos,credits,recommendations,external_ids",
     });
 
-    const recommendations = (tvData.recommendations?.results ?? []) as TMDBItem[];
+    const recommendations = tvData.recommendations?.results ?? [];
     const related = recommendations.map((item) => tmdbTVToMedia(item));
     const mediaMap = await this.mediaService.getMany({ ids: related.map((m) => m.id.toString()) });
 

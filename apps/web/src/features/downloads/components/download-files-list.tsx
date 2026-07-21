@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { TorrentInspectFile } from "@seedarr/sdk";
-import { formatBytes, VIDEO_EXTENSIONS } from "@seedarr/shared";
+import { formatBytes, SUBTITLE_EXTENSIONS, VIDEO_EXTENSIONS } from "@seedarr/shared";
 import { CheckCircle2Icon, ChevronDownIcon, ChevronUpIcon, FileIcon, VideoIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -20,8 +20,6 @@ interface DownloadFilesListProps {
 }
 
 type FileType = "video" | "subtitle" | "other";
-
-const SUBTITLE_EXTENSIONS = /\.(srt|vtt|ass|ssa|sub|idx)$/i;
 
 function getFileType(fileName: string): FileType {
   const ext = fileName.toLowerCase().split(".").pop() || "";

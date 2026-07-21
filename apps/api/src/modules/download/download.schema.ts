@@ -72,7 +72,6 @@ export const download = sqliteTable(
       .notNull()
       .$defaultFn(() => new Date()),
 
-    /** Set when a remote transfer completes — null means local-only (or not yet transferred). */
     remoteLocation: text("remote_location"),
 
     torrent: text("torrent", { mode: "json" }).$type<TorrentLiveData>(),

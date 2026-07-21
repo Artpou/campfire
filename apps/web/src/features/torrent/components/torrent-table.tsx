@@ -232,11 +232,6 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
                       {torrent.mediaInfos?.resolution && (
                         <Badge variant="secondary">{torrent.mediaInfos.resolution}</Badge>
                       )}
-                      {torrent.isStreamable && (
-                        <Badge variant="default">
-                          <Trans>Streamable</Trans>
-                        </Badge>
-                      )}
                       <Badge variant="outline">{torrent.tracker}</Badge>
                       {torrent.indexerManagerType && (
                         <img

@@ -1,11 +1,10 @@
+import { isSubtitleFile } from "@seedarr/shared";
+
 import { BadRequestError, NotFoundError } from "@/errors/error";
 import { getDownloadsRoot, resolveWithinDownloads } from "@/helpers/path.helper";
 import type { Download } from "@/modules/download/download.dto";
-import type { TorrentLiveData } from "@/modules/download/download.schema";
 import fs from "node:fs/promises";
 import * as path from "node:path";
-
-const SUBTITLE_EXTENSIONS = /\.(srt|vtt|ass|ssa)$/i;
 
 function contentTypeForSubtitle(filePath: string): string {
   const lower = filePath.toLowerCase();
@@ -19,8 +18,8 @@ export class StreamingSubtitleService {
     const downloadsRoot = getDownloadsRoot();
     const folderPath = resolveWithinDownloads(download.torrent?.name ?? "");
     const torrentPaths = new Set(
-      (download.torrent?.files ?? ([] as TorrentLiveData["files"]))
-        .filter((f) => SUBTITLE_EXTENSIONS.test(f.path))
+      (download.torrent?.files ?? [])
+        .filter((f) => isSubtitleFile(f.path))
         .map((f) => path.join(download.torrent?.name ?? "", f.path).replace(/\\/g, "/")),
     );
 
@@ -39,7 +38,7 @@ export class StreamingSubtitleService {
           continue;
         }
         const rel = path.relative(downloadsRoot, full).replace(/\\/g, "/");
-        if (SUBTITLE_EXTENSIONS.test(entry.name) && !torrentPaths.has(rel)) collected.push(rel);
+        if (isSubtitleFile(entry.name) && !torrentPaths.has(rel)) collected.push(rel);
       }
     };
 
@@ -50,7 +49,7 @@ export class StreamingSubtitleService {
   /** Serve subtitle file as-is (SRT/ASS/VTT) — movi-player parses client-side. */
   async getSubtitleFile(download: Download, rawFilePath: string): Promise<{ content: string; contentType: string }> {
     const filePath = decodeURIComponent(rawFilePath);
-    if (!SUBTITLE_EXTENSIONS.test(filePath)) {
+    if (!isSubtitleFile(filePath)) {
       throw new BadRequestError("Only .srt, .vtt, .ass and .ssa files are supported");
     }
 

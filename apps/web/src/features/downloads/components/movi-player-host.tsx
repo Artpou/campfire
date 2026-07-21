@@ -103,14 +103,15 @@ export function MoviPlayerHost({
       player.setAttribute("controls", "");
       player.setAttribute("theme", "dark");
       player.setAttribute("sw", "auto");
-      // Docs: themecolor / --movi-primary (default is purple #8B5CF6)
+
       const primary = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim();
       if (primary) player.setAttribute("themecolor", primary);
+
       player.style.width = "100%";
       player.style.aspectRatio = "16 / 9";
       player.src = src;
 
-      const parsedTracks = JSON.parse(tracksKey) as Array<[string, string, string, boolean, string]>;
+      const parsedTracks = JSON.parse(tracksKey);
       for (const [trackSrc, label, srclang, isDefault, format] of parsedTracks) {
         const el = document.createElement("track");
         el.kind = "subtitles";

@@ -9,4 +9,5 @@ export {
   type StremioPresetName,
 } from "./stremio-presets";
 export { parseString, sanitizeFileName, slugify, toLatin } from "./string";
+export { isSubtitleFile, SUBTITLE_EXTENSIONS } from "./subtitles";
 export { isVideoFile, VIDEO_EXTENSIONS } from "./video";

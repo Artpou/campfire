@@ -1,1 +1,0 @@
-ALTER TABLE `storageConfig` ADD `delete_local_after_transfer` integer DEFAULT false NOT NULL;

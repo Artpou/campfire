@@ -129,8 +129,7 @@ export class WebdavAdapter extends StorageAdapter {
     }
 
     const webdavStream = client.createReadStream(fullPath, { headers });
-    const nodeStream =
-      webdavStream instanceof Readable ? webdavStream : Readable.from(webdavStream as AsyncIterable<unknown>);
+    const nodeStream = webdavStream instanceof Readable ? webdavStream : Readable.from(webdavStream);
 
     return {
       stream: nodeStream,

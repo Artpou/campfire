@@ -7,7 +7,7 @@ import { db } from "@/db/db";
 import { NotFoundError } from "@/errors/error";
 import { downloadFilePathParamDto, stringIdParamDto } from "@/helpers/param.dto";
 import { authGuard } from "@/modules/auth/auth.guard";
-import { download as downloadTable } from "@/modules/download/download.schema";
+import { download } from "@/modules/download/download.schema";
 import type { HonoVariables } from "@/types/hono";
 import { StreamingService } from "./streaming.service";
 import { StreamingSubtitleService } from "./streaming-subtitle.service";
@@ -16,7 +16,7 @@ const streamingService = new StreamingService();
 const subtitleService = new StreamingSubtitleService();
 
 async function getDownload(id: string) {
-  const row = await db.query.download.findFirst({ where: eq(downloadTable.id, id) });
+  const row = await db.query.download.findFirst({ where: eq(download.id, id) });
   if (!row) throw new NotFoundError("Download");
   return row;
 }

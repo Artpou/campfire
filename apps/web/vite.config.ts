@@ -12,7 +12,10 @@ const apiTarget = process.env.VITE_API_URL || "http://localhost:3002";
 const config = defineConfig({
   envDir: "../../",
   plugins: [
-    tanstackRouter({ autoCodeSplitting: true }),
+    tanstackRouter({
+      autoCodeSplitting: true,
+      routeFileIgnorePattern: "\\.(test|spec|helper)\\.[jt]sx?$|/helpers/",
+    }),
     // TS7 has no programmatic ts.sys API — vite-plugin-checker is unsupported; use `pnpm tsc`
     viteTsConfigPaths({
       projects: ["./tsconfig.json"],
