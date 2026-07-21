@@ -9,7 +9,7 @@
       "ignore": ["src/shared/ui/*.tsx", "lingui.config.ts"]
     },
     "apps/api": {
-      "ignoreBinaries": ["ffmpeg"]
+      "ignoreBinaries": ["ffmpeg", "ffprobe"]
     },
     "packages/sdk": {},
     "packages/shared": {}

@@ -14,6 +14,11 @@ export const downloadQueries = {
       queryKey: [...downloadQueries.key, id],
       queryFn: () => unwrap(api.downloads[":id"].$get({ param: { id } })),
     }),
+  playbackInfo: (id: string) =>
+    queryOptions({
+      queryKey: [...downloadQueries.key, id, "playback-info"],
+      queryFn: () => unwrap(api.streaming[":id"].info.$get({ param: { id } })),
+    }),
   byMedia: (mediaId: number) =>
     queryOptions({
       queryKey: [...downloadQueries.key, "by-media", mediaId],

@@ -87,6 +87,7 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
             const isDownloading =
               episodeStatus === "downloading" || episodeStatus === "queued" || episodeStatus === "paused";
             const hasDownload = !!episodeDownloadId;
+            const canPlay = Boolean(episodeDownload);
 
             const isProgressCompleted =
               !!media?.progress?.duration && media.progress.position >= media.progress.duration * 0.95;
@@ -139,7 +140,7 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
                     </div>
                   )}
 
-                  {hasDownload && (isDownloaded || isDownloading) && (
+                  {hasDownload && canPlay && (isDownloaded || isDownloading) && (
                     <Button
                       size="sm"
                       variant={isDownloaded || isDownloading ? "default" : "secondary"}

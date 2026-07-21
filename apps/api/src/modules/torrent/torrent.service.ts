@@ -2,7 +2,7 @@ import type WebTorrent from "webtorrent";
 
 import { BadRequestError, NotFoundError, ServiceUnavailableError } from "@/errors/error";
 import { AuthenticatedService } from "@/modules/auth/auth.service";
-import { torrentClient } from "@/modules/download/webtorrent.client";
+import { torrentClient } from "@/modules/download/webtorrent-manager";
 import { IndexerManagerService } from "@/modules/indexer-manager/indexer-manager.service";
 import type { User } from "@/types";
 import type { Torrent, TorrentInspectResult, torrentInspectQuery, torrentListQuery } from "./torrent.dto";
@@ -25,7 +25,7 @@ export class TorrentService extends AuthenticatedService {
     if (manager.disabled) throw new BadRequestError("Indexer manager is disabled");
 
     const adapter = this.managerService.getAdapter(manager);
-    return adapter.getTorrents(query);
+    return await adapter.getTorrents(query);
   }
 
   async inspectTorrent(query: torrentInspectQuery): Promise<TorrentInspectResult> {

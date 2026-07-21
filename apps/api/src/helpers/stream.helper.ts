@@ -19,6 +19,6 @@ export async function pipeNodeStream(honoStream: StreamingApi, nodeStream: NodeJ
   await honoStream.pipe(toWebStream(nodeStream));
 }
 
-export function toWebStream(nodeStream: NodeJS.ReadableStream): ReadableStream {
+function toWebStream(nodeStream: NodeJS.ReadableStream): ReadableStream {
   return Readable.toWeb(ensureNodeReadable(nodeStream));
 }

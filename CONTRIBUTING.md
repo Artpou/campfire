@@ -6,7 +6,7 @@ Thank you for your interest in contributing! This guide covers how to set up the
 
 - [Node.js](https://nodejs.org/) v22+
 - [pnpm](https://pnpm.io/) v9.0.0 or higher
-- (Optional) [FFmpeg](https://ffmpeg.org/) for MKV → MP4 transcoding
+- (Optional) [FFmpeg](https://ffmpeg.org/) for live remux of progressive MP4 while downloading
 - (Optional) A [TMDB API key](https://www.themoviedb.org/settings/api)
 - (Optional) A Prowlarr or Jackett instance for torrent search
 

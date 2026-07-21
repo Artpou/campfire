@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { TorrentInspectFile } from "@seedarr/sdk";
-import { formatBytes } from "@seedarr/shared";
+import { formatBytes, SUBTITLE_EXTENSIONS, VIDEO_EXTENSIONS } from "@seedarr/shared";
 import { CheckCircle2Icon, ChevronDownIcon, ChevronUpIcon, FileIcon, VideoIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -21,21 +21,18 @@ interface DownloadFilesListProps {
 
 type FileType = "video" | "subtitle" | "other";
 
-const VIDEO_EXTENSIONS = ["mp4", "mkv", "avi", "mov", "wmv", "flv", "webm", "m4v", "mpg", "mpeg"];
-const SUBTITLE_EXTENSIONS = ["srt", "vtt", "ass", "ssa", "sub", "idx"];
-
 function getFileType(fileName: string): FileType {
   const ext = fileName.toLowerCase().split(".").pop() || "";
 
-  if (VIDEO_EXTENSIONS.includes(ext)) return "video";
-  if (SUBTITLE_EXTENSIONS.includes(ext)) return "subtitle";
+  if (VIDEO_EXTENSIONS.test(ext)) return "video";
+  if (SUBTITLE_EXTENSIONS.test(ext)) return "subtitle";
   return "other";
 }
 
 function getVideoType(files: TorrentInspectFile[]): string {
   for (const file of files) {
     const ext = file.name.split(".").pop()?.toLowerCase();
-    if (ext && VIDEO_EXTENSIONS.includes(ext)) {
+    if (ext && VIDEO_EXTENSIONS.test(ext)) {
       return ext.toUpperCase();
     }
   }

@@ -1,6 +1,6 @@
-import type { Download } from "./download.dto";
+import { VIDEO_EXTENSIONS } from "@seedarr/shared";
 
-export const VIDEO_EXTENSIONS = /\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v)$/i;
+import type { Download } from "@/modules/download/download.dto";
 
 export interface ByteRange {
   start: number;
@@ -62,7 +62,6 @@ function pickLargestVideoFromTorrent(download: Download): { name: string; path: 
   return videos[0] ?? null;
 }
 
-/** WebTorrent paths include the torrent root name — strip it for joins under torrent.name / remotePath. */
 function relativeToTorrentRoot(download: Download, videoPath: string, fallbackName: string): string {
   const torrentName = download.torrent?.name ?? "";
   const rel = videoPath.replace(/\\/g, "/");
@@ -78,7 +77,6 @@ export function buildRemoteVideoInfo(
   const video = pickLargestVideoFromTorrent(download);
   const size = video?.length ?? download.torrent?.length ?? 0;
 
-  // Single-file torrents are uploaded to torrentRemotePath itself (the .mkv/.mp4 path).
   if (VIDEO_EXTENSIONS.test(torrentRemotePath.split("/").pop() ?? "")) {
     const fileName = torrentRemotePath.split("/").pop() ?? torrentRemotePath;
     return { remotePath: torrentRemotePath, size, fileName };

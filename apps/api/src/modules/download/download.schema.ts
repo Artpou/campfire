@@ -37,6 +37,13 @@ export interface TorrentLiveData {
   transferProgress?: number;
   /** Skip auto-transfer when user chose local-only at start. */
   skipAutoTransfer?: boolean;
+  /** Cached ffprobe duration (seconds) — survives local delete after remote transfer. */
+  durationSeconds?: number;
+  /** Cached ffprobe codecs — avoid re-probing on every playback-info request. */
+  videoCodec?: string;
+  audioCodec?: string;
+  /** Cached MP4 faststart check (moov before mdat). */
+  moovAtStart?: boolean;
   files: {
     name: string;
     path: string;
@@ -65,7 +72,6 @@ export const download = sqliteTable(
       .notNull()
       .$defaultFn(() => new Date()),
 
-    /** Set when a remote transfer completes — null means local-only (or not yet transferred). */
     remoteLocation: text("remote_location"),
 
     torrent: text("torrent", { mode: "json" }).$type<TorrentLiveData>(),

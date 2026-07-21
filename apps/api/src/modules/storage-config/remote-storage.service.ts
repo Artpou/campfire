@@ -29,8 +29,9 @@ class RemoteStorageService {
   async getConnectionOptions(): Promise<StorageConnectionOptions | null> {
     const config = await db.query.storageConfig.findFirst();
     if (!config?.host) return null;
+
     return {
-      protocol: (config.protocol as StorageProtocol) ?? "ftp",
+      protocol: config.protocol,
       host: config.host,
       port: config.port ?? 21,
       username: config.username,

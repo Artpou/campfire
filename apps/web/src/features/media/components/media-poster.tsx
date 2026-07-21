@@ -34,6 +34,7 @@ export function MediaPoster({ data, downloadId, type = "movie" }: MediaPosterPro
   const displayTitle = getDisplayTitle(data);
   const { media } = data;
   const item = "movie" in data ? data.movie : data.tv;
+  const canPlay = Boolean(downloadId);
 
   const youtubeTrailer = useMemo(() => {
     const videos = item?.videos?.results;
@@ -70,7 +71,7 @@ export function MediaPoster({ data, downloadId, type = "movie" }: MediaPosterPro
           />
         )}
 
-        {downloadId && (
+        {canPlay && downloadId && (
           <Link
             to="/downloads/$id/play"
             params={{ id: downloadId }}

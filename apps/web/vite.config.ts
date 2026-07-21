@@ -7,10 +7,15 @@ import { lingui } from "@lingui/vite-plugin";
 
 const isKnip = process.env.KNIP === "true" || process.env.KNIP === "1";
 
+const apiTarget = process.env.VITE_API_URL || "http://localhost:3002";
+
 const config = defineConfig({
   envDir: "../../",
   plugins: [
-    tanstackRouter({ autoCodeSplitting: true }),
+    tanstackRouter({
+      autoCodeSplitting: true,
+      routeFileIgnorePattern: "\\.(test|spec|helper)\\.[jt]sx?$|/helpers/",
+    }),
     // TS7 has no programmatic ts.sys API — vite-plugin-checker is unsupported; use `pnpm tsc`
     viteTsConfigPaths({
       projects: ["./tsconfig.json"],
@@ -21,6 +26,15 @@ const config = defineConfig({
     }),
     isKnip ? lingui() : undefined,
   ],
+  // Proxy streaming so movi-player (credentials: same-origin) can send the session cookie in dev.
+  server: {
+    proxy: {
+      "/streaming": {
+        target: apiTarget,
+        changeOrigin: true,
+      },
+    },
+  },
 });
 
 export default config;

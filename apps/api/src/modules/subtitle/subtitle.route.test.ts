@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { download, type TorrentLiveData } from "@/modules/download/download.schema";
+import { download } from "@/modules/download/download.schema";
 import { createAuthGuardMock, seedTestUser } from "@/tests/route-test.helper";
 import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
 
@@ -92,7 +92,7 @@ describe("Subtitle Routes", () => {
             created: new Date(),
             maxWebConns: 4,
             files: [],
-          } as unknown as TorrentLiveData,
+          },
           createdAt: new Date(),
         })
         .run();

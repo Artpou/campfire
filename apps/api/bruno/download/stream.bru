@@ -1,11 +1,11 @@
 meta {
-  name: Stream Download
+  name: Stream Download Direct
   type: http
   seq: 4
 }
 
 get {
-  url: {{baseUrl}}/downloads/{{downloadId}}/stream
+  url: {{baseUrl}}/streaming/{{downloadId}}/direct
   body: none
   auth: inherit
 }
@@ -16,5 +16,5 @@ headers {
 }
 
 docs {
-  Requires member role or higher. Stream the video file for a download. Supports Range requests for seeking.
+  Requires authenticated session. Byte-range stream of the video file (local or remote). Used by movi-player for seeking.
 }

@@ -15,10 +15,9 @@ import { resolveTorrentSource } from "@/modules/torrent/torrent-source.helper";
 import fs from "node:fs/promises";
 import type { Download, DownloadStats, DownloadTorrentInput, TorrentLiveData } from "./download.dto";
 import { isTransferInProgress, markTransferStarting, runRemoteTransfer } from "./download-storage.helper";
-import { torrentClient } from "./webtorrent.client";
 import { extractTorrentLiveData, waitForTorrentMetadata } from "./webtorrent.helper";
-
-const DOWNLOAD_PATH = process.env.DOWNLOADS_PATH || "./downloads";
+import { torrentClient } from "./webtorrent-manager";
+import { clearHandlersForDownload, setupTorrentHandlers } from "./webtorrent-sync";
 
 function destroyTorrent(torrent: WebTorrent.Torrent, opts: { destroyStore: boolean }): Promise<void> {
   return new Promise<void>((resolve) => {
@@ -51,7 +50,6 @@ export class DownloadService extends IdentifiableService<Download> {
     });
   }
 
-  /** Alias used by routes that previously avoided storage enrichment. */
   async findMany(params?: { ids?: string[] }): Promise<Download[]> {
     return this.getMany(params);
   }
@@ -94,7 +92,7 @@ export class DownloadService extends IdentifiableService<Download> {
     const torrentSource = await resolveTorrentSource(input.magnetUri);
     logger.debug("DOWNLOAD", `Resolved torrent source (magnet: ${torrentSource})`);
 
-    const torrent = torrentClient.safeAdd(torrentSource, { path: DOWNLOAD_PATH });
+    const torrent = torrentClient.safeAdd(torrentSource, { path: torrentClient.downloadPath });
 
     try {
       const metadataTimeout = typeof torrentSource === "string" ? 10_000 : 5_000;
@@ -119,7 +117,7 @@ export class DownloadService extends IdentifiableService<Download> {
         })
         .returning();
 
-      torrentClient.setupTorrentHandlers(torrent, newDownload.id);
+      setupTorrentHandlers(torrent, newDownload.id);
 
       logger.info("DOWNLOAD", `Started in background: ${input.name || torrent.infoHash}`);
 
@@ -154,9 +152,8 @@ export class DownloadService extends IdentifiableService<Download> {
       const pausedData = {
         ...item.torrent,
         paused: true,
-        downloadSpeed: 0,
-        uploadSpeed: 0,
       } as TorrentLiveData;
+
       await db.update(download).set({ torrent: pausedData }).where(eq(download.id, id));
       logger.info("DOWNLOAD", `Paused (no active session): ${item.torrent?.name || id}`);
       return { success: true };
@@ -181,7 +178,8 @@ export class DownloadService extends IdentifiableService<Download> {
     if (!item.torrent?.paused) throw new BadRequestError("Torrent is not paused");
     if (!item.torrent.magnetURI) throw new BadRequestError("No magnet URI found");
 
-    await torrentClient.attachTorrent(id, item.torrent.magnetURI, DOWNLOAD_PATH, item.torrent.infoHash);
+    const resumed = await torrentClient.attachTorrent(id, item.torrent.magnetURI, item.torrent.infoHash);
+    setupTorrentHandlers(resumed, id);
 
     await db
       .update(download)
@@ -229,6 +227,7 @@ export class DownloadService extends IdentifiableService<Download> {
     if (torrent) {
       torrentClient.markDestroying(id);
       torrentClient.deleteActiveTorrent(id);
+      clearHandlersForDownload(id);
 
       destroyTorrent(torrent, { destroyStore: true })
         .then(() => logger.info("DOWNLOAD", `Destroyed files for: ${torrentName}`))

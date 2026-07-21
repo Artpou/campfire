@@ -48,7 +48,8 @@ function getTorrentsLinkProps(media: Media) {
 }
 
 function getPlayLinkProps(media: Media) {
-  const downloadId = media.download?.id ?? media.progress?.downloadId;
+  const download = media.download;
+  const downloadId = download?.id ?? media.progress?.downloadId;
   if (!downloadId) return null;
   return { to: "/downloads/$id/play", params: { id: downloadId } } as const;
 }

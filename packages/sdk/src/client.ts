@@ -11,12 +11,6 @@ export const getBaseUrl = () => {
   return "";
 };
 
-export function withMediaTokenParam(url: string, token?: string): string {
-  if (!token) return url;
-  const separator = url.includes("?") ? "&" : "?";
-  return `${url}${separator}token=${encodeURIComponent(token)}`;
-}
-
 export class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
