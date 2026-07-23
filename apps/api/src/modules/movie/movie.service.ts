@@ -38,7 +38,9 @@ export class MovieService extends TMDBService<Movie> {
       ...recommendations.map((item) => tmdbMovieToMedia(item)),
     ];
 
-    const mediaMap = await this.mediaService.getMany({ ids: allRelated.map((m) => m.id.toString()) });
+    const mediaMap = await this.mediaService.getMany({
+      ids: [id, ...allRelated.map((m) => m.id.toString())],
+    });
     const collectionIds = new Set(collectionParts.map((p) => p.id));
 
     const withMediaStatus = (list: MediaEnriched[]) =>
@@ -47,7 +49,7 @@ export class MovieService extends TMDBService<Movie> {
     return {
       id,
       movie: movieData,
-      media: tmdbMovieToMedia(movieData),
+      media: mediaMap.find((m) => m.id.toString() === id) ?? tmdbMovieToMedia(movieData),
       collection,
       related: {
         collection: withMediaStatus(allRelated.filter((m) => collectionIds.has(m.id))).sort((a, b) =>

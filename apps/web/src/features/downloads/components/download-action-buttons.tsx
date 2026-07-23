@@ -14,6 +14,7 @@ interface DownloadActionButtonsProps {
   isTransferring?: boolean;
   remoteStorageEnabled?: boolean;
   isMobile?: boolean;
+  canResume?: boolean;
 }
 
 export function DownloadActionButtons({
@@ -23,6 +24,7 @@ export function DownloadActionButtons({
   isTransferring = false,
   remoteStorageEnabled = false,
   isMobile = false,
+  canResume = false,
 }: DownloadActionButtonsProps) {
   const status = getDownloadStatus(download);
   const isComplete = status === "completed";
@@ -49,7 +51,7 @@ export function DownloadActionButtons({
         <Button size="lg" asChild className="flex-1">
           <Link to="/downloads/$id/play" params={{ id: download.id }}>
             <PlayIcon className="mr-2 size-5" />
-            {isComplete ? <Trans>Play</Trans> : <Trans>Streaming</Trans>}
+            {canResume ? <Trans>Resume</Trans> : isComplete ? <Trans>Play</Trans> : <Trans>Streaming</Trans>}
           </Link>
         </Button>
       </div>

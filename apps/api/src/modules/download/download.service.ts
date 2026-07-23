@@ -9,7 +9,7 @@ import { ActivityLogService } from "@/modules/activity-log/activity-log.service"
 import { IdentifiableService } from "@/modules/auth/auth.service";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import { download } from "@/modules/download/download.schema";
-import { media } from "@/modules/media/media.schema";
+import { media, watchProgress } from "@/modules/media/media.schema";
 import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
 import { resolveTorrentSource } from "@/modules/torrent/torrent-source.helper";
 import fs from "node:fs/promises";
@@ -252,6 +252,7 @@ export class DownloadService extends IdentifiableService<Download> {
         .catch((err) => logger.warn("DOWNLOAD", `Failed to delete remote file: ${err}`));
     }
 
+    await db.delete(watchProgress).where(eq(watchProgress.downloadId, id));
     await db.delete(download).where(eq(download.id, id));
 
     ActivityLogService.log({

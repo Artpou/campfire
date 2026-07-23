@@ -8,6 +8,13 @@
       "when": 1784623854170,
       "tag": "0000_demonic_stone_men",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1784751484980,
+      "tag": "0001_wealthy_randall",
+      "breakpoints": true
     }
   ]
 }

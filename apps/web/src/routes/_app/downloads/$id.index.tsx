@@ -31,9 +31,9 @@ import { DownloadMetadata } from "@/features/downloads/components/download-metad
 import { DownloadNetworkCard } from "@/features/downloads/components/download-network-card";
 import { DownloadNetworkChart } from "@/features/downloads/components/download-network-chart";
 import { DownloadProgress } from "@/features/downloads/components/download-progress";
-import { DownloadTransferProgress } from "@/features/downloads/components/download-transfer-progress";
 import { getDownloadStatus, getTorrentFiles } from "@/features/downloads/helpers/downloads.helper";
 import { MediaCard } from "@/features/media/components/media-card";
+import { hasWatchProgress } from "@/features/media/helpers/media.helper";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 import { storageConfigQueries } from "@/features/settings/hooks/storage-config.queries";
 import {
@@ -85,6 +85,7 @@ function DownloadDetailPage() {
   const isTransferring = Boolean(download.torrent?.transferring || transferDownload.isPending);
   const availableOnServer = Boolean(download.remoteLocation);
   const remoteStorageEnabled = Boolean(storageEnabled?.enabled);
+  const canResume = hasWatchProgress(media) && media.progress?.downloadId === id;
 
   const handleDeleteConfirm = async () => {
     await deleteTorrent.mutateAsync(id);
@@ -140,15 +141,16 @@ function DownloadDetailPage() {
                 isTransferring={isTransferring}
                 remoteStorageEnabled={remoteStorageEnabled}
                 isMobile={true}
+                canResume={canResume}
               />
             </div>
 
-            {isTransferring ? (
-              <DownloadTransferProgress download={download} />
-            ) : (
-              status !== "completed" && (
-                <DownloadProgress download={download} onClick={status === "paused" ? handleResume : handlePause} />
-              )
+            {(status !== "completed" || download.torrent?.transferring) && (
+              <DownloadProgress
+                download={download}
+                size="lg"
+                onPauseResume={status === "paused" ? handleResume : handlePause}
+              />
             )}
 
             {download.error && (
@@ -171,6 +173,7 @@ function DownloadDetailPage() {
               onTransfer={startTransfer}
               isTransferring={isTransferring}
               remoteStorageEnabled={remoteStorageEnabled}
+              canResume={canResume}
             />
           </div>
 

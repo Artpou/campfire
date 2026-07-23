@@ -1,20 +1,32 @@
 import { useMemo, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { Movie, TV } from "@seedarr/sdk";
+import type { Download, Movie, TV } from "@seedarr/sdk";
 import { Link } from "@tanstack/react-router";
-import { ClapperboardIcon, FilmIcon, MagnetIcon, PlayIcon } from "lucide-react";
+import { ClapperboardIcon, FilmIcon, HardDriveIcon, MagnetIcon, PlayIcon, Trash2Icon } from "lucide-react";
 
+import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/shared/ui/alert-dialog";
 import { Button } from "@/shared/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/shared/ui/dialog";
-import { Progress } from "@/shared/ui/progress";
 
 import { useRole } from "@/features/auth/hooks/use-role";
-import { getPosterUrl } from "@/features/media/helpers/media.helper";
+import { WatchProgressBar } from "@/features/media/components/watch-progress-bar";
+import { getPosterUrl, getWatchProgressPercent, hasWatchProgress } from "@/features/media/helpers/media.helper";
+import { useDownloadDelete } from "@/features/torrent/hooks/download.queries";
 
 interface MediaPosterProps {
   data: Movie | TV;
-  downloadId?: string;
+  download?: Download | null;
   type?: "movie" | "tv";
 }
 
@@ -25,16 +37,21 @@ function getDisplayTitle(data: Movie | TV): string {
   return "";
 }
 
-export function MediaPoster({ data, downloadId, type = "movie" }: MediaPosterProps) {
+export function MediaPoster({ data, download, type = "movie" }: MediaPosterProps) {
   const { role } = useRole();
-  const { i18n } = useLingui();
-
+  const { i18n, t } = useLingui();
+  const deleteTorrent = useDownloadDelete();
   const [imgError, setImgError] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const displayTitle = getDisplayTitle(data);
   const { media } = data;
   const item = "movie" in data ? data.movie : data.tv;
+  const downloadId = download?.id;
   const canPlay = Boolean(downloadId);
+  const showWatchProgress = hasWatchProgress(media);
+  const watchProgressPercent = getWatchProgressPercent(media);
+  const isComplete = Boolean(download?.torrent?.done);
 
   const youtubeTrailer = useMemo(() => {
     const videos = item?.videos?.results;
@@ -47,41 +64,51 @@ export function MediaPoster({ data, downloadId, type = "movie" }: MediaPosterPro
     );
   }, [item?.videos, i18n.locale]);
 
+  const handleDeleteConfirm = () => {
+    if (!downloadId) return;
+    deleteTorrent.mutate(downloadId, {
+      onSuccess: () => setShowDeleteConfirm(false),
+    });
+  };
+
   return (
-    <div className="flex flex-col shrink-0 space-y-2 items-center max-w-[230px]">
-      <div className="relative">
-        {!imgError && !!media.poster_path ? (
-          <img
-            src={getPosterUrl(media.poster_path, "w500")}
-            alt={displayTitle}
-            className="w-[200px] sm:w-full aspect-2/3 rounded-md object-cover border border-secondary shadow-2xl"
-            onError={() => setImgError(true)}
-          />
-        ) : (
-          <div className="w-[200px] size-full aspect-2/3 rounded-md flex items-center justify-center border border-border">
-            <ClapperboardIcon className="size-10 text-muted-foreground" />
-          </div>
-        )}
-
-        {media.progress && media.progress.position > 0 && (
-          <Progress
-            value={(media?.progress?.position / media?.progress?.duration) * 100}
-            variant="white"
-            className="absolute z-10 bottom-2 left-2 right-2 w-auto"
-          />
-        )}
-
-        {canPlay && downloadId && (
-          <Link
-            to="/downloads/$id/play"
-            params={{ id: downloadId }}
-            className="absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity rounded-md"
-          >
-            <div className="size-16 rounded-full bg-primary flex items-center justify-center shadow-lg">
-              <PlayIcon className="size-8 fill-current text-primary-foreground ml-1" />
+    <div className="flex flex-col shrink-0 space-y-2 items-center max-w-[230px] w-full">
+      <div className="relative w-[200px] sm:w-full aspect-2/3">
+        <div
+          className={cn(
+            "relative w-full overflow-hidden rounded-md border border-secondary shadow-2xl",
+            showWatchProgress ? "h-[calc(100%-0.75rem)]" : "h-full",
+          )}
+        >
+          {!imgError && !!media.poster_path ? (
+            <img
+              src={getPosterUrl(media.poster_path, "w500")}
+              alt={displayTitle}
+              className="size-full object-cover"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <div className="size-full flex items-center justify-center bg-muted">
+              <ClapperboardIcon className="size-10 text-muted-foreground" />
             </div>
-          </Link>
-        )}
+          )}
+
+          {type === "tv" && downloadId && (
+            <Button
+              asChild
+              size="icon"
+              variant="secondary"
+              className="absolute top-2 right-2 z-10 size-8"
+              aria-label={t`Open download`}
+            >
+              <Link to="/downloads/$id" params={{ id: downloadId }}>
+                <HardDriveIcon className="size-4" />
+              </Link>
+            </Button>
+          )}
+        </div>
+
+        {showWatchProgress && <WatchProgressBar value={watchProgressPercent} />}
       </div>
 
       {youtubeTrailer && (
@@ -105,20 +132,71 @@ export function MediaPoster({ data, downloadId, type = "movie" }: MediaPosterPro
       )}
 
       {media && role !== "viewer" && media.id && (
-        <Button className="w-full" asChild>
-          {type === "tv" ? (
-            <Link to="/tv/$id/torrents" params={{ id: media.id.toString() }}>
-              <MagnetIcon className="size-3" />
-              <Trans>Torrents</Trans>
-            </Link>
+        <div className="flex w-full gap-2">
+          {canPlay && downloadId ? (
+            <>
+              <Button className="flex-1" asChild>
+                <Link to="/downloads/$id/play" params={{ id: downloadId }}>
+                  <PlayIcon className="size-3 fill-current" />
+                  {showWatchProgress ? (
+                    <Trans>Resume</Trans>
+                  ) : isComplete ? (
+                    <Trans>Play</Trans>
+                  ) : (
+                    <Trans>Streaming</Trans>
+                  )}
+                </Link>
+              </Button>
+              {type === "movie" && (
+                <Button
+                  size="icon"
+                  variant="destructive"
+                  aria-label={t`Delete`}
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={deleteTorrent.isPending}
+                >
+                  <Trash2Icon className="size-4" />
+                </Button>
+              )}
+            </>
           ) : (
-            <Link to="/movies/$id/torrents" params={{ id: media.id.toString() }}>
-              <MagnetIcon className="size-3" />
-              <Trans>Torrents</Trans>
-            </Link>
+            <Button className="w-full" asChild>
+              {type === "tv" ? (
+                <Link to="/tv/$id/torrents" params={{ id: media.id.toString() }}>
+                  <MagnetIcon className="size-3" />
+                  <Trans>Torrents</Trans>
+                </Link>
+              ) : (
+                <Link to="/movies/$id/torrents" params={{ id: media.id.toString() }}>
+                  <MagnetIcon className="size-3" />
+                  <Trans>Torrents</Trans>
+                </Link>
+              )}
+            </Button>
           )}
-        </Button>
+        </div>
       )}
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              <Trans>Delete download?</Trans>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              <Trans>This will remove the downloaded files for this movie.</Trans>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              <Trans>Cancel</Trans>
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} disabled={deleteTorrent.isPending}>
+              <Trans>Delete</Trans>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

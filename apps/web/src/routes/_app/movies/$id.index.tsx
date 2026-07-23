@@ -47,7 +47,6 @@ function MoviePage() {
       posterPath={movie.poster_path}
       media={media}
       posterData={data}
-      downloadId={media?.download?.id}
       infoSection={<MovieInfo movie={movie} />}
       detailsSection={detailsSection}
     >

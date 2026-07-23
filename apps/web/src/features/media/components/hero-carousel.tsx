@@ -14,11 +14,11 @@ import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Carousel, type CarouselApi, CarouselContent, CarouselItem } from "@/shared/ui/carousel";
-import { Progress } from "@/shared/ui/progress";
 
 import { useRole } from "@/features/auth/hooks/use-role";
-import { DownloadProgressCircular } from "@/features/downloads/components/download-progress-circular";
+import { DownloadProgress } from "@/features/downloads/components/download-progress";
 import { MediaRating } from "@/features/media/components/media-rating";
+import { WatchProgressBar } from "@/features/media/components/watch-progress-bar";
 import {
   getBackdropUrl,
   getEndsAtForMedia,
@@ -84,23 +84,22 @@ const HeroSlide = memo(function HeroSlide({ media, isLibraryMode }: HeroSlidePro
       <div className="relative h-full container mx-auto max-w-6xl px-8 md:px-12 flex items-end pb-12 md:pb-16 gap-5 md:gap-8">
         {media.poster_path && (
           <Link {...detailLinkProps} className="hidden sm:block relative shrink-0 group/poster">
-            <img
-              src={getPosterUrl(media.poster_path, "w342")}
-              alt={media.title}
-              className="w-[110px] md:w-[150px] aspect-2/3 rounded-lg object-cover border border-border/60 shadow-2xl transition-transform group-hover/poster:scale-[1.02]"
-            />
-            {isLibraryMode && isDownloading && media.download && (
-              <div className="absolute top-2 left-2">
-                <DownloadProgressCircular download={media.download} />
-              </div>
-            )}
-            {showWatchProgress && (
-              <Progress
-                value={getWatchProgressPercent(media)}
-                variant="white"
-                className="absolute z-10 bottom-2 left-2 right-2 w-auto"
+            <div className="relative w-[110px] md:w-[150px] aspect-2/3">
+              <img
+                src={getPosterUrl(media.poster_path, "w342")}
+                alt={media.title}
+                className={cn(
+                  "w-full rounded-lg object-cover border border-border/60 shadow-2xl transition-transform group-hover/poster:scale-[1.02]",
+                  showWatchProgress ? "h-[calc(100%-0.75rem)]" : "h-full",
+                )}
               />
-            )}
+              {isLibraryMode && isDownloading && media.download && (
+                <div className="absolute top-2 left-2">
+                  <DownloadProgress download={media.download} variant="circular" />
+                </div>
+              )}
+              {showWatchProgress && <WatchProgressBar value={getWatchProgressPercent(media)} />}
+            </div>
           </Link>
         )}
 

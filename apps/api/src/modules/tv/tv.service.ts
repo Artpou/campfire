@@ -16,7 +16,9 @@ export class TVService extends TMDBService<TV> {
 
     const recommendations = tvData.recommendations?.results ?? [];
     const related = recommendations.map((item) => tmdbTVToMedia(item));
-    const mediaMap = await this.mediaService.getMany({ ids: related.map((m) => m.id.toString()) });
+    const mediaMap = await this.mediaService.getMany({
+      ids: [id, ...related.map((m) => m.id.toString())],
+    });
 
     const withMediaStatus = (list: MediaEnriched[]) =>
       list.map((item) => mediaMap.find((m) => m.id === item.id) ?? item);
@@ -24,7 +26,7 @@ export class TVService extends TMDBService<TV> {
     return {
       id,
       tv: tvData,
-      media: tmdbTVToMedia(tvData),
+      media: mediaMap.find((m) => m.id.toString() === id) ?? tmdbTVToMedia(tvData),
       collection: null,
       related: {
         collection: [],

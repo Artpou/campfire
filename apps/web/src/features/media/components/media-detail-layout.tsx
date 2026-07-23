@@ -1,15 +1,19 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 
 import type { Media, Movie, TV } from "@seedarr/sdk";
+import { useQuery } from "@tanstack/react-query";
 import { ClockPlusIcon, HeartIcon, InfoIcon } from "lucide-react";
 
 import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/shared/ui/sheet";
 
+import { useRole } from "@/features/auth/hooks/use-role";
+import { DownloadProgress } from "@/features/downloads/components/download-progress";
 import { MediaPoster } from "@/features/media/components/media-poster";
 import { getBackdropUrl, getPosterUrl } from "@/features/media/helpers/media.helper";
 import { useToggleLike, useToggleWatchList } from "@/features/media/hooks/media.queries";
+import { downloadQueries } from "@/features/torrent/hooks/download.queries";
 
 type MediaDetailLayoutProps = {
   title: string;
@@ -17,7 +21,6 @@ type MediaDetailLayoutProps = {
   posterPath?: string | null;
   media: Media | undefined;
   posterData: Movie | TV;
-  downloadId?: string;
   posterType?: "movie" | "tv";
   infoSection: ReactNode;
   detailsSection: ReactNode;
@@ -30,15 +33,30 @@ export function MediaDetailLayout({
   posterPath,
   media,
   posterData,
-  downloadId,
   posterType,
   infoSection,
   detailsSection,
   children,
 }: MediaDetailLayoutProps) {
+  const { role } = useRole();
   const [sheetOpen, setSheetOpen] = useState(false);
   const toggleLike = useToggleLike();
   const toggleWatchList = useToggleWatchList();
+
+  const { data: mediaDownloads = [] } = useQuery({
+    ...downloadQueries.byMedia(media?.id ?? 0),
+    enabled: posterType !== "tv" && role !== "viewer" && Boolean(media?.id),
+  });
+  const liveMovieDownload = useMemo(() => {
+    if (posterType === "tv" || !media) return null;
+    if (media.download?.id) {
+      return mediaDownloads.find((d) => d.id === media.download?.id) ?? media.download;
+    }
+    return mediaDownloads[0] ?? null;
+  }, [posterType, media, mediaDownloads]);
+  const showMovieDownloadBar = Boolean(
+    posterType !== "tv" && liveMovieDownload && !liveMovieDownload.torrent?.done && role !== "viewer",
+  );
 
   const handleToggleLike = () => {
     media && toggleLike.mutate(media);
@@ -105,14 +123,21 @@ export function MediaDetailLayout({
           </div>
 
           <div className="lg:w-1/4 max-w-[250px] justify-items-center">
-            <MediaPoster data={posterData} downloadId={downloadId} type={posterType} />
+            <MediaPoster data={posterData} download={media?.download} type={posterType} />
           </div>
-          <div className="lg:w-3/4">{infoSection}</div>
+          <div className="lg:w-3/4">
+            {infoSection}
+            {showMovieDownloadBar && liveMovieDownload && (
+              <div className="mt-6">
+                <DownloadProgress download={liveMovieDownload} showInfoLink />
+              </div>
+            )}
+          </div>
           <div className="hidden xl:block w-[300px]">{detailsSection}</div>
         </Container>
       </div>
 
-      <Container className="flex gap-8 pt-6">
+      <Container className="flex flex-col gap-6 pt-6">
         <div className="w-full flex flex-col gap-8">{children}</div>
       </Container>
     </div>

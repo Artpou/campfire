@@ -52,7 +52,6 @@ function TVPage() {
       posterPath={tv.poster_path}
       media={media}
       posterData={data}
-      downloadId={media?.download?.id}
       posterType="tv"
       infoSection={<TvInfo tv={tv} />}
       detailsSection={detailsSection}

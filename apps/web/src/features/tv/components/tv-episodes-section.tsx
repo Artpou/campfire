@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 
-import { Trans } from "@lingui/react/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import type { Media, TMDBTvDetails } from "@seedarr/sdk";
 import { formatRuntime } from "@seedarr/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CalendarIcon, ClapperboardIcon, ClockIcon, MagnetIcon, PlayIcon } from "lucide-react";
+import { CalendarIcon, ClapperboardIcon, ClockIcon, MagnetIcon, PlayIcon, Trash2Icon } from "lucide-react";
 
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Badge } from "@/shared/ui/badge";
@@ -16,8 +16,10 @@ import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { useRole } from "@/features/auth/hooks/use-role";
 import { getDownloadStatus } from "@/features/downloads/helpers/downloads.helper";
+import { WatchProgressBar } from "@/features/media/components/watch-progress-bar";
 import { getBackdropUrl } from "@/features/media/helpers/media.helper";
-import { downloadQueries } from "@/features/torrent/hooks/download.queries";
+import { downloadQueries, useDownloadDelete } from "@/features/torrent/hooks/download.queries";
+import { type EpisodeDeleteLabel, TvEpisodeDeleteDialog } from "@/features/tv/components/tv-episode-delete-dialog";
 import { TvEpisodeDownloadControls } from "@/features/tv/components/tv-episode-download-controls";
 import { formatSeasonEpisode } from "@/features/tv/helpers/episode.helper";
 import { buildEpisodeDownloadMap, getEpisodesCoveredByDownload } from "@/features/tv/helpers/episode-downloads.helper";
@@ -30,10 +32,16 @@ interface TvEpisodesSectionProps {
 
 export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
   const { role } = useRole();
+  const { t } = useLingui();
   const locale = useTmdbLocale();
+  const deleteTorrent = useDownloadDelete();
   const validSeasons = useMemo(() => (tv.seasons ?? []).filter((s) => s.season_number > 0), [tv.seasons]);
 
   const [selectedSeason, setSelectedSeason] = useState<string>(() => validSeasons[0]?.season_number?.toString() ?? "1");
+  const [deleteTarget, setDeleteTarget] = useState<{
+    downloadId: string;
+    episodes: EpisodeDeleteLabel[];
+  } | null>(null);
 
   const seasonNumber = Number(selectedSeason);
 
@@ -115,43 +123,57 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
 
             return (
               <Card key={episode.id} className="p-3 flex flex-col sm:flex-row gap-4 overflow-hidden">
-                <div className="flex flex-col items-center gap-2">
+                <div className="flex flex-col items-center gap-2 w-full sm:w-48">
                   {episode.still_path ? (
-                    <div className="relative shrink-0 w-full sm:w-48 aspect-video rounded-md overflow-hidden bg-muted">
-                      <img
-                        src={getBackdropUrl(episode.still_path, "w300")}
-                        alt={episode.name}
-                        className="size-full object-cover"
-                      />
+                    <div className="w-full">
+                      <div className="relative shrink-0 w-full aspect-video rounded-md overflow-hidden bg-muted">
+                        <img
+                          src={getBackdropUrl(episode.still_path, "w300")}
+                          alt={episode.name}
+                          className="size-full object-cover"
+                        />
+                      </div>
                       {hasStarted && media.progress && media.progress.duration > 0 && (
-                        <div className="absolute inset-x-0 bottom-0 h-1 bg-muted/60">
-                          <div
-                            className="h-full bg-green-500"
-                            style={{
-                              width: `${Math.min(100, (media.progress.position / media.progress.duration) * 100)}%`,
-                            }}
-                          />
-                        </div>
+                        <WatchProgressBar
+                          value={Math.min(100, (media.progress.position / media.progress.duration) * 100)}
+                        />
                       )}
                     </div>
                   ) : (
-                    <div className="size-full flex items-center justify-center">
+                    <div className="w-full aspect-video flex items-center justify-center rounded-md bg-muted">
                       <ClapperboardIcon className="size-10 text-muted-foreground" />
                     </div>
                   )}
 
                   {hasDownload && canPlay && (isDownloaded || isDownloading) && (
-                    <Button
-                      size="sm"
-                      variant={isDownloaded || isDownloading ? "default" : "secondary"}
-                      className="w-full"
-                      asChild
-                    >
-                      <Link to="/downloads/$id/play" params={{ id: episodeDownloadId }}>
-                        <PlayIcon className="size-3 mr-1 fill-current" />
-                        {hasStarted ? <Trans>Resume</Trans> : <Trans>Play</Trans>}
-                      </Link>
-                    </Button>
+                    <div className="flex w-full gap-1">
+                      <Button
+                        size="sm"
+                        variant={isDownloaded || isDownloading ? "default" : "secondary"}
+                        className="flex-1"
+                        asChild
+                      >
+                        <Link to="/downloads/$id/play" params={{ id: episodeDownloadId }}>
+                          <PlayIcon className="size-3 mr-1 fill-current" />
+                          {hasStarted ? <Trans>Resume</Trans> : <Trans>Play</Trans>}
+                        </Link>
+                      </Button>
+                      {role !== "viewer" && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          aria-label={t`Delete`}
+                          onClick={() =>
+                            setDeleteTarget({
+                              downloadId: episodeDownloadId,
+                              episodes: coveredEpisodes,
+                            })
+                          }
+                        >
+                          <Trash2Icon className="size-3.5" />
+                        </Button>
+                      )}
+                    </div>
                   )}
 
                   {role !== "viewer" && !hasDownload && (
@@ -207,15 +229,28 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
                     <p className="text-sm text-popover-foreground line-clamp-3">{episode.overview}</p>
                   )}
 
-                  {role !== "viewer" && episodeDownload && (
-                    <TvEpisodeDownloadControls download={episodeDownload} coveredEpisodes={coveredEpisodes} />
-                  )}
+                  {role !== "viewer" && episodeDownload && <TvEpisodeDownloadControls download={episodeDownload} />}
                 </div>
               </Card>
             );
           })
         )}
       </div>
+
+      <TvEpisodeDeleteDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          deleteTorrent.mutate(deleteTarget.downloadId, {
+            onSuccess: () => setDeleteTarget(null),
+          });
+        }}
+        episodes={deleteTarget?.episodes ?? []}
+        isPending={deleteTorrent.isPending}
+      />
     </div>
   );
 }
