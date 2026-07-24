@@ -23,10 +23,13 @@ export class TVService extends TMDBService<TV> {
     const withMediaStatus = (list: MediaEnriched[]) =>
       list.map((item) => mediaMap.find((m) => m.id === item.id) ?? item);
 
+    const fromTmdb = tmdbTVToMedia(tvData);
+    const fromDb = mediaMap.find((m) => m.id.toString() === id);
+
     return {
       id,
       tv: tvData,
-      media: mediaMap.find((m) => m.id.toString() === id) ?? tmdbTVToMedia(tvData),
+      media: fromDb ? { ...fromDb, imdbId: fromDb.imdbId || fromTmdb.imdbId } : fromTmdb,
       collection: null,
       related: {
         collection: [],

@@ -46,10 +46,13 @@ export class MovieService extends TMDBService<Movie> {
     const withMediaStatus = (list: MediaEnriched[]) =>
       list.map((item) => mediaMap.find((m) => m.id === item.id) ?? item);
 
+    const fromTmdb = tmdbMovieToMedia(movieData);
+    const fromDb = mediaMap.find((m) => m.id.toString() === id);
+
     return {
       id,
       movie: movieData,
-      media: mediaMap.find((m) => m.id.toString() === id) ?? tmdbMovieToMedia(movieData),
+      media: fromDb ? { ...fromDb, imdbId: fromDb.imdbId || fromTmdb.imdbId } : fromTmdb,
       collection,
       related: {
         collection: withMediaStatus(allRelated.filter((m) => collectionIds.has(m.id))).sort((a, b) =>

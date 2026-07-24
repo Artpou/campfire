@@ -25,6 +25,7 @@ function toMedia(
     runtime?: number | null;
     number_of_seasons?: number | null;
     genres?: TMDBGenre[];
+    external_ids?: { imdb_id?: string | null };
   },
   type: "movie" | "tv",
   extra: MediaExtraFields = {},
@@ -52,7 +53,7 @@ function toMedia(
     seasons_number: seasonsNumber,
     categories,
     backdrop_path: item.backdrop_path ?? null,
-    imdbId: item.imdb_id ?? "",
+    imdbId: item.imdb_id ?? item.external_ids?.imdb_id ?? "",
     likes: 0,
     watchList: 0,
   };

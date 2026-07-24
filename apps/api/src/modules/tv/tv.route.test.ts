@@ -74,7 +74,7 @@ const TV_DETAILS = {
   recommendations: { results: [] },
   credits: { cast: [], crew: [] },
   videos: { results: [] },
-  external_ids: {},
+  external_ids: { imdb_id: "tt0903747" },
   "watch/providers": { results: {} },
 };
 
@@ -142,7 +142,7 @@ describe("TV Routes", () => {
   it("GET /:id - returns details and upserts media", async () => {
     const body = await bodyOf(await tvRoutes.request("/200?locale=en-US"));
     expect(body.tv).toBeDefined();
-    expect(body.media).toMatchObject({ id: 200, title: "Breaking Bad" });
+    expect(body.media).toMatchObject({ id: 200, title: "Breaking Bad", imdbId: "tt0903747" });
   });
 
   it("GET /search - returns results", async () => {
