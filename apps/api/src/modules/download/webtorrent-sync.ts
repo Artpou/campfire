@@ -16,8 +16,13 @@ import { extractTorrentLiveData } from "./webtorrent.helper";
 import { torrentClient } from "./webtorrent-manager";
 
 const SYNC_THROTTLE_MS = 1_500;
+const HEALTH_CHECK_INTERVAL_MS = 60_000;
+/** Minutes to seed after download completes before unloading from WebTorrent. -1 = keep forever. */
+const SEED_AFTER_COMPLETE_MINUTES = Number.parseInt(process.env.SEED_AFTER_COMPLETE_MINUTES ?? "5", 10);
+
 const lastSyncTimestamps = new Map<string, number>();
 const handlersAttached = new Set<string>();
+let healthCheckTimer: ReturnType<typeof setInterval> | null = null;
 
 export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: string): void {
   if (torrent.ready) {
@@ -97,7 +102,10 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
         }
       }
 
-      if (dl?.torrent?.skipAutoTransfer) return;
+      if (dl?.torrent?.skipAutoTransfer) {
+        scheduleUnload(downloadId);
+        return;
+      }
 
       const enabled = await remoteStorageService.isEnabled();
       if (enabled && torrent.name) {
@@ -106,6 +114,8 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
           logger.error("WEBTORRENT", `Remote transfer failed for "${torrent.name}": ${err}`);
         });
       }
+
+      scheduleUnload(downloadId);
     } catch (err) {
       logger.error("WEBTORRENT", `Error in done handler for "${torrent.name}": ${err}`);
     }
@@ -129,24 +139,115 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
   }
 }
 
+/**
+ * After a torrent completes, seed briefly then unload from memory.
+ * Files stay on disk — only the WebTorrent peer session is torn down.
+ * Disabled when SEED_AFTER_COMPLETE_MINUTES < 0.
+ */
+function scheduleUnload(downloadId: string): void {
+  if (SEED_AFTER_COMPLETE_MINUTES < 0) return;
+
+  const delayMs = SEED_AFTER_COMPLETE_MINUTES * 60_000;
+  const timer = setTimeout(() => {
+    if (torrentClient.isDestroying(downloadId)) return;
+    const current = torrentClient.getActiveTorrent(downloadId);
+    if (!current || !current.done) return;
+
+    torrentClient.markDestroying(downloadId);
+    try {
+      current.destroy({ destroyStore: false }, () => {
+        torrentClient.deleteActiveTorrent(downloadId);
+        torrentClient.unmarkDestroying(downloadId);
+        clearHandlersForDownload(downloadId);
+        logger.info("WEBTORRENT", `Unloaded completed torrent: ${current.name}`);
+      });
+    } catch {
+      torrentClient.unmarkDestroying(downloadId);
+    }
+  }, delayMs);
+  timer.unref();
+}
+
 export async function restoreActiveTorrents(): Promise<void> {
   const downloads = await db.select().from(download).all();
   const activeDownloads = downloads.filter(
     (item) => item.torrent && !item.torrent.done && !item.torrent.paused && item.torrent.magnetURI,
   );
 
-  if (activeDownloads.length === 0) return;
+  if (activeDownloads.length === 0) {
+    startHealthCheck();
+    return;
+  }
+
   logger.info("WEBTORRENT", `Restoring ${activeDownloads.length} torrent(s)...`);
 
-  for (const item of activeDownloads) {
-    if (!item.torrent?.magnetURI) continue;
-    try {
+  const results = await Promise.allSettled(
+    activeDownloads.map(async (item) => {
+      if (!item.torrent?.magnetURI) return;
       const restored = await torrentClient.attachTorrent(item.id, item.torrent.magnetURI, item.torrent.infoHash);
       setupTorrentHandlers(restored, item.id);
+      reannounce(restored);
       logger.debug("WEBTORRENT", `Restored: ${restored.name}`);
-    } catch (error) {
-      logger.error("WEBTORRENT", `Failed to restore: ${item.torrent?.name}`, error);
+    }),
+  );
+
+  const failures = results.filter((r) => r.status === "rejected");
+  if (failures.length > 0) {
+    logger.warn("WEBTORRENT", `Failed to restore ${failures.length}/${activeDownloads.length} torrent(s)`);
+  }
+
+  startHealthCheck();
+}
+
+/** Force trackers to reannounce to find fresh peers. */
+function reannounce(torrent: WebTorrent.Torrent): void {
+  try {
+    if (torrent.done) return;
+    // WebTorrent's discovery re-announce via all trackers
+    const discovery = (torrent as unknown as { discovery?: { tracker?: { update(): void } } }).discovery;
+    discovery?.tracker?.update();
+  } catch {
+    // Non-critical — tracker reconnect is best-effort
+  }
+}
+
+/**
+ * Periodic health check: reannounce stale torrents (0 peers / 0 speed)
+ * and unload completed torrents still held in memory.
+ */
+function startHealthCheck(): void {
+  if (healthCheckTimer) return;
+
+  healthCheckTimer = setInterval(() => {
+    for (const torrent of torrentClient.getAllTorrents()) {
+      if (torrent.paused) continue;
+
+      if (torrent.done) {
+        if (SEED_AFTER_COMPLETE_MINUTES < 0) continue;
+        logger.debug("WEBTORRENT", `Unloading lingering completed torrent: ${torrent.name}`);
+        try {
+          for (const id of torrentClient.detachTorrent(torrent)) {
+            clearHandlersForDownload(id);
+          }
+          torrent.destroy({ destroyStore: false });
+        } catch {}
+        continue;
+      }
+
+      if (torrent.numPeers === 0 && torrent.downloadSpeed === 0) {
+        logger.debug("WEBTORRENT", `Stale torrent detected, reannouncing: ${torrent.name}`);
+        reannounce(torrent);
+      }
     }
+  }, HEALTH_CHECK_INTERVAL_MS);
+
+  healthCheckTimer.unref();
+}
+
+export function stopHealthCheck(): void {
+  if (healthCheckTimer) {
+    clearInterval(healthCheckTimer);
+    healthCheckTimer = null;
   }
 }
 

@@ -19,7 +19,8 @@ services:
       # Encrypts FTP/WebDAV passwords at rest. Change once and keep stable —
       # rotating this key makes existing stored credentials undecryptable.
       - STORAGE_ENCRYPTION_KEY=${STORAGE_ENCRYPTION_KEY:-change-me-to-a-long-random-secret}
-      - RESUME_DOWNLOADS=${RESUME_DOWNLOADS:-false}
+      - RESUME_DOWNLOADS=${RESUME_DOWNLOADS:-true}
+      - SEED_AFTER_COMPLETE_MINUTES=${SEED_AFTER_COMPLETE_MINUTES:-5}
       - LOG_LEVEL=${LOG_LEVEL:-info}
     volumes:
       - db_data:/data
@@ -27,6 +28,7 @@ services:
       # Mount your Plex media library here for hardlink support
       # - /path/to/plex/media:/media
     restart: unless-stopped
+    stop_grace_period: 15s
     healthcheck:
       test:
         [

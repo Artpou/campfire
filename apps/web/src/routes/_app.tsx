@@ -40,6 +40,15 @@ export const Route = createFileRoute("/_app")({
     } catch (err) {
       if (isRedirect(err)) throw err;
 
+      const isNetworkError =
+        err &&
+        typeof err === "object" &&
+        "status" in err &&
+        ((err as { status: number }).status === 0 || (err as { status: number }).status >= 502);
+      if (isNetworkError) {
+        throw err;
+      }
+
       useAuth.getState().setUser(null);
       throw redirect({ to: "/login" });
     }

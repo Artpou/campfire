@@ -121,10 +121,24 @@ export function useDownloadTransfer() {
 
   return useMutation({
     mutationFn: (id: string) => unwrap(api.downloads[":id"].transfer.$post({ param: { id } })),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: [...downloadQueries.key, id] });
+      const previous = queryClient.getQueryData<Download>([...downloadQueries.key, id]);
+      if (previous?.torrent) {
+        queryClient.setQueryData([...downloadQueries.key, id], {
+          ...previous,
+          torrent: { ...previous.torrent, transferring: true, transferProgress: 0 },
+        });
+      }
+      return { previous };
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: downloadQueries.key });
     },
-    onError: (error) => {
+    onError: (error, id, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData([...downloadQueries.key, id], context.previous);
+      }
       toast.error(t`Could not transfer to remote server`, {
         description: error instanceof Error ? error.message : undefined,
       });

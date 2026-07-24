@@ -160,6 +160,7 @@ export class DownloadService extends IdentifiableService<Download> {
     }
 
     torrentClient.markDestroying(id);
+    clearHandlersForDownload(id);
 
     const pausedData = { ...extractTorrentLiveData(activeTorrent), paused: true, downloadSpeed: 0, uploadSpeed: 0 };
     await db.update(download).set({ torrent: pausedData }).where(eq(download.id, id));

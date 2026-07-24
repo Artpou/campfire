@@ -30,7 +30,19 @@ type GlobalErrorResponse = {
 export type AppRpcType = ApplyGlobalResponse<AppType, GlobalErrorResponse>;
 
 async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const res = await fetch(input, init);
+  let res: Response;
+  try {
+    res = await fetch(input, init);
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiError("Request was canceled", 0);
+    }
+    if (err instanceof TypeError) {
+      throw new ApiError("Network error — server may be unavailable", 0);
+    }
+    throw new ApiError("Connection failed", 0);
+  }
+
   if (!res.ok) {
     let message = `API Error: ${res.status}`;
     try {

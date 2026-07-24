@@ -13,6 +13,7 @@ class WebTorrentManager {
   private isInitialized = false;
   private isInitializing = false;
   private destroyingIds = new Set<string>();
+  private uncaughtHandler: ((err: Error) => void) | null = null;
 
   get downloadPath(): string {
     return DOWNLOAD_PATH;
@@ -42,15 +43,19 @@ class WebTorrentManager {
         logger.error("WEBTORRENT", `Client error (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
       });
 
-      process.on("uncaughtException", (err) => {
+      this.uncaughtHandler = (err: Error) => {
         const isWebTorrentError =
-          err.stack?.includes("webtorrent") || err.stack?.includes("bittorrent") || err.stack?.includes("ut_metadata");
+          err.stack?.includes("webtorrent") ||
+          err.stack?.includes("bittorrent") ||
+          err.stack?.includes("ut_metadata") ||
+          err.stack?.includes("bittorrent-dht");
         if (isWebTorrentError) {
           logger.error("WEBTORRENT", `Uncaught exception from WebTorrent internals: ${err.message}`);
           return;
         }
         throw err;
-      });
+      };
+      process.on("uncaughtException", this.uncaughtHandler);
 
       this.isInitialized = true;
       this.isInitializing = false;
@@ -103,6 +108,18 @@ class WebTorrentManager {
     this.activeTorrents.delete(id);
   }
 
+  /** Drop map entries for a torrent instance; returns the download IDs that were attached. */
+  detachTorrent(torrent: WebTorrent.Torrent): string[] {
+    const ids: string[] = [];
+    for (const [id, active] of this.activeTorrents) {
+      if (active === torrent) {
+        this.activeTorrents.delete(id);
+        ids.push(id);
+      }
+    }
+    return ids;
+  }
+
   safeAdd(source: string | Buffer, opts: { path: string }): WebTorrent.Torrent {
     const client = this.getClient();
     if (typeof source === "string") {
@@ -126,6 +143,21 @@ class WebTorrentManager {
     if (!torrent.ready) await waitForTorrentMetadata(torrent, 15_000);
     this.activeTorrents.set(downloadId, torrent);
     return torrent;
+  }
+
+  async destroy(): Promise<void> {
+    if (this.uncaughtHandler) {
+      process.removeListener("uncaughtException", this.uncaughtHandler);
+      this.uncaughtHandler = null;
+    }
+    if (this.client) {
+      await new Promise<void>((resolve) => {
+        this.client?.destroy(() => resolve());
+      });
+      this.client = null;
+    }
+    this.activeTorrents.clear();
+    this.isInitialized = false;
   }
 }
 

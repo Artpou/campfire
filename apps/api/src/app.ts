@@ -5,6 +5,7 @@ import { secureHeaders } from "hono/secure-headers";
 import { csrfGuard } from "@/middlewares/csrf.middleware";
 import { errorHandler } from "@/middlewares/error.middleware";
 import { requestLogger } from "@/middlewares/logger.middleware";
+import { requestTimeout } from "@/middlewares/timeout.middleware";
 import { authGuard } from "@/modules/auth/auth.guard";
 import { requireRole } from "@/modules/auth/role.guard";
 import { Readable } from "node:stream";
@@ -42,6 +43,7 @@ export const app = new Hono<{ Variables: HonoVariables }>()
       maxAge: 600,
     }),
   )
+  .use("*", requestTimeout)
   .route("/auth", authRoutes)
   .route("/users", userRoutes)
   .route("/indexer-manager", indexerManagerRoutes)

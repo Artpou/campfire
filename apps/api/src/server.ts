@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { app } from "./app";
 import { logger, startupLogger } from "./helpers/logger.helper";
 import { torrentClient } from "./modules/download/webtorrent-manager";
-import { restoreActiveTorrents } from "./modules/download/webtorrent-sync";
+import { restoreActiveTorrents, stopHealthCheck } from "./modules/download/webtorrent-sync";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const startTime = Date.now();
@@ -69,7 +69,8 @@ const start = async () => {
   torrentClient
     .initialize()
     .then(() => {
-      if (process.env.RESUME_DOWNLOADS === "true") {
+      const resumeDisabled = process.env.RESUME_DOWNLOADS === "false";
+      if (!resumeDisabled) {
         restoreActiveTorrents().catch((error) => {
           logger.error("STARTUP", "Failed to restore torrents:", error);
         });
@@ -96,3 +97,24 @@ start().catch((err) => {
   console.error("Failed to start server:", err);
   process.exit(1);
 });
+
+let shuttingDown = false;
+function gracefulShutdown(signal: string) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.info("SHUTDOWN", `Received ${signal}, shutting down...`);
+  stopHealthCheck();
+  torrentClient
+    .destroy()
+    .then(() => {
+      logger.info("SHUTDOWN", "WebTorrent destroyed, exiting");
+      process.exit(0);
+    })
+    .catch(() => {
+      process.exit(1);
+    });
+  setTimeout(() => process.exit(1), 10_000).unref();
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
