@@ -25,6 +25,7 @@ import { Route as AppMoviesIndexRouteImport } from './routes/_app/movies/index'
 import { Route as AppDownloadsIndexRouteImport } from './routes/_app/downloads/index'
 import { Route as AppSettingsIndexerRouteImport } from './routes/_app/settings/indexer'
 import { Route as AppTvIdIndexRouteImport } from './routes/_app/tv/$id.index'
+import { Route as AppPersonIdIndexRouteImport } from './routes/_app/person/$id.index'
 import { Route as AppMoviesIdIndexRouteImport } from './routes/_app/movies/$id.index'
 import { Route as AppDownloadsIdIndexRouteImport } from './routes/_app/downloads/$id.index'
 import { Route as AppTvIdTorrentsRouteImport } from './routes/_app/tv/$id.torrents'
@@ -109,6 +110,11 @@ const AppTvIdIndexRoute = AppTvIdIndexRouteImport.update({
   path: '/tv/$id/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPersonIdIndexRoute = AppPersonIdIndexRouteImport.update({
+  id: '/person/$id/',
+  path: '/person/$id/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMoviesIdIndexRoute = AppMoviesIdIndexRouteImport.update({
   id: '/movies/$id/',
   path: '/movies/$id/',
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/tv/$id/torrents': typeof AppTvIdTorrentsRoute
   '/downloads/$id': typeof AppDownloadsIdIndexRoute
   '/movies/$id': typeof AppMoviesIdIndexRoute
+  '/person/$id': typeof AppPersonIdIndexRoute
   '/tv/$id': typeof AppTvIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -175,6 +182,7 @@ export interface FileRoutesByTo {
   '/tv/$id/torrents': typeof AppTvIdTorrentsRoute
   '/downloads/$id': typeof AppDownloadsIdIndexRoute
   '/movies/$id': typeof AppMoviesIdIndexRoute
+  '/person/$id': typeof AppPersonIdIndexRoute
   '/tv/$id': typeof AppTvIdIndexRoute
 }
 export interface FileRoutesById {
@@ -199,6 +207,7 @@ export interface FileRoutesById {
   '/_app/tv/$id/torrents': typeof AppTvIdTorrentsRoute
   '/_app/downloads/$id/': typeof AppDownloadsIdIndexRoute
   '/_app/movies/$id/': typeof AppMoviesIdIndexRoute
+  '/_app/person/$id/': typeof AppPersonIdIndexRoute
   '/_app/tv/$id/': typeof AppTvIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -222,6 +231,7 @@ export interface FileRouteTypes {
     | '/tv/$id/torrents'
     | '/downloads/$id'
     | '/movies/$id'
+    | '/person/$id'
     | '/tv/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -243,6 +253,7 @@ export interface FileRouteTypes {
     | '/tv/$id/torrents'
     | '/downloads/$id'
     | '/movies/$id'
+    | '/person/$id'
     | '/tv/$id'
   id:
     | '__root__'
@@ -266,6 +277,7 @@ export interface FileRouteTypes {
     | '/_app/tv/$id/torrents'
     | '/_app/downloads/$id/'
     | '/_app/movies/$id/'
+    | '/_app/person/$id/'
     | '/_app/tv/$id/'
   fileRoutesById: FileRoutesById
 }
@@ -388,6 +400,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTvIdIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/person/$id/': {
+      id: '/_app/person/$id/'
+      path: '/person/$id'
+      fullPath: '/person/$id'
+      preLoaderRoute: typeof AppPersonIdIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/movies/$id/': {
       id: '/_app/movies/$id/'
       path: '/movies/$id'
@@ -443,6 +462,7 @@ interface AppRouteChildren {
   AppTvIdTorrentsRoute: typeof AppTvIdTorrentsRoute
   AppDownloadsIdIndexRoute: typeof AppDownloadsIdIndexRoute
   AppMoviesIdIndexRoute: typeof AppMoviesIdIndexRoute
+  AppPersonIdIndexRoute: typeof AppPersonIdIndexRoute
   AppTvIdIndexRoute: typeof AppTvIdIndexRoute
 }
 
@@ -463,6 +483,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppTvIdTorrentsRoute: AppTvIdTorrentsRoute,
   AppDownloadsIdIndexRoute: AppDownloadsIdIndexRoute,
   AppMoviesIdIndexRoute: AppMoviesIdIndexRoute,
+  AppPersonIdIndexRoute: AppPersonIdIndexRoute,
   AppTvIdIndexRoute: AppTvIdIndexRoute,
 }
 

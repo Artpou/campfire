@@ -1,9 +1,10 @@
 import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
+import { Link } from "@tanstack/react-router";
 import { UserIcon } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { Card, CardContent } from "@/shared/ui/card";
 
 import { getPosterUrl } from "@/features/media/helpers/media.helper";
 
@@ -15,43 +16,38 @@ interface PersonCardProps {
   type: "Director" | "Actor";
 }
 
-export function PersonCard({ name, profile_path, role, type }: PersonCardProps) {
+export function PersonCard({ id, name, profile_path, role, type }: PersonCardProps) {
   const [imgError, setImgError] = useState(false);
 
   return (
-    <div className="group flex flex-col overflow-hidden rounded-lg bg-card">
-      <div className="relative aspect-3/4 overflow-hidden bg-muted">
-        {!imgError && !!profile_path ? (
-          <img
-            src={getPosterUrl(profile_path, "w185")}
-            alt={name}
-            className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
-            onError={() => setImgError(true)}
-          />
-        ) : (
-          <div className="flex size-full items-center justify-center">
-            <UserIcon className="size-10 text-muted-foreground" />
-          </div>
-        )}
-        <div
-          className={cn(
-            "absolute top-1.5 left-1.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold leading-tight",
-            type === "Director"
-              ? "bg-primary text-primary-foreground"
-              : "bg-background/80 text-foreground backdrop-blur-sm",
+    <Link to="/person/$id" params={{ id: id.toString() }} className="block">
+      <Card className="group overflow-hidden gap-0 py-0 border-2 border-transparent transition-colors hover:border-primary">
+        <div className="relative aspect-3/4 overflow-hidden bg-muted">
+          {!imgError && !!profile_path ? (
+            <img
+              src={getPosterUrl(profile_path, "w185")}
+              alt={name}
+              className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <div className="flex size-full items-center justify-center">
+              <UserIcon className="size-10 text-muted-foreground" />
+            </div>
           )}
-        >
-          <Trans>{type}</Trans>
         </div>
-      </div>
-      <div className="space-y-0.5 p-2">
-        <p className="text-xs font-semibold leading-tight line-clamp-2">{name}</p>
-        {role && (
-          <p className="text-[11px] leading-tight text-muted-foreground truncate" title={role}>
-            {role}
+        <CardContent className="space-y-0.5 p-2">
+          <p className="text-[11px] leading-tight text-muted-foreground">
+            {type === "Director" ? <Trans>Director</Trans> : <Trans>Actor</Trans>}
           </p>
-        )}
-      </div>
-    </div>
+          <p className="text-xs font-semibold leading-tight line-clamp-2">{name}</p>
+          {type === "Actor" && role && (
+            <p className="text-[11px] leading-tight text-muted-foreground truncate" title={role}>
+              {role}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </Link>
   );
 }

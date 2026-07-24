@@ -73,6 +73,28 @@ function normalizeDiscoverOptions(opts: tmdbDiscoverQuery): FetchOptions {
   }
   return Object.fromEntries(Object.entries(normalized).filter(([, v]) => v !== undefined)) as FetchOptions;
 }
+
+export async function tmdbRequest<T>(url: string, locale: string, options?: FetchOptions): Promise<T> {
+  const fullUrl = buildUrl(url, locale, options);
+  const cached = getTmdbCache(fullUrl);
+
+  if (isCachedPayload<T>(cached)) {
+    logger.debug("TMDB (cached)", `GET ${fullUrl}`);
+    return cached;
+  }
+
+  const res = await fetch(fullUrl);
+
+  if (!res.ok) throw new ServiceUnavailableError(`TMDB (${res.status} ${res.statusText})`);
+  logger.debug("TMDB", `GET ${fullUrl}`);
+
+  const data = await res.json();
+  if (!isCachedPayload<T>(data)) throw new ServiceUnavailableError("TMDB (invalid response)");
+  setTmdbCache(fullUrl, url, options, data);
+
+  return data;
+}
+
 export abstract class TMDBService<S extends Identifiable> extends IdentifiableService<S> {
   protected locale: string;
   protected readonly type: "movie" | "tv";
@@ -105,24 +127,7 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
   }
 
   protected async request<T>(url: string, options?: FetchOptions): Promise<T> {
-    const fullUrl = buildUrl(url, this.locale, options);
-    const cached = getTmdbCache(fullUrl);
-
-    if (isCachedPayload<T>(cached)) {
-      logger.debug("TMDB (cached)", `GET ${fullUrl}`);
-      return cached;
-    }
-
-    const res = await fetch(fullUrl);
-
-    if (!res.ok) throw new ServiceUnavailableError(`TMDB (${res.status} ${res.statusText})`);
-    logger.debug("TMDB", `GET ${fullUrl}`);
-
-    const data = await res.json();
-    if (!isCachedPayload<T>(data)) throw new ServiceUnavailableError("TMDB (invalid response)");
-    setTmdbCache(fullUrl, url, options, data);
-
-    return data;
+    return tmdbRequest<T>(url, this.locale, options);
   }
 
   private get toMedia() {

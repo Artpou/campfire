@@ -229,3 +229,67 @@ export interface TMDBGenre {
   id: number;
   name: string;
 }
+
+export interface TMDBPersonCreditCast {
+  id: number;
+  title?: string;
+  name?: string;
+  original_title?: string;
+  original_name?: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  vote_average: number;
+  vote_count: number;
+  release_date?: string | null;
+  first_air_date?: string | null;
+  overview: string | null;
+  character: string | null;
+  media_type: "movie" | "tv";
+  genre_ids: number[];
+  popularity: number;
+  credit_id: string;
+  order?: number;
+}
+
+export interface TMDBPersonCreditCrew {
+  id: number;
+  title?: string;
+  name?: string;
+  original_title?: string;
+  original_name?: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  vote_average: number;
+  vote_count: number;
+  release_date?: string | null;
+  first_air_date?: string | null;
+  overview: string | null;
+  department: string;
+  job: string;
+  media_type: "movie" | "tv";
+  genre_ids: number[];
+  popularity: number;
+  credit_id: string;
+}
+
+export interface TMDBPersonCredits {
+  cast: TMDBPersonCreditCast[];
+  crew: TMDBPersonCreditCrew[];
+}
+
+export interface TMDBPersonDetails {
+  id: number;
+  name: string;
+  biography: string | null;
+  birthday: string | null;
+  deathday: string | null;
+  place_of_birth: string | null;
+  profile_path: string | null;
+  known_for_department: string | null;
+  also_known_as: string[];
+  gender: number;
+  popularity: number;
+  imdb_id: string | null;
+  homepage: string | null;
+  combined_credits?: TMDBPersonCredits;
+}

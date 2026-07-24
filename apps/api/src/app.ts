@@ -15,6 +15,7 @@ import { downloadRoutes } from "./modules/download/download.route";
 import { indexerManagerRoutes } from "./modules/indexer-manager/indexer-manager.route";
 import { mediaRoutes } from "./modules/media/media.route";
 import { movieRoutes } from "./modules/movie/movie.route";
+import { personRoutes } from "./modules/person/person.route";
 import { storageConfigRoutes } from "./modules/storage-config/storage-config.route";
 import { streamingRoutes } from "./modules/streaming/streaming.route";
 import { subtitleRoutes } from "./modules/subtitle/subtitle.route";
@@ -46,6 +47,7 @@ export const app = new Hono<{ Variables: HonoVariables }>()
   .route("/indexer-manager", indexerManagerRoutes)
   .route("/media", mediaRoutes)
   .route("/movies", movieRoutes)
+  .route("/person", personRoutes)
   .route("/tv", tvRoutes)
   .route("/torrents", torrentRoutes)
   .route("/downloads", downloadRoutes)

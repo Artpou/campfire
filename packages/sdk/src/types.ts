@@ -8,6 +8,7 @@ type IndexerManagerListResponse = InferResponseType<ApiClient["indexer-manager"]
 
 export type Media = InferResponseType<ApiClient["media"][":id"]["$get"], 200>;
 export type Movie = InferResponseType<ApiClient["movies"][":id"]["$get"], 200>;
+export type Person = InferResponseType<ApiClient["person"][":id"]["$get"], 200>;
 export type TV = InferResponseType<ApiClient["tv"][":id"]["$get"], 200>;
 export type User = InferResponseType<ApiClient["users"][":id"]["$get"], 200>;
 export type AuthUser = InferResponseType<ApiClient["auth"]["me"]["$get"], 200>;
@@ -23,5 +24,6 @@ export type StorageConfig = InferResponseType<ApiClient["storage-config"]["$get"
 export type StorageStatus = InferResponseType<ApiClient["storage-config"]["status"]["$get"], 200>;
 
 export type TMDBMovieDetails = Movie["movie"];
+export type TMDBPersonDetails = Person["person"];
 export type TMDBTvDetails = TV["tv"];
 export type PaginatedMedia = InferResponseType<ApiClient["media"]["$get"], 200>;
