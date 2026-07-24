@@ -1,9 +1,11 @@
 import { useState } from "react";
 
+import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { api, type IndexerManager, type StremioManifest, type UpdateIndexerManagerInput, unwrap } from "@seedarr/sdk";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { SettingsIcon, TrashIcon } from "lucide-react";
+import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { DialogDelete } from "@/shared/components/dialog/dialog-delete";
@@ -62,6 +64,12 @@ export function IndexersManagerCard({ manager }: IndexersManagerCardProps) {
     onSuccess: () => {
       invalidateAll();
       setDialogOpen(null);
+      toast.success(t`Source uninstalled`);
+    },
+    onError: (error) => {
+      toast.error(t`Could not uninstall source`, {
+        description: error instanceof Error ? error.message : undefined,
+      });
     },
   });
 

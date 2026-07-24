@@ -1,14 +1,15 @@
 import { Trans } from "@lingui/react/macro";
+
 import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogTitle,
-} from "@radix-ui/react-alert-dialog";
-
-import { AlertDialogFooter, AlertDialogHeader } from "@/shared/ui/alert-dialog";
+} from "@/shared/ui/alert-dialog";
 
 interface DialogDeleteProps {
   open: boolean;
@@ -17,16 +18,17 @@ interface DialogDeleteProps {
   title: React.ReactNode;
   description: React.ReactNode;
 }
+
 export function DialogDelete({ open, setOpen, validate, title, description }: DialogDeleteProps) {
   return (
-    <AlertDialog open={!!open} onOpenChange={(value) => setOpen(value)}>
+    <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => setOpen(false)}>
+          <AlertDialogCancel>
             <Trans>Cancel</Trans>
           </AlertDialogCancel>
           <AlertDialogAction

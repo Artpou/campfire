@@ -211,7 +211,7 @@ msgstr "Êtes-vous sûr de vouloir supprimer ce téléchargement ? Cette action 
 msgid "Are you sure you want to delete user \"{0}\"? This action cannot be undone."
 msgstr "Êtes-vous sûr de vouloir supprimer l'utilisateur \"{0}\" ? Cette action est irréversible."
 
-#: src/features/indexers-manager/components/indexers-manager-card.tsx:126
+#: src/features/indexers-manager/components/indexers-manager-card.tsx:134
 msgid "Are you sure you want to uninstall this source? This action cannot be undone."
 msgstr "Êtes-vous sûr de vouloir désinstaller cette source ? Cette action est irréversible."
 
@@ -265,7 +265,7 @@ msgstr "Acheter / Louer"
 #: src/features/user/components/user-form-modal.tsx:259
 #: src/features/user/components/users-table.tsx:215
 #: src/routes/_app/downloads/$id.index.tsx:206
-#: src/shared/components/dialog/dialog-delete.tsx:30
+#: src/shared/components/dialog/dialog-delete.tsx:32
 msgid "Cancel"
 msgstr "Annuler"
 
@@ -360,6 +360,10 @@ msgstr "Impossible de reprendre le téléchargement"
 msgid "Could not transfer to remote server"
 msgstr "Impossible de transférer vers le serveur distant"
 
+#: src/features/indexers-manager/components/indexers-manager-card.tsx:70
+msgid "Could not uninstall source"
+msgstr "Impossible de désinstaller la source"
+
 #: src/features/media/hooks/media.queries.ts:110
 msgid "Could not update likes"
 msgstr "Impossible de mettre à jour les favoris"
@@ -421,7 +425,7 @@ msgstr "Qualité par défaut"
 #: src/features/user/components/users-table.tsx:188
 #: src/features/user/components/users-table.tsx:221
 #: src/routes/_app/downloads/$id.index.tsx:212
-#: src/shared/components/dialog/dialog-delete.tsx:36
+#: src/shared/components/dialog/dialog-delete.tsx:38
 msgid "Delete"
 msgstr "Supprimer"
 
@@ -470,7 +474,7 @@ msgstr "Réalisateur"
 msgid "Disable"
 msgstr "Désactiver"
 
-#: src/features/indexers-manager/components/indexers-manager-card.tsx:84
+#: src/features/indexers-manager/components/indexers-manager-card.tsx:92
 msgid "Disabled"
 msgstr "Désactivé"
 
@@ -1471,6 +1475,10 @@ msgstr "Passer pour l'instant"
 msgid "Something went wrong"
 msgstr "Une erreur s'est produite"
 
+#: src/features/indexers-manager/components/indexers-manager-card.tsx:67
+msgid "Source uninstalled"
+msgstr "Source désinstallée"
+
 #: src/features/media/components/media-filters-sheet.tsx:56
 msgid "Spanish"
 msgstr "Espagnol"
@@ -1683,11 +1691,11 @@ msgstr "Chemin des séries"
 msgid "Type"
 msgstr "Type"
 
-#: src/features/indexers-manager/components/indexers-manager-card.tsx:107
+#: src/features/indexers-manager/components/indexers-manager-card.tsx:115
 msgid "Uninstall"
 msgstr "Désinstaller"
 
-#: src/features/indexers-manager/components/indexers-manager-card.tsx:125
+#: src/features/indexers-manager/components/indexers-manager-card.tsx:133
 msgid "Uninstall source"
 msgstr "Désinstaller la source"
 
