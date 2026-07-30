@@ -80,8 +80,8 @@ function SearchPage() {
   return (
     <Container>
       <div className="space-y-6">
-        <div className="flex items-center justify-between gap-4">
-          <div className="relative flex-1">
+        <div className="flex flex-col gap-4">
+          <div className="relative w-full">
             <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground pointer-events-none" />
             <Input
               h="lg"
@@ -93,16 +93,16 @@ function SearchPage() {
             />
           </div>
           <Tabs value={type} onValueChange={handleTypeChange}>
-            <TabsList size="lg">
-              <TabsTrigger value="all" size="lg">
+            <TabsList size="lg" className="w-full sm:w-fit">
+              <TabsTrigger value="all" size="lg" className="flex-1 sm:flex-none">
                 <LayoutGridIcon className="size-4" />
                 <Trans>All</Trans>
               </TabsTrigger>
-              <TabsTrigger value="movie" size="lg">
+              <TabsTrigger value="movie" size="lg" className="flex-1 sm:flex-none">
                 <FilmIcon className="size-4" />
                 <Trans>Movies</Trans>
               </TabsTrigger>
-              <TabsTrigger value="tv" size="lg">
+              <TabsTrigger value="tv" size="lg" className="flex-1 sm:flex-none">
                 <TvIcon className="size-4" />
                 <Trans>TV Shows</Trans>
               </TabsTrigger>

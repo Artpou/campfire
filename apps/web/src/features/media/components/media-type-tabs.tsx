@@ -26,9 +26,9 @@ export function MediaTypeTabs({ value }: MediaTypeTabsProps) {
       value={value ?? "all"}
       onValueChange={(v) => navigate({ to: "/downloads", search: { type: getMediaType(v) } })}
     >
-      <TabsList size="lg">
+      <TabsList size="lg" className="w-full sm:w-fit">
         {TAB_OPTIONS.map(({ value: val, icon: Icon, label }) => (
-          <TabsTrigger key={val} value={val ?? "all"} size="lg">
+          <TabsTrigger key={val} value={val ?? "all"} size="lg" className="flex-1 sm:flex-none">
             <Icon className="size-4 text-foreground" />
             <span className="font-medium">
               <Trans id={label.id} />

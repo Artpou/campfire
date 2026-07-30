@@ -44,7 +44,11 @@ function TVPage() {
       queryOptions={tvQueries.discover(discoverOptions, locale)}
       onSearchChange={handleSearchChange}
       providerTabs={
-        <TVProviderTabs value={search.with_watch_providers} onValueChange={(value) => handleSearchChange(value)} />
+        <TVProviderTabs
+          className="hidden xl:flex"
+          value={search.with_watch_providers}
+          onValueChange={(value) => handleSearchChange(value)}
+        />
       }
       filtersSheet={<TvFiltersSheet value={pickTvFilters(search)} onChange={handleSearchChange} />}
       emptyTitle={<Trans>No TV shows found</Trans>}

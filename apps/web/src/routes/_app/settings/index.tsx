@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 
 import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";
@@ -53,6 +54,7 @@ function SettingsPage() {
   ];
 
   const visibleTabs = tabs.filter((tab) => !tab.adminOnly || isAdmin);
+  const activeTabMeta = visibleTabs.find((tab) => tab.id === activeTab) ?? visibleTabs[0];
 
   const handleSignOut = async () => {
     try {
@@ -66,10 +68,33 @@ function SettingsPage() {
   };
 
   return (
-    <Container>
+    <Container className="pb-3 sm:pb-6">
       <div className="flex flex-col md:flex-row gap-6">
         <nav className="md:w-64 shrink-0 flex flex-col md:sticky md:top-6 md:self-start md:h-[85vh]">
-          <div className="flex md:flex-col gap-1 flex-1">
+          <div className="md:hidden">
+            <Select value={activeTab} onValueChange={(value) => setActiveTab(value as SettingsTab)}>
+              <SelectTrigger className="w-full h-11">
+                <SelectValue>
+                  <span className="flex items-center gap-2">
+                    {activeTabMeta && <activeTabMeta.icon className="size-4" />}
+                    {activeTabMeta?.label}
+                  </span>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {visibleTabs.map((tab) => (
+                  <SelectItem key={tab.id} value={tab.id}>
+                    <span className="flex items-center gap-2">
+                      <tab.icon className="size-4" />
+                      {tab.label}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="hidden md:flex md:flex-col gap-1 flex-1">
             {visibleTabs.map((tab) => (
               <button
                 key={tab.id}
@@ -115,7 +140,7 @@ function SettingsPage() {
           {activeTab === "advanced" && isAdmin && <SettingsAdvancedTab />}
         </div>
 
-        <div className="md:hidden space-y-4">
+        <div className="md:hidden space-y-3">
           <Card className="py-4 gap-0">
             <CardContent className="flex items-center gap-2">
               <img src="/logo.svg" alt="Seedarr" className="size-8 shrink-0" />

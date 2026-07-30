@@ -67,16 +67,17 @@ function DownloadsPage() {
   return (
     <Container>
       <div className="space-y-4">
-        <div className="flex items-center gap-4">
-          <MediaTypeTabs value={type} />
+        <div className="flex flex-col gap-4">
           <Input
             type="text"
             h="lg"
             search
+            className="w-full"
             placeholder={t`Search in your library...`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          <MediaTypeTabs value={type} />
         </div>
 
         {stats && (
