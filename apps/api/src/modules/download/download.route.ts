@@ -23,6 +23,10 @@ export const downloadRoutes = DownloadService.createRouter()
     const { mediaId } = c.req.valid("param");
     return c.json(await c.var.service.getByMediaId(Number(mediaId)));
   })
+  .get("/:id/remote-files", zValidator("param", stringIdParamDto), async (c) => {
+    const { id } = c.req.valid("param");
+    return c.json(await c.var.service.listRemoteFiles(id));
+  })
   .get("/:id", zValidator("param", stringIdParamDto), async (c) => {
     const { id } = c.req.valid("param");
     const download = await c.var.service.get(id);

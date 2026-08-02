@@ -4,7 +4,7 @@ import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
-import { InfoIcon } from "lucide-react";
+import { HardDriveIcon, InfoIcon, ServerIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
@@ -23,6 +23,7 @@ import {
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { hasMinRole } from "@/features/auth/helpers/role.helper";
 import { DownloadActionButtons } from "@/features/downloads/components/download-action-buttons";
@@ -79,6 +80,15 @@ function DownloadDetailPage() {
   const pauseTorrent = useDownloadPause();
   const resumeTorrent = useDownloadResume();
   const transferDownload = useDownloadTransfer();
+
+  const torrentFiles = getTorrentFiles(download);
+  const hasTorrentFiles = torrentFiles.length > 0;
+  const hasRemoteLocation = Boolean(download.remoteLocation);
+
+  const { data: remoteFiles, isLoading: isRemoteFilesLoading } = useQuery({
+    ...downloadQueries.remoteFiles(id),
+    enabled: hasRemoteLocation,
+  });
 
   const status = getDownloadStatus(download);
   const { downloadSpeed, uploadSpeed, numPeers } = download.torrent ?? {};
@@ -159,9 +169,42 @@ function DownloadDetailPage() {
               </div>
             )}
 
-            {download.torrent?.files && (
-              <DownloadFilesList files={getTorrentFiles(download)} availableOnServer={availableOnServer} />
-            )}
+            {hasTorrentFiles && hasRemoteLocation ? (
+              <Tabs defaultValue="local">
+                <TabsList>
+                  <TabsTrigger value="local">
+                    <HardDriveIcon className="size-4" />
+                    <Trans>Local</Trans>
+                  </TabsTrigger>
+                  <TabsTrigger value="remote">
+                    <ServerIcon className="size-4" />
+                    <Trans>Remote</Trans>
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="local">
+                  <DownloadFilesList files={torrentFiles} availableOnServer={availableOnServer} />
+                </TabsContent>
+                <TabsContent value="remote">
+                  {remoteFiles ? (
+                    <DownloadFilesList files={remoteFiles} />
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-4">
+                      <Trans>Loading remote files…</Trans>
+                    </p>
+                  )}
+                </TabsContent>
+              </Tabs>
+            ) : !hasTorrentFiles && hasRemoteLocation ? (
+              remoteFiles ? (
+                <DownloadFilesList files={remoteFiles} availableOnServer />
+              ) : isRemoteFilesLoading ? (
+                <p className="text-sm text-muted-foreground py-4">
+                  <Trans>Loading remote files…</Trans>
+                </p>
+              ) : null
+            ) : hasTorrentFiles ? (
+              <DownloadFilesList files={torrentFiles} availableOnServer={availableOnServer} />
+            ) : null}
           </Card>
         </div>
 

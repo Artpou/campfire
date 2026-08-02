@@ -216,6 +216,13 @@ export class DownloadService extends IdentifiableService<Download> {
     return { success: true };
   }
 
+  async listRemoteFiles(id: string): Promise<{ name: string; path: string; length: number }[]> {
+    const [item] = await this.findMany({ ids: [id] });
+    if (!item) throw new NotFoundError("Download");
+    if (!item.remoteLocation) return [];
+    return remoteStorageService.listFiles(item.remoteLocation);
+  }
+
   async delete(id: string): Promise<{ success: true }> {
     const [item] = await this.findMany({ ids: [id] });
     if (!item) throw new NotFoundError("Download");

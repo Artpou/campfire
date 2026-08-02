@@ -3,7 +3,7 @@ import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { PassThrough, Transform } from "node:stream";
-import { StorageAdapter, type StorageConnectionOptions } from "./storage.adapter";
+import { type RemoteFileEntry, StorageAdapter, type StorageConnectionOptions } from "./storage.adapter";
 
 function createByteLimiter(maxBytes: number): Transform {
   let remaining = maxBytes;
@@ -129,6 +129,39 @@ export class FtpAdapter extends StorageAdapter {
     } finally {
       client.close();
     }
+  }
+
+  async listFiles(remotePath: string, opts: StorageConnectionOptions): Promise<RemoteFileEntry[]> {
+    const client = await this.createClient(opts);
+    const fullPath = this.buildRemotePath(remotePath);
+    const results: RemoteFileEntry[] = [];
+
+    try {
+      const stat = await client.size(fullPath).catch(() => -1);
+      if (stat >= 0) {
+        const name = path.posix.basename(fullPath);
+        results.push({ name, path: name, length: stat });
+        return results;
+      }
+
+      const collect = async (dir: string, prefix: string): Promise<void> => {
+        const entries = await client.list(dir);
+        for (const entry of entries) {
+          const entryPath = prefix ? `${prefix}/${entry.name}` : entry.name;
+          if (entry.isDirectory) {
+            await collect(path.posix.join(dir, entry.name), entryPath);
+          } else if (entry.isFile) {
+            results.push({ name: entry.name, path: entryPath, length: entry.size });
+          }
+        }
+      };
+
+      await collect(fullPath, "");
+    } finally {
+      client.close();
+    }
+
+    return results;
   }
 
   async createReadStream(

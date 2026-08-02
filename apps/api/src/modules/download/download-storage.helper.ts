@@ -9,6 +9,7 @@ import { media } from "@/modules/media/media.schema";
 import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
 import { waitUntilNoStreams } from "@/modules/streaming/streaming-lease";
 import fs from "node:fs/promises";
+import { torrentClient } from "./webtorrent-manager";
 
 const activeTransfers = new Set<string>();
 
@@ -20,6 +21,21 @@ async function resolveMediaType(mediaId: number | null | undefined): Promise<"mo
   if (!mediaId) return null;
   const mediaRow = await db.query.media.findFirst({ where: eq(media.id, mediaId) });
   return mediaRow?.type ?? null;
+}
+
+/** Tear down any in-memory WebTorrent session for this download (files may already be gone). */
+function unloadTorrentSession(downloadId: string): void {
+  const active = torrentClient.getActiveTorrent(downloadId);
+  if (!active) return;
+
+  torrentClient.markDestroying(downloadId);
+  torrentClient.deleteActiveTorrent(downloadId);
+  try {
+    active.destroy({ destroyStore: false });
+  } catch {
+    // already destroyed
+  }
+  setTimeout(() => torrentClient.unmarkDestroying(downloadId), 5_000);
 }
 
 /** Mark transfer started in DB so the UI can poll immediately (auto + manual). */
@@ -111,8 +127,11 @@ export async function runRemoteTransfer(
     if (shouldDeleteLocal) {
       // Wait until playback finishes so we don't delete under an open stream.
       await waitUntilNoStreams(downloadId);
+      unloadTorrentSession(downloadId);
       await fs.rm(localPath, { recursive: true, force: true });
-      logger.info("TRANSFER", `Deleted local files after transfer: ${torrentName}`);
+      // Drop torrent metadata — local source is gone; remoteLocation is the source of truth.
+      await db.update(download).set({ torrent: null }).where(eq(download.id, downloadId));
+      logger.info("TRANSFER", `Deleted local files and cleared torrent data: ${torrentName}`);
     } else {
       logger.info("TRANSFER", `Kept local files after transfer: ${torrentName}`);
     }

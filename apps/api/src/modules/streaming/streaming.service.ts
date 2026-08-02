@@ -26,10 +26,10 @@ import fs from "node:fs/promises";
 import * as path from "node:path";
 import {
   type ByteRange,
-  buildRemoteVideoInfo,
   buildStreamHeaders,
   isFsNotFoundError,
   parseRangeHeader,
+  resolveRemoteVideoInfo,
 } from "./streaming.helper";
 import { acquireStreamLease } from "./streaming-lease";
 
@@ -68,7 +68,7 @@ export interface LiveStreamResult {
 export class StreamingService {
   async resolveSource(download: Download): Promise<StreamSource | undefined> {
     if (download.remoteLocation) {
-      const remote = this.tryRemoteSource(download);
+      const remote = await this.tryRemoteSource(download);
       if (remote) return remote;
     }
 
@@ -267,11 +267,16 @@ export class StreamingService {
     return null;
   }
 
-  private tryRemoteSource(item: Download): StreamSource | undefined {
+  private async tryRemoteSource(item: Download): Promise<StreamSource | undefined> {
     if (!item.remoteLocation) return undefined;
-    const info = buildRemoteVideoInfo(item, item.remoteLocation);
-    if (!info) return undefined;
-    return { size: info.size, fileName: info.fileName, remotePath: info.remotePath, isRemote: true };
+    try {
+      const info = await resolveRemoteVideoInfo(item, item.remoteLocation);
+      if (!info) return undefined;
+      return { size: info.size, fileName: info.fileName, remotePath: info.remotePath, isRemote: true };
+    } catch (error) {
+      logger.warn("STREAM", `Remote source resolve failed: ${error}`);
+      return undefined;
+    }
   }
 
   private async resolveFromDisk(download: Download): Promise<StreamSource | undefined> {

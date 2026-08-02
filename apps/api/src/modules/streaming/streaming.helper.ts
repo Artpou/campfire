@@ -1,10 +1,18 @@
 import { VIDEO_EXTENSIONS } from "@seedarr/shared";
 
 import type { Download } from "@/modules/download/download.dto";
+import type { RemoteFileEntry } from "@/modules/storage-config/adapters/storage.adapter";
+import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
 
 export interface ByteRange {
   start: number;
   end: number;
+}
+
+export interface RemoteVideoInfo {
+  remotePath: string;
+  size: number;
+  fileName: string;
 }
 
 function getContentType(fileName: string): string {
@@ -62,6 +70,11 @@ function pickLargestVideoFromTorrent(download: Download): { name: string; path: 
   return videos[0] ?? null;
 }
 
+function pickLargestVideoFromRemoteFiles(files: RemoteFileEntry[]): RemoteFileEntry | null {
+  const videos = files.filter((f) => VIDEO_EXTENSIONS.test(f.name)).sort((a, b) => b.length - a.length);
+  return videos[0] ?? null;
+}
+
 function relativeToTorrentRoot(download: Download, videoPath: string, fallbackName: string): string {
   const torrentName = download.torrent?.name ?? "";
   const rel = videoPath.replace(/\\/g, "/");
@@ -70,10 +83,8 @@ function relativeToTorrentRoot(download: Download, videoPath: string, fallbackNa
   return rel.startsWith(`${torrentName}/`) ? rel.slice(torrentName.length + 1) : rel || fallbackName;
 }
 
-export function buildRemoteVideoInfo(
-  download: Download,
-  torrentRemotePath: string,
-): { remotePath: string; size: number; fileName: string } | null {
+/** Sync path using torrent.files metadata (may be null after local delete). */
+export function buildRemoteVideoInfo(download: Download, torrentRemotePath: string): RemoteVideoInfo | null {
   const video = pickLargestVideoFromTorrent(download);
   const size = video?.length ?? download.torrent?.length ?? 0;
 
@@ -87,6 +98,30 @@ export function buildRemoteVideoInfo(
   const relative = relativeToTorrentRoot(download, video.path, video.name);
   return {
     remotePath: `${torrentRemotePath}/${relative}`.replace(/\/+/g, "/"),
+    size: video.length,
+    fileName: video.name,
+  };
+}
+
+/** Prefer torrent metadata; fall back to listing the remote directory. */
+export async function resolveRemoteVideoInfo(
+  download: Download,
+  torrentRemotePath: string,
+): Promise<RemoteVideoInfo | null> {
+  const fromTorrent = buildRemoteVideoInfo(download, torrentRemotePath);
+  if (fromTorrent) return fromTorrent;
+
+  if (VIDEO_EXTENSIONS.test(torrentRemotePath.split("/").pop() ?? "")) {
+    const fileName = torrentRemotePath.split("/").pop() ?? torrentRemotePath;
+    return { remotePath: torrentRemotePath, size: 0, fileName };
+  }
+
+  const files = await remoteStorageService.listFiles(torrentRemotePath);
+  const video = pickLargestVideoFromRemoteFiles(files);
+  if (!video) return null;
+
+  return {
+    remotePath: `${torrentRemotePath}/${video.path}`.replace(/\/+/g, "/"),
     size: video.length,
     fileName: video.name,
   };

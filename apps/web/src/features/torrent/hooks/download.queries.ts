@@ -1,11 +1,17 @@
 import { t } from "@lingui/core/macro";
-import type { Download, DownloadTorrentInput } from "@seedarr/sdk";
-import { api, unwrap } from "@seedarr/sdk";
+import type { Download, DownloadTorrentInput, TorrentInspectFile } from "@seedarr/sdk";
+import { ApiError, api, getBaseUrl, unwrap } from "@seedarr/sdk";
 import { type QueryState, queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { translateDownloadError } from "@/features/downloads/helpers/download-error.helper";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
+
+async function fetchRemoteFiles(id: string): Promise<TorrentInspectFile[]> {
+  const res = await fetch(`${getBaseUrl()}/downloads/${id}/remote-files`, { credentials: "include" });
+  if (!res.ok) throw new ApiError(`Failed to fetch remote files: ${res.status}`, res.status);
+  return res.json();
+}
 
 export const downloadQueries = {
   key: ["download"] as const,
@@ -18,6 +24,11 @@ export const downloadQueries = {
     queryOptions({
       queryKey: [...downloadQueries.key, id, "playback-info"],
       queryFn: () => unwrap(api.streaming[":id"].info.$get({ param: { id } })),
+    }),
+  remoteFiles: (id: string) =>
+    queryOptions({
+      queryKey: [...downloadQueries.key, id, "remote-files"],
+      queryFn: () => fetchRemoteFiles(id),
     }),
   byMedia: (mediaId: number) =>
     queryOptions({

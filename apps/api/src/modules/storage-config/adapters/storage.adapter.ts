@@ -10,6 +10,12 @@ export interface StorageConnectionOptions {
   secure?: boolean;
 }
 
+export interface RemoteFileEntry {
+  name: string;
+  path: string;
+  length: number;
+}
+
 export abstract class StorageAdapter {
   abstract testConnection(opts: StorageConnectionOptions): Promise<{ success: boolean; error?: string }>;
   abstract transferDirectory(
@@ -24,4 +30,5 @@ export abstract class StorageAdapter {
     opts: StorageConnectionOptions,
     range?: { start: number; end: number },
   ): Promise<{ stream: NodeJS.ReadableStream; size: number; cleanup?: () => void }>;
+  abstract listFiles(remotePath: string, opts: StorageConnectionOptions): Promise<RemoteFileEntry[]>;
 }

@@ -1,7 +1,12 @@
 import { db } from "@/db/db";
 import path from "node:path";
 import { FtpAdapter } from "./adapters/ftp.adapter";
-import type { StorageAdapter, StorageConnectionOptions, StorageProtocol } from "./adapters/storage.adapter";
+import type {
+  RemoteFileEntry,
+  StorageAdapter,
+  StorageConnectionOptions,
+  StorageProtocol,
+} from "./adapters/storage.adapter";
 import { WebdavAdapter } from "./adapters/webdav.adapter";
 import { decrypt } from "./crypto.helper";
 
@@ -87,6 +92,14 @@ class RemoteStorageService {
     if (!opts) return;
     const adapter = getAdapter(opts.protocol);
     return adapter.remove(remotePath, opts);
+  }
+
+  async listFiles(remotePath: string): Promise<RemoteFileEntry[]> {
+    assertSafePath(remotePath);
+    const opts = await this.getConnectionOptions();
+    if (!opts) return [];
+    const adapter = getAdapter(opts.protocol);
+    return adapter.listFiles(remotePath, opts);
   }
 
   async createReadStream(

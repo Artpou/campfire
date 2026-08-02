@@ -55,8 +55,6 @@ export class StremioAdapter extends IndexerAdapter {
   async getTorrents(query: torrentListQuery): Promise<Torrent[]> {
     const media = query.media;
 
-    console.log("media", media);
-
     let videoId = media.imdbId;
     if (media.type === "tv") {
       const season = query.season ?? 1;

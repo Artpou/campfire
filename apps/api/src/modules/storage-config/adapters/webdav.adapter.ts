@@ -2,7 +2,7 @@ import { logger } from "@/helpers/logger.helper";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
-import { StorageAdapter, type StorageConnectionOptions } from "./storage.adapter";
+import { type RemoteFileEntry, StorageAdapter, type StorageConnectionOptions } from "./storage.adapter";
 
 export class WebdavAdapter extends StorageAdapter {
   private async createClient(opts: StorageConnectionOptions) {
@@ -109,6 +109,40 @@ export class WebdavAdapter extends StorageAdapter {
     } catch {
       logger.warn("WEBDAV", `Could not remove: ${remotePath}`);
     }
+  }
+
+  async listFiles(remotePath: string, opts: StorageConnectionOptions): Promise<RemoteFileEntry[]> {
+    const client = await this.createClient(opts);
+    const fullPath = this.buildRemotePath(remotePath);
+    const results: RemoteFileEntry[] = [];
+
+    const rawStat = await client.stat(fullPath);
+    const stat = "data" in rawStat ? rawStat.data : rawStat;
+
+    if (stat.type === "file") {
+      const name = path.posix.basename(fullPath);
+      results.push({ name, path: name, length: stat.size });
+      return results;
+    }
+
+    const collect = async (dir: string, prefix: string): Promise<void> => {
+      const raw = await client.getDirectoryContents(dir);
+      const entries = Array.isArray(raw) ? raw : (raw as { data: typeof raw }).data;
+
+      for (const entry of entries) {
+        const entryName = path.posix.basename(entry.filename);
+        const entryPath = prefix ? `${prefix}/${entryName}` : entryName;
+
+        if (entry.type === "directory") {
+          await collect(entry.filename, entryPath);
+        } else {
+          results.push({ name: entryName, path: entryPath, length: entry.size });
+        }
+      }
+    };
+
+    await collect(fullPath, "");
+    return results;
   }
 
   async createReadStream(
