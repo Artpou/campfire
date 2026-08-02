@@ -16,14 +16,6 @@ export interface SubtitleTrack {
   format: "srt" | "vtt" | "ass" | "ssa";
 }
 
-function subtitleFormat(fileName: string): SubtitleTrack["format"] {
-  const lower = fileName.toLowerCase();
-  if (lower.endsWith(".vtt")) return "vtt";
-  if (lower.endsWith(".ass")) return "ass";
-  if (lower.endsWith(".ssa")) return "ssa";
-  return "srt";
-}
-
 function extractLangInfo(fileName: string): { label: string; srclang: string } {
   const nameWithoutExt = fileName.replace(/\.(srt|vtt|ass|ssa)$/i, "");
   const match2 = nameWithoutExt.match(/\.([a-z]{2})$/i);
@@ -38,7 +30,7 @@ function extractLangInfo(fileName: string): { label: string; srclang: string } {
   };
 }
 
-/** Same-origin relative URLs so movi-player can fetch with session cookies. */
+/** Same-origin relative URLs — prefetched to blob: URLs before handing to movi-player. */
 export function buildSubtitleTracks(download: Download, externalPaths: string[]): SubtitleTrack[] {
   const tracks: SubtitleTrack[] = [];
   const id = download.id;
@@ -66,7 +58,7 @@ export function buildSubtitleTracks(download: Download, externalPaths: string[])
           srclang: `${srclang}-${i}`,
           src: `/streaming/${id}/subtitles/${encodeURIComponent(file.path)}`,
           default: i === 0 && tracks.length === 0,
-          format: subtitleFormat(fileNameOnly),
+          format: "vtt",
         });
       }
     }
@@ -75,14 +67,14 @@ export function buildSubtitleTracks(download: Download, externalPaths: string[])
   for (let i = 0; i < externalPaths.length; i++) {
     const filePath = externalPaths[i];
     const fileName = filePath.split("/").pop() || filePath;
-    const { label } = extractLangInfo(fileName);
+    const { label, srclang } = extractLangInfo(fileName);
     tracks.push({
       kind: "subtitles",
       label,
-      srclang: `ext-${i}`,
+      srclang: `${srclang}-ext-${i}`,
       src: `/streaming/${id}/subtitles/${encodeURIComponent(filePath)}`,
       default: tracks.length === 0,
-      format: subtitleFormat(fileName),
+      format: "vtt",
     });
   }
 
@@ -91,4 +83,39 @@ export function buildSubtitleTracks(download: Download, externalPaths: string[])
   }
 
   return tracks;
+}
+
+/** Normalize SRT → WebVTT for movi-player's cue parser. */
+export function ensureWebVtt(text: string): string {
+  const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
+  const body = normalized.replace(
+    /(\d{1,2}):(\d{2}):(\d{2}),(\d{3})/g,
+    (_m, h: string, m: string, s: string, ms: string) => `${h.padStart(2, "0")}:${m}:${s}.${ms}`,
+  );
+  if (body.startsWith("WEBVTT")) return body.endsWith("\n") ? body : `${body}\n`;
+  return `WEBVTT\n\n${body}\n`;
+}
+
+/** Prefetch with cookies → blob URLs (movi-player's fetch has no credentials). */
+export async function resolveSubtitleTracksToBlobs(tracks: SubtitleTrack[]): Promise<{
+  tracks: SubtitleTrack[];
+  blobUrls: string[];
+}> {
+  const blobUrls: string[] = [];
+  const resolved: SubtitleTrack[] = [];
+
+  for (const track of tracks) {
+    try {
+      const res = await fetch(track.src, { credentials: "include" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = ensureWebVtt(await res.text());
+      const url = URL.createObjectURL(new Blob([text], { type: "text/vtt;charset=utf-8" }));
+      blobUrls.push(url);
+      resolved.push({ ...track, src: url, format: "vtt" });
+    } catch (error) {
+      console.error("[subtitles] prefetch failed", track.src, error);
+    }
+  }
+
+  return { tracks: resolved, blobUrls };
 }

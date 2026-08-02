@@ -1,16 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { msg } from "@lingui/core/macro";
-import { Trans, useLingui } from "@lingui/react/macro";
+import { useLingui } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { SubtitlesIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
-import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
 
 import { hasMinRole } from "@/features/auth/helpers/role.helper";
@@ -151,21 +149,13 @@ function VideoPlayerPage() {
   return (
     <Container className="max-w-7xl">
       <div className="space-y-4">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <AppBreadcrumb
-            items={[
-              { name: t(msg`Downloads`), link: "/downloads" },
-              { name: download.torrent?.name ?? "", link: `/downloads/${id}` },
-              { name: t(msg`Play`) },
-            ]}
-          />
-          {download.mediaId != null && (
-            <Button variant="outline" size="sm" onClick={() => setSubtitleDialogOpen(true)}>
-              <SubtitlesIcon className="size-4" />
-              <Trans>Add subtitles</Trans>
-            </Button>
-          )}
-        </div>
+        <AppBreadcrumb
+          items={[
+            { name: t(msg`Downloads`), link: "/downloads" },
+            { name: download.torrent?.name ?? "", link: `/downloads/${id}` },
+            { name: t(msg`Play`) },
+          ]}
+        />
 
         {subtitleDialogOpen && (
           <SubtitleSearchDialog
@@ -184,6 +174,8 @@ function VideoPlayerPage() {
             onPlayer={handlePlayer}
             onLoadedMetadata={handleLoadedMetadata}
             onError={handlePlaybackError}
+            onAddSubtitles={download.mediaId != null ? () => setSubtitleDialogOpen(true) : undefined}
+            enableSubtitleDelay
           />
         </div>
       </div>

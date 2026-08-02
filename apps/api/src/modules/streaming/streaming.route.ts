@@ -56,7 +56,7 @@ export const streamingRoutes = new Hono<{ Variables: HonoVariables }>()
     c.header("Content-Type", contentType);
     c.header("Access-Control-Allow-Origin", process.env.WEB_URL || "");
     c.header("Access-Control-Allow-Methods", "GET");
-    c.header("Cache-Control", "public, max-age=3600");
+    c.header("Cache-Control", "private, no-cache");
 
     return c.text(content);
   });
