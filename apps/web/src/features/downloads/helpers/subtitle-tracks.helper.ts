@@ -86,7 +86,7 @@ export function buildSubtitleTracks(download: Download, externalPaths: string[])
 }
 
 /** Normalize SRT → WebVTT for movi-player's cue parser. */
-export function ensureWebVtt(text: string): string {
+function ensureWebVtt(text: string): string {
   const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
   const body = normalized.replace(
     /(\d{1,2}):(\d{2}):(\d{2}),(\d{3})/g,
