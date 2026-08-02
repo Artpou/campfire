@@ -84,7 +84,7 @@ function relativeToTorrentRoot(download: Download, videoPath: string, fallbackNa
 }
 
 /** Sync path using torrent.files metadata (may be null after local delete). */
-export function buildRemoteVideoInfo(download: Download, torrentRemotePath: string): RemoteVideoInfo | null {
+function buildRemoteVideoInfo(download: Download, torrentRemotePath: string): RemoteVideoInfo | null {
   const video = pickLargestVideoFromTorrent(download);
   const size = video?.length ?? download.torrent?.length ?? 0;
 
