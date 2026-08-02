@@ -7,6 +7,7 @@ import { logger } from "@/helpers/logger.helper";
 import { resolveWithinDownloads } from "@/helpers/path.helper";
 import { probeVideoDuration } from "@/helpers/video.helper";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
+import type { TorrentLiveData } from "@/modules/download/download.schema";
 import { download } from "@/modules/download/download.schema";
 import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
 import fs from "node:fs/promises";
@@ -15,7 +16,7 @@ import { markTransferStarting, runRemoteTransfer } from "./download-storage.help
 import { extractTorrentLiveData } from "./webtorrent.helper";
 import { torrentClient } from "./webtorrent-manager";
 
-const SYNC_THROTTLE_MS = 1_500;
+const SYNC_THROTTLE_MS = 1_000;
 const HEALTH_CHECK_INTERVAL_MS = 60_000;
 /** Minutes to seed after download completes before unloading from WebTorrent. -1 = keep forever. */
 const SEED_AFTER_COMPLETE_MINUTES = Number.parseInt(process.env.SEED_AFTER_COMPLETE_MINUTES ?? "5", 10);
@@ -57,6 +58,7 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
           ...liveData,
           transferring: current?.torrent?.transferring,
           transferProgress: current?.torrent?.transferProgress,
+          transferSpeed: current?.torrent?.transferSpeed,
           skipAutoTransfer: current?.torrent?.skipAutoTransfer,
           durationSeconds: current?.torrent?.durationSeconds,
           videoCodec: current?.torrent?.videoCodec,
@@ -83,7 +85,14 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
       logger.info("WEBTORRENT", `Completed: ${torrent.name}`);
       await syncDb(true, { done: true });
 
-      const dl = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
+      let dl = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
+
+      // Wrap single-file torrents into a folder so the layout is consistent.
+      if (torrent.files.length === 1 && torrent.name) {
+        const wrapped = await wrapSingleFileInFolder(downloadId, torrent.name, dl?.torrent ?? undefined);
+        if (wrapped) dl = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
+      }
+
       ActivityLogService.log({
         userId: dl?.userId,
         type: "SUCCESS",
@@ -93,7 +102,8 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
       });
 
       if (dl?.torrent && !dl.torrent.durationSeconds && torrent.name) {
-        const durationSeconds = await probeLargestVideoDuration(torrent.name);
+        const torrentName = dl.torrent.name;
+        const durationSeconds = await probeLargestVideoDuration(torrentName);
         if (durationSeconds != null) {
           await db
             .update(download)
@@ -137,6 +147,51 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
     torrentClient.setActiveTorrent(downloadId, torrent);
     syncDb(true);
   }
+}
+
+/**
+ * For single-file torrents, move `downloads/file.mkv` → `downloads/file/file.mkv`
+ * so the on-disk layout is always a folder, consistent with multi-file torrents.
+ * Updates `torrent.name` and `torrent.files[].path` in DB.
+ */
+async function wrapSingleFileInFolder(
+  downloadId: string,
+  torrentName: string,
+  torrentData: TorrentLiveData | undefined,
+): Promise<boolean> {
+  const filePath = resolveWithinDownloads(torrentName);
+  try {
+    const stat = await fs.stat(filePath);
+    if (!stat.isFile()) return false;
+  } catch {
+    return false;
+  }
+
+  const ext = path.extname(torrentName);
+  const folderName = ext ? torrentName.slice(0, -ext.length) : torrentName;
+  const folderPath = resolveWithinDownloads(folderName);
+
+  try {
+    await fs.mkdir(folderPath, { recursive: true });
+    await fs.rename(filePath, path.join(folderPath, torrentName));
+  } catch (err) {
+    logger.error("WEBTORRENT", `Failed to wrap single file in folder: ${err}`);
+    return false;
+  }
+
+  if (torrentData) {
+    const updatedFiles = torrentData.files.map((f) => ({
+      ...f,
+      path: path.join(folderName, f.name),
+    }));
+    await db
+      .update(download)
+      .set({ torrent: { ...torrentData, name: folderName, path: resolveWithinDownloads(), files: updatedFiles } })
+      .where(eq(download.id, downloadId));
+  }
+
+  logger.info("WEBTORRENT", `Wrapped single file into folder: ${torrentName} → ${folderName}/`);
+  return true;
 }
 
 /**

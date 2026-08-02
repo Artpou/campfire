@@ -35,6 +35,8 @@ export interface TorrentLiveData {
   /** Ephemeral — transfer in progress (UI progress bar). */
   transferring?: boolean;
   transferProgress?: number;
+  /** Bytes/sec during remote transfer (computed from progress deltas). */
+  transferSpeed?: number;
   /** Skip auto-transfer when user chose local-only at start. */
   skipAutoTransfer?: boolean;
   /** Cached ffprobe duration (seconds) — survives local delete after remote transfer. */

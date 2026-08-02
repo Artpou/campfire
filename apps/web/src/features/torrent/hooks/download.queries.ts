@@ -46,8 +46,8 @@ export const downloadQueries = {
 export function refetchDownloadInterval({ state }: { state: QueryState<Download> }) {
   const data = state.data;
   if (!data) return false;
-  if (data.torrent?.transferring) return 1500;
-  return data.torrent?.done ? false : 1500;
+  if (data.torrent?.transferring) return 1000;
+  return data.torrent?.done ? false : 1000;
 }
 
 function refetchDownloadsByMediaInterval({ state }: { state: QueryState<Download[]> }) {
@@ -58,7 +58,7 @@ function refetchDownloadsByMediaInterval({ state }: { state: QueryState<Download
     (download) => download.torrent?.transferring || (download.torrent && !download.torrent.done),
   );
 
-  return hasActiveDownload ? 5000 : false;
+  return hasActiveDownload ? 2000 : false;
 }
 
 export function useStartDownload() {

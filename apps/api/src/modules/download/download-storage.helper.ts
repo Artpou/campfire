@@ -89,9 +89,21 @@ export async function runRemoteTransfer(
 
     logger.info("TRANSFER", `Transferring to remote: ${remotePath}`);
 
+    const totalSize = dl.torrent.length ?? 0;
+    let lastProgressAt = Date.now();
+    let lastProgressBytes = 0;
+
     await remoteStorageService.transferDirectory(localPath, remotePath, async (progress) => {
       const current = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
       if (!current?.torrent) return;
+
+      const now = Date.now();
+      const elapsed = (now - lastProgressAt) / 1000;
+      const currentBytes = progress * totalSize;
+      const speed = elapsed > 0 ? (currentBytes - lastProgressBytes) / elapsed : 0;
+      lastProgressAt = now;
+      lastProgressBytes = currentBytes;
+
       await db
         .update(download)
         .set({
@@ -99,6 +111,7 @@ export async function runRemoteTransfer(
             ...current.torrent,
             transferring: true,
             transferProgress: progress,
+            transferSpeed: Math.max(0, Math.round(speed)),
           },
         })
         .where(eq(download.id, downloadId));

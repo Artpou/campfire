@@ -23,17 +23,23 @@ type MediaCardProps = {
   mode?: "default" | "minimal" | "preview";
   playable?: boolean;
   withType?: boolean;
+  /** Override card click navigation: "detail" (default) or "download". */
+  linkTo?: "detail" | "download";
 };
 
-export function MediaCard({ media, mode = "default", className, playable, withType }: MediaCardProps) {
+export function MediaCard({ media, mode = "default", className, playable, withType, linkTo }: MediaCardProps) {
   const navigate = useNavigate();
   const [imgError, setImgError] = useState(false);
 
   const canPlay = Boolean(playable || media.download);
-  const detailLinkProps =
+  const tmdbLinkProps =
     media.type === "tv"
       ? ({ to: "/tv/$id", params: { id: media.id.toString() } } as const)
       : ({ to: "/movies/$id", params: { id: media.id.toString() } } as const);
+  const detailLinkProps =
+    linkTo === "download" && media.download?.id
+      ? ({ to: "/downloads/$id", params: { id: media.download.id } } as const)
+      : tmdbLinkProps;
 
   const playDownloadId = media.download?.id ?? media.progress?.downloadId ?? undefined;
   const watchProgressPercent = getWatchProgressPercent(media);
@@ -83,11 +89,13 @@ export function MediaCard({ media, mode = "default", className, playable, withTy
             </div>
           )}
 
-          {mode === "default" && media.download && !media.download.torrent?.done && (
-            <div className="absolute top-2 left-2 z-10">
-              <DownloadProgress download={media.download} variant="circular" />
-            </div>
-          )}
+          {mode === "default" &&
+            media.download &&
+            (!media.download.torrent?.done || media.download.torrent?.transferring) && (
+              <div className="absolute top-2 left-2 z-10">
+                <DownloadProgress download={media.download} variant="circular" />
+              </div>
+            )}
 
           {["search", "preview"].includes(mode) && !!media.download && (
             <Badge variant="secondary" className="absolute top-2 left-2">

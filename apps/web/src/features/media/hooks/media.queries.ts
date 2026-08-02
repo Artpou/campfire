@@ -14,7 +14,9 @@ import { toast } from "sonner";
 import { toPaginationQuery } from "@/shared/helpers/pagination.helper";
 
 function isActiveDownload(download: Media["download"]): boolean {
-  return !!download?.torrent && !download.torrent.done && !download.torrent.paused;
+  if (!download?.torrent) return false;
+  if (download.torrent.transferring) return true;
+  return !download.torrent.done && !download.torrent.paused;
 }
 
 export const mediaQueries = {
@@ -86,14 +88,14 @@ export function refetchMediaInterval({ state }: { state: QueryState<InfiniteData
     results?.some((media: Media) => isActiveDownload(media.download)),
   );
 
-  return hasDownloadingMedia ? 1500 : false;
+  return hasDownloadingMedia ? 2000 : false;
 }
 
 export function refetchLibraryInterval({ state }: { state: QueryState<Media[]> }) {
   const data = state.data;
   if (!data?.length) return false;
 
-  return data.some((media) => isActiveDownload(media.download)) ? 1500 : false;
+  return data.some((media) => isActiveDownload(media.download)) ? 2000 : false;
 }
 
 export function useToggleLike() {

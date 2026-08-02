@@ -54,8 +54,11 @@ export function MediaDetailLayout({
     }
     return mediaDownloads[0] ?? null;
   }, [posterType, media, mediaDownloads]);
+  const isDownloadActive = liveMovieDownload
+    ? !liveMovieDownload.torrent?.done || liveMovieDownload.torrent?.transferring
+    : false;
   const showMovieDownloadBar = Boolean(
-    posterType !== "tv" && liveMovieDownload && !liveMovieDownload.torrent?.done && role !== "viewer",
+    posterType !== "tv" && liveMovieDownload && isDownloadActive && role !== "viewer",
   );
 
   const handleToggleLike = () => {

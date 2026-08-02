@@ -68,42 +68,50 @@ function CircularProgress({ download, onPauseResume }: { download: Download; onP
   const { t } = useLingui();
   const { toggle } = usePauseToggle(download, onPauseResume);
 
+  const isTransferring = Boolean(download.torrent?.transferring);
   const isPaused = getDownloadStatus(download) === "paused";
-  const value = (download.torrent?.progress ?? 0) * 100;
+  const value = isTransferring
+    ? (download.torrent?.transferProgress ?? 0) * 100
+    : (download.torrent?.progress ?? 0) * 100;
+  const color = isTransferring ? "text-blue-500" : isPaused ? "text-warning" : "text-primary";
 
   return (
-    <ProgressCircular
-      value={value}
-      size={CIRCULAR_SIZE}
-      strokeWidth={CIRCULAR_STROKE}
-      color={isPaused ? "text-warning" : "text-primary"}
-    >
-      <button
-        type="button"
-        className="group/dl-circular cursor-pointer bg-transparent border-0 p-0 text-inherit"
-        onClick={toggle}
-        aria-label={isPaused ? t`Resume` : t`Pause`}
-      >
-        {isPaused ? (
-          <>
-            <PauseIcon className="mt-1.5 size-4 group-hover/dl-circular:hidden" />
-            <DownloadIcon className="mt-1.5 size-4 hidden group-hover/dl-circular:block" />
-          </>
-        ) : (
-          <>
-            <span
-              className="font-bold tracking-tighter flex items-center group-hover/dl-circular:hidden"
-              style={{ fontSize: CIRCULAR_SIZE * 0.38 }}
-            >
-              {Math.round(value)}
-              <span className="ml-0.5 opacity-90" style={{ fontSize: CIRCULAR_SIZE * 0.26 }}>
-                %
+    <ProgressCircular value={value} size={CIRCULAR_SIZE} strokeWidth={CIRCULAR_STROKE} color={color}>
+      {isTransferring ? (
+        <div className="flex flex-col items-center">
+          <UploadIcon className="size-3" />
+          <span className="font-bold tracking-tighter" style={{ fontSize: CIRCULAR_SIZE * 0.3 }}>
+            {Math.round(value)}%
+          </span>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="group/dl-circular cursor-pointer bg-transparent border-0 p-0 text-inherit"
+          onClick={toggle}
+          aria-label={isPaused ? t`Resume` : t`Pause`}
+        >
+          {isPaused ? (
+            <>
+              <PauseIcon className="mt-1.5 size-4 group-hover/dl-circular:hidden" />
+              <DownloadIcon className="mt-1.5 size-4 hidden group-hover/dl-circular:block" />
+            </>
+          ) : (
+            <>
+              <span
+                className="font-bold tracking-tighter flex items-center group-hover/dl-circular:hidden"
+                style={{ fontSize: CIRCULAR_SIZE * 0.38 }}
+              >
+                {Math.round(value)}
+                <span className="ml-0.5 opacity-90" style={{ fontSize: CIRCULAR_SIZE * 0.26 }}>
+                  %
+                </span>
               </span>
-            </span>
-            <PauseIcon className="mt-1 size-4 hidden group-hover/dl-circular:block" />
-          </>
-        )}
-      </button>
+              <PauseIcon className="mt-1 size-4 hidden group-hover/dl-circular:block" />
+            </>
+          )}
+        </button>
+      )}
     </ProgressCircular>
   );
 }
@@ -126,18 +134,21 @@ function BarProgress({
   const textSize = isLg ? "text-xl font-bold" : "text-sm font-semibold";
   const iconSize = isLg ? "size-4" : "size-3.5";
 
-  // Cas 1 : En cours de transfert
   if (download.torrent?.transferring) {
     const progress = (download.torrent?.transferProgress ?? 0) * 100;
+    const transferSpeed = download.torrent?.transferSpeed ?? 0;
 
     return (
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <span className={`${textSize} text-blue-500`}>{progress.toFixed(isLg ? 1 : 0)}%</span>
-          <Badge variant="secondary" className="flex items-center gap-1">
-            <UploadIcon className="size-3" />
-            <Trans>Transferring</Trans>
-          </Badge>
+      <div>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className={`${textSize} text-blue-500`}>{progress.toFixed(isLg ? 1 : 0)}%</span>
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <UploadIcon className="size-3" />
+              <Trans>Transferring</Trans>
+            </Badge>
+          </div>
+          {transferSpeed > 0 && <span className="text-xs text-muted-foreground">{formatBytes(transferSpeed)}/s</span>}
         </div>
         <Progress value={progress} variant="transfer" />
       </div>

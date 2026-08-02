@@ -119,7 +119,7 @@ function DownloadsPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-6 gap-4">
             {filteredResults.map((media) => {
               if (!media.download) return null;
-              return <MediaCard key={media.download.id} media={media} />;
+              return <MediaCard key={media.download.id} media={media} linkTo="download" />;
             })}
           </div>
         ) : (
