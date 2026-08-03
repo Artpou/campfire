@@ -5,7 +5,18 @@ import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { PassThrough, Transform } from "node:stream";
-import { type RemoteFileEntry, StorageAdapter, type StorageConnectionOptions } from "./storage.adapter";
+import {
+  type RemoteDirectoryEntry,
+  type RemoteFileEntry,
+  StorageAdapter,
+  type StorageConnectionOptions,
+} from "./storage.adapter";
+
+const VIDEO_EXT_RE = /\.(mkv|mp4|avi|m4v|mov|wmv|flv|webm|ts|m2ts|mpg|mpeg)$/i;
+
+function hasVideoExtension(name: string): boolean {
+  return VIDEO_EXT_RE.test(name);
+}
 
 function createByteLimiter(maxBytes: number): Transform {
   let remaining = maxBytes;
@@ -41,6 +52,9 @@ export class FtpAdapter extends StorageAdapter {
       password: opts.password || undefined,
       secure: opts.secure ?? false,
     });
+    // Freebox (and similar embedded FTP) often returns empty listings for `LIST -a`.
+    // Prefer plain LIST / NLST after connect.
+    client.availableListCommands = ["LIST", "NLST"];
     return client;
   }
 
@@ -49,10 +63,20 @@ export class FtpAdapter extends StorageAdapter {
     return joined ? `/${joined}` : "/";
   }
 
+  /** CD into path then LIST cwd — Freebox ignores/breaks LIST with an absolute path argument. */
+  private async listCwd(client: Awaited<ReturnType<FtpAdapter["createClient"]>>, remotePath: string) {
+    const fullPath = this.buildRemotePath(remotePath);
+    await client.cd(fullPath);
+    const entries = await client.list();
+    await client.cd("/");
+    return entries;
+  }
+
   async testConnection(opts: StorageConnectionOptions): Promise<{ success: boolean; error?: string }> {
     try {
       const client = await this.createClient(opts);
-      await client.list("/");
+      await client.cd("/");
+      await client.list();
       client.close();
       return { success: true };
     } catch (error) {
@@ -147,15 +171,20 @@ export class FtpAdapter extends StorageAdapter {
       }
 
       const collect = async (dir: string, prefix: string): Promise<void> => {
-        const entries = await client.list(dir);
+        await client.cd(dir);
+        const entries = await client.list();
         for (const entry of entries) {
+          if (!entry.name || entry.name === "." || entry.name === "..") continue;
           const entryPath = prefix ? `${prefix}/${entry.name}` : entry.name;
-          if (entry.isDirectory) {
+          const isDir = entry.isDirectory || (!entry.isFile && !hasVideoExtension(entry.name));
+          if (isDir) {
             await collect(path.posix.join(dir, entry.name), entryPath);
-          } else if (entry.isFile) {
+          } else {
             results.push({ name: entry.name, path: entryPath, length: entry.size });
           }
         }
+        // Return to parent so siblings resolve correctly after nested cds.
+        await client.cd(dir);
       };
 
       await collect(fullPath, "");
@@ -164,6 +193,56 @@ export class FtpAdapter extends StorageAdapter {
     }
 
     return results;
+  }
+
+  async listDirectories(remotePath: string, opts: StorageConnectionOptions): Promise<RemoteDirectoryEntry[]> {
+    const client = await this.createClient(opts);
+
+    try {
+      const entries = await this.listCwd(client, remotePath);
+      logger.info(
+        "FTP",
+        `listDirectories("${remotePath}"): ${entries.length} raw entries — ${entries
+          .slice(0, 20)
+          .map((e) => `${e.name}[dir=${e.isDirectory},file=${e.isFile}]`)
+          .join(", ")}`,
+      );
+
+      return entries
+        .filter((entry) => entry.name && entry.name !== "." && entry.name !== "..")
+        .map((entry) => {
+          const isDir = entry.isDirectory || (!entry.isFile && !hasVideoExtension(entry.name));
+          return {
+            name: entry.name,
+            path: entry.name,
+            type: (isDir ? "directory" : "file") as "file" | "directory",
+          };
+        });
+    } finally {
+      client.close();
+    }
+  }
+
+  async moveFile(from: string, to: string, opts: StorageConnectionOptions): Promise<void> {
+    const client = await this.createClient(opts);
+    try {
+      const fullFrom = this.buildRemotePath(from);
+      const fullTo = this.buildRemotePath(to);
+      await client.rename(fullFrom, fullTo);
+    } finally {
+      client.close();
+    }
+  }
+
+  async ensureDirectory(remotePath: string, opts: StorageConnectionOptions): Promise<void> {
+    const client = await this.createClient(opts);
+    try {
+      const fullPath = this.buildRemotePath(remotePath);
+      await client.ensureDir(fullPath);
+      await client.cd("/");
+    } finally {
+      client.close();
+    }
   }
 
   async createReadStream(

@@ -15,6 +15,13 @@
       "when": 1784751484980,
       "tag": "0001_wealthy_randall",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1785789722437,
+      "tag": "0002_flippant_robin_chapel",
+      "breakpoints": true
     }
   ]
 }

@@ -2,6 +2,7 @@ import { db } from "@/db/db";
 import path from "node:path";
 import { FtpAdapter } from "./adapters/ftp.adapter";
 import type {
+  RemoteDirectoryEntry,
   RemoteFileEntry,
   StorageAdapter,
   StorageConnectionOptions,
@@ -94,12 +95,37 @@ class RemoteStorageService {
     return adapter.remove(remotePath, opts);
   }
 
+  async listDirectories(remotePath: string): Promise<RemoteDirectoryEntry[]> {
+    assertSafePath(remotePath);
+    const opts = await this.getConnectionOptions();
+    if (!opts) return [];
+    const adapter = getAdapter(opts.protocol);
+    return adapter.listDirectories(remotePath, opts);
+  }
+
   async listFiles(remotePath: string): Promise<RemoteFileEntry[]> {
     assertSafePath(remotePath);
     const opts = await this.getConnectionOptions();
     if (!opts) return [];
     const adapter = getAdapter(opts.protocol);
     return adapter.listFiles(remotePath, opts);
+  }
+
+  async moveFile(from: string, to: string): Promise<void> {
+    assertSafePath(from);
+    assertSafePath(to);
+    const opts = await this.getConnectionOptions();
+    if (!opts) throw new Error("Remote storage is not configured");
+    const adapter = getAdapter(opts.protocol);
+    return adapter.moveFile(from, to, opts);
+  }
+
+  async ensureDirectory(remotePath: string): Promise<void> {
+    assertSafePath(remotePath);
+    const opts = await this.getConnectionOptions();
+    if (!opts) throw new Error("Remote storage is not configured");
+    const adapter = getAdapter(opts.protocol);
+    return adapter.ensureDirectory(remotePath, opts);
   }
 
   async createReadStream(

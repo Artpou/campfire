@@ -19,6 +19,7 @@ export const activityLogActionEnum = [
   "DOWNLOAD_TRANSFERRED",
   "INDEXER_ADD",
   "INDEXER_DELETE",
+  "REMOTE_SYNC",
   "SYSTEM_ERROR",
 ] as const;
 export type ActivityLogAction = (typeof activityLogActionEnum)[number];

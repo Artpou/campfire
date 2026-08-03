@@ -4,7 +4,12 @@ import { logger } from "@/helpers/logger.helper";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
-import { type RemoteFileEntry, StorageAdapter, type StorageConnectionOptions } from "./storage.adapter";
+import {
+  type RemoteDirectoryEntry,
+  type RemoteFileEntry,
+  StorageAdapter,
+  type StorageConnectionOptions,
+} from "./storage.adapter";
 
 export class WebdavAdapter extends StorageAdapter {
   private async createClient(opts: StorageConnectionOptions) {
@@ -145,6 +150,37 @@ export class WebdavAdapter extends StorageAdapter {
 
     await collect(fullPath, "");
     return results;
+  }
+
+  async listDirectories(remotePath: string, opts: StorageConnectionOptions): Promise<RemoteDirectoryEntry[]> {
+    const client = await this.createClient(opts);
+    const fullPath = this.buildRemotePath(remotePath);
+
+    const raw = await client.getDirectoryContents(fullPath);
+    const entries = Array.isArray(raw) ? raw : (raw as { data: typeof raw }).data;
+
+    return entries.map((entry) => ({
+      name: path.posix.basename(entry.filename),
+      path: path.posix.basename(entry.filename),
+      type: (entry.type === "directory" ? "directory" : "file") as "file" | "directory",
+    }));
+  }
+
+  async moveFile(from: string, to: string, opts: StorageConnectionOptions): Promise<void> {
+    const client = await this.createClient(opts);
+    const fullFrom = this.buildRemotePath(from);
+    const fullTo = this.buildRemotePath(to);
+    await client.moveFile(fullFrom, fullTo);
+  }
+
+  async ensureDirectory(remotePath: string, opts: StorageConnectionOptions): Promise<void> {
+    const client = await this.createClient(opts);
+    const fullPath = this.buildRemotePath(remotePath);
+    try {
+      await client.createDirectory(fullPath, { recursive: true });
+    } catch {
+      // directory may already exist
+    }
   }
 
   async createReadStream(

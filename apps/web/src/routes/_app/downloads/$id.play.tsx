@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import { api, unwrap } from "@seedarr/sdk";
+import { api } from "@seedarr/sdk";
 import { formatError } from "@seedarr/shared";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
@@ -15,6 +15,7 @@ import { Container } from "@/shared/ui/container";
 import { hasMinRole } from "@/features/auth/helpers/role.helper";
 import { type MoviPlayerHandle, MoviPlayerHost } from "@/features/downloads/components/movi-player-host";
 import { buildSubtitleTracks } from "@/features/downloads/helpers/subtitle-tracks.helper";
+import { mediaQueries } from "@/features/media/hooks/media.queries";
 import { SubtitleSearchDialog } from "@/features/subtitles/components/subtitle-search-dialog";
 import { subtitleQueries } from "@/features/subtitles/hooks/subtitle.queries";
 import { downloadQueries, refetchDownloadInterval } from "@/features/torrent/hooks/download.queries";
@@ -26,10 +27,13 @@ export const Route = createFileRoute("/_app/downloads/$id/play")({
     }
   },
   loader: async ({ context, params }) => {
+    const download = await context.queryClient.ensureQueryData(downloadQueries.details(params.id));
+    if (!download?.mediaId) throw new Error("Media ID not found");
+
     await Promise.all([
-      context.queryClient.ensureQueryData(downloadQueries.details(params.id)),
       context.queryClient.ensureQueryData(downloadQueries.playbackInfo(params.id)),
       context.queryClient.ensureQueryData(subtitleQueries.external(params.id)),
+      context.queryClient.ensureQueryData(mediaQueries.details(download.mediaId)),
     ]);
   },
   pendingComponent: () => <SeedarrLoaderContainer />,
@@ -45,11 +49,15 @@ function VideoPlayerPage() {
     ...downloadQueries.details(id),
     refetchInterval: refetchDownloadInterval,
   });
+  // biome-ignore lint/style/noNonNullAssertion: mediaId is set for playable downloads
+  const { data: media } = useSuspenseQuery(mediaQueries.details(download.mediaId!));
   const { data: playbackInfo } = useSuspenseQuery({
     ...downloadQueries.playbackInfo(id),
     refetchInterval: download.torrent?.done ? false : 3000,
   });
   const { data: externalSubtitles } = useSuspenseQuery(subtitleQueries.external(id));
+
+  const displayName = download.torrent?.name || media.title;
 
   const playerRef = useRef<MoviPlayerHandle | null>(null);
   const hasInitialSeeked = useRef(false);
@@ -114,12 +122,6 @@ function VideoPlayerPage() {
     const player = playerRef.current;
     if (!player) return;
 
-    if (!download?.mediaId) {
-      hasInitialSeeked.current = true;
-      return;
-    }
-
-    const media = await unwrap(api.media[":id"].$get({ param: { id: download.mediaId.toString() } }));
     const position = media.progress?.position;
     if (!position || position < 1) {
       hasInitialSeeked.current = true;
@@ -128,7 +130,7 @@ function VideoPlayerPage() {
 
     hasInitialSeeked.current = true;
     player.currentTime = position;
-  }, [download?.mediaId]);
+  }, [media.progress?.position]);
 
   const handlePlaybackError = useCallback(
     (error?: unknown) => {
@@ -153,7 +155,7 @@ function VideoPlayerPage() {
         <AppBreadcrumb
           items={[
             { name: t(msg`Downloads`), link: "/downloads" },
-            { name: download.torrent?.name ?? "", link: `/downloads/${id}` },
+            { name: displayName, link: `/downloads/${id}` },
             { name: t(msg`Play`) },
           ]}
         />
@@ -164,7 +166,7 @@ function VideoPlayerPage() {
             onOpenChange={setSubtitleDialogOpen}
             tmdbId={String(download.mediaId ?? "")}
             downloadId={id}
-            mediaTitle={download.torrent?.name ?? ""}
+            mediaTitle={displayName}
           />
         )}
 

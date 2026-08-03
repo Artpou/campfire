@@ -55,7 +55,8 @@ export function MediaDetailLayout({
     return mediaDownloads[0] ?? null;
   }, [posterType, media, mediaDownloads]);
   const isDownloadActive = liveMovieDownload
-    ? !liveMovieDownload.torrent?.done || liveMovieDownload.torrent?.transferring
+    ? (!liveMovieDownload.torrent?.done && !(!liveMovieDownload.torrent && liveMovieDownload.remoteLocation)) ||
+      liveMovieDownload.torrent?.transferring
     : false;
   const showMovieDownloadBar = Boolean(
     posterType !== "tv" && liveMovieDownload && isDownloadActive && role !== "viewer",

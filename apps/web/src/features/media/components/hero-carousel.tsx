@@ -66,7 +66,7 @@ const HeroSlide = memo(function HeroSlide({ media, isLibraryMode }: HeroSlidePro
   const torrentsLinkProps = getTorrentsLinkProps(media);
   const playLinkProps = getPlayLinkProps(media);
   const endsAt = getEndsAtForMedia(media);
-  const isDownloading = !!media.download && !media.download.torrent?.done;
+  const isDownloading = !!media.download && !media.download.torrent?.done && !media.download.remoteLocation;
   const showWatchProgress = isLibraryMode && hasWatchProgress(media);
 
   const backdropUrl = getBackdropUrl(media.backdrop_path, "w1280") || getPosterUrl(media.poster_path, "w780");

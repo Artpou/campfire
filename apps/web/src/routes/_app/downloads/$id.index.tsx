@@ -25,7 +25,9 @@ import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
+import { useAuth } from "@/features/auth/auth-store";
 import { hasMinRole } from "@/features/auth/helpers/role.helper";
+import { useRole } from "@/features/auth/hooks/use-role";
 import { DownloadActionButtons } from "@/features/downloads/components/download-action-buttons";
 import { DownloadFilesList } from "@/features/downloads/components/download-files-list";
 import { DownloadMetadata } from "@/features/downloads/components/download-metadata";
@@ -67,6 +69,8 @@ function DownloadDetailPage() {
   const navigate = useNavigate();
   const { t } = useLingui();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const { isAdmin } = useRole();
+  const currentUser = useAuth((state) => state.user);
 
   const { data: download } = useSuspenseQuery({
     ...downloadQueries.details(id),
@@ -96,9 +100,14 @@ function DownloadDetailPage() {
   const availableOnServer = Boolean(download.remoteLocation);
   const remoteStorageEnabled = Boolean(storageEnabled?.enabled);
   const canResume = hasWatchProgress(media) && media.progress?.downloadId === id;
+  const canDelete = isAdmin || download.userId === currentUser?.id;
 
   const handleDeleteConfirm = async () => {
-    await deleteTorrent.mutateAsync(id);
+    await deleteTorrent.mutateAsync({ id });
+    navigate({ to: "/downloads" });
+  };
+  const handleDeleteDbOnly = async () => {
+    await deleteTorrent.mutateAsync({ id, dbOnly: true });
     navigate({ to: "/downloads" });
   };
   const handlePause = async () => await pauseTorrent.mutateAsync(id);
@@ -146,7 +155,7 @@ function DownloadDetailPage() {
             <div className="lg:hidden">
               <DownloadActionButtons
                 download={download}
-                onDelete={() => setShowDeleteConfirm(true)}
+                onDelete={canDelete ? () => setShowDeleteConfirm(true) : undefined}
                 onTransfer={startTransfer}
                 isTransferring={isTransferring}
                 remoteStorageEnabled={remoteStorageEnabled}
@@ -212,7 +221,7 @@ function DownloadDetailPage() {
           <div className="hidden lg:block">
             <DownloadActionButtons
               download={download}
-              onDelete={() => setShowDeleteConfirm(true)}
+              onDelete={canDelete ? () => setShowDeleteConfirm(true) : undefined}
               onTransfer={startTransfer}
               isTransferring={isTransferring}
               remoteStorageEnabled={remoteStorageEnabled}
@@ -248,6 +257,14 @@ function DownloadDetailPage() {
             <AlertDialogCancel>
               <Trans>Cancel</Trans>
             </AlertDialogCancel>
+            {isAdmin && (
+              <AlertDialogAction
+                onClick={handleDeleteDbOnly}
+                className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              >
+                <Trans>DB only</Trans>
+              </AlertDialogAction>
+            )}
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

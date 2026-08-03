@@ -20,6 +20,7 @@ export type {
   UpdateProgressQuery,
 } from "../modules/media/media.dto";
 export type { movieIdQuery } from "../modules/movie/movie.dto";
+export type { RemoteSyncResponse, SettingsResponse, UpsertSettingsInput } from "../modules/settings/settings.dto";
 export type {
   StorageConfigResponse,
   TestStorageConfigInput,

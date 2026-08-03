@@ -244,9 +244,12 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
         }}
         onConfirm={() => {
           if (!deleteTarget) return;
-          deleteTorrent.mutate(deleteTarget.downloadId, {
-            onSuccess: () => setDeleteTarget(null),
-          });
+          deleteTorrent.mutate(
+            { id: deleteTarget.downloadId },
+            {
+              onSuccess: () => setDeleteTarget(null),
+            },
+          );
         }}
         episodes={deleteTarget?.episodes ?? []}
         isPending={deleteTorrent.isPending}

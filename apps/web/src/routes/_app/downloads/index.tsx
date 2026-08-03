@@ -5,7 +5,8 @@ import type { Media } from "@seedarr/sdk";
 import { formatBytes } from "@seedarr/shared";
 import { useQuery, useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { ArrowDownIcon, ArrowUpIcon, InfoIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, InfoIcon, Loader2Icon, RefreshCwIcon } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
@@ -18,6 +19,9 @@ import { downloadStatsQueries } from "@/features/downloads/hooks/download-stats.
 import { MediaCard } from "@/features/media/components/media-card";
 import { MediaTypeTabs } from "@/features/media/components/media-type-tabs";
 import { mediaQueries, refetchMediaInterval } from "@/features/media/hooks/media.queries";
+import { useRemoteSync } from "@/features/settings/hooks/remote-sync.queries";
+import { settingsQueries } from "@/features/settings/hooks/settings.queries";
+import { storageConfigQueries } from "@/features/settings/hooks/storage-config.queries";
 import { validateDownloadsSearch } from "@/routes/helpers/downloads-route.helper";
 
 export const Route = createFileRoute("/_app/downloads/")({
@@ -77,7 +81,10 @@ function DownloadsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <MediaTypeTabs value={type} />
+          <div className="flex items-center justify-between gap-4">
+            <MediaTypeTabs value={type} />
+            <SyncButton />
+          </div>
         </div>
 
         {stats && (
@@ -135,5 +142,29 @@ function DownloadsPage() {
 
       <DownloadsStatsPanel open={statsOpen} onOpenChange={setStatsOpen} />
     </Container>
+  );
+}
+
+function SyncButton() {
+  const { t } = useLingui();
+  const { data: storageEnabled } = useQuery(storageConfigQueries.enabled());
+  const { data: tmdbKeyStatus } = useQuery(settingsQueries.tmdbKeyStatus());
+  const syncMutation = useRemoteSync();
+
+  if (!storageEnabled?.enabled) return null;
+
+  const handleSync = () => {
+    if (!tmdbKeyStatus?.configured) {
+      toast.error(t`TMDB API key is required for synchronization. Configure it in Settings > General.`);
+      return;
+    }
+    syncMutation.mutate();
+  };
+
+  return (
+    <Button variant="outline" size="lg" onClick={handleSync} disabled={syncMutation.isPending}>
+      {syncMutation.isPending ? <Loader2Icon className="size-4 animate-spin" /> : <RefreshCwIcon className="size-4" />}
+      <Trans>Synchronize</Trans>
+    </Button>
   );
 }

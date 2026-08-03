@@ -16,6 +16,12 @@ export interface RemoteFileEntry {
   length: number;
 }
 
+export interface RemoteDirectoryEntry {
+  name: string;
+  path: string;
+  type: "file" | "directory";
+}
+
 export abstract class StorageAdapter {
   abstract testConnection(opts: StorageConnectionOptions): Promise<{ success: boolean; error?: string }>;
   abstract transferDirectory(
@@ -31,4 +37,7 @@ export abstract class StorageAdapter {
     range?: { start: number; end: number },
   ): Promise<{ stream: NodeJS.ReadableStream; size: number; cleanup?: () => void }>;
   abstract listFiles(remotePath: string, opts: StorageConnectionOptions): Promise<RemoteFileEntry[]>;
+  abstract listDirectories(remotePath: string, opts: StorageConnectionOptions): Promise<RemoteDirectoryEntry[]>;
+  abstract moveFile(from: string, to: string, opts: StorageConnectionOptions): Promise<void>;
+  abstract ensureDirectory(remotePath: string, opts: StorageConnectionOptions): Promise<void>;
 }

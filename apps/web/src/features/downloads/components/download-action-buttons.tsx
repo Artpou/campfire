@@ -9,7 +9,7 @@ import { getDownloadStatus } from "@/features/downloads/helpers/downloads.helper
 
 interface DownloadActionButtonsProps {
   download: Download;
-  onDelete: () => void;
+  onDelete?: () => void;
   onTransfer?: () => void;
   isTransferring?: boolean;
   remoteStorageEnabled?: boolean;
@@ -40,14 +40,16 @@ export function DownloadActionButtons({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex gap-2">
-        <Button variant="destructive" size="lg" onClick={onDelete} className={isMobile ? "" : "lg:w-auto"}>
-          <Trash2Icon className="size-5" />
-          {isMobile && (
-            <span className="ml-2">
-              <Trans>Delete</Trans>
-            </span>
-          )}
-        </Button>
+        {onDelete && (
+          <Button variant="destructive" size="lg" onClick={onDelete} className={isMobile ? "" : "lg:w-auto"}>
+            <Trash2Icon className="size-5" />
+            {isMobile && (
+              <span className="ml-2">
+                <Trans>Delete</Trans>
+              </span>
+            )}
+          </Button>
+        )}
         <Button size="lg" asChild className="flex-1">
           <Link to="/downloads/$id/play" params={{ id: download.id }}>
             <PlayIcon className="mr-2 size-5" />

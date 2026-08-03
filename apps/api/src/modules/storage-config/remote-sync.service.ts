@@ -1,0 +1,419 @@
+import { filenameParse } from "@ctrl/video-filename-parser";
+import { eq } from "drizzle-orm";
+
+import { db } from "@/db/db";
+import { BadRequestError } from "@/errors/error";
+import { logger } from "@/helpers/logger.helper";
+import { toLatin } from "@/helpers/string.helper";
+import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
+import { download } from "@/modules/download/download.schema";
+import { media } from "@/modules/media/media.schema";
+import type { RemoteSyncResponse } from "@/modules/settings/settings.dto";
+import { getSettingsTmdbApiKey } from "@/modules/settings/tmdb-key.helper";
+import type { TMDBItem, TMDBPaginatedResponse } from "@/modules/tmdb/tmdb.dto";
+import { tmdbMovieToMedia, tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
+import { tmdbRequest } from "@/modules/tmdb/tmdb.service";
+import { remoteStorageService } from "./remote-storage.service";
+
+const BATCH_SIZE = 5;
+const BATCH_DELAY_MS = 250;
+
+const VIDEO_EXT_RE = /\.(mkv|mp4|avi|m4v|mov|wmv|flv|webm|ts|m2ts|mpg|mpeg)$/i;
+
+const SKIP_DIRECTORY_NAMES = new Set([
+  "freebox",
+  "#recycle",
+  "@eadir",
+  "$recycle.bin",
+  "system volume information",
+  "lost+found",
+  "tmp",
+  "temp",
+]);
+
+const TMDB_ID_REGEX = /\{tmdb-(\d+)\}/i;
+const IMDB_ID_REGEX = /\{imdb-(tt\d+)\}/i;
+const IMDB_BARE_REGEX = /\b(tt\d{7,})\b/;
+
+interface SyncEntry {
+  name: string;
+  remoteLocation: string;
+  mediaType: "movie" | "tv";
+  type: "file" | "directory";
+  basePath: string;
+}
+
+interface TMDBFindResponse {
+  movie_results: TMDBItem[];
+  tv_results: TMDBItem[];
+}
+
+interface TMDBMatch {
+  item: TMDBItem;
+  resolvedType: "movie" | "tv";
+}
+
+// --- Helpers ---
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isSyncableDir(name: string): boolean {
+  if (!name || name === "." || name === "..") return false;
+  if (name.startsWith(".")) return false;
+  return !SKIP_DIRECTORY_NAMES.has(name.toLowerCase());
+}
+
+function isSyncableFile(name: string): boolean {
+  return VIDEO_EXT_RE.test(name);
+}
+
+function extractTmdbId(name: string): number | null {
+  const match = name.match(TMDB_ID_REGEX);
+  return match ? Number.parseInt(match[1], 10) : null;
+}
+
+function extractImdbId(name: string): string | null {
+  const match = name.match(IMDB_ID_REGEX) || name.match(IMDB_BARE_REGEX);
+  return match ? match[1] : null;
+}
+
+function parseEntry(name: string, isTv: boolean): { title: string; year: number | null; seasons: number[] } {
+  const parsed = filenameParse(name, isTv);
+
+  let title = parsed.title;
+  if (!title && isTv) {
+    title = filenameParse(name, false).title;
+  }
+  if (!title) {
+    title = name.replace(/[._-]/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  const year = parsed.year ? Number.parseInt(parsed.year, 10) : null;
+  const seasons = isTv && "seasons" in parsed ? ((parsed.seasons as number[]) ?? []) : [];
+
+  return { title, year, seasons };
+}
+
+function extractYear(dateStr?: string | null): number | null {
+  if (!dateStr) return null;
+  const year = Number.parseInt(dateStr.substring(0, 4), 10);
+  return Number.isNaN(year) ? null : year;
+}
+
+function buildPlexFolderName(title: string, year: number | null): string {
+  return year ? `${title} (${year})` : title;
+}
+
+function getTmdbTitle(item: TMDBItem, type: "movie" | "tv"): string {
+  return type === "movie" ? (item.title ?? item.name ?? "") : (item.name ?? item.title ?? "");
+}
+
+function tmdbItemToMediaInsert(item: TMDBItem, type: "movie" | "tv") {
+  const mapped = type === "movie" ? tmdbMovieToMedia(item) : tmdbTVToMedia(item);
+  const { likes: _likes, watchList: _watchList, download: _download, progress: _progress, ...insertFields } = mapped;
+
+  return {
+    ...insertFields,
+    imdbId: insertFields.imdbId || (item as { external_ids?: { imdb_id?: string } }).external_ids?.imdb_id || "",
+    sanitize_title: toLatin(insertFields.original_title ?? "") ?? insertFields.title,
+  };
+}
+
+// --- TMDB resolution ---
+
+async function resolveTmdbMatch(name: string, mediaType: "movie" | "tv"): Promise<TMDBMatch | null> {
+  const tmdbId = extractTmdbId(name);
+  if (tmdbId) {
+    const item = await fetchByTmdbId(tmdbId, mediaType);
+    if (item) return { item, resolvedType: mediaType };
+  }
+
+  const imdbId = extractImdbId(name);
+  if (imdbId) {
+    const found = await fetchByImdbId(imdbId);
+    if (found) return { item: found.item, resolvedType: found.type };
+  }
+
+  const { title, year } = parseEntry(name, mediaType === "tv");
+  if (title) {
+    const item = await searchTmdb(title, year, mediaType);
+    if (item) return { item, resolvedType: mediaType };
+  }
+
+  return null;
+}
+
+async function fetchByTmdbId(tmdbId: number, mediaType: "movie" | "tv"): Promise<TMDBItem | null> {
+  try {
+    const endpoint = mediaType === "tv" ? `/tv/${tmdbId}` : `/movie/${tmdbId}`;
+    return await tmdbRequest<TMDBItem & { external_ids?: { imdb_id?: string } }>(endpoint, "", {
+      append_to_response: "external_ids",
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function fetchByImdbId(imdbId: string): Promise<{ item: TMDBItem; type: "movie" | "tv" } | null> {
+  try {
+    const result = await tmdbRequest<TMDBFindResponse>(`/find/${imdbId}`, "", { external_source: "imdb_id" });
+    if (result.movie_results?.length > 0) return { item: result.movie_results[0], type: "movie" };
+    if (result.tv_results?.length > 0) return { item: result.tv_results[0], type: "tv" };
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function searchTmdb(title: string, year: number | null, mediaType: "movie" | "tv"): Promise<TMDBItem | null> {
+  try {
+    const endpoint = mediaType === "tv" ? "/search/tv" : "/search/movie";
+    const options: Record<string, string> = { query: title };
+    if (year) {
+      options[mediaType === "tv" ? "first_air_date_year" : "year"] = year.toString();
+    }
+    const result = await tmdbRequest<TMDBPaginatedResponse>(endpoint, "", options);
+    return result.results?.[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// --- Entry collection ---
+
+async function collectEntries(basePath: string, mediaType: "movie" | "tv"): Promise<SyncEntry[]> {
+  const results: SyncEntry[] = [];
+  try {
+    const items = await remoteStorageService.listDirectories(basePath);
+    const normalizedBase = basePath.replace(/\/+$/, "");
+    logger.info("REMOTE_SYNC", `${mediaType} path "${basePath}": ${items.length} entries`);
+
+    for (const item of items) {
+      if (item.type === "directory" && isSyncableDir(item.name)) {
+        results.push({
+          name: item.name,
+          remoteLocation: `${normalizedBase}/${item.name}`,
+          mediaType,
+          type: "directory",
+          basePath: normalizedBase,
+        });
+      } else if (item.type === "file" && isSyncableFile(item.name)) {
+        results.push({
+          name: item.name,
+          remoteLocation: `${normalizedBase}/${item.name}`,
+          mediaType,
+          type: "file",
+          basePath: normalizedBase,
+        });
+      }
+    }
+  } catch (err) {
+    logger.error("REMOTE_SYNC", `Failed to list ${mediaType} directory "${basePath}": ${err}`);
+  }
+  return results;
+}
+
+// --- File organization ---
+
+function buildDownloadLocation(entry: SyncEntry, tmdbItem: TMDBItem, resolvedType: "movie" | "tv"): string {
+  const releaseDate = resolvedType === "movie" ? tmdbItem.release_date : tmdbItem.first_air_date;
+  const tmdbTitle = getTmdbTitle(tmdbItem, resolvedType);
+  const year = extractYear(releaseDate);
+  return `${entry.basePath}/${buildPlexFolderName(tmdbTitle, year)}`;
+}
+
+async function organizeFile(
+  entry: SyncEntry,
+  tmdbItem: TMDBItem,
+  resolvedType: "movie" | "tv",
+  seasons: number[],
+): Promise<void> {
+  const releaseDate = resolvedType === "movie" ? tmdbItem.release_date : tmdbItem.first_air_date;
+  const tmdbTitle = getTmdbTitle(tmdbItem, resolvedType);
+  const year = extractYear(releaseDate);
+  const folderName = buildPlexFolderName(tmdbTitle, year);
+
+  let targetDir: string;
+  if (resolvedType === "tv") {
+    const seasonNum = seasons[0] ?? 1;
+    const seasonFolder = `Season ${String(seasonNum).padStart(2, "0")}`;
+    targetDir = `${entry.basePath}/${folderName}/${seasonFolder}`;
+  } else {
+    targetDir = `${entry.basePath}/${folderName}`;
+  }
+
+  const from = entry.remoteLocation;
+  const to = `${targetDir}/${entry.name}`;
+
+  try {
+    await remoteStorageService.ensureDirectory(targetDir);
+    await remoteStorageService.moveFile(from, to);
+    logger.info("REMOTE_SYNC", `Moved "${entry.name}" → "${to}"`);
+  } catch (err) {
+    logger.error("REMOTE_SYNC", `Failed to organize file "${entry.name}": ${err}`);
+  }
+}
+
+// --- Main ---
+
+export async function runRemoteSync(userId: string): Promise<RemoteSyncResponse> {
+  const apiKey = await getSettingsTmdbApiKey();
+  if (!apiKey) {
+    throw new BadRequestError("TMDB API key is required for synchronization. Configure it in Settings > General.");
+  }
+
+  const config = await db.query.storageConfig.findFirst();
+  if (!config?.enabled) {
+    throw new BadRequestError("Remote storage is not configured or disabled");
+  }
+
+  const existingDownloads = await db.query.download.findMany({ with: { media: true } });
+  const existingLocations = new Set<string>();
+  const existingTitles = new Set<string>();
+
+  for (const dl of existingDownloads) {
+    if (dl.remoteLocation) existingLocations.add(dl.remoteLocation.toLowerCase());
+    const m = dl.media;
+    if (m) {
+      existingTitles.add(m.title.toLowerCase());
+      if (m.original_title) existingTitles.add(m.original_title.toLowerCase());
+    }
+  }
+
+  const entries: SyncEntry[] = [];
+
+  if (config.moviePath) {
+    entries.push(...(await collectEntries(config.moviePath, "movie")));
+  }
+  if (config.tvPath) {
+    entries.push(...(await collectEntries(config.tvPath, "tv")));
+  }
+
+  const uniqueEntries: SyncEntry[] = [];
+  const seenLocations = new Set<string>();
+  for (const entry of entries) {
+    const key = entry.remoteLocation.toLowerCase();
+    if (seenLocations.has(key)) continue;
+    seenLocations.add(key);
+    uniqueEntries.push(entry);
+  }
+
+  logger.info("REMOTE_SYNC", `Found ${uniqueEntries.length} entries to process (${entries.length} total before dedup)`);
+
+  if (uniqueEntries.length === 0) {
+    return { synced: 0, skipped: 0, errors: [] };
+  }
+
+  let synced = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+  const syncedMediaIds = new Set<number>();
+
+  for (let i = 0; i < uniqueEntries.length; i += BATCH_SIZE) {
+    const batch = uniqueEntries.slice(i, i + BATCH_SIZE);
+
+    const results = await Promise.allSettled(
+      batch.map((entry) => processEntry(entry, userId, existingLocations, existingTitles, syncedMediaIds)),
+    );
+
+    for (let j = 0; j < results.length; j++) {
+      const result = results[j];
+      if (result.status === "fulfilled") {
+        if (result.value === "synced") synced++;
+        else if (result.value === "skipped") skipped++;
+        else errors.push(batch[j].name);
+      } else {
+        logger.error("REMOTE_SYNC", `Error processing "${batch[j].name}": ${result.reason}`);
+        errors.push(batch[j].name);
+      }
+    }
+
+    if (i + BATCH_SIZE < uniqueEntries.length) await sleep(BATCH_DELAY_MS);
+  }
+
+  ActivityLogService.log({
+    userId,
+    type: errors.length > 0 ? "WARNING" : "SUCCESS",
+    action: "REMOTE_SYNC",
+    title: `Remote sync completed: ${synced} synced, ${skipped} skipped, ${errors.length} errors`,
+    metadata: { synced, skipped, errors },
+  });
+
+  logger.info("REMOTE_SYNC", `Completed: ${synced} synced, ${skipped} skipped, ${errors.length} errors`);
+  return { synced, skipped, errors };
+}
+
+// --- Per-entry processing ---
+
+async function processEntry(
+  entry: SyncEntry,
+  userId: string,
+  existingLocations: Set<string>,
+  existingTitles: Set<string>,
+  syncedMediaIds: Set<number>,
+): Promise<"synced" | "skipped" | "not_found"> {
+  const { name, remoteLocation, mediaType, type } = entry;
+
+  if (existingLocations.has(remoteLocation.toLowerCase())) return "skipped";
+
+  const { title, seasons } = parseEntry(name, mediaType === "tv");
+  if (title && existingTitles.has(title.toLowerCase())) return "skipped";
+
+  const match = await resolveTmdbMatch(name, mediaType);
+  if (!match?.item?.id) return "not_found";
+
+  const { item: tmdbItem, resolvedType } = match;
+  const mediaInsert = tmdbItemToMediaInsert(tmdbItem, resolvedType);
+
+  if (syncedMediaIds.has(tmdbItem.id)) {
+    if (type === "file") await organizeFile(entry, tmdbItem, resolvedType, seasons);
+    return "skipped";
+  }
+
+  const existingDls = await db.query.download.findMany({
+    where: eq(download.mediaId, tmdbItem.id),
+  });
+
+  if (existingDls.length > 0) {
+    const needsUpdate = existingDls.some((dl) => !dl.remoteLocation);
+    if (needsUpdate) {
+      const targetLocation = type === "file" ? buildDownloadLocation(entry, tmdbItem, resolvedType) : remoteLocation;
+      for (const dl of existingDls) {
+        if (!dl.remoteLocation) {
+          await db.update(download).set({ remoteLocation: targetLocation }).where(eq(download.id, dl.id));
+        }
+      }
+      await db.insert(media).values(mediaInsert).onConflictDoUpdate({ target: media.id, set: mediaInsert });
+    }
+
+    if (type === "file") await organizeFile(entry, tmdbItem, resolvedType, seasons);
+
+    syncedMediaIds.add(tmdbItem.id);
+    existingTitles.add(mediaInsert.title.toLowerCase());
+    if (mediaInsert.original_title) existingTitles.add(mediaInsert.original_title.toLowerCase());
+    return needsUpdate ? "synced" : "skipped";
+  }
+
+  if (type === "file") await organizeFile(entry, tmdbItem, resolvedType, seasons);
+
+  const downloadLocation = type === "file" ? buildDownloadLocation(entry, tmdbItem, resolvedType) : remoteLocation;
+
+  await db.insert(media).values(mediaInsert).onConflictDoUpdate({ target: media.id, set: mediaInsert });
+
+  await db.insert(download).values({
+    userId,
+    mediaId: tmdbItem.id,
+    origin: "remote-sync",
+    remoteLocation: downloadLocation,
+    torrent: null,
+  });
+
+  syncedMediaIds.add(tmdbItem.id);
+  existingLocations.add(downloadLocation.toLowerCase());
+  existingTitles.add(mediaInsert.title.toLowerCase());
+  if (mediaInsert.original_title) existingTitles.add(mediaInsert.original_title.toLowerCase());
+
+  return "synced";
+}

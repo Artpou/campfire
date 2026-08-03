@@ -38,7 +38,9 @@ export function MediaCard({ media, mode = "default", className, playable, withTy
       : ({ to: "/movies/$id", params: { id: media.id.toString() } } as const);
   const detailLinkProps =
     linkTo === "download" && media.download?.id
-      ? ({ to: "/downloads/$id", params: { id: media.download.id } } as const)
+      ? media.type === "tv"
+        ? tmdbLinkProps
+        : ({ to: "/downloads/$id", params: { id: media.download.id } } as const)
       : tmdbLinkProps;
 
   const playDownloadId = media.download?.id ?? media.progress?.downloadId ?? undefined;
@@ -91,7 +93,8 @@ export function MediaCard({ media, mode = "default", className, playable, withTy
 
           {mode === "default" &&
             media.download &&
-            (!media.download.torrent?.done || media.download.torrent?.transferring) && (
+            (!media.download.torrent?.done || media.download.torrent?.transferring) &&
+            !(!media.download.torrent && media.download.remoteLocation) && (
               <div className="absolute top-2 left-2 z-10">
                 <DownloadProgress download={media.download} variant="circular" />
               </div>
@@ -138,7 +141,7 @@ export function MediaCard({ media, mode = "default", className, playable, withTy
                 <PlayIcon className="size-3.5 mr-1" />
                 {showWatchProgress ? (
                   <Trans>Resume</Trans>
-                ) : media.download?.torrent?.done ? (
+                ) : media.download?.torrent?.done || (!media.download?.torrent && media.download?.remoteLocation) ? (
                   <Trans>Play</Trans>
                 ) : (
                   <Trans>Streaming</Trans>

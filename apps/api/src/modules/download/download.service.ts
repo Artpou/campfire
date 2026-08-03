@@ -2,7 +2,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import type WebTorrent from "webtorrent";
 
 import { db } from "@/db/db";
-import { BadRequestError, NotFoundError } from "@/errors/error";
+import { BadRequestError, ForbiddenError, NotFoundError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
 import { resolveWithinDownloads } from "@/helpers/path.helper";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
@@ -217,9 +217,30 @@ export class DownloadService extends IdentifiableService<Download> {
     return remoteStorageService.listFiles(item.remoteLocation);
   }
 
-  async delete(id: string): Promise<{ success: true }> {
+  async delete(id: string, options?: { dbOnly?: boolean }): Promise<{ success: true }> {
     const [item] = await this.findMany({ ids: [id] });
     if (!item) throw new NotFoundError("Download");
+
+    if (item.userId !== this.user.id && this.roleLevel < ROLE_LEVELS.admin) {
+      throw new ForbiddenError();
+    }
+
+    if (options?.dbOnly) {
+      if (this.roleLevel < ROLE_LEVELS.admin) throw new ForbiddenError();
+
+      await db.delete(watchProgress).where(eq(watchProgress.downloadId, id));
+      await db.delete(download).where(eq(download.id, id));
+
+      ActivityLogService.log({
+        userId: this.user.id,
+        type: "INFO",
+        action: "DOWNLOAD_DELETE",
+        title: `Download deleted (DB only): ${item.torrent?.name || id}`,
+        metadata: { downloadId: id, dbOnly: true },
+      });
+
+      return { success: true };
+    }
 
     const torrentName = item.torrent?.name;
     const torrent =

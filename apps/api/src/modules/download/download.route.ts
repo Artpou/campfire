@@ -1,4 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 
 import { NotFoundError } from "@/errors/error";
 import { downloadMediaIdParamDto, stringIdParamDto } from "@/helpers/param.dto";
@@ -67,6 +68,14 @@ export const downloadRoutes = DownloadService.createRouter()
       return c.json(await c.var.service.transfer(getDownloadId(c)));
     },
   )
-  .delete("/:id", requireRole("member"), zValidator("param", stringIdParamDto), requireDownloadOwnership, async (c) => {
-    return c.json(await c.var.service.delete(getDownloadId(c)));
-  });
+  .delete(
+    "/:id",
+    requireRole("member"),
+    zValidator("param", stringIdParamDto),
+    zValidator("query", z.object({ dbOnly: z.enum(["true"]).optional() })),
+    requireDownloadOwnership,
+    async (c) => {
+      const dbOnly = c.req.valid("query").dbOnly === "true";
+      return c.json(await c.var.service.delete(getDownloadId(c), { dbOnly }));
+    },
+  );

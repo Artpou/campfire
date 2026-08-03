@@ -17,6 +17,7 @@ import { indexerManagerRoutes } from "./modules/indexer-manager/indexer-manager.
 import { mediaRoutes } from "./modules/media/media.route";
 import { movieRoutes } from "./modules/movie/movie.route";
 import { personRoutes } from "./modules/person/person.route";
+import { settingsRoutes } from "./modules/settings/settings.route";
 import { storageConfigRoutes } from "./modules/storage-config/storage-config.route";
 import { streamingRoutes } from "./modules/streaming/streaming.route";
 import { subtitleRoutes } from "./modules/subtitle/subtitle.route";
@@ -57,6 +58,7 @@ export const app = new Hono<{ Variables: HonoVariables }>()
   .route("/subtitles", subtitleRoutes)
   .route("/activity-logs", activityLogRoutes)
   .route("/storage-config", storageConfigRoutes)
+  .route("/settings", settingsRoutes)
   .get("/logs/export", authGuard, requireRole("admin"), async (c) => {
     const fsSync = await import("node:fs");
     const filePath = getLogFilePath();

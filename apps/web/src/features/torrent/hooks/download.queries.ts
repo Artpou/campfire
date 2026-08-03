@@ -78,7 +78,8 @@ export function useDownloadDelete() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => unwrap(api.downloads[":id"].$delete({ param: { id } })),
+    mutationFn: ({ id, dbOnly }: { id: string; dbOnly?: boolean }) =>
+      unwrap(api.downloads[":id"].$delete({ param: { id }, query: dbOnly ? { dbOnly: "true" } : {} })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: downloadQueries.key });
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });

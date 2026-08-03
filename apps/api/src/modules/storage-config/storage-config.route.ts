@@ -2,16 +2,16 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { timeout } from "hono/timeout";
 
-import { authGuard } from "@/modules/auth/auth.guard";
+import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
 import { requireRole } from "@/modules/auth/role.guard";
+import { runRemoteSync } from "./remote-sync.service";
 import { testStorageConfigDto, upsertStorageConfigDto } from "./storage-config.dto";
 import { StorageConfigService } from "./storage-config.service";
 
 const service = new StorageConfigService();
 
-export const storageConfigRoutes = new Hono()
+export const storageConfigRoutes = new Hono<{ Variables: HonoAuthenticatedVariables }>()
   .use("*", authGuard)
-  // Members need this to show the "Transfer to server" button (no secrets).
   .get("/enabled", requireRole("member"), async (c) => {
     const { remoteStorageService } = await import("./remote-storage.service");
     return c.json({ enabled: await remoteStorageService.isEnabled() });
@@ -36,4 +36,9 @@ export const storageConfigRoutes = new Hono()
     const { remoteStorageService } = await import("./remote-storage.service");
     const available = await remoteStorageService.isAvailable();
     return c.json({ available });
+  })
+  .post("/sync", async (c) => {
+    const user = c.get("user");
+    const result = await runRemoteSync(user.id);
+    return c.json(result);
   });

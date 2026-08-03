@@ -6,6 +6,7 @@ import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.
 import { type Identifiable, IdentifiableService } from "@/modules/auth/auth.service";
 import type { MediaEnriched } from "@/modules/media/media.dto";
 import { MediaService } from "@/modules/media/media.service";
+import { getTmdbApiKey } from "@/modules/settings/tmdb-key.helper";
 import { tmdbMovieToMedia, tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
 import type { User } from "@/types";
 import { getTmdbCache, isCachedPayload, setTmdbCache } from "./tmdb.cache";
@@ -29,11 +30,10 @@ const TMDB_API_URL = "https://api.themoviedb.org/3";
 const NUMBER_OF_PROVIDERS = 5;
 const TRENDING_LIMIT = 10;
 
-function buildUrl(url: string, language: string | undefined, options?: FetchOptions): string {
+function buildUrl(url: string, language: string | undefined, apiKey: string, options?: FetchOptions): string {
   const fullUrl = new URL(`${TMDB_API_URL}${url}`);
-  if (!process.env.TMDB_API_KEY) throw new ServiceUnavailableError("TMDB (missing API key)");
 
-  fullUrl.searchParams.set("api_key", process.env.TMDB_API_KEY);
+  fullUrl.searchParams.set("api_key", apiKey);
   if (language) fullUrl.searchParams.set("language", language);
 
   if (options) {
@@ -75,7 +75,10 @@ function normalizeDiscoverOptions(opts: tmdbDiscoverQuery): FetchOptions {
 }
 
 export async function tmdbRequest<T>(url: string, locale: string, options?: FetchOptions): Promise<T> {
-  const fullUrl = buildUrl(url, locale, options);
+  const apiKey = await getTmdbApiKey();
+  if (!apiKey) throw new ServiceUnavailableError("TMDB (missing API key)");
+
+  const fullUrl = buildUrl(url, locale, apiKey, options);
   const cached = getTmdbCache(fullUrl);
 
   if (isCachedPayload<T>(cached)) {

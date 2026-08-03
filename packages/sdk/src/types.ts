@@ -20,8 +20,11 @@ export type TorrentInspectResult = InferResponseType<ApiClient["torrents"]["insp
 export type SubdlSearchResponse = InferResponseType<ApiClient["subtitles"]["search"]["$get"], 200>;
 export type IndexerManager = IndexerManagerListResponse[number];
 export type IndexerManagerDetail = InferResponseType<ApiClient["indexer-manager"][":id"]["$get"], 200>;
+export type Settings = InferResponseType<ApiClient["settings"]["$get"], 200>;
+export type TmdbKeyStatus = InferResponseType<ApiClient["settings"]["tmdb-key-status"]["$get"], 200>;
 export type StorageConfig = InferResponseType<ApiClient["storage-config"]["$get"], 200>;
 export type StorageStatus = InferResponseType<ApiClient["storage-config"]["status"]["$get"], 200>;
+export type RemoteSyncResult = InferResponseType<ApiClient["storage-config"]["sync"]["$post"], 200>;
 
 export type TMDBMovieDetails = Movie["movie"];
 export type TMDBPersonDetails = Person["person"];

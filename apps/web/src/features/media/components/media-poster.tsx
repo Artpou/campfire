@@ -51,7 +51,7 @@ export function MediaPoster({ data, download, type = "movie" }: MediaPosterProps
   const canPlay = Boolean(downloadId);
   const showWatchProgress = hasWatchProgress(media);
   const watchProgressPercent = getWatchProgressPercent(media);
-  const isComplete = Boolean(download?.torrent?.done);
+  const isComplete = Boolean(download?.torrent?.done || (!download?.torrent && download?.remoteLocation));
 
   const youtubeTrailer = useMemo(() => {
     const videos = item?.videos?.results;
@@ -66,9 +66,12 @@ export function MediaPoster({ data, download, type = "movie" }: MediaPosterProps
 
   const handleDeleteConfirm = () => {
     if (!downloadId) return;
-    deleteTorrent.mutate(downloadId, {
-      onSuccess: () => setShowDeleteConfirm(false),
-    });
+    deleteTorrent.mutate(
+      { id: downloadId },
+      {
+        onSuccess: () => setShowDeleteConfirm(false),
+      },
+    );
   };
 
   return (
