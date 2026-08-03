@@ -1,6 +1,7 @@
 import { t } from "@lingui/core/macro";
 import type { UpsertStorageConfigInput } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
+import { formatError } from "@seedarr/shared";
 import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -40,7 +41,7 @@ export function useUpsertStorageConfig() {
     },
     onError: (error) => {
       toast.error(t`Failed to save storage configuration`, {
-        description: error instanceof Error ? error.message : undefined,
+        description: formatError(error),
       });
     },
   });
@@ -60,7 +61,7 @@ export function useTestStorageConnection() {
     },
     onError: (error) => {
       toast.error(t`Remote server is unreachable`, {
-        description: error instanceof Error ? error.message : undefined,
+        description: formatError(error),
       });
     },
   });

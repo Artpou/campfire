@@ -1,5 +1,6 @@
 import { t } from "@lingui/core/macro";
 import { api, unwrap } from "@seedarr/sdk";
+import { formatError } from "@seedarr/shared";
 import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -39,7 +40,7 @@ export function useDownloadSubtitle() {
     },
     onError: (error) => {
       toast.error(t`Could not add subtitle`, {
-        description: error instanceof Error ? error.message : undefined,
+        description: formatError(error),
       });
     },
   });

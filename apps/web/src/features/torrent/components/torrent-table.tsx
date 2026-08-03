@@ -4,6 +4,7 @@ import { plural } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { DownloadTorrentInput, IndexerType, Media, Resolution, Torrent } from "@seedarr/sdk";
 import { ApiError } from "@seedarr/sdk";
+import { formatError } from "@seedarr/shared";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowDownIcon, ArrowUpIcon, DownloadIcon, InfoIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -116,7 +117,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
         setUnavailableDialogOpen(true);
         return;
       }
-      const message = error instanceof Error ? error.message : t`Unknown error`;
+      const message = formatError(error) || t`Unknown error`;
       toast.error(t`Download failed`, { id, description: message });
     }
   };

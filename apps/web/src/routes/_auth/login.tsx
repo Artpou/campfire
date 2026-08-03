@@ -4,6 +4,7 @@ import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { LoginInput } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
+import { formatError } from "@seedarr/shared";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
@@ -44,7 +45,7 @@ function Login() {
       navigate({ to: "/" });
     },
     onError: (err: unknown) => {
-      setError(err instanceof Error ? err.message : t(msg`An error occurred`));
+      setError(formatError(err) || t(msg`An error occurred`));
     },
   });
 

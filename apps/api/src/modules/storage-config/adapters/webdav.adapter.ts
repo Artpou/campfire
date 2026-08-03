@@ -1,3 +1,5 @@
+import { formatError } from "@seedarr/shared";
+
 import { logger } from "@/helpers/logger.helper";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -27,7 +29,7 @@ export class WebdavAdapter extends StorageAdapter {
       await client.getDirectoryContents("/");
       return { success: true };
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = formatError(error);
       logger.error("WEBDAV", `Connection test failed: ${message}`);
       return { success: false, error: message };
     }
@@ -96,7 +98,7 @@ export class WebdavAdapter extends StorageAdapter {
       }
       onProgress?.(1);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = formatError(error);
       throw new Error(`WebDAV transfer failed: ${message}`);
     }
   }

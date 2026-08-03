@@ -1,5 +1,6 @@
 import { Trans } from "@lingui/react/macro";
 import type { Torrent } from "@seedarr/sdk";
+import { formatError } from "@seedarr/shared";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2Icon, TriangleAlertIcon } from "lucide-react";
 
@@ -60,9 +61,7 @@ export function TorrentInspectModal({ open, onOpenChange, torrent, magnetUri }: 
             <p className="text-destructive">
               <Trans>Failed to fetch torrent metadata</Trans>
             </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              {error instanceof Error ? error.message : String(error)}
-            </p>
+            <p className="text-sm text-muted-foreground mt-2">{formatError(error)}</p>
           </div>
         )}
 

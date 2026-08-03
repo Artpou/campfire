@@ -1,3 +1,4 @@
+import { formatError } from "@seedarr/shared";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db/db";
@@ -9,7 +10,7 @@ import { media } from "@/modules/media/media.schema";
 import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
 import { waitUntilNoStreams } from "@/modules/streaming/streaming-lease";
 import fs from "node:fs/promises";
-import { torrentClient } from "./webtorrent-manager";
+import { torrentClient, UNMARK_DESTROYING_DELAY_MS } from "./webtorrent-manager";
 
 const activeTransfers = new Set<string>();
 
@@ -35,7 +36,7 @@ function unloadTorrentSession(downloadId: string): void {
   } catch {
     // already destroyed
   }
-  setTimeout(() => torrentClient.unmarkDestroying(downloadId), 5_000);
+  setTimeout(() => torrentClient.unmarkDestroying(downloadId), UNMARK_DESTROYING_DELAY_MS);
 }
 
 /** Mark transfer started in DB so the UI can poll immediately (auto + manual). */
@@ -157,7 +158,7 @@ export async function runRemoteTransfer(
       metadata: { downloadId, remotePath },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = formatError(error);
     logger.error("TRANSFER", `Remote transfer failed for "${downloadId}": ${message}`);
 
     const dl = await db.query.download.findFirst({ where: eq(download.id, downloadId) });

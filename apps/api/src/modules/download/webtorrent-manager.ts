@@ -1,3 +1,4 @@
+import { formatError } from "@seedarr/shared";
 import type WebTorrent from "webtorrent";
 
 import { ServiceUnavailableError } from "@/errors/error";
@@ -5,6 +6,11 @@ import { logger } from "@/helpers/logger.helper";
 import { waitForTorrentMetadata } from "./webtorrent.helper";
 
 const DOWNLOAD_PATH = process.env.DOWNLOADS_PATH || "./downloads";
+
+/** Delay before clearing the destroying flag so late WebTorrent callbacks are ignored. */
+export const UNMARK_DESTROYING_DELAY_MS = 5_000;
+
+const WEBTORRENT_STACK_MARKERS = ["webtorrent", "bittorrent", "ut_metadata", "bittorrent-dht"] as const;
 
 class WebTorrentManager {
   private client: WebTorrent.Instance | null = null;
@@ -40,15 +46,11 @@ class WebTorrentManager {
       this.client = new WebTorrentModule();
 
       this.client.on("error", (err) => {
-        logger.error("WEBTORRENT", `Client error (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
+        logger.error("WEBTORRENT", `Client error (non-fatal): ${formatError(err)}`);
       });
 
       this.uncaughtHandler = (err: Error) => {
-        const isWebTorrentError =
-          err.stack?.includes("webtorrent") ||
-          err.stack?.includes("bittorrent") ||
-          err.stack?.includes("ut_metadata") ||
-          err.stack?.includes("bittorrent-dht");
+        const isWebTorrentError = WEBTORRENT_STACK_MARKERS.some((marker) => err.stack?.includes(marker));
         if (isWebTorrentError) {
           logger.error("WEBTORRENT", `Uncaught exception from WebTorrent internals: ${err.message}`);
           return;

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { api, type IndexerManager, type StremioManifest, type UpdateIndexerManagerInput, unwrap } from "@seedarr/sdk";
+import { formatError } from "@seedarr/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { SettingsIcon, TrashIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -68,7 +69,7 @@ export function IndexersManagerCard({ manager }: IndexersManagerCardProps) {
     },
     onError: (error) => {
       toast.error(t`Could not uninstall source`, {
-        description: error instanceof Error ? error.message : undefined,
+        description: formatError(error),
       });
     },
   });

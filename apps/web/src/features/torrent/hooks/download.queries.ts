@@ -1,6 +1,7 @@
 import { t } from "@lingui/core/macro";
 import type { Download, DownloadTorrentInput, TorrentInspectFile } from "@seedarr/sdk";
 import { ApiError, api, getBaseUrl, unwrap } from "@seedarr/sdk";
+import { formatError } from "@seedarr/shared";
 import { type QueryState, queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -85,7 +86,7 @@ export function useDownloadDelete() {
     },
     onError: (error) => {
       toast.error(t`Could not delete download`, {
-        description: error instanceof Error ? error.message : undefined,
+        description: formatError(error),
       });
     },
   });
@@ -103,7 +104,7 @@ export function useDownloadPause() {
     },
     onError: (error) => {
       toast.error(t`Could not pause download`, {
-        description: error instanceof Error ? translateDownloadError(error.message) : undefined,
+        description: translateDownloadError(formatError(error)),
       });
     },
   });
@@ -121,7 +122,7 @@ export function useDownloadResume() {
     },
     onError: (error) => {
       toast.error(t`Could not resume download`, {
-        description: error instanceof Error ? translateDownloadError(error.message) : undefined,
+        description: translateDownloadError(formatError(error)),
       });
     },
   });
@@ -151,7 +152,7 @@ export function useDownloadTransfer() {
         queryClient.setQueryData([...downloadQueries.key, id], context.previous);
       }
       toast.error(t`Could not transfer to remote server`, {
-        description: error instanceof Error ? error.message : undefined,
+        description: formatError(error),
       });
     },
   });

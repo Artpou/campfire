@@ -16,8 +16,13 @@ import fs from "node:fs/promises";
 import type { Download, DownloadStats, DownloadTorrentInput, TorrentLiveData } from "./download.dto";
 import { isTransferInProgress, markTransferStarting, runRemoteTransfer } from "./download-storage.helper";
 import { extractTorrentLiveData, waitForTorrentMetadata } from "./webtorrent.helper";
-import { torrentClient } from "./webtorrent-manager";
+import { torrentClient, UNMARK_DESTROYING_DELAY_MS } from "./webtorrent-manager";
 import { clearHandlersForDownload, setupTorrentHandlers } from "./webtorrent-sync";
+
+/** Magnet URIs need longer — peers must be discovered before metadata arrives. */
+const METADATA_TIMEOUT_MAGNET_MS = 10_000;
+/** .torrent buffers already carry metadata; only wait for ready/error. */
+const METADATA_TIMEOUT_FILE_MS = 5_000;
 
 function destroyTorrent(torrent: WebTorrent.Torrent, opts: { destroyStore: boolean }): Promise<void> {
   return new Promise<void>((resolve) => {
@@ -74,19 +79,11 @@ export class DownloadService extends IdentifiableService<Download> {
     return { count: downloads.length, totalSize, downloadSpeed, uploadSpeed, peers };
   }
 
-  async checkRemoteAvailability(): Promise<{ available: boolean; enabled: boolean }> {
-    const enabled = await remoteStorageService.isEnabled();
-    if (!enabled) return { available: false, enabled: false };
-    const available = await remoteStorageService.isAvailable();
-    return { available, enabled };
-  }
-
   async start(input: DownloadTorrentInput): Promise<Download | { status: "REMOTE_UNAVAILABLE" }> {
     const { preferLocal, ...downloadInput } = input;
 
-    if (!preferLocal) {
-      const { enabled, available } = await this.checkRemoteAvailability();
-      if (enabled && !available) return { status: "REMOTE_UNAVAILABLE" };
+    if (!preferLocal && (await remoteStorageService.isEnabled())) {
+      if (!(await remoteStorageService.isAvailable())) return { status: "REMOTE_UNAVAILABLE" };
     }
 
     const torrentSource = await resolveTorrentSource(input.magnetUri);
@@ -95,7 +92,7 @@ export class DownloadService extends IdentifiableService<Download> {
     const torrent = torrentClient.safeAdd(torrentSource, { path: torrentClient.downloadPath });
 
     try {
-      const metadataTimeout = typeof torrentSource === "string" ? 10_000 : 5_000;
+      const metadataTimeout = typeof torrentSource === "string" ? METADATA_TIMEOUT_MAGNET_MS : METADATA_TIMEOUT_FILE_MS;
       await waitForTorrentMetadata(torrent, metadataTimeout);
 
       const [newMedia] = await db
@@ -149,10 +146,7 @@ export class DownloadService extends IdentifiableService<Download> {
     if (!activeTorrent) {
       if (item.torrent?.paused) return { success: true };
 
-      const pausedData = {
-        ...item.torrent,
-        paused: true,
-      } as TorrentLiveData;
+      const pausedData = { ...item.torrent, paused: true } as TorrentLiveData;
 
       await db.update(download).set({ torrent: pausedData }).where(eq(download.id, id));
       logger.info("DOWNLOAD", `Paused (no active session): ${item.torrent?.name || id}`);
@@ -169,7 +163,7 @@ export class DownloadService extends IdentifiableService<Download> {
     torrentClient.deleteActiveTorrent(id);
 
     logger.info("DOWNLOAD", `Paused: ${activeTorrent.name || id}`);
-    setTimeout(() => torrentClient.unmarkDestroying(id), 5_000);
+    setTimeout(() => torrentClient.unmarkDestroying(id), UNMARK_DESTROYING_DELAY_MS);
     return { success: true };
   }
 
@@ -241,7 +235,7 @@ export class DownloadService extends IdentifiableService<Download> {
         .then(() => logger.info("DOWNLOAD", `Destroyed files for: ${torrentName}`))
         .catch((err) => logger.error("DOWNLOAD", `Error destroying files`, err));
 
-      setTimeout(() => torrentClient.unmarkDestroying(id), 5_000);
+      setTimeout(() => torrentClient.unmarkDestroying(id), UNMARK_DESTROYING_DELAY_MS);
     } else if (torrentName) {
       try {
         const targetPath = resolveWithinDownloads(torrentName);

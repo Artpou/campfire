@@ -1,4 +1,5 @@
 export { todayIsoDate } from "./date";
+export { formatError } from "./error";
 export { formatBytes, formatRuntime, formatTime } from "./format";
 export { parseNumber } from "./number";
 export {

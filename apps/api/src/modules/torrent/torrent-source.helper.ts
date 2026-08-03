@@ -1,3 +1,5 @@
+import { formatError } from "@seedarr/shared";
+
 import { BadRequestError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
 import { assertSafeTorrentFetchUrl, redactUrl } from "@/helpers/url.helper";
@@ -18,7 +20,7 @@ export async function resolveTorrentSource(uri: string, depth = 0): Promise<stri
       headers: { "User-Agent": "Seedarr/1.0" },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = formatError(error);
     logger.error("TORRENT", `Failed to fetch torrent from ${redactUrl(uri)}: ${message}`);
     throw new BadRequestError(`Failed to fetch .torrent file: ${message}`);
   }

@@ -1,4 +1,4 @@
-import { VIDEO_EXTENSIONS } from "@seedarr/shared";
+import { formatError, VIDEO_EXTENSIONS } from "@seedarr/shared";
 import { eq } from "drizzle-orm";
 import type { StreamingApi } from "hono/utils/stream";
 import type WebTorrent from "webtorrent";
@@ -255,7 +255,7 @@ export class StreamingService {
           remote.cleanup?.();
         }
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
+        const message = formatError(error);
         logger.warn("STREAM", `Remote probe failed for ${download.id}: ${message}`);
       }
     }

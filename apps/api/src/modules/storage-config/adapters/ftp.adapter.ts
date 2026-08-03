@@ -1,3 +1,5 @@
+import { formatError } from "@seedarr/shared";
+
 import { logger } from "@/helpers/logger.helper";
 import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
@@ -54,7 +56,7 @@ export class FtpAdapter extends StorageAdapter {
       client.close();
       return { success: true };
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = formatError(error);
       logger.error("FTP", `Connection test failed: ${message}`);
       return { success: false, error: message };
     }

@@ -1,3 +1,5 @@
+import { formatError } from "@seedarr/shared";
+
 import { BadRequestError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
 import dns from "node:dns/promises";
@@ -55,7 +57,7 @@ function parseAndValidateUrl(url: string, logContext?: string): URL {
     return parsed;
   } catch (err) {
     if (logContext) logger.warn(logContext, `Invalid URL: ${redactUrl(url)}`);
-    const msg = err instanceof Error ? err.message : "Invalid URL";
+    const msg = formatError(err);
     throw new BadRequestError(`${msg}: ${redactUrl(url)}`);
   }
 }

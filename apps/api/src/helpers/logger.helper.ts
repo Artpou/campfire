@@ -1,3 +1,5 @@
+import { formatError } from "@seedarr/shared";
+
 import { appendFileSync, existsSync, renameSync, statSync } from "node:fs";
 
 const colors = {
@@ -45,7 +47,7 @@ function writeToFile(line: string) {
     }
     appendFileSync(filePath, `${stripAnsi(line)}\n`);
   } catch (err) {
-    console.error(`[LOGGER] Failed to write to log file: ${err instanceof Error ? err.message : String(err)}`);
+    console.error(`[LOGGER] Failed to write to log file: ${formatError(err)}`);
   }
 }
 

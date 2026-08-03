@@ -1,6 +1,7 @@
 import { t } from "@lingui/core/macro";
 import type { ListMediaQuery, Media, Paginate } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
+import { formatError } from "@seedarr/shared";
 import {
   type InfiniteData,
   infiniteQueryOptions,
@@ -110,7 +111,7 @@ export function useToggleLike() {
     },
     onError: (error) => {
       toast.error(t`Could not update likes`, {
-        description: error instanceof Error ? error.message : undefined,
+        description: formatError(error),
       });
     },
   });
@@ -128,7 +129,7 @@ export function useToggleWatchList() {
     },
     onError: (error) => {
       toast.error(t`Could not update watch list`, {
-        description: error instanceof Error ? error.message : undefined,
+        description: formatError(error),
       });
     },
   });

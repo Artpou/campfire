@@ -1,3 +1,4 @@
+import { formatError } from "@seedarr/shared";
 import type WebTorrent from "webtorrent";
 
 import { BadRequestError, NotFoundError, ServiceUnavailableError } from "@/errors/error";
@@ -81,7 +82,7 @@ export class TorrentService extends AuthenticatedService {
       torrent.on("error", (err) => {
         clearTimeout(timeoutId);
         if (torrent) torrent.destroy();
-        const message = err instanceof Error ? err.message : String(err);
+        const message = formatError(err);
         reject(new ServiceUnavailableError(`Torrent error: ${message}`));
       });
 

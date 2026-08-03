@@ -1,4 +1,5 @@
 /** biome-ignore-all lint/correctness/noUnusedVariables: we want to exclude some properties */
+import { formatError } from "@seedarr/shared";
 import type WebTorrent from "webtorrent";
 
 import { BadRequestError } from "@/errors/error";
@@ -82,7 +83,7 @@ export function waitForTorrentMetadata(torrent: WebTorrent.Torrent, timeoutMs: n
 
     const onError = (err: Error | string) => {
       cleanup();
-      const message = err instanceof Error ? err.message : String(err);
+      const message = formatError(err);
       reject(new BadRequestError(message));
     };
 

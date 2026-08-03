@@ -1,4 +1,4 @@
-import { VIDEO_EXTENSIONS } from "@seedarr/shared";
+import { formatError, VIDEO_EXTENSIONS } from "@seedarr/shared";
 import { eq } from "drizzle-orm";
 import type WebTorrent from "webtorrent";
 
@@ -51,19 +51,14 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
       liveData.uploadSpeed = 0;
     }
 
+    // Preserve DB-only fields (durationSeconds, skipAutoTransfer, transferring…),
+    // then refresh live WebTorrent metrics, then apply explicit overrides.
     await db
       .update(download)
       .set({
         torrent: {
+          ...current?.torrent,
           ...liveData,
-          transferring: current?.torrent?.transferring,
-          transferProgress: current?.torrent?.transferProgress,
-          transferSpeed: current?.torrent?.transferSpeed,
-          skipAutoTransfer: current?.torrent?.skipAutoTransfer,
-          durationSeconds: current?.torrent?.durationSeconds,
-          videoCodec: current?.torrent?.videoCodec,
-          audioCodec: current?.torrent?.audioCodec,
-          moovAtStart: current?.torrent?.moovAtStart,
           ...extraFields,
         },
       })
@@ -134,7 +129,7 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
   torrent.on("error", async (err) => {
     try {
       if (torrentClient.isDestroying(downloadId)) return;
-      const message = err instanceof Error ? err.message : String(err);
+      const message = formatError(err);
       logger.error("WEBTORRENT", `Error on "${torrent.name || downloadId}": ${message}`);
       await db.update(download).set({ error: message }).where(eq(download.id, downloadId));
       await syncDb(true);

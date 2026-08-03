@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
+import { formatError } from "@seedarr/shared";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -133,7 +134,7 @@ function VideoPlayerPage() {
     (error?: unknown) => {
       if (errorToastedRef.current) return;
       errorToastedRef.current = true;
-      const message = error instanceof Error ? error.message : typeof error === "string" ? error : undefined;
+      const message = error != null ? formatError(error) : undefined;
       toast.error(t(msg`Playback failed`), {
         description: message || t(msg`Could not load the video stream. Check that the file is still available.`),
       });

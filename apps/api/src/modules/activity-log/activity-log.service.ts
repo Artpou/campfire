@@ -1,3 +1,4 @@
+import { formatError } from "@seedarr/shared";
 import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "@/db/db";
@@ -27,7 +28,7 @@ export class ActivityLogService extends AuthenticatedService {
         metadata: params.metadata ? JSON.stringify(params.metadata) : null,
       });
     } catch (err) {
-      logger.error("ACTIVITY_LOG", `Failed to insert log: ${err instanceof Error ? err.message : String(err)}`);
+      logger.error("ACTIVITY_LOG", `Failed to insert log: ${formatError(err)}`);
     }
   }
 
