@@ -1,8 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { Download } from "@seedarr/sdk";
 import { formatBytes, formatTime } from "@seedarr/shared";
-import { Link } from "@tanstack/react-router";
-import { ClockIcon, DownloadIcon, InfoIcon, PauseIcon, UploadIcon } from "lucide-react";
+import { ClockIcon, DownloadIcon, PauseIcon, UploadIcon } from "lucide-react";
 
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
@@ -18,8 +17,6 @@ const CIRCULAR_STROKE = 4;
 interface DownloadProgressProps {
   download: Download;
   variant?: "bar" | "circular";
-  /** Show a link to the download detail page (bar only). */
-  showInfoLink?: boolean;
   /** Larger typography for the download detail page (bar only). */
   size?: "default" | "lg";
   /** Override pause/resume (e.g. when the parent already owns the mutations). */
@@ -55,13 +52,12 @@ function usePauseToggle(download: Download, onPauseResume?: () => void) {
 export function DownloadProgress({
   download,
   variant = "bar",
-  showInfoLink = false,
   size = "default",
   onPauseResume,
 }: DownloadProgressProps) {
   if (variant === "circular") return <CircularProgress download={download} onPauseResume={onPauseResume} />;
 
-  return <BarProgress download={download} showInfoLink={showInfoLink} size={size} onPauseResume={onPauseResume} />;
+  return <BarProgress download={download} size={size} onPauseResume={onPauseResume} />;
 }
 
 function CircularProgress({ download, onPauseResume }: { download: Download; onPauseResume?: () => void }) {
@@ -118,16 +114,13 @@ function CircularProgress({ download, onPauseResume }: { download: Download; onP
 
 function BarProgress({
   download,
-  showInfoLink,
   size,
   onPauseResume,
 }: {
   download: Download;
-  showInfoLink: boolean;
   size: "default" | "lg";
   onPauseResume?: () => void;
 }) {
-  const { t } = useLingui();
   const { toggle, isPending } = usePauseToggle(download, onPauseResume);
 
   const isLg = size === "lg";
@@ -193,14 +186,6 @@ function BarProgress({
           {isPaused ? <DownloadIcon className={iconSize} /> : <PauseIcon className={iconSize} />}
           <span>{isPaused ? <Trans>Resume</Trans> : <Trans>Pause</Trans>}</span>
         </Button>
-
-        {showInfoLink && (
-          <Button size={isLg ? "icon" : "icon-sm"} variant="outline" asChild aria-label={t`Open download`}>
-            <Link to="/downloads/$id" params={{ id: download.id }}>
-              <InfoIcon className={iconSize} />
-            </Link>
-          </Button>
-        )}
       </div>
     </div>
   );

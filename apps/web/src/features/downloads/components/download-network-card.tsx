@@ -2,84 +2,53 @@ import { Trans } from "@lingui/react/macro";
 import { formatBytes } from "@seedarr/shared";
 import { ArrowDownIcon, ArrowUpIcon, ScaleIcon, UsersIcon } from "lucide-react";
 
-import { Card } from "@/shared/ui/card";
-
 interface DownloadNetworkCardProps {
   type: "download" | "upload" | "peers" | "ratio";
   value?: number;
 }
 
+const CONFIG = {
+  download: {
+    icon: ArrowDownIcon,
+    colorClass: "text-primary bg-primary/10",
+  },
+  upload: {
+    icon: ArrowUpIcon,
+    colorClass: "text-blue bg-blue/10",
+  },
+  ratio: {
+    icon: ScaleIcon,
+    colorClass: "text-red bg-red/10",
+  },
+  peers: {
+    icon: UsersIcon,
+    colorClass: "text-purple bg-purple/10",
+  },
+} as const;
+
+function formatValue(type: DownloadNetworkCardProps["type"], value: number): string {
+  if (type === "download" || type === "upload") return `${formatBytes(value)}/s`;
+  if (type === "ratio") return value.toFixed(2);
+  return value.toString();
+}
+
 export function DownloadNetworkCard({ type, value = 0 }: DownloadNetworkCardProps) {
-  if (type === "download") {
-    return (
-      <Card className="p-3">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-primary/10">
-            <ArrowDownIcon className="size-4 text-primary" />
-          </div>
-          <div className="flex-1">
-            <p className="text-xs text-muted-foreground">
-              <Trans>Download Speed</Trans>
-            </p>
-            <p className="text-lg font-bold">{formatBytes(value)}/s</p>
-          </div>
-        </div>
-      </Card>
-    );
-  }
+  const { icon: Icon, colorClass } = CONFIG[type];
 
-  if (type === "upload") {
-    return (
-      <Card className="p-3">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-blue/10">
-            <ArrowUpIcon className="size-4 text-blue" />
-          </div>
-          <div className="flex-1">
-            <p className="text-xs text-muted-foreground">
-              <Trans>Upload Speed</Trans>
-            </p>
-            <p className="text-lg font-bold">{formatBytes(value)}/s</p>
-          </div>
-        </div>
-      </Card>
-    );
-  }
-
-  if (type === "ratio") {
-    return (
-      <Card className="p-3">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-red/10">
-            <ScaleIcon className="size-4 text-red" />
-          </div>
-          <div className="flex-1">
-            <p className="text-xs text-muted-foreground">
-              <Trans>Ratio</Trans>
-            </p>
-            <p className="text-lg font-bold">{value.toFixed(2)}</p>
-          </div>
-        </div>
-      </Card>
-    );
-  }
-
-  // peers
   return (
-    <Card className="p-3">
-      <div className="flex items-center gap-2">
-        <div className="p-1.5 rounded-lg bg-purple/10">
-          <UsersIcon className="size-4 text-purple" />
-        </div>
-        <div className="flex-1">
-          <p className="text-xs text-muted-foreground">
-            <Trans>Connected Peers</Trans>
-          </p>
-          <p className="text-lg font-bold">
-            <Trans>{value} peers</Trans>
-          </p>
-        </div>
+    <div className="bg-card flex items-center gap-2 rounded-md border px-2.5 py-1.5">
+      <div className={`p-1 rounded-md ${colorClass}`}>
+        <Icon className="size-3.5" />
       </div>
-    </Card>
+      <div className="flex items-baseline justify-between gap-2 w-full">
+        <span className="text-xs text-muted-foreground">
+          {type === "download" && <Trans>Download</Trans>}
+          {type === "upload" && <Trans>Upload</Trans>}
+          {type === "peers" && <Trans>Peers</Trans>}
+          {type === "ratio" && <Trans>Ratio</Trans>}
+        </span>
+        <span className="text-sm font-semibold truncate">{formatValue(type, value)}</span>
+      </div>
+    </div>
   );
 }

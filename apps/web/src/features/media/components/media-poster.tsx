@@ -2,8 +2,8 @@ import { useMemo, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { Download, Movie, TV } from "@seedarr/sdk";
-import { Link } from "@tanstack/react-router";
-import { ClapperboardIcon, FilmIcon, HardDriveIcon, MagnetIcon, PlayIcon, Trash2Icon } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { ClapperboardIcon, FilmIcon, MagnetIcon, PlayIcon, Trash2Icon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
@@ -40,6 +40,7 @@ function getDisplayTitle(data: Movie | TV): string {
 export function MediaPoster({ data, download, type = "movie" }: MediaPosterProps) {
   const { role } = useRole();
   const { i18n, t } = useLingui();
+  const navigate = useNavigate();
   const deleteTorrent = useDownloadDelete();
   const [imgError, setImgError] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -64,14 +65,9 @@ export function MediaPoster({ data, download, type = "movie" }: MediaPosterProps
     );
   }, [item?.videos, i18n.locale]);
 
-  const handleDeleteConfirm = () => {
+  const handleDelete = (dbOnly: boolean) => {
     if (!downloadId) return;
-    deleteTorrent.mutate(
-      { id: downloadId },
-      {
-        onSuccess: () => setShowDeleteConfirm(false),
-      },
-    );
+    deleteTorrent.mutate({ id: downloadId, dbOnly }, { onSuccess: () => setShowDeleteConfirm(false) });
   };
 
   return (
@@ -79,7 +75,7 @@ export function MediaPoster({ data, download, type = "movie" }: MediaPosterProps
       <div className="relative w-[200px] sm:w-full aspect-2/3">
         <div
           className={cn(
-            "relative w-full overflow-hidden rounded-md border border-secondary shadow-2xl",
+            "group/poster relative w-full overflow-hidden rounded-md border border-secondary shadow-2xl",
             showWatchProgress ? "h-[calc(100%-0.75rem)]" : "h-full",
           )}
         >
@@ -96,18 +92,17 @@ export function MediaPoster({ data, download, type = "movie" }: MediaPosterProps
             </div>
           )}
 
-          {type === "tv" && downloadId && (
-            <Button
-              asChild
-              size="icon"
-              variant="secondary"
-              className="absolute top-2 right-2 z-10 size-8"
-              aria-label={t`Open download`}
+          {canPlay && downloadId && (
+            <button
+              type="button"
+              className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/poster:bg-black/50 transition-colors cursor-pointer"
+              onClick={() => navigate({ to: "/downloads/$id/play", params: { id: downloadId } })}
+              aria-label={t`Play`}
             >
-              <Link to="/downloads/$id" params={{ id: downloadId }}>
-                <HardDriveIcon className="size-4" />
-              </Link>
-            </Button>
+              <span className="flex items-center justify-center size-16 rounded-full bg-primary/80 shadow-lg opacity-80 group-hover/poster:opacity-100 group-hover/poster:bg-primary group-hover/poster:scale-105 transition-all duration-300">
+                <PlayIcon className="size-8 text-white fill-current ml-1" />
+              </span>
+            </button>
           )}
         </div>
 
@@ -184,17 +179,30 @@ export function MediaPoster({ data, download, type = "movie" }: MediaPosterProps
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              <Trans>Delete download?</Trans>
+              <Trans>Delete Download</Trans>
             </AlertDialogTitle>
             <AlertDialogDescription>
-              <Trans>This will remove the downloaded files for this movie.</Trans>
+              <Trans>Are you sure you want to delete this download? This action cannot be undone.</Trans>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>
               <Trans>Cancel</Trans>
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} disabled={deleteTorrent.isPending}>
+            {role === "owner" && (
+              <AlertDialogAction
+                onClick={() => handleDelete(true)}
+                disabled={deleteTorrent.isPending}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/80"
+              >
+                <Trans>DB only</Trans>
+              </AlertDialogAction>
+            )}
+            <AlertDialogAction
+              onClick={() => handleDelete(false)}
+              disabled={deleteTorrent.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/80"
+            >
               <Trans>Delete</Trans>
             </AlertDialogAction>
           </AlertDialogFooter>

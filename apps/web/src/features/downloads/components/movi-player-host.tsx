@@ -21,6 +21,8 @@ export interface MoviPlayerHandle extends HTMLElement {
 interface MoviPlayerHostProps {
   src: string;
   tracks?: SubtitleTrack[];
+  /** Initial playback position in seconds (movi-player `startat` — skips poster seek(0)). */
+  startAt?: number;
   onPlayer: (player: MoviPlayerHandle | null) => void;
   onLoadedMetadata?: () => void;
   onError?: (error?: unknown) => void;
@@ -60,8 +62,10 @@ function errorDetail(event: Event): unknown {
   return event instanceof CustomEvent ? event.detail : event;
 }
 
+type CcExtrasOpts = { onAddSubtitles?: () => void; enableDelay?: boolean };
+
 /** Inject Add / Delay controls into movi-player's CC menu (native delay UI is file-source only). */
-function injectCcExtras(player: MoviPlayerHandle, opts: { onAddSubtitles?: () => void; enableDelay?: boolean }): void {
+function injectCcExtras(player: MoviPlayerHandle, opts: CcExtrasOpts): void {
   const menu = player.shadowRoot?.querySelector(".movi-subtitle-track-menu");
   if (!menu || menu.querySelector("[data-seedarr-cc-extras]")) return;
 
@@ -125,6 +129,53 @@ function injectCcExtras(player: MoviPlayerHandle, opts: { onAddSubtitles?: () =>
 }
 
 /**
+ * movi-player hides `.movi-subtitle-track-container` when there are no tracks.
+ * Keep the CC button visible so users can still open the menu and add subtitles.
+ */
+function ensureCcMenuAvailable(player: MoviPlayerHandle, opts: CcExtrasOpts): void {
+  const showCcControls = (): void => {
+    const root = player.shadowRoot;
+    if (!root) return;
+
+    const container = root.querySelector<HTMLElement>(".movi-subtitle-track-container");
+    const btn = root.querySelector<HTMLElement>(".movi-subtitle-track-btn");
+    const list = root.querySelector<HTMLElement>(".movi-subtitle-track-list");
+    const footer = root.querySelector<HTMLElement>(".movi-subtitle-track-footer");
+
+    if (container) container.style.display = "flex";
+    if (btn) btn.style.display = "flex";
+
+    // When no tracks exist, updateSubtitleTrackMenu returns early without seeding the list.
+    if (list && list.childElementCount === 0) {
+      list.innerHTML = `
+        <div class="movi-subtitle-track-item movi-subtitle-track-active" data-track-id="null">
+          <span class="movi-subtitle-track-label">Off</span>
+        </div>
+      `;
+      if (footer) footer.textContent = "No subtitle tracks available";
+    }
+
+    injectCcExtras(player, opts);
+  };
+
+  const el = player as MoviPlayerHandle & {
+    updateSubtitleTrackMenu?: () => void;
+    __seedarrCcPatched?: boolean;
+  };
+
+  if (typeof el.updateSubtitleTrackMenu === "function" && !el.__seedarrCcPatched) {
+    const original = el.updateSubtitleTrackMenu.bind(el);
+    el.updateSubtitleTrackMenu = () => {
+      original();
+      showCcControls();
+    };
+    el.__seedarrCcPatched = true;
+  }
+
+  showCcControls();
+}
+
+/**
  * Mounts `<movi-player>` via the DOM (not JSX).
  *
  * Creation is deferred by a macrotask so React Strict Mode's mount→cleanup→mount
@@ -135,6 +186,7 @@ function injectCcExtras(player: MoviPlayerHandle, opts: { onAddSubtitles?: () =>
 export function MoviPlayerHost({
   src,
   tracks = [],
+  startAt = 0,
   onPlayer,
   onLoadedMetadata,
   onError,
@@ -153,6 +205,7 @@ export function MoviPlayerHost({
   onAddSubtitlesRef.current = onAddSubtitles;
 
   const tracksKey = JSON.stringify(tracks.map((t) => [t.src, t.label, t.srclang, t.default, t.format]));
+  const resumeAt = Number.isFinite(startAt) && startAt >= 1 ? Math.floor(startAt) : 0;
 
   useEffect(() => {
     const host = hostRef.current;
@@ -198,6 +251,9 @@ export function MoviPlayerHost({
         player.setAttribute("controls", "");
         player.setAttribute("theme", "dark");
         player.setAttribute("sw", "auto");
+        // Must be set before source() — otherwise init does seek(0) for the poster frame
+        // and overwrites a later currentTime resume seek.
+        if (resumeAt > 0) player.setAttribute("startat", String(resumeAt));
 
         const primary = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim();
         if (primary) player.setAttribute("themecolor", primary);
@@ -208,6 +264,9 @@ export function MoviPlayerHost({
         player.addEventListener("loadedmetadata", handleLoaded);
         player.addEventListener("loadeddata", handleLoaded);
         player.addEventListener("error", handleError);
+
+        // Expose the element before source() so resume handlers can use playerRef.
+        onPlayerRef.current(player);
 
         // Connect first, then source() — so initializePlayer runs while connected
         // with subtitle tracks already registered.
@@ -244,13 +303,11 @@ export function MoviPlayerHost({
         if (loopMenu) loopMenu.style.display = "none";
 
         if (onAddSubtitlesRef.current || enableSubtitleDelay) {
-          injectCcExtras(player, {
+          ensureCcMenuAvailable(player, {
             onAddSubtitles: onAddSubtitlesRef.current ? () => onAddSubtitlesRef.current?.() : undefined,
             enableDelay: enableSubtitleDelay,
           });
         }
-
-        onPlayerRef.current(player);
       })();
     }, 0);
 
@@ -266,7 +323,7 @@ export function MoviPlayerHost({
       onPlayerRef.current(null);
       host.replaceChildren();
     };
-  }, [src, tracksKey, enableSubtitleDelay]);
+  }, [src, tracksKey, enableSubtitleDelay, resumeAt]);
 
   return <div ref={hostRef} className={className} />;
 }

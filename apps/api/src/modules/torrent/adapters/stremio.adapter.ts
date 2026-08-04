@@ -63,7 +63,9 @@ export class StremioAdapter extends IndexerAdapter {
       videoId = `${media.imdbId}:${season}:${episode}`;
     }
 
-    const data = (await this.fetchApi(`stream/${media.type}/${videoId}.json`)) as StremioResponse;
+    const data = (await this.fetchApi(
+      `stream/${media.type === "movie" ? "movie" : "series"}/${videoId}.json`,
+    )) as StremioResponse;
 
     return data.streams.map((stream) => {
       const filename = stream.behaviorHints?.filename ?? "";

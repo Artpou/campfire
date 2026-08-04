@@ -25,18 +25,23 @@ export function MovieRelated({ collection, collectionMedia, recommendedMovies }:
     <MediaCarousel
       title={
         hasCollection ? (
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "collection" | "recommendations")}>
-            <TabsList size="lg">
-              <TabsTrigger value="collection" size="lg">
-                <Trans>{typeof collection?.name === "string" ? collection.name : ""}</Trans> ({collectionMedia.length})
-              </TabsTrigger>
-              <TabsTrigger value="recommendations" size="lg">
-                <Trans>Recommended</Trans> ({recommendedMovies.length})
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <span className="flex items-center gap-2">
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "collection" | "recommendations")}>
+              <TabsList size="lg">
+                <TabsTrigger value="collection" size="lg">
+                  <Trans>{typeof collection?.name === "string" ? collection.name : ""}</Trans> ({collectionMedia.length}
+                  )
+                </TabsTrigger>
+                <TabsTrigger value="recommendations" size="lg">
+                  <Trans>Recommended</Trans> ({recommendedMovies.length})
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </span>
         ) : (
-          <Trans>Related</Trans>
+          <span className="flex items-center gap-2">
+            <Trans>Related</Trans>
+          </span>
         )
       }
       data={activeTab === "recommendations" || !hasCollection ? recommendedMovies : collectionMedia}

@@ -1,17 +1,22 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 
+import { useRole } from "@/features/auth/hooks/use-role";
 import { MediaDetailLayout } from "@/features/media/components/media-detail-layout";
 import { useToggleLike, useToggleWatchList } from "@/features/media/hooks/media.queries";
 import { MovieCast } from "@/features/movies/components/movie-cast";
 import { MovieDetails } from "@/features/movies/components/movie-details";
+import { MovieDownloadSection } from "@/features/movies/components/movie-download-section";
 import { MovieInfo } from "@/features/movies/components/movie-info";
 import { MovieRelated } from "@/features/movies/components/movie-related";
 import { movieQueries } from "@/features/movies/hooks/movie.queries";
+import { downloadQueries } from "@/features/torrent/hooks/download.queries";
 
 export const Route = createFileRoute("/_app/movies/$id/")({
   loader: ({ context, params }) =>
@@ -24,11 +29,25 @@ function MoviePage() {
   const params = Route.useParams();
   const locale = useTmdbLocale();
   const { data } = useSuspenseQuery(movieQueries.details(params.id, locale));
+  const { role } = useRole();
 
   const toggleLike = useToggleLike();
   const toggleWatchList = useToggleWatchList();
 
   const { media, movie } = data;
+
+  const { data: mediaDownloads = [] } = useQuery({
+    ...downloadQueries.byMedia(media?.id ?? 0),
+    enabled: role !== "viewer" && Boolean(media?.id),
+  });
+
+  const liveDownload = useMemo(() => {
+    if (!media) return null;
+    if (media.download?.id) {
+      return mediaDownloads.find((d) => d.id === media.download?.id) ?? media.download;
+    }
+    return mediaDownloads[0] ?? null;
+  }, [media, mediaDownloads]);
 
   const detailsSection = (
     <MovieDetails
@@ -42,13 +61,15 @@ function MoviePage() {
 
   return (
     <MediaDetailLayout
-      title={movie.title ?? ""}
+      title={movie.title || movie.original_title || ""}
       backdropPath={movie.backdrop_path}
       posterPath={movie.poster_path}
       media={media}
+      download={liveDownload}
       posterData={data}
       infoSection={<MovieInfo movie={movie} />}
       detailsSection={detailsSection}
+      downloadSection={liveDownload ? <MovieDownloadSection download={liveDownload} /> : undefined}
     >
       <MovieCast movie={movie} />
       <MovieRelated

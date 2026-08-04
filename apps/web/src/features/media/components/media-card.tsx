@@ -23,25 +23,17 @@ type MediaCardProps = {
   mode?: "default" | "minimal" | "preview";
   playable?: boolean;
   withType?: boolean;
-  /** Override card click navigation: "detail" (default) or "download". */
-  linkTo?: "detail" | "download";
 };
 
-export function MediaCard({ media, mode = "default", className, playable, withType, linkTo }: MediaCardProps) {
+export function MediaCard({ media, mode = "default", className, playable, withType }: MediaCardProps) {
   const navigate = useNavigate();
   const [imgError, setImgError] = useState(false);
 
   const canPlay = Boolean(playable || media.download);
-  const tmdbLinkProps =
+  const detailLinkProps =
     media.type === "tv"
       ? ({ to: "/tv/$id", params: { id: media.id.toString() } } as const)
       : ({ to: "/movies/$id", params: { id: media.id.toString() } } as const);
-  const detailLinkProps =
-    linkTo === "download" && media.download?.id
-      ? media.type === "tv"
-        ? tmdbLinkProps
-        : ({ to: "/downloads/$id", params: { id: media.download.id } } as const)
-      : tmdbLinkProps;
 
   const playDownloadId = media.download?.id ?? media.progress?.downloadId ?? undefined;
   const watchProgressPercent = getWatchProgressPercent(media);

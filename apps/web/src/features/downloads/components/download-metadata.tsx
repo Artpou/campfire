@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import { Badge } from "@/shared/ui/badge";
 
 interface DownloadMetadataProps {
@@ -7,13 +8,13 @@ interface DownloadMetadataProps {
   className?: string;
 }
 
-export function DownloadMetadata({ origin, quality, language, className = "" }: DownloadMetadataProps) {
+export function DownloadMetadata({ origin, quality, language, className }: DownloadMetadataProps) {
   if (!origin && !quality && !language) {
     return null;
   }
 
   return (
-    <div className={`flex flex-wrap gap-2 ${className}`}>
+    <div className={cn("flex flex-wrap gap-1", className)}>
       {origin && (
         <Badge variant="outline" className="text-xs">
           {origin}

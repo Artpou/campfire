@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/ui/di
 import { Skeleton } from "@/shared/ui/skeleton";
 
 import { DownloadFilesList } from "@/features/downloads/components/download-files-list";
-import { DownloadMetadata } from "@/features/downloads/components/download-metadata";
 import { torrentQueries } from "@/features/torrent/hooks/torrent.queries";
 
 interface TorrentInspectModalProps {
@@ -108,7 +107,6 @@ export function TorrentInspectModal({ open, onOpenChange, torrent, magnetUri }: 
               </p>
             )}
 
-            <DownloadMetadata origin={torrent?.tracker} quality={quality} language={language} />
             <DownloadFilesList files={inspectData.files} collapsible defaultExpanded />
           </div>
         )}

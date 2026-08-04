@@ -5,7 +5,16 @@ import type { Media, TMDBTvDetails } from "@seedarr/sdk";
 import { formatRuntime } from "@seedarr/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CalendarIcon, ClapperboardIcon, ClockIcon, MagnetIcon, PlayIcon, Trash2Icon } from "lucide-react";
+import {
+  CalendarIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ClapperboardIcon,
+  ClockIcon,
+  MagnetIcon,
+  PlayIcon,
+  Trash2Icon,
+} from "lucide-react";
 
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Badge } from "@/shared/ui/badge";
@@ -21,6 +30,7 @@ import { getBackdropUrl } from "@/features/media/helpers/media.helper";
 import { downloadQueries, useDownloadDelete } from "@/features/torrent/hooks/download.queries";
 import { type EpisodeDeleteLabel, TvEpisodeDeleteDialog } from "@/features/tv/components/tv-episode-delete-dialog";
 import { TvEpisodeDownloadControls } from "@/features/tv/components/tv-episode-download-controls";
+import { TvEpisodeDownloadPanel } from "@/features/tv/components/tv-episode-download-panel";
 import { formatSeasonEpisode } from "@/features/tv/helpers/episode.helper";
 import { buildEpisodeDownloadMap, getEpisodesCoveredByDownload } from "@/features/tv/helpers/episode-downloads.helper";
 import { tvQueries } from "@/features/tv/hooks/tv.queries";
@@ -38,6 +48,7 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
   const validSeasons = useMemo(() => (tv.seasons ?? []).filter((s) => s.season_number > 0), [tv.seasons]);
 
   const [selectedSeason, setSelectedSeason] = useState<string>(() => validSeasons[0]?.season_number?.toString() ?? "1");
+  const [expandedEpisode, setExpandedEpisode] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{
     downloadId: string;
     episodes: EpisodeDeleteLabel[];
@@ -121,117 +132,136 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
                 }))
               : [];
 
-            return (
-              <Card key={episode.id} className="p-3 flex flex-col sm:flex-row gap-4 overflow-hidden">
-                <div className="flex flex-col items-center gap-2 w-full sm:w-48">
-                  {episode.still_path ? (
-                    <div className="w-full">
-                      <div className="relative shrink-0 w-full aspect-video rounded-md overflow-hidden bg-muted">
-                        <img
-                          src={getBackdropUrl(episode.still_path, "w300")}
-                          alt={episode.name}
-                          className="size-full object-cover"
-                        />
-                      </div>
-                      {hasStarted && media.progress && media.progress.duration > 0 && (
-                        <WatchProgressBar
-                          value={Math.min(100, (media.progress.position / media.progress.duration) * 100)}
-                        />
-                      )}
-                    </div>
-                  ) : (
-                    <div className="w-full aspect-video flex items-center justify-center rounded-md bg-muted">
-                      <ClapperboardIcon className="size-10 text-muted-foreground" />
-                    </div>
-                  )}
+            const episodeKey = `${seasonNumber}-${episode.episode_number}`;
+            const isExpanded = expandedEpisode === episodeKey;
+            const toggleExpand = () => setExpandedEpisode(isExpanded ? null : episodeKey);
 
-                  {hasDownload && canPlay && (isDownloaded || isDownloading) && (
-                    <div className="flex w-full gap-1">
-                      <Button
-                        size="sm"
-                        variant={isDownloaded || isDownloading ? "default" : "secondary"}
-                        className="flex-1"
-                        asChild
-                      >
-                        <Link to="/downloads/$id/play" params={{ id: episodeDownloadId }}>
-                          <PlayIcon className="size-3 mr-1 fill-current" />
-                          {hasStarted ? <Trans>Resume</Trans> : <Trans>Play</Trans>}
-                        </Link>
-                      </Button>
-                      {role !== "viewer" && (
+            return (
+              <div key={episode.id} className="space-y-0">
+                <Card className="p-3 flex flex-col sm:flex-row gap-4 overflow-hidden">
+                  <div className="flex flex-col items-center gap-2 w-full sm:w-48">
+                    {episode.still_path ? (
+                      <div className="w-full">
+                        <div className="relative shrink-0 w-full aspect-video rounded-md overflow-hidden bg-muted">
+                          <img
+                            src={getBackdropUrl(episode.still_path, "w300")}
+                            alt={episode.name}
+                            className="size-full object-cover"
+                          />
+                        </div>
+                        {hasStarted && media.progress && media.progress.duration > 0 && (
+                          <WatchProgressBar
+                            value={Math.min(100, (media.progress.position / media.progress.duration) * 100)}
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <div className="w-full aspect-video flex items-center justify-center rounded-md bg-muted">
+                        <ClapperboardIcon className="size-10 text-muted-foreground" />
+                      </div>
+                    )}
+
+                    {hasDownload && canPlay && (isDownloaded || isDownloading) && (
+                      <div className="flex w-full gap-1">
                         <Button
                           size="sm"
-                          variant="destructive"
-                          aria-label={t`Delete`}
-                          onClick={() =>
-                            setDeleteTarget({
-                              downloadId: episodeDownloadId,
-                              episodes: coveredEpisodes,
-                            })
-                          }
+                          variant={isDownloaded || isDownloading ? "default" : "secondary"}
+                          className="flex-1"
+                          asChild
                         >
-                          <Trash2Icon className="size-3.5" />
+                          <Link to="/downloads/$id/play" params={{ id: episodeDownloadId }}>
+                            <PlayIcon className="size-3 mr-1 fill-current" />
+                            {hasStarted ? <Trans>Resume</Trans> : <Trans>Play</Trans>}
+                          </Link>
+                        </Button>
+                        {role !== "viewer" && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            aria-label={t`Delete`}
+                            onClick={() =>
+                              setDeleteTarget({
+                                downloadId: episodeDownloadId,
+                                episodes: coveredEpisodes,
+                              })
+                            }
+                          >
+                            <Trash2Icon className="size-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+
+                    {role !== "viewer" && !hasDownload && (
+                      <Button size="sm" className="w-full" asChild>
+                        <Link
+                          to="/tv/$id/torrents"
+                          params={{ id: tv.id.toString() }}
+                          search={{
+                            season: seasonNumber,
+                            episode: episode.episode_number,
+                          }}
+                        >
+                          <MagnetIcon className="size-3 mr-1" />
+                          <Trans>Torrents</Trans>
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="flex-1 min-w-0 flex flex-col gap-2">
+                    <div className="flex items-start justify-between gap-2 flex-wrap">
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-base">
+                          <span className="text-muted-foreground mr-2">{seCode}</span>
+                          {episode.name}
+                        </h3>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-popover-foreground flex-wrap">
+                          {episode.air_date && (
+                            <Badge variant="outline">
+                              <CalendarIcon className="size-3" />
+                              {new Date(episode.air_date).toLocaleDateString(undefined, {
+                                day: "2-digit",
+                                month: "long",
+                                year: "numeric",
+                              })}
+                            </Badge>
+                          )}
+                          {episode.runtime && episode.runtime > 0 && (
+                            <Badge variant="outline">
+                              <ClockIcon className="size-3" />
+                              {formatRuntime(episode.runtime)}
+                            </Badge>
+                          )}
+                          {endsAt && (
+                            <Badge variant="secondary">
+                              <Trans>Ends at</Trans> {endsAt}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      {hasDownload && (
+                        <Button size="icon-sm" variant="ghost" onClick={toggleExpand} aria-label={t`Toggle details`}>
+                          {isExpanded ? <ChevronUpIcon className="size-4" /> : <ChevronDownIcon className="size-4" />}
                         </Button>
                       )}
                     </div>
-                  )}
+                    {episode.overview && (
+                      <p className="text-sm text-popover-foreground line-clamp-3">{episode.overview}</p>
+                    )}
 
-                  {role !== "viewer" && !hasDownload && (
-                    <Button size="sm" className="w-full" asChild>
-                      <Link
-                        to="/tv/$id/torrents"
-                        params={{ id: tv.id.toString() }}
-                        search={{
-                          season: seasonNumber,
-                          episode: episode.episode_number,
-                        }}
-                      >
-                        <MagnetIcon className="size-3 mr-1" />
-                        <Trans>Torrents</Trans>
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0 flex flex-col gap-2">
-                  <div className="flex items-start justify-between gap-2 flex-wrap">
-                    <div className="min-w-0">
-                      <h3 className="font-semibold text-base">
-                        <span className="text-muted-foreground mr-2">{seCode}</span>
-                        {episode.name}
-                      </h3>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-popover-foreground flex-wrap">
-                        {episode.air_date && (
-                          <Badge variant="outline">
-                            <CalendarIcon className="size-3" />
-                            {new Date(episode.air_date).toLocaleDateString(undefined, {
-                              day: "2-digit",
-                              month: "long",
-                              year: "numeric",
-                            })}
-                          </Badge>
-                        )}
-                        {episode.runtime && episode.runtime > 0 && (
-                          <Badge variant="outline">
-                            <ClockIcon className="size-3" />
-                            {formatRuntime(episode.runtime)}
-                          </Badge>
-                        )}
-                        {endsAt && (
-                          <Badge variant="secondary">
-                            <Trans>Ends at</Trans> {endsAt}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
+                    {role !== "viewer" && episodeDownload && !isExpanded && (
+                      <TvEpisodeDownloadControls download={episodeDownload} />
+                    )}
                   </div>
-                  {episode.overview && (
-                    <p className="text-sm text-popover-foreground line-clamp-3">{episode.overview}</p>
-                  )}
+                </Card>
 
-                  {role !== "viewer" && episodeDownload && <TvEpisodeDownloadControls download={episodeDownload} />}
-                </div>
-              </Card>
+                {isExpanded && episodeDownload && (
+                  <div className="mt-2">
+                    <TvEpisodeDownloadPanel download={episodeDownload} />
+                  </div>
+                )}
+              </div>
             );
           })
         )}

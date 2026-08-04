@@ -9,7 +9,7 @@ interface TvEpisodeDownloadControlsProps {
 export function TvEpisodeDownloadControls({ download }: TvEpisodeDownloadControlsProps) {
   return (
     <div className="pt-1">
-      <DownloadProgress download={download} showInfoLink />
+      <DownloadProgress download={download} />
     </div>
   );
 }

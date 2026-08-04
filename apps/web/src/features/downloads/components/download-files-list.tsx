@@ -3,12 +3,14 @@ import { useState } from "react";
 import { Trans } from "@lingui/react/macro";
 import type { TorrentInspectFile } from "@seedarr/sdk";
 import { formatBytes, SUBTITLE_EXTENSIONS, VIDEO_EXTENSIONS } from "@seedarr/shared";
-import { CheckCircle2Icon, ChevronDownIcon, ChevronUpIcon, FileIcon, VideoIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronUpIcon, FileIcon, VideoIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Flag } from "@/shared/components/flag";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
+
+import { DownloadMetadata } from "@/features/downloads/components/download-metadata";
 
 interface DownloadFilesListProps {
   className?: string;
@@ -17,6 +19,9 @@ interface DownloadFilesListProps {
   collapsible?: boolean;
   defaultExpanded?: boolean;
   availableOnServer?: boolean;
+  origin?: string | null;
+  quality?: string | null;
+  language?: string | null;
 }
 
 type FileType = "video" | "subtitle" | "other";
@@ -54,7 +59,10 @@ export function DownloadFilesList({
   files,
   title,
   defaultExpanded = true,
-  availableOnServer = false,
+  availableOnServer: _availableOnServer = false,
+  origin,
+  quality,
+  language,
 }: DownloadFilesListProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
@@ -80,21 +88,17 @@ export function DownloadFilesList({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h3 className="text-base font-semibold">
+          <FileIcon className="size-6" />
+          <h2 className="text-lg font-semibold">
             {title || <Trans>Files</Trans>} ({files.length})
-          </h3>
+          </h2>
           <div className="flex items-center gap-1">
             {videoType.length > 0 && (
               <Badge variant="secondary" className="text-xs">
                 {videoType}
               </Badge>
             )}
-            {availableOnServer && (
-              <Badge variant="secondary" className="text-xs flex items-center gap-1 text-green-600">
-                <CheckCircle2Icon className="size-3" />
-                <Trans>Available on server</Trans>
-              </Badge>
-            )}
+            <DownloadMetadata origin={origin} quality={quality} language={language} className="contents" />
             {subtitleCount > 0 && (
               <Badge variant="secondary" className="text-xs">
                 <Trans>{subtitleCount} subtitles</Trans>

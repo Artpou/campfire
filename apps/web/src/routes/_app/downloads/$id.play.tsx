@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
+import type { Media } from "@seedarr/sdk";
 import { api } from "@seedarr/sdk";
 import { formatError } from "@seedarr/shared";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
@@ -15,6 +16,7 @@ import { Container } from "@/shared/ui/container";
 import { hasMinRole } from "@/features/auth/helpers/role.helper";
 import { type MoviPlayerHandle, MoviPlayerHost } from "@/features/downloads/components/movi-player-host";
 import { buildSubtitleTracks } from "@/features/downloads/helpers/subtitle-tracks.helper";
+import { hasWatchProgress } from "@/features/media/helpers/media.helper";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 import { SubtitleSearchDialog } from "@/features/subtitles/components/subtitle-search-dialog";
 import { subtitleQueries } from "@/features/subtitles/hooks/subtitle.queries";
@@ -33,7 +35,8 @@ export const Route = createFileRoute("/_app/downloads/$id/play")({
     await Promise.all([
       context.queryClient.ensureQueryData(downloadQueries.playbackInfo(params.id)),
       context.queryClient.ensureQueryData(subtitleQueries.external(params.id)),
-      context.queryClient.ensureQueryData(mediaQueries.details(download.mediaId)),
+      // Always refetch — ensureQueryData would return stale progress from cache.
+      context.queryClient.fetchQuery(mediaQueries.details(download.mediaId)),
     ]);
   },
   pendingComponent: () => <SeedarrLoaderContainer />,
@@ -59,6 +62,14 @@ function VideoPlayerPage() {
 
   const displayName = download.torrent?.name || media.title;
 
+  // Freeze resume position for this session — updating media.progress while watching
+  // must not remount the player via startAt.
+  const initialResumeRef = useRef<number | null>(null);
+  if (initialResumeRef.current === null) {
+    initialResumeRef.current = hasWatchProgress(media) ? (media.progress?.position ?? 0) : 0;
+  }
+  const resumePosition = initialResumeRef.current;
+
   const playerRef = useRef<MoviPlayerHandle | null>(null);
   const hasInitialSeeked = useRef(false);
   const errorToastedRef = useRef(false);
@@ -74,6 +85,8 @@ function VideoPlayerPage() {
     void queryClient.invalidateQueries({ queryKey: downloadQueries.playbackInfo(id).queryKey });
     errorToastedRef.current = false;
     hasInitialSeeked.current = false;
+    // Recompute startat from media on next render for the new stream source.
+    initialResumeRef.current = null;
   }, [sourceFingerprint, id, queryClient]);
 
   // Same-origin relative URL (Vite proxies /streaming in dev) so cookies work with movi-player.
@@ -84,19 +97,31 @@ function VideoPlayerPage() {
 
   useEffect(() => {
     if (!download?.mediaId) return;
+    const mediaId = download.mediaId;
 
     const saveProgress = async (): Promise<void> => {
       const player = playerRef.current;
       if (!player || typeof player.currentTime !== "number" || !Number.isFinite(player.currentTime)) return;
       if (player.currentTime < 1) return;
 
+      const position = Math.floor(player.currentTime);
+      const duration = Math.floor(player.duration || playbackInfo.duration || 0);
+
       await api.media[":id"].progress.$patch({
-        param: { id: String(download.mediaId) },
-        json: {
-          position: Math.floor(player.currentTime),
-          duration: Math.floor(player.duration || playbackInfo.duration || 0),
-          downloadId: id,
-        },
+        param: { id: String(mediaId) },
+        json: { position, duration, downloadId: id },
+      });
+
+      queryClient.setQueryData<Media>(mediaQueries.details(mediaId).queryKey, (prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          progress: {
+            position,
+            duration,
+            downloadId: id,
+          },
+        };
       });
     };
 
@@ -108,29 +133,35 @@ function VideoPlayerPage() {
 
     return () => {
       clearInterval(patchInterval);
-      void saveProgress();
+      void saveProgress().finally(() => {
+        void queryClient.invalidateQueries({ queryKey: mediaQueries.key });
+        void queryClient.invalidateQueries({ queryKey: ["movie-full"] });
+        void queryClient.invalidateQueries({ queryKey: ["tv"] });
+      });
     };
-  }, [download?.mediaId, id, playbackInfo.duration]);
+  }, [download?.mediaId, id, playbackInfo.duration, queryClient]);
 
   const handlePlayer = useCallback((player: MoviPlayerHandle | null) => {
     playerRef.current = player;
   }, []);
 
-  const handleLoadedMetadata = useCallback(async () => {
+  // Fallback if startat wasn't applied — movi-player holds seeks via _pendingSeek until ready.
+  const handleLoadedMetadata = useCallback(() => {
     if (hasInitialSeeked.current) return;
 
     const player = playerRef.current;
     if (!player) return;
 
-    const position = media.progress?.position;
-    if (!position || position < 1) {
+    if (!resumePosition) {
       hasInitialSeeked.current = true;
       return;
     }
 
     hasInitialSeeked.current = true;
-    player.currentTime = position;
-  }, [media.progress?.position]);
+    if (player.currentTime < 1) {
+      player.currentTime = resumePosition;
+    }
+  }, [resumePosition]);
 
   const handlePlaybackError = useCallback(
     (error?: unknown) => {
@@ -174,6 +205,7 @@ function VideoPlayerPage() {
           <MoviPlayerHost
             src={streamUrl}
             tracks={subtitleTracks}
+            startAt={resumePosition}
             onPlayer={handlePlayer}
             onLoadedMetadata={handleLoadedMetadata}
             onError={handlePlaybackError}

@@ -10,5 +10,14 @@ interface TvRelatedProps {
 export function TvRelated({ recommendedTV }: TvRelatedProps) {
   if (recommendedTV.length === 0) return null;
 
-  return <MediaCarousel title={<Trans>Recommended</Trans>} data={recommendedTV} />;
+  return (
+    <MediaCarousel
+      title={
+        <span className="flex items-center gap-2">
+          <Trans>Recommended</Trans>
+        </span>
+      }
+      data={recommendedTV}
+    />
+  );
 }

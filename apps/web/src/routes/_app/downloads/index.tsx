@@ -89,6 +89,9 @@ function DownloadsPage() {
 
         {stats && (
           <div className="flex items-center gap-4 flex-wrap">
+            <Button variant="outline" size="sm" onClick={() => setStatsOpen(true)}>
+              <InfoIcon className="size-4" />
+            </Button>
             <div className="flex items-center gap-6 flex-wrap flex-1">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">
@@ -114,11 +117,6 @@ function DownloadsPage() {
                 <span className="text-lg font-bold text-blue">{formatBytes(stats.uploadSpeed)}/s</span>
               </div>
             </div>
-
-            <Button variant="outline" size="sm" onClick={() => setStatsOpen(true)}>
-              <InfoIcon className="size-4" />
-              <Trans>More info</Trans>
-            </Button>
           </div>
         )}
 
@@ -126,7 +124,7 @@ function DownloadsPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-6 gap-4">
             {filteredResults.map((media) => {
               if (!media.download) return null;
-              return <MediaCard key={media.download.id} media={media} linkTo="download" />;
+              return <MediaCard key={media.download.id} media={media} />;
             })}
           </div>
         ) : (

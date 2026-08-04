@@ -47,7 +47,7 @@ function TVPage() {
 
   return (
     <MediaDetailLayout
-      title={tv.name ?? ""}
+      title={tv.name || tv.original_name || ""}
       backdropPath={tv.backdrop_path}
       posterPath={tv.poster_path}
       media={media}

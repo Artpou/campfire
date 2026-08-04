@@ -7,11 +7,20 @@ import { toast } from "sonner";
 
 import { translateDownloadError } from "@/features/downloads/helpers/download-error.helper";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
+import { tvQueries } from "@/features/tv/hooks/tv.queries";
 
 async function fetchRemoteFiles(id: string): Promise<TorrentInspectFile[]> {
   const res = await fetch(`${getBaseUrl()}/downloads/${id}/remote-files`, { credentials: "include" });
   if (!res.ok) throw new ApiError(`Failed to fetch remote files: ${res.status}`, res.status);
   return res.json();
+}
+
+function invalidateDownloadRelatedQueries(queryClient: ReturnType<typeof useQueryClient>): void {
+  queryClient.invalidateQueries({ queryKey: downloadQueries.key });
+  queryClient.invalidateQueries({ queryKey: mediaQueries.key });
+  // Movie/TV detail pages cache media.download separately — keep Play in sync.
+  queryClient.invalidateQueries({ queryKey: ["movie-full"] });
+  queryClient.invalidateQueries({ queryKey: tvQueries.key });
 }
 
 export const downloadQueries = {
@@ -68,8 +77,7 @@ export function useStartDownload() {
   return useMutation({
     mutationFn: (input: DownloadTorrentInput) => unwrap(api.downloads.$post({ json: input })),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: downloadQueries.key });
-      queryClient.invalidateQueries({ queryKey: mediaQueries.key });
+      invalidateDownloadRelatedQueries(queryClient);
     },
   });
 }
@@ -81,8 +89,7 @@ export function useDownloadDelete() {
     mutationFn: ({ id, dbOnly }: { id: string; dbOnly?: boolean }) =>
       unwrap(api.downloads[":id"].$delete({ param: { id }, query: dbOnly ? { dbOnly: "true" } : {} })),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: downloadQueries.key });
-      queryClient.invalidateQueries({ queryKey: mediaQueries.key });
+      invalidateDownloadRelatedQueries(queryClient);
       toast.success(t`Download deleted`);
     },
     onError: (error) => {
@@ -99,8 +106,7 @@ export function useDownloadPause() {
   return useMutation({
     mutationFn: (id: string) => unwrap(api.downloads[":id"].pause.$post({ param: { id } })),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: downloadQueries.key });
-      queryClient.invalidateQueries({ queryKey: mediaQueries.key });
+      invalidateDownloadRelatedQueries(queryClient);
       toast.success(t`Download paused`);
     },
     onError: (error) => {
@@ -117,43 +123,12 @@ export function useDownloadResume() {
   return useMutation({
     mutationFn: (id: string) => unwrap(api.downloads[":id"].resume.$post({ param: { id } })),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: downloadQueries.key });
-      queryClient.invalidateQueries({ queryKey: mediaQueries.key });
+      invalidateDownloadRelatedQueries(queryClient);
       toast.success(t`Download resumed`);
     },
     onError: (error) => {
       toast.error(t`Could not resume download`, {
         description: translateDownloadError(formatError(error)),
-      });
-    },
-  });
-}
-
-export function useDownloadTransfer() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: string) => unwrap(api.downloads[":id"].transfer.$post({ param: { id } })),
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: [...downloadQueries.key, id] });
-      const previous = queryClient.getQueryData<Download>([...downloadQueries.key, id]);
-      if (previous?.torrent) {
-        queryClient.setQueryData([...downloadQueries.key, id], {
-          ...previous,
-          torrent: { ...previous.torrent, transferring: true, transferProgress: 0 },
-        });
-      }
-      return { previous };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: downloadQueries.key });
-    },
-    onError: (error, id, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData([...downloadQueries.key, id], context.previous);
-      }
-      toast.error(t`Could not transfer to remote server`, {
-        description: formatError(error),
       });
     },
   });

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { TMDBMovieDetails } from "@seedarr/sdk";
+import { UsersIcon } from "lucide-react";
 
 import { CarouselItem } from "@/shared/ui/carousel";
 import { CarouselWrapper } from "@/shared/ui/carousel-wrapper";
@@ -26,7 +27,14 @@ export function MovieCast({ movie }: MovieCastProps) {
   if (castAndCrew.length === 0) return null;
 
   return (
-    <CarouselWrapper title={<Trans>Cast & Crew</Trans>}>
+    <CarouselWrapper
+      title={
+        <span className="flex items-center gap-2">
+          <UsersIcon className="size-5" />
+          <Trans>Cast & Crew</Trans>
+        </span>
+      }
+    >
       {castAndCrew.map((person) => (
         <CarouselItem
           key={`${person.id}-${person.role}`}
