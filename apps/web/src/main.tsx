@@ -9,8 +9,8 @@ import "./styles.css";
 
 import { useLingui } from "@lingui/react";
 
+import { LinguiClientProvider } from "@/shared/components/lingui-client-provider";
 import { getI18nMessages, getInitialCountry, getLanguageFromCountry } from "@/shared/helpers/i18n.helper";
-import { LinguiClientProvider } from "@/shared/lingui-client-provider";
 
 import { queryClient, router } from "@/router";
 

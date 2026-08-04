@@ -8,7 +8,7 @@ import { AlertTriangleIcon, FilmIcon, LibraryIcon, ListIcon, TvIcon } from "luci
 import ms from "ms";
 
 import { cn } from "@/lib/utils";
-import { AppTopbar } from "@/shared/app-topbar";
+import { AppTopbar } from "@/shared/components/app-topbar";
 import { RouteErrorHandler } from "@/shared/components/route-error";
 import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
 

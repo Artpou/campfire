@@ -48,7 +48,7 @@ const MESSAGES_MAP = {
   fr: frMessages,
 };
 
-export function LanguageDropdown() {
+export function SelectI18nLang() {
   const { i18n: lingui } = useLingui();
   const currentCountry = lingui.locale;
 

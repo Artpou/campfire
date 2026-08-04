@@ -4,9 +4,9 @@ import { Trans } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
 import { FileIcon, GlobeIcon, KeyIcon, Loader2Icon, MoonIcon, PaletteIcon, SaveIcon, SunIcon } from "lucide-react";
 
+import { SelectI18nLang } from "@/shared/components/select/select-i18n-lang";
+import { SelectQuality } from "@/shared/components/select/select-quality";
 import { useTheme } from "@/shared/hooks/use-theme";
-import { LanguageDropdown } from "@/shared/language-dropdown";
-import { SelectQuality } from "@/shared/reusable/select/select-quality";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
@@ -34,7 +34,7 @@ export function SettingsGeneralTab() {
           <GlobeIcon className="size-4" />
           <Trans>Language</Trans>
         </h3>
-        <LanguageDropdown />
+        <SelectI18nLang />
       </div>
 
       <div className="flex items-center justify-between gap-4 border rounded-md p-4">

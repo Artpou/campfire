@@ -7,7 +7,7 @@ import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { FilmIcon, ListIcon, MonitorIcon, SearchIcon, SettingsIcon, TvIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { LanguageDropdown } from "@/shared/language-dropdown";
+import { SelectI18nLang } from "@/shared/components/select/select-i18n-lang";
 import { Button } from "@/shared/ui/button";
 
 import { useRole } from "@/features/auth/hooks/use-role";
@@ -123,7 +123,7 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
         ) : (
           <>
             <div className="flex-1" />
-            <LanguageDropdown />
+            <SelectI18nLang />
           </>
         )}
       </div>
