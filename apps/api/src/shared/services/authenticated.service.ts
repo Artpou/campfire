@@ -5,7 +5,7 @@ import type { Paginate, PaginationQuery } from "@/helpers/pagination.dto";
 import { toPaginate } from "@/helpers/pagination.helper";
 import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
-import type { User } from "../user/user.dto";
+import type { User } from "../../modules/user/user.dto";
 
 export class AuthenticatedService {
   protected readonly user: User;

@@ -1,8 +1,9 @@
 import { formatError } from "@seedarr/shared";
 import type WebTorrent from "webtorrent";
 
+import { AuthenticatedService } from "@/shared/services/authenticated.service";
+
 import { BadRequestError, NotFoundError, ServiceUnavailableError } from "@/errors/error";
-import { AuthenticatedService } from "@/modules/auth/auth.service";
 import { torrentClient } from "@/modules/download/webtorrent-manager";
 import { IndexerManagerService } from "@/modules/indexer-manager/indexer-manager.service";
 import type { User } from "@/types";

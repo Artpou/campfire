@@ -1,9 +1,10 @@
 import { count, eq } from "drizzle-orm";
 
+import { IdentifiableService } from "@/shared/services/authenticated.service";
+
 import { hashPassword } from "@/auth/password.util";
 import { db } from "@/db/db";
 import { ConflictError, ForbiddenError, NotFoundError } from "@/errors/error";
-import { IdentifiableService } from "@/modules/auth/auth.service";
 import { user } from "@/modules/user/user.schema";
 import type { CreateUserInput, NewUser, UpdateUserInput, User } from "./user.dto";
 

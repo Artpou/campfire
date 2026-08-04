@@ -1,9 +1,10 @@
 import { Hono } from "hono";
 
+import { type Identifiable, IdentifiableService } from "@/shared/services/authenticated.service";
+
 import { ServiceUnavailableError } from "@/errors/error";
 import { logger } from "@/helpers/logger.helper";
 import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
-import { type Identifiable, IdentifiableService } from "@/modules/auth/auth.service";
 import type { MediaEnriched } from "@/modules/media/media.dto";
 import { MediaService } from "@/modules/media/media.service";
 import { getTmdbApiKey } from "@/modules/settings/tmdb-key.helper";
