@@ -17,9 +17,9 @@ import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
+import { useStartDownload } from "@/features/downloads/hooks/download.queries";
 import { indexersManagerImages } from "@/features/indexers-manager/helpers/indexers-manager.helper";
 import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
-import { useStartDownload } from "@/features/torrent/hooks/download.queries";
 import { DownloadUnavailableDialog } from "./download-unavailable-dialog";
 import { TorrentInspectModal } from "./torrent-inspect-modal";
 

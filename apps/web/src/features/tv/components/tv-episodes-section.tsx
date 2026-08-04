@@ -25,9 +25,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { useRole } from "@/features/auth/hooks/use-role";
 import { getDownloadStatus } from "@/features/downloads/helpers/downloads.helper";
+import { downloadQueries, useDownloadDelete } from "@/features/downloads/hooks/download.queries";
 import { WatchProgressBar } from "@/features/media/components/watch-progress-bar";
 import { getBackdropUrl } from "@/features/media/helpers/media.helper";
-import { downloadQueries, useDownloadDelete } from "@/features/torrent/hooks/download.queries";
 import { type EpisodeDeleteLabel, TvEpisodeDeleteDialog } from "@/features/tv/components/tv-episode-delete-dialog";
 import { TvEpisodeDownloadControls } from "@/features/tv/components/tv-episode-download-controls";
 import { TvEpisodeDownloadPanel } from "@/features/tv/components/tv-episode-download-panel";

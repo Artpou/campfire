@@ -8,6 +8,7 @@ import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 
 import { useRole } from "@/features/auth/hooks/use-role";
+import { downloadQueries } from "@/features/downloads/hooks/download.queries";
 import { MediaDetailLayout } from "@/features/media/components/media-detail-layout";
 import { useToggleLike, useToggleWatchList } from "@/features/media/hooks/media.queries";
 import { MovieCast } from "@/features/movies/components/movie-cast";
@@ -16,7 +17,6 @@ import { MovieDownloadSection } from "@/features/movies/components/movie-downloa
 import { MovieInfo } from "@/features/movies/components/movie-info";
 import { MovieRelated } from "@/features/movies/components/movie-related";
 import { movieQueries } from "@/features/movies/hooks/movie.queries";
-import { downloadQueries } from "@/features/torrent/hooks/download.queries";
 
 export const Route = createFileRoute("/_app/movies/$id/")({
   loader: ({ context, params }) =>

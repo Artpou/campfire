@@ -16,11 +16,11 @@ import { Container } from "@/shared/ui/container";
 import { hasMinRole } from "@/features/auth/helpers/role.helper";
 import { type MoviPlayerHandle, MoviPlayerHost } from "@/features/downloads/components/movi-player-host";
 import { buildSubtitleTracks } from "@/features/downloads/helpers/subtitle-tracks.helper";
+import { downloadQueries, refetchDownloadInterval } from "@/features/downloads/hooks/download.queries";
 import { hasWatchProgress } from "@/features/media/helpers/media.helper";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 import { SubtitleSearchDialog } from "@/features/subtitles/components/subtitle-search-dialog";
 import { subtitleQueries } from "@/features/subtitles/hooks/subtitle.queries";
-import { downloadQueries, refetchDownloadInterval } from "@/features/torrent/hooks/download.queries";
 
 export const Route = createFileRoute("/_app/downloads/$id/play")({
   beforeLoad: ({ context }) => {

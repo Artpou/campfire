@@ -10,7 +10,7 @@ import { DownloadNetworkCard } from "@/features/downloads/components/download-ne
 import { DownloadNetworkChart } from "@/features/downloads/components/download-network-chart";
 import { DownloadProgress } from "@/features/downloads/components/download-progress";
 import { getDownloadStatus, getTorrentFiles } from "@/features/downloads/helpers/downloads.helper";
-import { downloadQueries } from "@/features/torrent/hooks/download.queries";
+import { downloadQueries } from "@/features/downloads/hooks/download.queries";
 
 interface MovieDownloadSectionProps {
   download: Download;

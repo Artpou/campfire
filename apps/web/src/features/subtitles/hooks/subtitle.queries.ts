@@ -4,7 +4,7 @@ import { formatError } from "@seedarr/shared";
 import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { downloadQueries } from "@/features/torrent/hooks/download.queries";
+import { downloadQueries } from "@/features/downloads/hooks/download.queries";
 
 export const subtitleQueries = {
   key: ["subtitles"] as const,

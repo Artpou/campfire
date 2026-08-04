@@ -20,9 +20,9 @@ import { Button } from "@/shared/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/shared/ui/dialog";
 
 import { useRole } from "@/features/auth/hooks/use-role";
+import { useDownloadDelete } from "@/features/downloads/hooks/download.queries";
 import { WatchProgressBar } from "@/features/media/components/watch-progress-bar";
 import { getPosterUrl, getWatchProgressPercent, hasWatchProgress } from "@/features/media/helpers/media.helper";
-import { useDownloadDelete } from "@/features/torrent/hooks/download.queries";
 
 interface MediaPosterProps {
   data: Movie | TV;

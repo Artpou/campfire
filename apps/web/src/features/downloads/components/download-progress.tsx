@@ -9,7 +9,7 @@ import { Progress } from "@/shared/ui/progress";
 import { ProgressCircular } from "@/shared/ui/progress-circular";
 
 import { getDownloadStatus } from "@/features/downloads/helpers/downloads.helper";
-import { useDownloadPause, useDownloadResume } from "@/features/torrent/hooks/download.queries";
+import { useDownloadPause, useDownloadResume } from "@/features/downloads/hooks/download.queries";
 
 const CIRCULAR_SIZE = 50;
 const CIRCULAR_STROKE = 4;

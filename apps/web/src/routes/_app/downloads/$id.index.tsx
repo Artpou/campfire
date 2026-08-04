@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
+import { downloadQueries } from "@/features/downloads/hooks/download.queries";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
-import { downloadQueries } from "@/features/torrent/hooks/download.queries";
 
 export const Route = createFileRoute("/_app/downloads/$id/")({
   beforeLoad: async ({ context, params }) => {

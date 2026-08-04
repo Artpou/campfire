@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/shared/ui/skeleton";
 
 import { getTorrentFiles } from "@/features/downloads/helpers/downloads.helper";
-import { downloadQueries } from "@/features/torrent/hooks/download.queries";
+import { downloadQueries } from "@/features/downloads/hooks/download.queries";
 import {
   collectAddedSubtitleLanguages,
   isMatchingSubtitleRelease,
