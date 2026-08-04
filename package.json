@@ -8,6 +8,7 @@
     "lint": "turbo lint",
     "lint:fix": "biome check --write --unsafe .",
     "tsc": "turbo tsc",
+    "tsc:watch": "tsc --build --watch --preserveWatchOutput",
     "test": "turbo test",
     "knip": "knip",
     "check": "turbo build:types lint tsc test //#knip",

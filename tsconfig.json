@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "resolvePackageJsonExports": true
+  },
+  "files": [],
+  "references": [
+    { "path": "apps/api" },
+    { "path": "apps/web" },
+    { "path": "packages/sdk" },
+    { "path": "packages/shared" }
+  ]
+}

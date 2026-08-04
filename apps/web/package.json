@@ -9,6 +9,7 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write --unsafe .",
     "format": "biome format --write .",
+    "build:types": "tsc --build --force",
     "tsc": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

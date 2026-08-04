@@ -4,14 +4,15 @@
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
+      "types": "./dist/index.d.ts",
       "default": "./src/index.ts"
     }
   },
   "scripts": {
+    "build:types": "tsc --build --force",
     "test": "vitest run",
     "tsc": "tsc --noEmit"
   },

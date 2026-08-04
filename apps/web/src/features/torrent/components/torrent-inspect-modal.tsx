@@ -38,8 +38,8 @@ export function TorrentInspectModal({ open, onOpenChange, torrent, magnetUri }: 
   const { data: inspectData, isLoading, error } = useQuery(torrentQueries.inspect(magnetUri, torrent?.seeders));
 
   const name = inspectData?.name || torrent?.title;
-  const quality = name ? detectQuality(name) : null;
-  const language = name ? detectLanguage(name) : null;
+  const _quality = name ? detectQuality(name) : null;
+  const _language = name ? detectLanguage(name) : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

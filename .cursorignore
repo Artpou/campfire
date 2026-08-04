@@ -17,5 +17,9 @@ pnpm-debug.log*
 
 # system & ide
 .DS_Store
-.vscode/
 .idea/
+
+# generated code
+apps/web/src/routeTree.gen.ts
+apps/web/src/locales/**/messages.mjs
+apps/api/src/db/drizzle/

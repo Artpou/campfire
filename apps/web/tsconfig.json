@@ -10,7 +10,12 @@
     "forceConsistentCasingInFileNames": true,
     "resolvePackageJsonExports": true,
     "jsx": "react-jsx",
-    "noEmit": true,
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "outDir": "./dist",
+    "rootDir": ".",
     "paths": {
       "@/*": ["./src/*"]
     },
@@ -20,6 +25,6 @@
     "verbatimModuleSyntax": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts", "lucide-react.d.ts"],
-  "exclude": ["node_modules", "dist"],
-  "references": [{ "path": "../../packages/sdk" }]
+  "exclude": ["node_modules", "dist", ".turbo", "coverage"],
+  "references": [{ "path": "../../packages/sdk" }, { "path": "../../packages/shared" }]
 }
