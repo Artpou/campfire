@@ -3,18 +3,19 @@ import { eq } from "drizzle-orm";
 import type { StreamingApi } from "hono/utils/stream";
 import type WebTorrent from "webtorrent";
 
-import { db } from "@/db/db";
-import { BadRequestError, NotFoundError } from "@/errors/error";
-import { logger } from "@/helpers/logger.helper";
-import { assertWithinDownloads, resolveWithinDownloads } from "@/helpers/path.helper";
-import { pipeNodeStream } from "@/helpers/stream.helper";
+import { BadRequestError, NotFoundError } from "@/shared/errors/error";
+import { logger } from "@/shared/helpers/logger.helper";
+import { assertWithinDownloads, resolveWithinDownloads } from "@/shared/helpers/path.helper";
+import { pipeNodeStream } from "@/shared/helpers/stream.helper";
 import {
   convertToFragmentedMp4Stream,
   getVideoInputFormat,
   probeVideoStreams,
   type RemuxInput,
   type VideoProbe,
-} from "@/helpers/video.helper";
+} from "@/shared/helpers/video.helper";
+
+import { db } from "@/db/db";
 import type { Download } from "@/modules/download/download.dto";
 import type { TorrentLiveData } from "@/modules/download/download.schema";
 import { download as downloadTable } from "@/modules/download/download.schema";

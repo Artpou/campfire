@@ -1,9 +1,10 @@
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 
-import { NotFoundError } from "@/errors/error";
-import { downloadMediaIdParamDto, stringIdParamDto } from "@/helpers/param.dto";
-import { downloadStartRateLimiter } from "@/middlewares/rate-limiter.middleware";
+import { NotFoundError } from "@/shared/errors/error";
+import { downloadMediaIdParamDto, stringIdParamDto } from "@/shared/helpers/param.dto";
+import { downloadStartRateLimiter } from "@/shared/middlewares/rate-limiter.middleware";
+
 import { requireRole } from "@/modules/auth/role.guard";
 import { downloadTorrentDto } from "./download.dto";
 import { requireDownloadOwnership } from "./download.guard";

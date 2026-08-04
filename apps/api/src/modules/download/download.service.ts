@@ -1,12 +1,12 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import type WebTorrent from "webtorrent";
 
+import { BadRequestError, ForbiddenError, NotFoundError } from "@/shared/errors/error";
+import { logger } from "@/shared/helpers/logger.helper";
+import { resolveWithinDownloads } from "@/shared/helpers/path.helper";
 import { IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { db } from "@/db/db";
-import { BadRequestError, ForbiddenError, NotFoundError } from "@/errors/error";
-import { logger } from "@/helpers/logger.helper";
-import { resolveWithinDownloads } from "@/helpers/path.helper";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import { download } from "@/modules/download/download.schema";

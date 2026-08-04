@@ -1,6 +1,7 @@
 import { formatError } from "@seedarr/shared";
 
-import { logger } from "@/helpers/logger.helper";
+import { logger } from "@/shared/helpers/logger.helper";
+
 import fs from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";

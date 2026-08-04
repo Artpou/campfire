@@ -1,5 +1,6 @@
+import { logger } from "@/shared/helpers/logger.helper";
+
 import { db } from "@/db/db";
-import { logger } from "@/helpers/logger.helper";
 import type { SettingsResponse, UpsertSettingsInput } from "./settings.dto";
 import { settings } from "./settings.schema";
 

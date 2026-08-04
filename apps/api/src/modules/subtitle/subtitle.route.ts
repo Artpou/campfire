@@ -1,8 +1,9 @@
 import { zValidator } from "@hono/zod-validator";
 
-import { ForbiddenError } from "@/errors/error";
-import { resolveWithinDownloads } from "@/helpers/path.helper";
-import { subtitleRateLimiter } from "@/middlewares/rate-limiter.middleware";
+import { ForbiddenError } from "@/shared/errors/error";
+import { resolveWithinDownloads } from "@/shared/helpers/path.helper";
+import { subtitleRateLimiter } from "@/shared/middlewares/rate-limiter.middleware";
+
 import { DownloadService } from "@/modules/download/download.service";
 import { SubtitleService } from "@/modules/subtitle/subtitle.service";
 import { downloadSubtitleDto, subtitlesSearchDto } from "./subtitle.dto";

@@ -1,7 +1,8 @@
 import { zValidator } from "@hono/zod-validator";
 
-import { NotFoundError } from "@/errors/error";
-import { tmdbRateLimiter } from "@/middlewares/rate-limiter.middleware";
+import { NotFoundError } from "@/shared/errors/error";
+import { tmdbRateLimiter } from "@/shared/middlewares/rate-limiter.middleware";
+
 import {
   tmdbDiscoverDto,
   tmdbIdDto,

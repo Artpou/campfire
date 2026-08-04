@@ -2,14 +2,14 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
 
-import { csrfGuard } from "@/middlewares/csrf.middleware";
-import { errorHandler } from "@/middlewares/error.middleware";
-import { requestLogger } from "@/middlewares/logger.middleware";
-import { requestTimeout } from "@/middlewares/timeout.middleware";
+import { csrfGuard } from "@/shared/middlewares/csrf.middleware";
+import { errorHandler } from "@/shared/middlewares/error.middleware";
+import { requestLogger } from "@/shared/middlewares/logger.middleware";
+import { requestTimeout } from "@/shared/middlewares/timeout.middleware";
+
 import { authGuard } from "@/modules/auth/auth.guard";
 import { requireRole } from "@/modules/auth/role.guard";
 import { Readable } from "node:stream";
-import { getLogFilePath } from "./helpers/logger.helper";
 import { activityLogRoutes } from "./modules/activity-log/activity-log.route";
 import { authRoutes } from "./modules/auth/auth.route";
 import { downloadRoutes } from "./modules/download/download.route";
@@ -24,6 +24,7 @@ import { subtitleRoutes } from "./modules/subtitle/subtitle.route";
 import { torrentRoutes } from "./modules/torrent/torrent.route";
 import { tvRoutes } from "./modules/tv/tv.route";
 import { userRoutes } from "./modules/user/user.route";
+import { getLogFilePath } from "./shared/helpers/logger.helper";
 import type { HonoVariables } from "./types/hono";
 
 if (!process.env.WEB_URL) throw new Error("WEB_URL is not set");

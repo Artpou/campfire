@@ -1,13 +1,13 @@
 import { formatError } from "@seedarr/shared";
 import { and, desc, eq } from "drizzle-orm";
 
+import { ForbiddenError } from "@/shared/errors/error";
+import { logger } from "@/shared/helpers/logger.helper";
+import type { Paginate } from "@/shared/helpers/pagination.dto";
+import { paginate, toPaginate } from "@/shared/helpers/pagination.helper";
 import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
 import { db } from "@/db/db";
-import { ForbiddenError } from "@/errors/error";
-import { logger } from "@/helpers/logger.helper";
-import type { Paginate } from "@/helpers/pagination.dto";
-import { paginate, toPaginate } from "@/helpers/pagination.helper";
 import type { ActivityLog, ListActivityLogsQuery } from "./activity-log.dto";
 import type { ActivityLogAction, ActivityLogType } from "./activity-log.schema";
 import { activityLog } from "./activity-log.schema";

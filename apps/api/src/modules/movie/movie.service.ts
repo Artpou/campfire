@@ -1,4 +1,5 @@
-import { BadRequestError } from "@/errors/error";
+import { BadRequestError } from "@/shared/errors/error";
+
 import type { MediaEnriched } from "@/modules/media/media.dto";
 import type { TMDBItem, TMDBMovieDetails } from "@/modules/tmdb/tmdb.dto";
 import { tmdbMovieToMedia } from "@/modules/tmdb/tmdb.helper";

@@ -2,11 +2,12 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 
+import { NotFoundError, UnauthorizedError } from "@/shared/errors/error";
+import { authRateLimiter } from "@/shared/middlewares/rate-limiter.middleware";
+
 import { SESSION_COOKIE_NAME, sessionCookieOptions } from "@/auth/auth.constants";
 import { hashPassword, verifyPassword } from "@/auth/password.util";
 import { createSession, deleteOtherSessions, deleteSession, resolveAuthenticatedSession } from "@/auth/session.util";
-import { NotFoundError, UnauthorizedError } from "@/errors/error";
-import { authRateLimiter } from "@/middlewares/rate-limiter.middleware";
 import { IndexerManagerService } from "@/modules/indexer-manager/indexer-manager.service";
 import { ActivityLogService } from "../activity-log/activity-log.service";
 import { UserService } from "../user/user.service";

@@ -1,9 +1,10 @@
 import { formatError } from "@seedarr/shared";
 import { eq } from "drizzle-orm";
 
+import { logger } from "@/shared/helpers/logger.helper";
+import { resolveWithinDownloads } from "@/shared/helpers/path.helper";
+
 import { db } from "@/db/db";
-import { logger } from "@/helpers/logger.helper";
-import { resolveWithinDownloads } from "@/helpers/path.helper";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { download } from "@/modules/download/download.schema";
 import { media } from "@/modules/media/media.schema";

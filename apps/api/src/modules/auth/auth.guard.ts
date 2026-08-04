@@ -3,7 +3,7 @@ import { getCookie, setCookie } from "hono/cookie";
 
 import { SESSION_COOKIE_NAME, sessionCookieOptions } from "@/auth/auth.constants";
 import { resolveAuthenticatedSession } from "@/auth/session.util";
-import { UnauthorizedError } from "../../errors/error";
+import { UnauthorizedError } from "../../shared/errors/error";
 import type { User } from "../user/user.dto";
 
 export type HonoAuthenticatedVariables = {

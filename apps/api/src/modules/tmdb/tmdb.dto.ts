@@ -1,6 +1,6 @@
 import z from "zod";
 
-import { paginationDto } from "@/helpers/pagination.dto";
+import { paginationDto } from "@/shared/helpers/pagination.dto";
 
 export interface TMDBItem {
   id: number;

@@ -1,9 +1,9 @@
 import { sanitizeFileName } from "@seedarr/shared";
 
+import { BadRequestError, NotFoundError, ServiceUnavailableError } from "@/shared/errors/error";
+import { assertWithinDownloads, getDownloadsRoot } from "@/shared/helpers/path.helper";
 import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
-import { BadRequestError, NotFoundError, ServiceUnavailableError } from "@/errors/error";
-import { assertWithinDownloads, getDownloadsRoot } from "@/helpers/path.helper";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import type { SubdlSearchResponse, SubtitlesSearchQuery } from "./subtitle.dto";

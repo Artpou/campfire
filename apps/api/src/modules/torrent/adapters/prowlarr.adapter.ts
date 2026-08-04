@@ -1,6 +1,7 @@
 import { filenameParse } from "@ctrl/video-filename-parser";
 
-import { BadRequestError } from "@/errors/error";
+import { BadRequestError } from "@/shared/errors/error";
+
 import type { Indexer, IndexerManager, IndexerType } from "@/types";
 import type { Torrent, torrentListQuery } from "../torrent.dto";
 import { buildIndexerSearchPlan, searchWithTitleFallback } from "../torrent-search.helper";

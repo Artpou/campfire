@@ -1,4 +1,4 @@
-import { sanitize } from "@/helpers/string.helper";
+import { sanitize } from "@/shared/helpers/string.helper";
 
 export type MediaSearchTitles = {
   imdbId?: string | null;

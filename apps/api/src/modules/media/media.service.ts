@@ -1,12 +1,12 @@
 import { and, desc, eq, exists, inArray } from "drizzle-orm";
 
+import { BadRequestError, NotFoundError } from "@/shared/errors/error";
+import { countSubquery } from "@/shared/helpers/drizzle.helper";
+import type { Paginate } from "@/shared/helpers/pagination.dto";
+import { paginate, toPaginate } from "@/shared/helpers/pagination.helper";
 import { IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { db } from "@/db/db";
-import { BadRequestError, NotFoundError } from "@/errors/error";
-import { countSubquery } from "@/helpers/drizzle.helper";
-import type { Paginate } from "@/helpers/pagination.dto";
-import { paginate, toPaginate } from "@/helpers/pagination.helper";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import { download } from "@/modules/download/download.schema";
 import { media, userLikes, userWatchList, watchProgress } from "@/modules/media/media.schema";

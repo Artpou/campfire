@@ -1,6 +1,7 @@
 import ms from "ms";
 
-import { logger } from "@/helpers/logger.helper";
+import { logger } from "@/shared/helpers/logger.helper";
+
 import type { FetchOptions } from "./tmdb.dto";
 
 const CACHE_TTL = ms("1h");

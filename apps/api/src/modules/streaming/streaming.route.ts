@@ -3,9 +3,10 @@ import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { stream } from "hono/streaming";
 
+import { NotFoundError } from "@/shared/errors/error";
+import { downloadFilePathParamDto, stringIdParamDto } from "@/shared/helpers/param.dto";
+
 import { db } from "@/db/db";
-import { NotFoundError } from "@/errors/error";
-import { downloadFilePathParamDto, stringIdParamDto } from "@/helpers/param.dto";
 import { authGuard } from "@/modules/auth/auth.guard";
 import { download } from "@/modules/download/download.schema";
 import type { HonoVariables } from "@/types/hono";

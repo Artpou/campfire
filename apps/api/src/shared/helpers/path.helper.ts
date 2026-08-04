@@ -1,4 +1,5 @@
-import { BadRequestError } from "@/errors/error";
+import { BadRequestError } from "@/shared/errors/error";
+
 import path from "node:path";
 
 export function getDownloadsRoot(): string {

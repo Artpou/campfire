@@ -1,4 +1,5 @@
-import { logger } from "@/helpers/logger.helper";
+import { logger } from "@/shared/helpers/logger.helper";
+
 import { type ChildProcess, spawn } from "node:child_process";
 import { extname } from "node:path";
 import { PassThrough } from "node:stream";

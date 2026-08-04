@@ -1,7 +1,8 @@
 import { createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { paginationDto } from "@/helpers/pagination.dto";
+import { paginationDto } from "@/shared/helpers/pagination.dto";
+
 import { activityLog, activityLogActionEnum, activityLogTypeEnum } from "./activity-log.schema";
 
 export const activityLogSelectSchema = createSelectSchema(activityLog);

@@ -2,7 +2,7 @@ import type { Context, MiddlewareHandler, Next } from "hono";
 
 import type { HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
 import type { UserRole } from "@/modules/user/user.schema";
-import { ForbiddenError, UnauthorizedError } from "../../errors/error";
+import { ForbiddenError, UnauthorizedError } from "../../shared/errors/error";
 
 export const ROLE_LEVELS = {
   owner: 4,

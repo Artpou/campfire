@@ -2,10 +2,11 @@ import { formatError, VIDEO_EXTENSIONS } from "@seedarr/shared";
 import { eq } from "drizzle-orm";
 import type WebTorrent from "webtorrent";
 
+import { logger } from "@/shared/helpers/logger.helper";
+import { resolveWithinDownloads } from "@/shared/helpers/path.helper";
+import { probeVideoDuration } from "@/shared/helpers/video.helper";
+
 import { db } from "@/db/db";
-import { logger } from "@/helpers/logger.helper";
-import { resolveWithinDownloads } from "@/helpers/path.helper";
-import { probeVideoDuration } from "@/helpers/video.helper";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import type { TorrentLiveData } from "@/modules/download/download.schema";
 import { download } from "@/modules/download/download.schema";

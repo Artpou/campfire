@@ -1,8 +1,9 @@
 import { and, eq } from "drizzle-orm";
 import type { Context, Next } from "hono";
 
+import { BadRequestError, ForbiddenError, NotFoundError } from "@/shared/errors/error";
+
 import { db } from "@/db/db";
-import { BadRequestError, ForbiddenError, NotFoundError } from "@/errors/error";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import { download } from "@/modules/download/download.schema";
 import type { HonoAuthenticatedVariables } from "../auth/auth.guard";

@@ -1,4 +1,5 @@
-import { toLatin } from "@/helpers/string.helper";
+import { toLatin } from "@/shared/helpers/string.helper";
+
 import type { MediaEnriched } from "@/modules/media/media.dto";
 import type { TMDBGenre, TMDBItem } from "./tmdb.dto";
 

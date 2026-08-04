@@ -1,6 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 
-import { tmdbRateLimiter } from "@/middlewares/rate-limiter.middleware";
+import { tmdbRateLimiter } from "@/shared/middlewares/rate-limiter.middleware";
+
 import { tmdbDiscoverDto, tmdbIdDto, tmdbKeywordsDto, tmdbListDto, tmdbSearchDto } from "@/types";
 import { MovieService } from "./movie.service";
 

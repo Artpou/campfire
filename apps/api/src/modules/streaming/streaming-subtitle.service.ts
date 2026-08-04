@@ -1,7 +1,8 @@
 import { isSubtitleFile } from "@seedarr/shared";
 
-import { BadRequestError, NotFoundError } from "@/errors/error";
-import { getDownloadsRoot, resolveWithinDownloads } from "@/helpers/path.helper";
+import { BadRequestError, NotFoundError } from "@/shared/errors/error";
+import { getDownloadsRoot, resolveWithinDownloads } from "@/shared/helpers/path.helper";
+
 import type { Download } from "@/modules/download/download.dto";
 import fs from "node:fs/promises";
 import * as path from "node:path";

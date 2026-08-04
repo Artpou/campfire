@@ -7,9 +7,9 @@ import * as fsPromises from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app } from "./app";
-import { logger, startupLogger } from "./helpers/logger.helper";
 import { torrentClient } from "./modules/download/webtorrent-manager";
 import { restoreActiveTorrents, stopHealthCheck } from "./modules/download/webtorrent-sync";
+import { logger, startupLogger } from "./shared/helpers/logger.helper";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const startTime = Date.now();

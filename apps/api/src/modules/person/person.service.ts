@@ -1,6 +1,6 @@
+import { BadRequestError } from "@/shared/errors/error";
 import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
-import { BadRequestError } from "@/errors/error";
 import type { MediaEnriched } from "@/modules/media/media.dto";
 import { MediaService } from "@/modules/media/media.service";
 import type { TMDBItem, TMDBPersonCreditCast, TMDBPersonCreditCrew, TMDBPersonDetails } from "@/modules/tmdb/tmdb.dto";

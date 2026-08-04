@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 
-import { logger } from "@/helpers/logger.helper";
+import { logger } from "@/shared/helpers/logger.helper";
 
 export const errorHandler = (err: Error, c: Context) => {
   const tag = `${c.req.method} ${c.req.path}`;

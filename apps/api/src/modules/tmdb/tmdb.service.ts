@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 
+import { ServiceUnavailableError } from "@/shared/errors/error";
+import { logger } from "@/shared/helpers/logger.helper";
 import { type Identifiable, IdentifiableService } from "@/shared/services/authenticated.service";
 
-import { ServiceUnavailableError } from "@/errors/error";
-import { logger } from "@/helpers/logger.helper";
 import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
 import type { MediaEnriched } from "@/modules/media/media.dto";
 import { MediaService } from "@/modules/media/media.service";

@@ -1,7 +1,8 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 
-import { tmdbRateLimiter } from "@/middlewares/rate-limiter.middleware";
+import { tmdbRateLimiter } from "@/shared/middlewares/rate-limiter.middleware";
+
 import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
 import { tmdbIdDto, tmdbListDto } from "@/types";
 import { PersonService } from "./person.service";

@@ -1,5 +1,6 @@
-import { BadRequestError, ServiceUnavailableError } from "@/errors/error";
-import { logger } from "@/helpers/logger.helper";
+import { BadRequestError, ServiceUnavailableError } from "@/shared/errors/error";
+import { logger } from "@/shared/helpers/logger.helper";
+
 import type { Torrent, torrentListQuery } from "@/modules/torrent/torrent.dto";
 import type { Indexer, IndexerManager, IndexerType } from "@/types";
 

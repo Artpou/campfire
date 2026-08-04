@@ -1,6 +1,7 @@
+import { NotFoundError } from "@/shared/errors/error";
+import { logger } from "@/shared/helpers/logger.helper";
+
 import { db } from "@/db/db";
-import { NotFoundError } from "@/errors/error";
-import { logger } from "@/helpers/logger.helper";
 import { decrypt, encrypt } from "./crypto.helper";
 import { remoteStorageService } from "./remote-storage.service";
 import type { StorageConfigResponse, TestStorageConfigInput, UpsertStorageConfigInput } from "./storage-config.dto";

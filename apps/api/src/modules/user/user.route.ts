@@ -1,6 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 
-import { stringIdParamDto } from "@/helpers/param.dto";
+import { stringIdParamDto } from "@/shared/helpers/param.dto";
+
 import { requireRole } from "@/modules/auth/role.guard";
 import { createUserSchema, updateUserSchema } from "./user.dto";
 import { UserService } from "./user.service";

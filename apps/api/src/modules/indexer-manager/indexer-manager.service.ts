@@ -1,11 +1,11 @@
 import { count, eq, inArray } from "drizzle-orm";
 
+import { BadRequestError, NotFoundError } from "@/shared/errors/error";
+import { logger } from "@/shared/helpers/logger.helper";
+import { assertSafeIndexerUrl, isPrivateHost } from "@/shared/helpers/url.helper";
 import { IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { db } from "@/db/db";
-import { BadRequestError, NotFoundError } from "@/errors/error";
-import { logger } from "@/helpers/logger.helper";
-import { assertSafeIndexerUrl, isPrivateHost } from "@/helpers/url.helper";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import { indexerManager, type StremioManifest } from "@/modules/indexer-manager/indexer-manager.schema";

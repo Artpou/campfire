@@ -1,6 +1,6 @@
 import type { Context, Next } from "hono";
 
-import { ForbiddenError } from "@/errors/error";
+import { ForbiddenError } from "@/shared/errors/error";
 
 const MUTATING_METHODS = new Set(["POST", "PUT", "DELETE", "PATCH"]);
 

@@ -2,7 +2,8 @@
 import { formatError } from "@seedarr/shared";
 import type WebTorrent from "webtorrent";
 
-import { BadRequestError } from "@/errors/error";
+import { BadRequestError } from "@/shared/errors/error";
+
 import type { TorrentLiveData } from "./download.dto";
 
 export const extractTorrentLiveData = (torrent: WebTorrent.Torrent): TorrentLiveData => ({

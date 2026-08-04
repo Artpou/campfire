@@ -1,7 +1,8 @@
 import { formatError } from "@seedarr/shared";
 
-import { BadRequestError } from "@/errors/error";
-import { logger } from "@/helpers/logger.helper";
+import { BadRequestError } from "@/shared/errors/error";
+import { logger } from "@/shared/helpers/logger.helper";
+
 import dns from "node:dns/promises";
 
 // --- UTILS & HELPERS ---

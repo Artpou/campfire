@@ -1,8 +1,9 @@
 import { formatError } from "@seedarr/shared";
 
-import { BadRequestError } from "@/errors/error";
-import { logger } from "@/helpers/logger.helper";
-import { assertSafeTorrentFetchUrl, redactUrl } from "@/helpers/url.helper";
+import { BadRequestError } from "@/shared/errors/error";
+import { logger } from "@/shared/helpers/logger.helper";
+import { assertSafeTorrentFetchUrl, redactUrl } from "@/shared/helpers/url.helper";
+
 import { enrichMagnetUri } from "./magnet-tracker.helper";
 
 const MAX_REDIRECT_DEPTH = 5;

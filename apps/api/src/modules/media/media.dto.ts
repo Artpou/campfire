@@ -1,7 +1,8 @@
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import z from "zod";
 
-import { paginationDto } from "@/helpers/pagination.dto";
+import { paginationDto } from "@/shared/helpers/pagination.dto";
+
 import { download } from "@/modules/download/download.schema";
 import { media, mediaTypeEnum, watchProgress } from "@/modules/media/media.schema";
 
