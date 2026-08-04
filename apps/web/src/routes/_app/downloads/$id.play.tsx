@@ -14,11 +14,12 @@ import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-conta
 import { Container } from "@/shared/ui/container";
 
 import { hasMinRole } from "@/features/auth/helpers/role.helper";
-import { type MoviPlayerHandle, MoviPlayerHost } from "@/features/downloads/components/movi-player-host";
 import { buildSubtitleTracks } from "@/features/downloads/helpers/subtitle-tracks.helper";
 import { downloadQueries, refetchDownloadInterval } from "@/features/downloads/hooks/download.queries";
 import { hasWatchProgress } from "@/features/media/helpers/media.helper";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
+import { Player } from "@/features/player/components/player";
+import type { MoviPlayerHandle } from "@/features/player/helpers/movi-player.helper";
 import { SubtitleSearchDialog } from "@/features/subtitles/components/subtitle-search-dialog";
 import { subtitleQueries } from "@/features/subtitles/hooks/subtitle.queries";
 
@@ -202,7 +203,7 @@ function VideoPlayerPage() {
         )}
 
         <div className="w-full bg-black rounded-lg overflow-hidden">
-          <MoviPlayerHost
+          <Player
             src={streamUrl}
             tracks={subtitleTracks}
             startAt={resumePosition}
