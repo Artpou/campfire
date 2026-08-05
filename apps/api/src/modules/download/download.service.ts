@@ -218,6 +218,48 @@ export class DownloadService extends IdentifiableService<Download> {
     return remoteStorageService.listFiles(item.remoteLocation);
   }
 
+  async recheck(id: string): Promise<{ success: true }> {
+    const [item] = await this.findMany({ ids: [id] });
+    if (!item) throw new NotFoundError("Download");
+    if (!item.torrent?.magnetURI) throw new BadRequestError("No magnet URI found");
+    if (item.torrent.done) throw new BadRequestError("Download is already complete");
+
+    const activeTorrent = torrentClient.resolveTorrent(id, item.torrent.infoHash);
+
+    if (activeTorrent) {
+      torrentClient.markDestroying(id);
+      clearHandlersForDownload(id);
+      await destroyTorrent(activeTorrent, { destroyStore: false });
+      torrentClient.deleteActiveTorrent(id);
+      setTimeout(() => torrentClient.unmarkDestroying(id), UNMARK_DESTROYING_DELAY_MS);
+    }
+
+    const resumed = await torrentClient.attachTorrent(id, item.torrent.magnetURI, item.torrent.infoHash);
+    setupTorrentHandlers(resumed, id);
+
+    await db
+      .update(download)
+      .set({ torrent: { ...item.torrent, paused: false }, error: null })
+      .where(eq(download.id, id));
+
+    logger.info("DOWNLOAD", `Force recheck: ${item.torrent.name || id}`);
+    return { success: true };
+  }
+
+  async reannounce(id: string): Promise<{ success: true }> {
+    const [item] = await this.findMany({ ids: [id] });
+    if (!item) throw new NotFoundError("Download");
+
+    const activeTorrent = torrentClient.resolveTorrent(id, item.torrent?.infoHash);
+    if (!activeTorrent) throw new BadRequestError("Torrent has no active session");
+
+    const discovery = (activeTorrent as unknown as { discovery?: { tracker?: { update(): void } } }).discovery;
+    discovery?.tracker?.update();
+
+    logger.info("DOWNLOAD", `Force reannounce: ${item.torrent?.name || id}`);
+    return { success: true };
+  }
+
   async delete(id: string, options?: { dbOnly?: boolean }): Promise<{ success: true }> {
     const [item] = await this.findMany({ ids: [id] });
     if (!item) throw new NotFoundError("Download");

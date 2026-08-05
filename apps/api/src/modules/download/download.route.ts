@@ -69,6 +69,24 @@ export const downloadRoutes = DownloadService.createRouter()
       return c.json(await c.var.service.transfer(getDownloadId(c)));
     },
   )
+  .post(
+    "/:id/recheck",
+    requireRole("member"),
+    zValidator("param", stringIdParamDto),
+    requireDownloadOwnership,
+    async (c) => {
+      return c.json(await c.var.service.recheck(getDownloadId(c)));
+    },
+  )
+  .post(
+    "/:id/reannounce",
+    requireRole("member"),
+    zValidator("param", stringIdParamDto),
+    requireDownloadOwnership,
+    async (c) => {
+      return c.json(await c.var.service.reannounce(getDownloadId(c)));
+    },
+  )
   .delete(
     "/:id",
     requireRole("member"),

@@ -1,11 +1,16 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 
+import { downloadQueries } from "@/features/downloads/hooks/download.queries";
 import { MediaDetailLayout } from "@/features/media/components/media-detail-layout";
+import { MediaDownloadTab } from "@/features/media/components/media-download-tab";
+import { MediaServerTab } from "@/features/media/components/media-server-tab";
 import { useToggleLike, useToggleWatchList } from "@/features/media/hooks/media.queries";
 import { TvCast } from "@/features/tv/components/tv-cast";
 import { TvDetails } from "@/features/tv/components/tv-details";
@@ -35,6 +40,22 @@ function TVPage() {
 
   const { tv, media, related } = data;
 
+  const { data: mediaDownloads = [] } = useQuery({
+    ...downloadQueries.byMedia(tv.id),
+    enabled: Boolean(media?.id),
+  });
+
+  const liveDownload = useMemo(() => {
+    if (!media) return null;
+    if (media.download?.id) {
+      return mediaDownloads.find((d) => d.id === media.download?.id) ?? media.download;
+    }
+    return mediaDownloads[0] ?? null;
+  }, [media, mediaDownloads]);
+
+  const torrentDownloads = useMemo(() => mediaDownloads.filter((d) => d.torrent), [mediaDownloads]);
+  const remoteDownloads = useMemo(() => mediaDownloads.filter((d) => d.remoteLocation), [mediaDownloads]);
+
   const detailsSection = (
     <TvDetails
       tv={tv}
@@ -45,16 +66,30 @@ function TVPage() {
     />
   );
 
+  const hasActiveDownload = torrentDownloads.some((d) => d.torrent && !d.torrent.done);
+
   return (
     <MediaDetailLayout
       title={tv.name || tv.original_name || ""}
       backdropPath={tv.backdrop_path}
       posterPath={tv.poster_path}
       media={media}
+      download={liveDownload}
       posterData={data}
       posterType="tv"
       infoSection={<TvInfo tv={tv} />}
       detailsSection={detailsSection}
+      downloadTabContent={torrentDownloads.length > 0 ? <MediaDownloadTab downloads={torrentDownloads} /> : undefined}
+      downloadCount={torrentDownloads.length}
+      serverTabContent={remoteDownloads.length > 0 ? <MediaServerTab downloads={remoteDownloads} /> : undefined}
+      serverCount={remoteDownloads.length}
+      defaultTab={
+        hasActiveDownload
+          ? "downloads"
+          : remoteDownloads.length > 0 && torrentDownloads.length === 0
+            ? "server"
+            : "info"
+      }
     >
       <TvEpisodesSection tv={tv} media={data.media} />
       <TvCast tv={tv} />

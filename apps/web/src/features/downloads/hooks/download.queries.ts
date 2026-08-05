@@ -133,3 +133,37 @@ export function useDownloadResume() {
     },
   });
 }
+
+export function useDownloadRecheck() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => unwrap(api.downloads[":id"].recheck.$post({ param: { id } })),
+    onSuccess: () => {
+      invalidateDownloadRelatedQueries(queryClient);
+      toast.success(t`Recheck started`);
+    },
+    onError: (error) => {
+      toast.error(t`Could not recheck download`, {
+        description: translateDownloadError(formatError(error)),
+      });
+    },
+  });
+}
+
+export function useDownloadReannounce() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => unwrap(api.downloads[":id"].reannounce.$post({ param: { id } })),
+    onSuccess: () => {
+      invalidateDownloadRelatedQueries(queryClient);
+      toast.success(t`Reannounce sent`);
+    },
+    onError: (error) => {
+      toast.error(t`Could not reannounce`, {
+        description: formatError(error),
+      });
+    },
+  });
+}

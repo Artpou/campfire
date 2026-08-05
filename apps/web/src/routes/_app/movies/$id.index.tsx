@@ -10,10 +10,11 @@ import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { useRole } from "@/features/auth/hooks/use-role";
 import { downloadQueries } from "@/features/downloads/hooks/download.queries";
 import { MediaDetailLayout } from "@/features/media/components/media-detail-layout";
+import { MediaDownloadTab } from "@/features/media/components/media-download-tab";
+import { MediaServerTab } from "@/features/media/components/media-server-tab";
 import { useToggleLike, useToggleWatchList } from "@/features/media/hooks/media.queries";
 import { MovieCast } from "@/features/movies/components/movie-cast";
 import { MovieDetails } from "@/features/movies/components/movie-details";
-import { MovieDownloadSection } from "@/features/movies/components/movie-download-section";
 import { MovieInfo } from "@/features/movies/components/movie-info";
 import { MovieRelated } from "@/features/movies/components/movie-related";
 import { movieQueries } from "@/features/movies/hooks/movie.queries";
@@ -49,6 +50,9 @@ function MoviePage() {
     return mediaDownloads[0] ?? null;
   }, [media, mediaDownloads]);
 
+  const torrentDownloads = useMemo(() => mediaDownloads.filter((d) => d.torrent), [mediaDownloads]);
+  const remoteDownloads = useMemo(() => mediaDownloads.filter((d) => d.remoteLocation), [mediaDownloads]);
+
   const detailsSection = (
     <MovieDetails
       movie={movie}
@@ -58,6 +62,8 @@ function MoviePage() {
       onToggleWatchList={() => toggleWatchList.mutate(media)}
     />
   );
+
+  const hasActiveDownload = torrentDownloads.some((d) => d.torrent && !d.torrent.done);
 
   return (
     <MediaDetailLayout
@@ -69,7 +75,17 @@ function MoviePage() {
       posterData={data}
       infoSection={<MovieInfo movie={movie} />}
       detailsSection={detailsSection}
-      downloadSection={liveDownload ? <MovieDownloadSection download={liveDownload} /> : undefined}
+      downloadTabContent={torrentDownloads.length > 0 ? <MediaDownloadTab downloads={torrentDownloads} /> : undefined}
+      downloadCount={torrentDownloads.length}
+      serverTabContent={remoteDownloads.length > 0 ? <MediaServerTab downloads={remoteDownloads} /> : undefined}
+      serverCount={remoteDownloads.length}
+      defaultTab={
+        hasActiveDownload
+          ? "downloads"
+          : remoteDownloads.length > 0 && torrentDownloads.length === 0
+            ? "server"
+            : "info"
+      }
     >
       <MovieCast movie={movie} />
       <MovieRelated

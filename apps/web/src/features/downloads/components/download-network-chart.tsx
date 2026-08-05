@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 
 import type { Download } from "@seedarr/sdk";
+import { PauseIcon } from "lucide-react";
 
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { Card } from "@/shared/ui/card";
@@ -60,6 +61,7 @@ interface DownloadNetworkChartProps {
 export function DownloadNetworkChart({ download }: DownloadNetworkChartProps) {
   const [networkHistory, setNetworkHistory] = useState<NetworkDataPoint[]>([]);
   const status = getDownloadStatus(download);
+  const isPaused = status === "paused";
 
   useEffect(() => {
     if (download.torrent) {
@@ -67,12 +69,17 @@ export function DownloadNetworkChart({ download }: DownloadNetworkChartProps) {
       const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
 
       setNetworkHistory((prev) => {
+        const toMb = (bytes: number) => {
+          const mb = bytes / 1024 / 1024;
+          return mb < 0.001 ? 0 : mb;
+        };
+
         const newData = [
           ...prev,
           {
             time: timeStr,
-            download: (download.torrent?.downloadSpeed ?? 0) / 1024 / 1024,
-            upload: (download.torrent?.uploadSpeed ?? 0) / 1024 / 1024,
+            download: toMb(download.torrent?.downloadSpeed ?? 0),
+            upload: toMb(download.torrent?.uploadSpeed ?? 0),
           },
         ];
         return newData.slice(-30);
@@ -80,7 +87,18 @@ export function DownloadNetworkChart({ download }: DownloadNetworkChartProps) {
     }
   }, [download.torrent]);
 
-  if (networkHistory.length < 2) {
+  // Seed a flat history when paused with too few samples so the chart still renders
+  const chartData =
+    networkHistory.length >= 2
+      ? networkHistory
+      : isPaused
+        ? [
+            { time: "00:00:00", download: 0, upload: 0 },
+            { time: "00:00:01", download: 0, upload: 0 },
+          ]
+        : null;
+
+  if (!chartData) {
     return (
       <Card className="p-3">
         <SeedarrLoader className="my-11" size={40} />
@@ -89,12 +107,19 @@ export function DownloadNetworkChart({ download }: DownloadNetworkChartProps) {
   }
 
   return (
-    <Card className="p-0 pl-2 pt-2">
+    <Card className="relative p-0 pl-2 pt-2">
       <div className="h-32">
         <Suspense fallback={<SeedarrLoader className="my-11" size={40} />}>
-          <LazyRecharts data={networkHistory} status={status} />
+          <LazyRecharts data={chartData} status={status} />
         </Suspense>
       </div>
+      {isPaused && (
+        <div className="absolute inset-0 flex items-center justify-center bg-card/60 rounded-xl">
+          <div className="flex items-center justify-center size-10 rounded-full bg-warning/20 text-warning">
+            <PauseIcon className="size-5 fill-current" />
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

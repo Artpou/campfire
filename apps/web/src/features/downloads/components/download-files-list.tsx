@@ -123,7 +123,6 @@ export function DownloadFilesList({
             >
               {getFileIcon(fileType, file.name)}
               <span className="truncate flex-1 text-sm">{file.name}</span>
-              <span className="text-muted-foreground text-xs ml-4 shrink-0">{formatBytes(file.length)}</span>
             </div>
           );
         })}

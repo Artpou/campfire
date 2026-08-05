@@ -75,8 +75,6 @@ export const logger = {
   },
   info: (tag: string, message: string, ...args: unknown[]) => {
     if (!shouldLog("info")) return;
-    const line = `${colors.blue}[${tag}]${colors.reset} ${message}`;
-    console.info(line, ...args);
     writeToFile(buildLogLine("info", tag, message, args));
   },
   warn: (tag: string, message: string, ...args: unknown[]) => {
@@ -91,22 +89,6 @@ export const logger = {
     console.error(line, ...args);
     writeToFile(buildLogLine("error", tag, message, args));
   },
-};
-
-const colorMethod = (method: string): string => {
-  const upper = method.toUpperCase();
-  if (upper === "GET") return `${colors.green}${method}${colors.reset}`;
-  if (upper === "OPTIONS") return `${colors.blue}${method}${colors.reset}`;
-  return `${colors.yellow}${method}${colors.reset}`;
-};
-
-const colorStatus = (status: number): string => {
-  const s = status.toString();
-  if (status >= 500) return `${colors.red}${s}${colors.reset}`;
-  if (status >= 400) return `${colors.orange}${s}${colors.reset}`;
-  if (status >= 300) return `${colors.blue}${s}${colors.reset}`;
-  if (status >= 100) return `${colors.green}${s}${colors.reset}`;
-  return s;
 };
 
 const formatDuration = (ms: number): string => {
@@ -124,8 +106,6 @@ export const logRequest = (
 ) => {
   if (!shouldLog("info")) return;
 
-  const timestamp = `${colors.gray}${formatTimestamp()}${colors.reset}`;
-  const duration = `${colors.gray} ${formatDuration(durationMs)}${colors.reset}`;
   const statusCode = typeof status === "string" ? Number.parseInt(status, 10) : status;
 
   const formatedParams = Object.entries(params || {})
@@ -133,27 +113,9 @@ export const logRequest = (
     .join("&");
   const route = new URL(url).pathname + (formatedParams ? `?${formatedParams}` : "");
 
-  const consoleLine = `${timestamp} ${colorMethod(method)} ${route} ${colorStatus(statusCode)} ${duration}`;
-  console.log(consoleLine);
   writeToFile(`${formatTimestamp()} ${method} ${route} ${statusCode} ${formatDuration(durationMs)}`);
 };
 
 export const startupLogger = (startTime: number, port: number) => {
-  const publicUrl = process.env.WEB_URL?.replace(/\/$/, "") || `http://localhost:${port}`;
-
-  console.log(`[STARTUP] Server is now listening`);
-  console.log(
-    `\n  ${colors.bold}${colors.yellow}HONO${colors.reset} ${colors.yellow}v4${colors.reset}  ready in ${Date.now() - startTime} ms\n`,
-  );
-  console.log(
-    `  ${colors.bold}${colors.yellow}>${colors.reset}  ${colors.bold}App:${colors.reset}     ${colors.cyan}${publicUrl}/${colors.reset}`,
-  );
-  if (process.env.WEB_URL) {
-    console.log(
-      `  ${colors.bold}${colors.yellow}>${colors.reset}  ${colors.bold}Listen:${colors.reset}  ${colors.cyan}0.0.0.0:${port}${colors.reset} ${colors.gray}(container)${colors.reset}`,
-    );
-  }
-  console.log(`  ${colors.bold}Log level:${colors.reset} ${getLogLevel()}\n`);
-
   writeToFile(`[STARTUP] Server ready in ${Date.now() - startTime}ms on port ${port} (level: ${getLogLevel()})`);
 };
