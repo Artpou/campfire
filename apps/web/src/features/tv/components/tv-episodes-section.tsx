@@ -28,6 +28,7 @@ import { getDownloadStatus } from "@/features/downloads/helpers/downloads.helper
 import { downloadQueries, useDownloadDelete } from "@/features/downloads/hooks/download.queries";
 import { WatchProgressBar } from "@/features/media/components/watch-progress-bar";
 import { getBackdropUrl } from "@/features/media/helpers/media.helper";
+import { preloadMoviPlayer } from "@/features/player/helpers/movi-player.helper";
 import { type EpisodeDeleteLabel, TvEpisodeDeleteDialog } from "@/features/tv/components/tv-episode-delete-dialog";
 import { TvEpisodeDownloadControls } from "@/features/tv/components/tv-episode-download-controls";
 import { TvEpisodeDownloadPanel } from "@/features/tv/components/tv-episode-download-panel";
@@ -169,7 +170,13 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
                           className="flex-1"
                           asChild
                         >
-                          <Link to="/downloads/$id/play" params={{ id: episodeDownloadId }}>
+                          <Link
+                            to="/downloads/$id/play"
+                            params={{ id: episodeDownloadId }}
+                            onMouseEnter={preloadMoviPlayer}
+                            onFocus={preloadMoviPlayer}
+                            onPointerDown={preloadMoviPlayer}
+                          >
                             <PlayIcon className="size-3 mr-1 fill-current" />
                             {hasStarted ? <Trans>Resume</Trans> : <Trans>Play</Trans>}
                           </Link>

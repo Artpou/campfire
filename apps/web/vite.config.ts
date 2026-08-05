@@ -35,6 +35,20 @@ const config = defineConfig({
       },
     },
   },
+  build: {
+    // App shell stays under this; movi-player is loaded via dynamic import().
+    chunkSizeWarningLimit: 700,
+    rollupOptions: {
+      output: {
+        // Naming only — Vite already splits dynamic imports; a stable name helps ops/cache.
+        manualChunks(id) {
+          if (id.includes("node_modules/movi-player") || id.includes("node_modules/.pnpm/movi-player@")) {
+            return "movi-player";
+          }
+        },
+      },
+    },
+  },
 });
 
 export default config;

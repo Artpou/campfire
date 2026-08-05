@@ -14,13 +14,15 @@ export interface MoviPlayerHandle extends HTMLElement {
 
 type CcExtrasOpts = { onAddSubtitles?: () => void; enableDelay?: boolean };
 
+let moviPlayerImport: Promise<void> | null = null;
+
 /**
  * movi-player 0.3.x calls `this.setAttribute("tabindex", "0")` from createControls()
  * inside the custom element constructor. The HTML spec forbids gaining attributes during
  * construction, so `document.createElement("movi-player")` throws NotSupportedError.
  * Defer tabindex writes until after construction completes.
  */
-export function patchMoviPlayerTabIndex(): void {
+function patchMoviPlayerTabIndex(): void {
   const Ctor = customElements.get("movi-player") as
     | (CustomElementConstructor & { __seedarrTabIndexPatched?: boolean })
     | undefined;
@@ -37,6 +39,32 @@ export function patchMoviPlayerTabIndex(): void {
     return original.call(this, name, value);
   };
   Ctor.__seedarrTabIndexPatched = true;
+}
+
+/** Warm the ~10 MB movi-player chunk in the background (hover / route preload). */
+export function preloadMoviPlayer(): void {
+  void ensureMoviPlayerRegistered().catch(() => {
+    // Best-effort prefetch — Player will surface errors on mount.
+  });
+}
+
+/** Load + register `<movi-player>` once; shared by preload and Player mount. */
+export function ensureMoviPlayerRegistered(): Promise<void> {
+  if (customElements.get("movi-player")) {
+    patchMoviPlayerTabIndex();
+    return Promise.resolve();
+  }
+  if (!moviPlayerImport) {
+    moviPlayerImport = import("movi-player")
+      .then(() => {
+        patchMoviPlayerTabIndex();
+      })
+      .catch((err) => {
+        moviPlayerImport = null;
+        throw err;
+      });
+  }
+  return moviPlayerImport;
 }
 
 export function errorDetail(event: Event): unknown {

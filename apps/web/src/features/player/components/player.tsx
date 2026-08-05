@@ -1,14 +1,16 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+import { Trans } from "@lingui/react/macro";
+
+import { cn } from "@/lib/utils";
+import { Spinner } from "@/shared/ui/spinner";
 
 import { resolveSubtitleTracksToBlobs, type SubtitleTrack } from "@/features/downloads/helpers/subtitle-tracks.helper";
-
-import "movi-player";
-
 import {
   ensureCcMenuAvailable,
+  ensureMoviPlayerRegistered,
   errorDetail,
   type MoviPlayerHandle,
-  patchMoviPlayerTabIndex,
 } from "@/features/player/helpers/movi-player.helper";
 
 interface PlayerProps {
@@ -24,8 +26,6 @@ interface PlayerProps {
   className?: string;
 }
 
-patchMoviPlayerTabIndex();
-
 /**
  * Mounts `<movi-player>` via the DOM (not JSX).
  *
@@ -33,6 +33,7 @@ patchMoviPlayerTabIndex();
  * cycle does not construct then destroy the WASM player mid-load (Asyncify corruption).
  *
  * External subs are prefetched (cookies) into blob: URLs, then wired via `source()`.
+ * `movi-player` is dynamically imported so it never ships in the initial bundle.
  */
 export function Player({
   src,
@@ -55,7 +56,12 @@ export function Player({
   onErrorRef.current = onError;
   onAddSubtitlesRef.current = onAddSubtitles;
 
-  const tracksKey = JSON.stringify(tracks.map((t) => [t.src, t.label, t.srclang, t.default, t.format]));
+  const [isEngineLoading, setIsEngineLoading] = useState(true);
+
+  const tracksKey = useMemo(
+    () => JSON.stringify(tracks.map((t) => [t.src, t.label, t.srclang, t.default, t.format])),
+    [tracks],
+  );
   const resumeAt = Number.isFinite(startAt) && startAt >= 1 ? Math.floor(startAt) : 0;
 
   useEffect(() => {
@@ -79,6 +85,20 @@ export function Player({
     const timer = window.setTimeout(() => {
       void (async () => {
         if (cancelled || !hostRef.current) return;
+
+        setIsEngineLoading(true);
+        try {
+          await ensureMoviPlayerRegistered();
+        } catch (err) {
+          if (!cancelled) {
+            setIsEngineLoading(false);
+            console.error("[movi-player] failed to load engine", err);
+            onErrorRef.current?.(err);
+          }
+          return;
+        }
+        if (cancelled || !hostRef.current) return;
+        setIsEngineLoading(false);
 
         const inputTracks: SubtitleTrack[] = JSON.parse(tracksKey).map(
           ([trackSrc, label, srclang, isDefault, format]: [string, string, string, boolean, string]) => ({
@@ -176,5 +196,20 @@ export function Player({
     };
   }, [src, tracksKey, enableSubtitleDelay, resumeAt]);
 
-  return <div ref={hostRef} className={className} />;
+  return (
+    <div className={cn("relative w-full", className)}>
+      {isEngineLoading && (
+        <div
+          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black aspect-video"
+          aria-busy="true"
+        >
+          <Spinner className="size-8 text-white" />
+          <p className="text-sm text-white/70">
+            <Trans>Loading player…</Trans>
+          </p>
+        </div>
+      )}
+      <div ref={hostRef} />
+    </div>
+  );
 }

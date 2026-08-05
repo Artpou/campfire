@@ -15,6 +15,7 @@ import { Card } from "@/shared/ui/card";
 import { DownloadProgress } from "@/features/downloads/components/download-progress";
 import { WatchProgressBar } from "@/features/media/components/watch-progress-bar";
 import { getPosterUrl, getWatchProgressPercent, hasWatchProgress } from "@/features/media/helpers/media.helper";
+import { preloadMoviPlayer } from "@/features/player/helpers/movi-player.helper";
 import { MediaCardPreview } from "./media-card-preview";
 
 type MediaCardProps = {
@@ -129,7 +130,14 @@ export function MediaCard({ media, mode = "default", className, playable, withTy
 
           {mode === "default" && !playable && canPlay && (
             <div className="absolute bottom-2 left-2 right-2 z-10 flex gap-1">
-              <Button size="sm" className="flex-1" onClick={handlePlay}>
+              <Button
+                size="sm"
+                className="flex-1"
+                onClick={handlePlay}
+                onMouseEnter={preloadMoviPlayer}
+                onFocus={preloadMoviPlayer}
+                onPointerDown={preloadMoviPlayer}
+              >
                 <PlayIcon className="size-3.5 mr-1" />
                 {showWatchProgress ? (
                   <Trans>Resume</Trans>

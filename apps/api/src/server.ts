@@ -42,7 +42,18 @@ function createProductionApp(): Hono {
       return c.html(html);
     })
     .route("/", app)
-    .use("*", serveStatic({ root: WEB_DIST_PATH }))
+    .use(
+      "*",
+      serveStatic({
+        root: WEB_DIST_PATH,
+        // Vite emits content-hashed filenames under /assets — safe to cache forever.
+        onFound: (filePath, c) => {
+          if (filePath.includes(`${path.sep}assets${path.sep}`) || filePath.includes("/assets/")) {
+            c.header("Cache-Control", "public, max-age=31536000, immutable");
+          }
+        },
+      }),
+    )
     .get("*", async (c) => {
       const html = readFrontendIndex();
       if (!html) return c.json({ error: "Frontend not found" }, 404);

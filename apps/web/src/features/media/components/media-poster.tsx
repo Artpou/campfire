@@ -23,6 +23,7 @@ import { useRole } from "@/features/auth/hooks/use-role";
 import { useDownloadDelete } from "@/features/downloads/hooks/download.queries";
 import { WatchProgressBar } from "@/features/media/components/watch-progress-bar";
 import { getPosterUrl, getWatchProgressPercent, hasWatchProgress } from "@/features/media/helpers/media.helper";
+import { preloadMoviPlayer } from "@/features/player/helpers/movi-player.helper";
 
 interface MediaPosterProps {
   data: Movie | TV;
@@ -97,6 +98,9 @@ export function MediaPoster({ data, download, type = "movie" }: MediaPosterProps
               type="button"
               className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/poster:bg-black/50 transition-colors cursor-pointer"
               onClick={() => navigate({ to: "/downloads/$id/play", params: { id: downloadId } })}
+              onMouseEnter={preloadMoviPlayer}
+              onFocus={preloadMoviPlayer}
+              onPointerDown={preloadMoviPlayer}
               aria-label={t`Play`}
             >
               <span className="flex items-center justify-center size-16 rounded-full bg-primary/80 shadow-lg opacity-80 group-hover/poster:opacity-100 group-hover/poster:bg-primary group-hover/poster:scale-105 transition-all duration-300">
@@ -134,7 +138,13 @@ export function MediaPoster({ data, download, type = "movie" }: MediaPosterProps
           {canPlay && downloadId ? (
             <>
               <Button className="flex-1" asChild>
-                <Link to="/downloads/$id/play" params={{ id: downloadId }}>
+                <Link
+                  to="/downloads/$id/play"
+                  params={{ id: downloadId }}
+                  onMouseEnter={preloadMoviPlayer}
+                  onFocus={preloadMoviPlayer}
+                  onPointerDown={preloadMoviPlayer}
+                >
                   <PlayIcon className="size-3 fill-current" />
                   {showWatchProgress ? (
                     <Trans>Resume</Trans>

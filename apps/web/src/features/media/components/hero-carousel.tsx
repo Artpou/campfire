@@ -27,6 +27,7 @@ import {
   hasWatchProgress,
 } from "@/features/media/helpers/media.helper";
 import { mediaQueries, refetchLibraryInterval } from "@/features/media/hooks/media.queries";
+import { preloadMoviPlayer } from "@/features/player/helpers/movi-player.helper";
 
 const AUTO_ROTATE_MS = 7000;
 const MAX_OVERVIEW_LENGTH = 220;
@@ -139,7 +140,12 @@ const HeroSlide = memo(function HeroSlide({ media, isLibraryMode }: HeroSlidePro
 
             {role !== "viewer" && isLibraryMode && playLinkProps && (
               <Button asChild size="lg" className="shadow-lg">
-                <Link {...playLinkProps}>
+                <Link
+                  {...playLinkProps}
+                  onMouseEnter={preloadMoviPlayer}
+                  onFocus={preloadMoviPlayer}
+                  onPointerDown={preloadMoviPlayer}
+                >
                   <PlayIcon className="size-4 fill-current" />
                   {showWatchProgress ? <Trans>Resume</Trans> : <Trans>Watch</Trans>}
                 </Link>

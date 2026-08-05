@@ -19,7 +19,7 @@ import { downloadQueries, refetchDownloadInterval } from "@/features/downloads/h
 import { hasWatchProgress } from "@/features/media/helpers/media.helper";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 import { Player } from "@/features/player/components/player";
-import type { MoviPlayerHandle } from "@/features/player/helpers/movi-player.helper";
+import { type MoviPlayerHandle, preloadMoviPlayer } from "@/features/player/helpers/movi-player.helper";
 import { SubtitleSearchDialog } from "@/features/subtitles/components/subtitle-search-dialog";
 import { subtitleQueries } from "@/features/subtitles/hooks/subtitle.queries";
 
@@ -30,6 +30,9 @@ export const Route = createFileRoute("/_app/downloads/$id/play")({
     }
   },
   loader: async ({ context, params }) => {
+    // Start fetching the WASM player chunk while route data loads.
+    preloadMoviPlayer();
+
     const download = await context.queryClient.ensureQueryData(downloadQueries.details(params.id));
     if (!download?.mediaId) throw new Error("Media ID not found");
 
