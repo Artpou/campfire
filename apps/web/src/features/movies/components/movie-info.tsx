@@ -56,7 +56,7 @@ export function MovieInfo({ movie }: MovieInfoProps) {
   return (
     <div className="dark text-foreground flex flex-col gap-4">
       <div>
-        <h1 className="md:text-5xl  tracking-tight">{movie.title}</h1>
+        <h1 className="md:text-5xl  tracking-tight">{movie.title || movie.original_title || ""}</h1>
         <div className="flex items-center mt-1 gap-2">
           <Flag lang={movie.original_language ?? ""} />
           <p className="text-sm text-muted-foreground font-medium">{movie.original_title}</p>

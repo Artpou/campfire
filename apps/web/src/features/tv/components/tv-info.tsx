@@ -61,7 +61,7 @@ export function TvInfo({ tv }: TvInfoProps) {
   return (
     <div className="dark text-foreground flex flex-col gap-4">
       <div>
-        <h1 className="text-4xl md:text-5xl font-black tracking-tight">{tv.name}</h1>
+        <h1 className="text-4xl md:text-5xl font-black tracking-tight">{tv.name || tv.original_name || ""}</h1>
         <div className="flex items-center mt-1 gap-2">
           <Flag lang={tv.original_language ?? ""} />
           <p className="text-sm text-muted-foreground font-medium">{tv.original_name}</p>
