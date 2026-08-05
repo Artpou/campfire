@@ -17,7 +17,6 @@ import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AppSearchRouteImport } from './routes/_app/search'
 import { Route as AppOnboardingRouteImport } from './routes/_app/onboarding'
 import { Route as AppListsRouteImport } from './routes/_app/lists'
-import { Route as AppErrorRouteImport } from './routes/_app/error'
 import { Route as App404RouteImport } from './routes/_app/404'
 import { Route as AppTvIndexRouteImport } from './routes/_app/tv/index'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
@@ -68,11 +67,6 @@ const AppOnboardingRoute = AppOnboardingRouteImport.update({
 const AppListsRoute = AppListsRouteImport.update({
   id: '/lists',
   path: '/lists',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppErrorRoute = AppErrorRouteImport.update({
-  id: '/error',
-  path: '/error',
   getParentRoute: () => AppRoute,
 } as any)
 const App404Route = App404RouteImport.update({
@@ -143,7 +137,6 @@ const AppDownloadsIdPlayRoute = AppDownloadsIdPlayRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/404': typeof App404Route
-  '/error': typeof AppErrorRoute
   '/lists': typeof AppListsRoute
   '/onboarding': typeof AppOnboardingRoute
   '/search': typeof AppSearchRoute
@@ -165,7 +158,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/404': typeof App404Route
-  '/error': typeof AppErrorRoute
   '/lists': typeof AppListsRoute
   '/onboarding': typeof AppOnboardingRoute
   '/search': typeof AppSearchRoute
@@ -190,7 +182,6 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
   '/_app/404': typeof App404Route
-  '/_app/error': typeof AppErrorRoute
   '/_app/lists': typeof AppListsRoute
   '/_app/onboarding': typeof AppOnboardingRoute
   '/_app/search': typeof AppSearchRoute
@@ -214,7 +205,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/404'
-    | '/error'
     | '/lists'
     | '/onboarding'
     | '/search'
@@ -236,7 +226,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/404'
-    | '/error'
     | '/lists'
     | '/onboarding'
     | '/search'
@@ -260,7 +249,6 @@ export interface FileRouteTypes {
     | '/_app'
     | '/_auth'
     | '/_app/404'
-    | '/_app/error'
     | '/_app/lists'
     | '/_app/onboarding'
     | '/_app/search'
@@ -342,13 +330,6 @@ declare module '@tanstack/react-router' {
       path: '/lists'
       fullPath: '/lists'
       preLoaderRoute: typeof AppListsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/error': {
-      id: '/_app/error'
-      path: '/error'
-      fullPath: '/error'
-      preLoaderRoute: typeof AppErrorRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/404': {
@@ -447,7 +428,6 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   App404Route: typeof App404Route
-  AppErrorRoute: typeof AppErrorRoute
   AppListsRoute: typeof AppListsRoute
   AppOnboardingRoute: typeof AppOnboardingRoute
   AppSearchRoute: typeof AppSearchRoute
@@ -468,7 +448,6 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   App404Route: App404Route,
-  AppErrorRoute: AppErrorRoute,
   AppListsRoute: AppListsRoute,
   AppOnboardingRoute: AppOnboardingRoute,
   AppSearchRoute: AppSearchRoute,
