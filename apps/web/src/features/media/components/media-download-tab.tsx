@@ -74,8 +74,8 @@ function DownloadEntry({ download }: { download: Download }) {
   const totalSize = download.torrent?.length ?? 0;
   const showProgress = isActive || isPaused;
 
-  const handleDelete = (dbOnly: boolean) => {
-    deleteTorrent.mutate({ id: download.id, dbOnly }, { onSuccess: () => setShowDeleteConfirm(false) });
+  const handleDelete = () => {
+    deleteTorrent.mutate({ id: download.id, scope: "torrent" }, { onSuccess: () => setShowDeleteConfirm(false) });
   };
 
   return (
@@ -174,7 +174,9 @@ function DownloadEntry({ download }: { download: Download }) {
               <Trans>Delete Download</Trans>
             </AlertDialogTitle>
             <AlertDialogDescription>
-              <Trans>Are you sure you want to delete this download? This action cannot be undone.</Trans>
+              <Trans>
+                This will stop the torrent and delete local files. If a remote copy exists, it will not be affected.
+              </Trans>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -182,7 +184,7 @@ function DownloadEntry({ download }: { download: Download }) {
               <Trans>Cancel</Trans>
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => handleDelete(false)}
+              onClick={handleDelete}
               disabled={deleteTorrent.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/80"
             >

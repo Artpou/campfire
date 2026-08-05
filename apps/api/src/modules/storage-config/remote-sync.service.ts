@@ -1,5 +1,5 @@
 import { filenameParse } from "@ctrl/video-filename-parser";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { BadRequestError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
@@ -9,7 +9,7 @@ import { db } from "@/db/db";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { download } from "@/modules/download/download.schema";
 import { media } from "@/modules/media/media.schema";
-import type { RemoteSyncResponse } from "@/modules/settings/settings.dto";
+import type { ManualSyncInput, RemoteSyncResponse } from "@/modules/settings/settings.dto";
 import { getSettingsTmdbApiKey } from "@/modules/settings/tmdb-key.helper";
 import type { TMDBItem, TMDBPaginatedResponse } from "@/modules/tmdb/tmdb.dto";
 import { tmdbMovieToMedia, tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
@@ -309,7 +309,7 @@ export async function runRemoteSync(userId: string): Promise<RemoteSyncResponse>
 
   let synced = 0;
   let skipped = 0;
-  const errors: string[] = [];
+  const errors: RemoteSyncResponse["errors"] = [];
   const syncedMediaIds = new Set<number>();
 
   for (let i = 0; i < uniqueEntries.length; i += BATCH_SIZE) {
@@ -324,10 +324,10 @@ export async function runRemoteSync(userId: string): Promise<RemoteSyncResponse>
       if (result.status === "fulfilled") {
         if (result.value === "synced") synced++;
         else if (result.value === "skipped") skipped++;
-        else errors.push(batch[j].name);
+        else errors.push({ name: batch[j].name, path: batch[j].remoteLocation, type: batch[j].mediaType });
       } else {
         logger.error("REMOTE_SYNC", `Error processing "${batch[j].name}": ${result.reason}`);
-        errors.push(batch[j].name);
+        errors.push({ name: batch[j].name, path: batch[j].remoteLocation, type: batch[j].mediaType });
       }
     }
 
@@ -417,4 +417,39 @@ async function processEntry(
   if (mediaInsert.original_title) existingTitles.add(mediaInsert.original_title.toLowerCase());
 
   return "synced";
+}
+
+export async function runManualSync(userId: string, input: ManualSyncInput): Promise<{ success: true }> {
+  const apiKey = await getSettingsTmdbApiKey();
+  if (!apiKey) throw new BadRequestError("TMDB API key is required");
+
+  const tmdbItem = await fetchByTmdbId(input.mediaId, input.type);
+  if (!tmdbItem) throw new BadRequestError("Could not find media on TMDB");
+
+  const mediaInsert = tmdbItemToMediaInsert(tmdbItem, input.type);
+  await db.insert(media).values(mediaInsert).onConflictDoUpdate({ target: media.id, set: mediaInsert });
+
+  const existing = await db.query.download.findFirst({
+    where: and(eq(download.mediaId, input.mediaId), eq(download.remoteLocation, input.remotePath)),
+  });
+
+  if (!existing) {
+    await db.insert(download).values({
+      userId,
+      mediaId: input.mediaId,
+      origin: "remote-sync",
+      remoteLocation: input.remotePath,
+      torrent: null,
+    });
+  }
+
+  ActivityLogService.log({
+    userId,
+    type: "SUCCESS",
+    action: "REMOTE_SYNC",
+    title: `Manual sync: ${mediaInsert.title}`,
+    metadata: { mediaId: input.mediaId, remotePath: input.remotePath },
+  });
+
+  return { success: true };
 }

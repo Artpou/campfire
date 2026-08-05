@@ -4,7 +4,8 @@ import { timeout } from "hono/timeout";
 
 import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
 import { requireRole } from "@/modules/auth/role.guard";
-import { runRemoteSync } from "./remote-sync.service";
+import { manualSyncDto } from "@/modules/settings/settings.dto";
+import { runManualSync, runRemoteSync } from "./remote-sync.service";
 import { testStorageConfigDto, upsertStorageConfigDto } from "./storage-config.dto";
 import { StorageConfigService } from "./storage-config.service";
 
@@ -41,4 +42,8 @@ export const storageConfigRoutes = new Hono<{ Variables: HonoAuthenticatedVariab
     const user = c.get("user");
     const result = await runRemoteSync(user.id);
     return c.json(result);
+  })
+  .post("/sync-manual", zValidator("json", manualSyncDto), async (c) => {
+    const user = c.get("user");
+    return c.json(await runManualSync(user.id, c.req.valid("json")));
   });

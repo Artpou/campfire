@@ -4,7 +4,13 @@ import { formatError } from "@seedarr/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-export function useRemoteSync() {
+interface SyncError {
+  name: string;
+  path: string;
+  type: "movie" | "tv";
+}
+
+export function useRemoteSync(onUnmatchedFiles?: (files: SyncError[]) => void) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -23,11 +29,18 @@ export function useRemoteSync() {
       }
 
       if (result.errors.length > 0) {
-        const errorList = result.errors.slice(0, 10).join(", ");
-        const suffix = result.errors.length > 10 ? t` and ${result.errors.length - 10} more` : "";
+        const errorNames = result.errors.map((e) => e.name);
+        const errorList = errorNames.slice(0, 10).join(", ");
+        const suffix = errorNames.length > 10 ? t` and ${errorNames.length - 10} more` : "";
         toast.error(t`Could not detect ${result.errors.length} items`, {
           description: `${errorList}${suffix}`,
-          duration: 10000,
+          duration: 15000,
+          action: onUnmatchedFiles
+            ? {
+                label: t`Manual sync`,
+                onClick: () => onUnmatchedFiles(result.errors),
+              }
+            : undefined,
         });
       }
 
@@ -36,6 +49,24 @@ export function useRemoteSync() {
     },
     onError: (error) => {
       toast.error(t`Synchronization failed`, {
+        description: formatError(error),
+      });
+    },
+  });
+}
+
+export function useManualSync() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: { remotePath: string; mediaId: number; type: "movie" | "tv" }) =>
+      unwrap(api["storage-config"]["sync-manual"].$post({ json: input })),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["downloads"] });
+      queryClient.invalidateQueries({ queryKey: ["media"] });
+    },
+    onError: (error) => {
+      toast.error(t`Manual sync failed`, {
         description: formatError(error),
       });
     },

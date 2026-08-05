@@ -82,18 +82,48 @@ export function useStartDownload() {
   });
 }
 
+interface DeleteDownloadParams {
+  id: string;
+  dbOnly?: boolean;
+  scope?: "torrent" | "remote" | "all";
+  unlink?: boolean;
+}
+
 export function useDownloadDelete() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, dbOnly }: { id: string; dbOnly?: boolean }) =>
-      unwrap(api.downloads[":id"].$delete({ param: { id }, query: dbOnly ? { dbOnly: "true" } : {} })),
+    mutationFn: ({ id, dbOnly, scope, unlink }: DeleteDownloadParams) => {
+      const query: Record<string, string> = {};
+      if (dbOnly) query.dbOnly = "true";
+      if (unlink) query.unlink = "true";
+      if (scope && scope !== "all") query.scope = scope;
+      return unwrap(api.downloads[":id"].$delete({ param: { id }, query }));
+    },
     onSuccess: () => {
       invalidateDownloadRelatedQueries(queryClient);
       toast.success(t`Download deleted`);
     },
     onError: (error) => {
       toast.error(t`Could not delete download`, {
+        description: formatError(error),
+      });
+    },
+  });
+}
+
+export function useDownloadReassignMedia() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, mediaId }: { id: string; mediaId: number }) =>
+      unwrap(api.downloads[":id"].media.$patch({ param: { id }, json: { mediaId } })),
+    onSuccess: () => {
+      invalidateDownloadRelatedQueries(queryClient);
+      toast.success(t`Media reassigned`);
+    },
+    onError: (error) => {
+      toast.error(t`Could not reassign media`, {
         description: formatError(error),
       });
     },

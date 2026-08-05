@@ -13,8 +13,8 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#. placeholder {0}: result.errors.length - 10
-#: src/features/settings/hooks/remote-sync.queries.ts:27
+#. placeholder {0}: errorNames.length - 10
+#: src/features/settings/hooks/remote-sync.queries.ts:34
 msgid " and {0} more"
 msgstr " and {0} more"
 
@@ -33,13 +33,13 @@ msgstr "{0}"
 #~ msgstr "{0} API Key"
 
 #. placeholder {0}: result.skipped
-#: src/features/settings/hooks/remote-sync.queries.ts:19
+#: src/features/settings/hooks/remote-sync.queries.ts:25
 msgid "{0} media already up to date"
 msgstr "{0} media already up to date"
 
 #. placeholder {0}: result.synced
 #. placeholder {1}: result.skipped
-#: src/features/settings/hooks/remote-sync.queries.ts:15
+#: src/features/settings/hooks/remote-sync.queries.ts:21
 msgid "{0} media synced, {1} skipped"
 msgstr "{0} media synced, {1} skipped"
 
@@ -194,8 +194,12 @@ msgid "An error occurred"
 msgstr "An error occurred"
 
 #: src/routes/_app/error.tsx:30
-msgid "An unexpected error occurred. Please try again later."
-msgstr "An unexpected error occurred. Please try again later."
+#~ msgid "An unexpected error occurred. Please try again later."
+#~ msgstr "An unexpected error occurred. Please try again later."
+
+#: src/shared/components/route-error.tsx:31
+msgid "An unexpected error occurred. Please try again."
+msgstr "An unexpected error occurred. Please try again."
 
 #: src/features/media/components/media-filters-sheet.tsx:53
 msgid "Any language"
@@ -219,8 +223,6 @@ msgstr "Apply"
 msgid "Arabic"
 msgstr "Arabic"
 
-#: src/features/media/components/media-download-tab.tsx:208
-#: src/features/media/components/media-download-tab.tsx:311
 #: src/features/media/components/media-poster.tsx:195
 #: src/features/tv/components/tv-episode-delete-dialog.tsx:55
 msgid "Are you sure you want to delete this download? This action cannot be undone."
@@ -279,9 +281,11 @@ msgstr "Buy / Rent"
 
 #: src/features/indexers-manager/components/indexers-manager-add-dialog.tsx:160
 #: src/features/indexers-manager/components/indexers-manager-edit-dialog.tsx:99
-#: src/features/media/components/media-download-tab.tsx:213
-#: src/features/media/components/media-download-tab.tsx:316
+#: src/features/media/components/media-download-tab.tsx:184
 #: src/features/media/components/media-poster.tsx:200
+#: src/features/media/components/media-search-modal.tsx:96
+#: src/features/media/components/media-server-tab.tsx:133
+#: src/features/settings/components/manual-sync-wizard.tsx:84
 #: src/features/torrent/components/download-unavailable-dialog.tsx:63
 #: src/features/tv/components/tv-episode-delete-dialog.tsx:77
 #: src/features/user/components/user-form-modal.tsx:259
@@ -298,6 +302,11 @@ msgstr "Carousel navigation"
 #: src/features/tv/components/tv-cast.tsx:38
 msgid "Cast & Crew"
 msgstr "Cast & Crew"
+
+#: src/features/media/components/media-search-modal.tsx:70
+#: src/features/media/components/media-server-tab.tsx:93
+msgid "Change media"
+msgstr "Change media"
 
 #: src/features/media/components/media-filters-sheet.tsx:61
 msgid "Chinese"
@@ -316,8 +325,8 @@ msgid "Collection"
 msgstr "Collection"
 
 #: src/features/media/components/media-download-tab.tsx:94
-msgid "Completed"
-msgstr "Completed"
+#~ msgid "Completed"
+#~ msgstr "Completed"
 
 #: src/routes/_app/settings/index.tsx:160
 #~ msgid "Configure"
@@ -369,12 +378,12 @@ msgstr "Connection"
 msgid "Could not add subtitle"
 msgstr "Could not add subtitle"
 
-#: src/features/downloads/hooks/download.queries.ts:96
+#: src/features/downloads/hooks/download.queries.ts:108
 msgid "Could not delete download"
 msgstr "Could not delete download"
 
 #. placeholder {0}: result.errors.length
-#: src/features/settings/hooks/remote-sync.queries.ts:28
+#: src/features/settings/hooks/remote-sync.queries.ts:35
 msgid "Could not detect {0} items"
 msgstr "Could not detect {0} items"
 
@@ -382,19 +391,23 @@ msgstr "Could not detect {0} items"
 msgid "Could not load the video stream. Check that the file is still available."
 msgstr "Could not load the video stream. Check that the file is still available."
 
-#: src/features/downloads/hooks/download.queries.ts:113
+#: src/features/downloads/hooks/download.queries.ts:143
 msgid "Could not pause download"
 msgstr "Could not pause download"
 
-#: src/features/downloads/hooks/download.queries.ts:164
+#: src/features/downloads/hooks/download.queries.ts:194
 msgid "Could not reannounce"
 msgstr "Could not reannounce"
 
-#: src/features/downloads/hooks/download.queries.ts:147
+#: src/features/downloads/hooks/download.queries.ts:126
+msgid "Could not reassign media"
+msgstr "Could not reassign media"
+
+#: src/features/downloads/hooks/download.queries.ts:177
 msgid "Could not recheck download"
 msgstr "Could not recheck download"
 
-#: src/features/downloads/hooks/download.queries.ts:130
+#: src/features/downloads/hooks/download.queries.ts:160
 msgid "Could not resume download"
 msgstr "Could not resume download"
 
@@ -443,6 +456,10 @@ msgstr "Created by"
 msgid "Creating account..."
 msgstr "Creating account..."
 
+#: src/features/media/components/media-search-modal.tsx:188
+msgid "Current"
+msgstr "Current"
+
 #: src/features/indexers-manager/components/indexers-manager-add-dialog.tsx:88
 msgid "Custom Stremio Addon"
 msgstr "Custom Stremio Addon"
@@ -456,19 +473,19 @@ msgid "Date"
 msgstr "Date"
 
 #: src/features/media/components/media-poster.tsx:208
-msgid "DB only"
-msgstr "DB only"
+#~ msgid "DB only"
+#~ msgstr "DB only"
 
 #: src/features/settings/components/settings-general-tab.tsx:59
 msgid "Default quality"
 msgstr "Default quality"
 
-#: src/features/media/components/media-download-tab.tsx:140
-#: src/features/media/components/media-download-tab.tsx:220
-#: src/features/media/components/media-download-tab.tsx:288
-#: src/features/media/components/media-download-tab.tsx:323
+#: src/features/media/components/media-download-tab.tsx:130
+#: src/features/media/components/media-download-tab.tsx:191
 #: src/features/media/components/media-poster.tsx:162
-#: src/features/media/components/media-poster.tsx:216
+#: src/features/media/components/media-poster.tsx:207
+#: src/features/media/components/media-server-tab.tsx:101
+#: src/features/media/components/media-server-tab.tsx:147
 #: src/features/tv/components/tv-episode-delete-dialog.tsx:84
 #: src/features/tv/components/tv-episodes-section.tsx:188
 #: src/features/user/components/users-table.tsx:188
@@ -481,8 +498,7 @@ msgstr "Delete"
 msgid "Delete download"
 msgstr "Delete download"
 
-#: src/features/media/components/media-download-tab.tsx:205
-#: src/features/media/components/media-download-tab.tsx:308
+#: src/features/media/components/media-download-tab.tsx:174
 #: src/features/media/components/media-poster.tsx:192
 msgid "Delete Download"
 msgstr "Delete Download"
@@ -498,6 +514,10 @@ msgstr "Delete local files after auto-transfer"
 #: src/features/tv/components/tv-episode-delete-dialog.tsx:43
 msgid "Delete multiple episodes"
 msgstr "Delete multiple episodes"
+
+#: src/features/media/components/media-server-tab.tsx:122
+msgid "Delete Remote Files"
+msgstr "Delete Remote Files"
 
 #: src/features/user/components/users-table.tsx:205
 msgid "Delete User"
@@ -538,7 +558,7 @@ msgstr "Disabled"
 msgid "Download"
 msgstr "Download"
 
-#: src/features/downloads/hooks/download.queries.ts:93
+#: src/features/downloads/hooks/download.queries.ts:105
 msgid "Download deleted"
 msgstr "Download deleted"
 
@@ -546,11 +566,11 @@ msgstr "Download deleted"
 msgid "Download failed"
 msgstr "Download failed"
 
-#: src/features/downloads/hooks/download.queries.ts:110
+#: src/features/downloads/hooks/download.queries.ts:140
 msgid "Download paused"
 msgstr "Download paused"
 
-#: src/features/downloads/hooks/download.queries.ts:127
+#: src/features/downloads/hooks/download.queries.ts:157
 msgid "Download resumed"
 msgstr "Download resumed"
 
@@ -574,7 +594,7 @@ msgstr "Download subtitles"
 msgid "Downloaded"
 msgstr "Downloaded"
 
-#: src/features/media/components/media-detail-layout.tsx:143
+#: src/features/media/components/media-detail-layout.tsx:142
 #: src/routes/_app/downloads/$id.play.tsx:192
 msgid "Downloads"
 msgstr "Downloads"
@@ -642,7 +662,7 @@ msgstr "Error"
 msgid "Export logs"
 msgstr "Export logs"
 
-#: src/features/media/components/media-download-tab.tsx:99
+#: src/features/media/components/media-download-tab.tsx:92
 msgid "Failed"
 msgstr "Failed"
 
@@ -670,6 +690,10 @@ msgstr "Failed to save settings"
 msgid "Failed to save storage configuration"
 msgstr "Failed to save storage configuration"
 
+#: src/features/media/components/media-search-modal.tsx:225
+msgid "File"
+msgstr "File"
+
 #: src/features/downloads/components/download-files-list.tsx:93
 msgid "Files"
 msgstr "Files"
@@ -687,11 +711,11 @@ msgstr "Filters"
 msgid "First air date"
 msgstr "First air date"
 
-#: src/features/media/components/media-download-tab.tsx:126
+#: src/features/media/components/media-download-tab.tsx:117
 msgid "Force reannounce"
 msgstr "Force reannounce"
 
-#: src/features/media/components/media-download-tab.tsx:112
+#: src/features/media/components/media-download-tab.tsx:104
 msgid "Force recheck"
 msgstr "Force recheck"
 
@@ -716,7 +740,7 @@ msgstr "General"
 msgid "German"
 msgstr "German"
 
-#: src/routes/_app/error.tsx:39
+#: src/shared/components/route-error.tsx:50
 msgid "Go back"
 msgstr "Go back"
 
@@ -793,7 +817,7 @@ msgstr "Indexer Managers"
 msgid "Indexers"
 msgstr "Indexers"
 
-#: src/features/media/components/media-detail-layout.tsx:138
+#: src/features/media/components/media-detail-layout.tsx:137
 msgid "Info"
 msgstr "Info"
 
@@ -889,9 +913,7 @@ msgstr "Loading"
 msgid "Loading player…"
 msgstr "Loading player…"
 
-#: src/features/media/components/media-download-tab.tsx:296
-#: src/features/movies/components/movie-download-section.tsx:72
-#: src/features/movies/components/movie-download-section.tsx:85
+#: src/features/media/components/media-server-tab.tsx:110
 #: src/features/tv/components/tv-episode-download-panel.tsx:72
 #: src/features/tv/components/tv-episode-download-panel.tsx:85
 msgid "Loading remote files…"
@@ -903,7 +925,6 @@ msgstr "Loading remote files…"
 msgid "Loading..."
 msgstr "Loading..."
 
-#: src/features/movies/components/movie-download-section.tsx:55
 #: src/features/tv/components/tv-episode-download-panel.tsx:55
 msgid "Local"
 msgstr "Local"
@@ -934,6 +955,15 @@ msgstr "Manage user accounts and permissions"
 msgid "Manifest URL"
 msgstr "Manifest URL"
 
+#: src/features/settings/components/manual-sync-wizard.tsx:69
+#: src/features/settings/hooks/remote-sync.queries.ts:40
+msgid "Manual sync"
+msgstr "Manual sync"
+
+#: src/features/settings/hooks/remote-sync.queries.ts:69
+msgid "Manual sync failed"
+msgstr "Manual sync failed"
+
 #: src/features/torrent/components/torrent-table.tsx:172
 msgid "Max {preferenceMaxSize} GB"
 msgstr "Max {preferenceMaxSize} GB"
@@ -942,9 +972,13 @@ msgstr "Max {preferenceMaxSize} GB"
 msgid "Max torrent size"
 msgstr "Max torrent size"
 
-#: src/routes/_app/downloads/index.tsx:98
+#: src/routes/_app/downloads/index.tsx:99
 msgid "Media"
 msgstr "Media"
+
+#: src/features/downloads/hooks/download.queries.ts:123
+msgid "Media reassigned"
+msgstr "Media reassigned"
 
 #: src/features/downloads/components/downloads-stats-panel.tsx:129
 msgid "Medias"
@@ -1045,8 +1079,8 @@ msgstr "Next episode: S{0}E{1} - {2}"
 msgid "No activity yet."
 msgstr "No activity yet."
 
-#: src/features/media/components/media-download-tab.tsx:43
-#: src/routes/_app/downloads/index.tsx:134
+#: src/features/media/components/media-download-tab.tsx:42
+#: src/routes/_app/downloads/index.tsx:135
 msgid "No downloads yet"
 msgstr "No downloads yet"
 
@@ -1086,7 +1120,7 @@ msgstr "No keyword found."
 msgid "No magnet URI found"
 msgstr "No magnet URI found"
 
-#: src/features/settings/hooks/remote-sync.queries.ts:22
+#: src/features/settings/hooks/remote-sync.queries.ts:28
 msgid "No media found on remote server"
 msgstr "No media found on remote server"
 
@@ -1098,15 +1132,19 @@ msgstr "No movies found"
 msgid "No peers detected"
 msgstr "No peers detected"
 
-#: src/features/media/components/media-download-tab.tsx:238
+#: src/features/media/components/media-server-tab.tsx:35
 msgid "No remote files"
 msgstr "No remote files"
+
+#: src/features/media/components/media-search-modal.tsx:148
+msgid "No results found"
+msgstr "No results found"
 
 #: src/routes/_app/search.tsx:128
 msgid "No results found for \"{q}\""
 msgstr "No results found for \"{q}\""
 
-#: src/routes/_app/downloads/index.tsx:134
+#: src/routes/_app/downloads/index.tsx:135
 msgid "No results found for \"{search}\""
 msgstr "No results found for \"{search}\""
 
@@ -1142,7 +1180,7 @@ msgstr "No users found"
 #~ msgid "No viewing history yet."
 #~ msgstr "No viewing history yet."
 
-#: src/features/settings/hooks/remote-sync.queries.ts:18
+#: src/features/settings/hooks/remote-sync.queries.ts:24
 msgid "Nothing new to sync"
 msgstr "Nothing new to sync"
 
@@ -1308,11 +1346,11 @@ msgstr "Read more"
 msgid "Real-time network activity and library overview"
 msgstr "Real-time network activity and library overview"
 
-#: src/features/media/components/media-download-tab.tsx:130
+#: src/features/media/components/media-download-tab.tsx:121
 msgid "Reannounce"
 msgstr "Reannounce"
 
-#: src/features/downloads/hooks/download.queries.ts:161
+#: src/features/downloads/hooks/download.queries.ts:191
 msgid "Reannounce sent"
 msgstr "Reannounce sent"
 
@@ -1324,11 +1362,11 @@ msgstr "Recent activity on this instance."
 #~ msgid "Recently Viewed"
 #~ msgstr "Recently Viewed"
 
-#: src/features/media/components/media-download-tab.tsx:116
+#: src/features/media/components/media-download-tab.tsx:108
 msgid "Recheck"
 msgstr "Recheck"
 
-#: src/features/downloads/hooks/download.queries.ts:144
+#: src/features/downloads/hooks/download.queries.ts:174
 msgid "Recheck started"
 msgstr "Recheck started"
 
@@ -1360,14 +1398,13 @@ msgid "Release date"
 msgstr "Release date"
 
 #: src/routes/_app/error.tsx:42
-msgid "Reload page"
-msgstr "Reload page"
+#~ msgid "Reload page"
+#~ msgstr "Reload page"
 
 #: src/shared/components/error-boundary.tsx:43
 msgid "Reload Page"
 msgstr "Reload Page"
 
-#: src/features/movies/components/movie-download-section.tsx:59
 #: src/features/tv/components/tv-episode-download-panel.tsx:59
 msgid "Remote"
 msgstr "Remote"
@@ -1423,6 +1460,7 @@ msgid "Resume"
 msgstr "Resume"
 
 #: src/features/torrent/components/download-unavailable-dialog.tsx:55
+#: src/shared/components/route-error.tsx:54
 msgid "Retry"
 msgstr "Retry"
 
@@ -1445,6 +1483,8 @@ msgstr "Russian"
 
 #: src/features/indexers-manager/components/indexers-manager-add-dialog.tsx:163
 #: src/features/indexers-manager/components/indexers-manager-edit-dialog.tsx:103
+#: src/features/media/components/media-search-modal.tsx:99
+#: src/features/settings/components/manual-sync-wizard.tsx:90
 #: src/features/settings/components/settings-general-tab.tsx:147
 msgid "Save"
 msgstr "Save"
@@ -1475,7 +1515,7 @@ msgstr "Search an indexer..."
 #~ msgid "Search for Movies and TV Shows"
 #~ msgstr "Search for Movies and TV Shows"
 
-#: src/routes/_app/downloads/index.tsx:80
+#: src/routes/_app/downloads/index.tsx:81
 msgid "Search in your library..."
 msgstr "Search in your library..."
 
@@ -1502,6 +1542,12 @@ msgstr "Search movies and TV shows..."
 #: src/shared/components/app-topbar.tsx:113
 msgid "Search..."
 msgstr "Search..."
+
+#. placeholder {0}: mediaType === "tv" ? " TV shows" : mediaType === "movie" ? " movies" : ""
+#: src/features/media/components/media-search-modal.tsx:77
+#: src/features/media/components/media-search-modal.tsx:234
+msgid "Search{0}..."
+msgstr "Search{0}..."
 
 #: src/features/media/components/media-filters-sheet.tsx:225
 msgid "Searching..."
@@ -1549,7 +1595,7 @@ msgstr "Select"
 msgid "Self-Hosted"
 msgstr "Self-Hosted"
 
-#: src/features/media/components/media-detail-layout.tsx:152
+#: src/features/media/components/media-detail-layout.tsx:151
 msgid "Server"
 msgstr "Server"
 
@@ -1598,13 +1644,17 @@ msgstr "Sign Up"
 msgid "Size"
 msgstr "Size"
 
+#: src/features/settings/components/manual-sync-wizard.tsx:87
+msgid "Skip"
+msgstr "Skip"
+
 #: src/routes/_app/onboarding.tsx:142
 #: src/routes/_app/onboarding.tsx:208
 msgid "Skip for now"
 msgstr "Skip for now"
 
-#: src/routes/_app/error.tsx:25
 #: src/shared/components/error-boundary.tsx:30
+#: src/shared/components/route-error.tsx:28
 #: src/shared/helpers/error.helper.ts:7
 msgid "Something went wrong"
 msgstr "Something went wrong"
@@ -1662,15 +1712,15 @@ msgstr "Subtitle added"
 msgid "Success"
 msgstr "Success"
 
-#: src/features/settings/hooks/remote-sync.queries.ts:14
+#: src/features/settings/hooks/remote-sync.queries.ts:20
 msgid "Synchronization complete"
 msgstr "Synchronization complete"
 
-#: src/features/settings/hooks/remote-sync.queries.ts:38
+#: src/features/settings/hooks/remote-sync.queries.ts:51
 msgid "Synchronization failed"
 msgstr "Synchronization failed"
 
-#: src/routes/_app/downloads/index.tsx:165
+#: src/routes/_app/downloads/index.tsx:183
 msgid "Synchronize"
 msgstr "Synchronize"
 
@@ -1719,6 +1769,10 @@ msgstr "This torrent looks reachable from Seedarr."
 #~ msgid "This will remove the downloaded files for this movie."
 #~ msgstr "This will remove the downloaded files for this movie."
 
+#: src/features/media/components/media-download-tab.tsx:177
+msgid "This will stop the torrent and delete local files. If a remote copy exists, it will not be affected."
+msgstr "This will stop the torrent and delete local files. If a remote copy exists, it will not be affected."
+
 #: src/features/settings/components/settings-activity-tab.tsx:58
 msgid "Title"
 msgstr "Title"
@@ -1737,7 +1791,7 @@ msgstr "TMDB"
 msgid "TMDB API Key (v3)"
 msgstr "TMDB API Key (v3)"
 
-#: src/routes/_app/downloads/index.tsx:156
+#: src/routes/_app/downloads/index.tsx:169
 msgid "TMDB API key is required for synchronization. Configure it in Settings > General."
 msgstr "TMDB API key is required for synchronization. Configure it in Settings > General."
 
@@ -1789,7 +1843,7 @@ msgid "Torrents"
 msgstr "Torrents"
 
 #: src/features/downloads/components/downloads-stats-panel.tsx:135
-#: src/routes/_app/downloads/index.tsx:105
+#: src/routes/_app/downloads/index.tsx:106
 msgid "Total Size"
 msgstr "Total Size"
 
@@ -1848,6 +1902,10 @@ msgstr "TV Shows path"
 msgid "Type"
 msgstr "Type"
 
+#: src/features/media/components/media-search-modal.tsx:129
+msgid "Type to search"
+msgstr "Type to search"
+
 #: src/features/indexers-manager/components/indexers-manager-card.tsx:116
 msgid "Uninstall"
 msgstr "Uninstall"
@@ -1867,6 +1925,10 @@ msgstr "Unknown error"
 #: src/features/media/components/media-card.tsx:70
 #~ msgid "Unlike"
 #~ msgstr "Unlike"
+
+#: src/features/media/components/media-server-tab.tsx:140
+msgid "Unlink"
+msgstr "Unlink"
 
 #: src/routes/_app/downloads/$id.play.tsx:216
 #~ msgid "Unsupported codec for the browser (often HEVC/AC3). Try VLC, or use an H.264/AAC file."
@@ -1969,6 +2031,10 @@ msgstr "Watchlist"
 #: src/features/settings/components/settings-storage-tab.tsx:377
 msgid "When enabled, new downloads are automatically transferred to the remote server after completion. You can still transfer files manually at any time."
 msgstr "When enabled, new downloads are automatically transferred to the remote server after completion. You can still transfer files manually at any time."
+
+#: src/features/media/components/media-server-tab.tsx:125
+msgid "You can delete the remote files permanently or just unlink them from Seedarr (keeping files on the server)."
+msgstr "You can delete the remote files permanently or just unlink them from Seedarr (keeping files on the server)."
 
 #: src/routes/settings.tsx:117
 #~ msgid "Your API key is stored locally in your browser and is never sent to our servers except as an Authorization header."

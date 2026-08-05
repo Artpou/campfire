@@ -260,13 +260,35 @@ export class DownloadService extends IdentifiableService<Download> {
     return { success: true };
   }
 
-  async delete(id: string, options?: { dbOnly?: boolean }): Promise<{ success: true }> {
+  async reassignMedia(id: string, newMediaId: number): Promise<{ success: true }> {
+    const [item] = await this.findMany({ ids: [id] });
+    if (!item) throw new NotFoundError("Download");
+
+    await db.update(download).set({ mediaId: newMediaId }).where(eq(download.id, id));
+
+    ActivityLogService.log({
+      userId: this.user.id,
+      type: "INFO",
+      action: "REMOTE_SYNC",
+      title: `Download reassigned to media ${newMediaId}`,
+      metadata: { downloadId: id, previousMediaId: item.mediaId, newMediaId },
+    });
+
+    return { success: true };
+  }
+
+  async delete(
+    id: string,
+    options?: { dbOnly?: boolean; scope?: "torrent" | "remote" | "all"; unlink?: boolean },
+  ): Promise<{ success: true }> {
     const [item] = await this.findMany({ ids: [id] });
     if (!item) throw new NotFoundError("Download");
 
     if (item.userId !== this.user.id && this.roleLevel < ROLE_LEVELS.admin) {
       throw new ForbiddenError();
     }
+
+    const scope = options?.scope ?? "all";
 
     if (options?.dbOnly) {
       if (this.roleLevel < ROLE_LEVELS.admin) throw new ForbiddenError();
@@ -285,6 +307,40 @@ export class DownloadService extends IdentifiableService<Download> {
       return { success: true };
     }
 
+    if (scope === "all" || scope === "torrent") this.destroyLocalTorrent(id, item);
+
+    if (scope === "all" || scope === "remote") {
+      if (item.remoteLocation && !options?.unlink) {
+        remoteStorageService
+          .remove(item.remoteLocation)
+          .then(() => logger.info("DOWNLOAD", `Deleted remote file: ${item.remoteLocation}`))
+          .catch((err) => logger.warn("DOWNLOAD", `Failed to delete remote file: ${err}`));
+      }
+    }
+
+    const otherSideExists = scope === "torrent" ? item.remoteLocation : scope === "remote" ? item.torrent : false;
+    if (scope === "all" || !otherSideExists) {
+      await db.delete(watchProgress).where(eq(watchProgress.downloadId, id));
+      await db.delete(download).where(eq(download.id, id));
+    } else if (scope === "torrent") {
+      await db.update(download).set({ torrent: null, error: null }).where(eq(download.id, id));
+    } else if (scope === "remote") {
+      await db.update(download).set({ remoteLocation: null }).where(eq(download.id, id));
+    }
+
+    const label = options?.unlink ? "unlinked" : "deleted";
+    ActivityLogService.log({
+      userId: this.user.id,
+      type: "INFO",
+      action: "DOWNLOAD_DELETE",
+      title: `Download ${label} (${scope}): ${item.torrent?.name || id}`,
+      metadata: { downloadId: id, scope, unlink: options?.unlink },
+    });
+
+    return { success: true };
+  }
+
+  private destroyLocalTorrent(id: string, item: Download): void {
     const torrentName = item.torrent?.name;
     const torrent =
       torrentClient.getActiveTorrent(id) ??
@@ -310,25 +366,5 @@ export class DownloadService extends IdentifiableService<Download> {
         logger.error("DOWNLOAD", `Refusing to delete path outside downloads: ${torrentName}`, error);
       }
     }
-
-    if (item.remoteLocation) {
-      remoteStorageService
-        .remove(item.remoteLocation)
-        .then(() => logger.info("DOWNLOAD", `Deleted remote file: ${item.remoteLocation}`))
-        .catch((err) => logger.warn("DOWNLOAD", `Failed to delete remote file: ${err}`));
-    }
-
-    await db.delete(watchProgress).where(eq(watchProgress.downloadId, id));
-    await db.delete(download).where(eq(download.id, id));
-
-    ActivityLogService.log({
-      userId: this.user.id,
-      type: "INFO",
-      action: "DOWNLOAD_DELETE",
-      title: `Download deleted: ${torrentName || id}`,
-      metadata: { downloadId: id },
-    });
-
-    return { success: true };
   }
 }

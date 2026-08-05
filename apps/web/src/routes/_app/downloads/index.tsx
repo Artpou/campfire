@@ -19,6 +19,7 @@ import { downloadStatsQueries } from "@/features/downloads/hooks/download-stats.
 import { MediaCard } from "@/features/media/components/media-card";
 import { MediaTypeTabs } from "@/features/media/components/media-type-tabs";
 import { mediaQueries, refetchMediaInterval } from "@/features/media/hooks/media.queries";
+import { ManualSyncWizard } from "@/features/settings/components/manual-sync-wizard";
 import { useRemoteSync } from "@/features/settings/hooks/remote-sync.queries";
 import { settingsQueries } from "@/features/settings/hooks/settings.queries";
 import { storageConfigQueries } from "@/features/settings/hooks/storage-config.queries";
@@ -143,11 +144,23 @@ function DownloadsPage() {
   );
 }
 
+interface SyncError {
+  name: string;
+  path: string;
+  type: "movie" | "tv";
+}
+
 function SyncButton() {
   const { t } = useLingui();
+  const [unmatchedFiles, setUnmatchedFiles] = useState<SyncError[]>([]);
+  const [wizardOpen, setWizardOpen] = useState(false);
+
   const { data: storageEnabled } = useQuery(storageConfigQueries.enabled());
   const { data: tmdbKeyStatus } = useQuery(settingsQueries.tmdbKeyStatus());
-  const syncMutation = useRemoteSync();
+  const syncMutation = useRemoteSync((files) => {
+    setUnmatchedFiles(files);
+    setWizardOpen(true);
+  });
 
   if (!storageEnabled?.enabled) return null;
 
@@ -160,9 +173,16 @@ function SyncButton() {
   };
 
   return (
-    <Button variant="outline" size="lg" onClick={handleSync} disabled={syncMutation.isPending}>
-      {syncMutation.isPending ? <Loader2Icon className="size-4 animate-spin" /> : <RefreshCwIcon className="size-4" />}
-      <Trans>Synchronize</Trans>
-    </Button>
+    <>
+      <Button variant="outline" size="lg" onClick={handleSync} disabled={syncMutation.isPending}>
+        {syncMutation.isPending ? (
+          <Loader2Icon className="size-4 animate-spin" />
+        ) : (
+          <RefreshCwIcon className="size-4" />
+        )}
+        <Trans>Synchronize</Trans>
+      </Button>
+      <ManualSyncWizard files={unmatchedFiles} open={wizardOpen} onOpenChange={setWizardOpen} />
+    </>
   );
 }

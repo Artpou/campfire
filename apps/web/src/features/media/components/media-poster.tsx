@@ -199,15 +199,6 @@ export function MediaPoster({ data, download, type = "movie" }: MediaPosterProps
             <AlertDialogCancel>
               <Trans>Cancel</Trans>
             </AlertDialogCancel>
-            {role === "owner" && (
-              <AlertDialogAction
-                onClick={() => handleDelete(true)}
-                disabled={deleteTorrent.isPending}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/80"
-              >
-                <Trans>DB only</Trans>
-              </AlertDialogAction>
-            )}
             <AlertDialogAction
               onClick={() => handleDelete(false)}
               disabled={deleteTorrent.isPending}

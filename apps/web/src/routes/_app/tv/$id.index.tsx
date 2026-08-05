@@ -81,7 +81,9 @@ function TVPage() {
       detailsSection={detailsSection}
       downloadTabContent={torrentDownloads.length > 0 ? <MediaDownloadTab downloads={torrentDownloads} /> : undefined}
       downloadCount={torrentDownloads.length}
-      serverTabContent={remoteDownloads.length > 0 ? <MediaServerTab downloads={remoteDownloads} /> : undefined}
+      serverTabContent={
+        remoteDownloads.length > 0 ? <MediaServerTab downloads={remoteDownloads} mediaType="tv" /> : undefined
+      }
       serverCount={remoteDownloads.length}
       defaultTab={
         hasActiveDownload

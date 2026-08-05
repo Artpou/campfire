@@ -87,14 +87,34 @@ export const downloadRoutes = DownloadService.createRouter()
       return c.json(await c.var.service.reannounce(getDownloadId(c)));
     },
   )
+  .patch(
+    "/:id/media",
+    requireRole("member"),
+    zValidator("param", stringIdParamDto),
+    zValidator("json", z.object({ mediaId: z.number().int().positive() })),
+    requireDownloadOwnership,
+    async (c) => {
+      return c.json(await c.var.service.reassignMedia(getDownloadId(c), c.req.valid("json").mediaId));
+    },
+  )
   .delete(
     "/:id",
     requireRole("member"),
     zValidator("param", stringIdParamDto),
-    zValidator("query", z.object({ dbOnly: z.enum(["true"]).optional() })),
+    zValidator(
+      "query",
+      z.object({
+        dbOnly: z.enum(["true"]).optional(),
+        scope: z.enum(["torrent", "remote", "all"]).optional(),
+        unlink: z.enum(["true"]).optional(),
+      }),
+    ),
     requireDownloadOwnership,
     async (c) => {
-      const dbOnly = c.req.valid("query").dbOnly === "true";
-      return c.json(await c.var.service.delete(getDownloadId(c), { dbOnly }));
+      const query = c.req.valid("query");
+      const dbOnly = query.dbOnly === "true";
+      const scope = query.scope ?? "all";
+      const unlink = query.unlink === "true";
+      return c.json(await c.var.service.delete(getDownloadId(c), { dbOnly, scope, unlink }));
     },
   );

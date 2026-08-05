@@ -4,7 +4,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import type { Download } from "@seedarr/sdk";
 import { formatBytes } from "@seedarr/shared";
 import { useQuery } from "@tanstack/react-query";
-import { Trash2Icon } from "lucide-react";
+import { ArrowRightLeftIcon, Trash2Icon } from "lucide-react";
 
 import {
   AlertDialog,
@@ -21,12 +21,14 @@ import { Button } from "@/shared/ui/button";
 import { DownloadFilesList } from "@/features/downloads/components/download-files-list";
 import { DownloadMetadata } from "@/features/downloads/components/download-metadata";
 import { downloadQueries, useDownloadDelete } from "@/features/downloads/hooks/download.queries";
+import { MediaSearchModal } from "@/features/media/components/media-search-modal";
 
 interface MediaServerTabProps {
   downloads: Download[];
+  mediaType?: "movie" | "tv";
 }
 
-export function MediaServerTab({ downloads }: MediaServerTabProps) {
+export function MediaServerTab({ downloads, mediaType }: MediaServerTabProps) {
   if (downloads.length === 0) {
     return (
       <p className="py-8 text-center text-muted-foreground">
@@ -38,24 +40,32 @@ export function MediaServerTab({ downloads }: MediaServerTabProps) {
   return (
     <div className="space-y-6">
       {downloads.map((dl) => (
-        <ServerEntry key={dl.id} download={dl} />
+        <ServerEntry key={dl.id} download={dl} mediaType={mediaType} />
       ))}
     </div>
   );
 }
 
-function ServerEntry({ download }: { download: Download }) {
+function ServerEntry({ download, mediaType }: { download: Download; mediaType?: "movie" | "tv" }) {
   const { t } = useLingui();
-  const deleteTorrent = useDownloadDelete();
+  const deleteDownload = useDownloadDelete();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showChangeMedia, setShowChangeMedia] = useState(false);
 
   const { data: remoteFiles, isLoading } = useQuery({
     ...downloadQueries.remoteFiles(download.id),
     enabled: Boolean(download.remoteLocation),
   });
 
-  const handleDelete = (dbOnly: boolean) => {
-    deleteTorrent.mutate({ id: download.id, dbOnly }, { onSuccess: () => setShowDeleteConfirm(false) });
+  const handleDelete = () => {
+    deleteDownload.mutate({ id: download.id, scope: "remote" }, { onSuccess: () => setShowDeleteConfirm(false) });
+  };
+
+  const handleUnlink = () => {
+    deleteDownload.mutate(
+      { id: download.id, scope: "remote", unlink: true },
+      { onSuccess: () => setShowDeleteConfirm(false) },
+    );
   };
 
   const metadata = { origin: download.origin, quality: download.quality, language: download.language };
@@ -79,15 +89,20 @@ function ServerEntry({ download }: { download: Download }) {
           </div>
         </div>
 
-        <Button
-          size="sm"
-          variant="destructive"
-          onClick={() => setShowDeleteConfirm(true)}
-          disabled={deleteTorrent.isPending}
-          aria-label={t`Delete`}
-        >
-          <Trash2Icon className="size-3.5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button size="sm" variant="secondary" onClick={() => setShowChangeMedia(true)} aria-label={t`Change media`}>
+            <ArrowRightLeftIcon className="size-3.5" />
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => setShowDeleteConfirm(true)}
+            disabled={deleteDownload.isPending}
+            aria-label={t`Delete`}
+          >
+            <Trash2Icon className="size-3.5" />
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -104,10 +119,13 @@ function ServerEntry({ download }: { download: Download }) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              <Trans>Delete Download</Trans>
+              <Trans>Delete Remote Files</Trans>
             </AlertDialogTitle>
             <AlertDialogDescription>
-              <Trans>Are you sure you want to delete this download? This action cannot be undone.</Trans>
+              <Trans>
+                You can delete the remote files permanently or just unlink them from Seedarr (keeping files on the
+                server).
+              </Trans>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -115,8 +133,15 @@ function ServerEntry({ download }: { download: Download }) {
               <Trans>Cancel</Trans>
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => handleDelete(false)}
-              disabled={deleteTorrent.isPending}
+              onClick={handleUnlink}
+              disabled={deleteDownload.isPending}
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            >
+              <Trans>Unlink</Trans>
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleteDownload.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/80"
             >
               <Trans>Delete</Trans>
@@ -124,6 +149,14 @@ function ServerEntry({ download }: { download: Download }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <MediaSearchModal
+        open={showChangeMedia}
+        onOpenChange={setShowChangeMedia}
+        downloadId={download.id}
+        mediaId={download.mediaId ?? undefined}
+        mediaType={mediaType}
+      />
     </div>
   );
 }
