@@ -67,15 +67,14 @@ export function MediaDetailLayout({
 
   return (
     <div>
-      <div className="relative w-full pb-6 pt-6">
+      <div className="relative w-full pb-6 pt-6 dark">
         <div
           className="absolute inset-0 bg-cover bg-center -z-10 filter"
           style={{
             backgroundImage: `url(${getBackdropUrl(backdropPath) || getPosterUrl(posterPath)})`,
           }}
         >
-          <div className="absolute inset-0 bg-linear-to-r from-[oklch(0.22_0.004_240/0.95)] via-[oklch(0.22_0.004_240/0.75)] to-[oklch(0.22_0.004_240/0.75)]" />
-          <div className="absolute inset-0 bg-linear-to-b from-black/70 via-background/10 dark:to-background" />
+          <div className="absolute inset-0 bg-linear-to-b from-background via-background/75 to-background" />
         </div>
 
         <Container className="flex flex-col lg:flex-row gap-8 items-center lg:items-start relative">
