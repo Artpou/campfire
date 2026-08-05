@@ -1,3 +1,4 @@
+import type { TorrentInspectQuery, TorrentListQuery } from "@seedarr/contracts";
 import { formatError } from "@seedarr/shared";
 import type WebTorrent from "webtorrent";
 
@@ -6,8 +7,8 @@ import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
 import { torrentClient } from "@/modules/download/webtorrent-manager";
 import { IndexerManagerService } from "@/modules/indexer-manager/indexer-manager.service";
-import type { User } from "@/types";
-import type { Torrent, TorrentInspectResult, torrentInspectQuery, torrentListQuery } from "./torrent.dto";
+import type { User } from "@/modules/user/user.schema";
+import type { Torrent, TorrentInspectResult } from "./torrent.types";
 import { probeTorrentPeers } from "./torrent-peer.helper";
 import { resolveTorrentSource } from "./torrent-source.helper";
 
@@ -21,7 +22,7 @@ export class TorrentService extends AuthenticatedService {
     this.managerService = new IndexerManagerService(user);
   }
 
-  async list(query: torrentListQuery): Promise<Torrent[]> {
+  async list(query: TorrentListQuery): Promise<Torrent[]> {
     const manager = await this.managerService.get(query.indexerManagerId);
     if (!manager) throw new NotFoundError("Indexer manager not found");
     if (manager.disabled) throw new BadRequestError("Indexer manager is disabled");
@@ -30,7 +31,7 @@ export class TorrentService extends AuthenticatedService {
     return await adapter.getTorrents(query);
   }
 
-  async inspectTorrent(query: torrentInspectQuery): Promise<TorrentInspectResult> {
+  async inspectTorrent(query: TorrentInspectQuery): Promise<TorrentInspectResult> {
     const source = await resolveTorrentSource(query.magnet);
     const client = torrentClient.getClient();
 

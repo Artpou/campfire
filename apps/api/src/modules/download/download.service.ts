@@ -1,3 +1,4 @@
+import type { DownloadTorrentInput } from "@seedarr/contracts";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import type WebTorrent from "webtorrent";
 
@@ -14,7 +15,7 @@ import { media, watchProgress } from "@/modules/media/media.schema";
 import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
 import { resolveTorrentSource } from "@/modules/torrent/torrent-source.helper";
 import fs from "node:fs/promises";
-import type { Download, DownloadStats, DownloadTorrentInput, TorrentLiveData } from "./download.dto";
+import type { Download, DownloadStats, TorrentLiveData } from "./download.schema";
 import { isTransferInProgress, markTransferStarting, runRemoteTransfer } from "./download-storage.helper";
 import { extractTorrentLiveData, waitForTorrentMetadata } from "./webtorrent.helper";
 import { torrentClient, UNMARK_DESTROYING_DELAY_MS } from "./webtorrent-manager";

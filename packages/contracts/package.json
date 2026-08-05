@@ -1,0 +1,27 @@
+{
+  "name": "@seedarr/contracts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "pnpm build:types",
+    "build:types": "tsc --build",
+    "tsc": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ctrl/video-filename-parser": "^5.11.0",
+    "@seedarr/shared": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
+  }
+}

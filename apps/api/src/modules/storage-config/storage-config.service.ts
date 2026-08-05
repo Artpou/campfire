@@ -1,11 +1,26 @@
+import type { TestStorageConfigInput, UpsertStorageConfigInput } from "@seedarr/contracts";
+
 import { NotFoundError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
 
 import { db } from "@/db/db";
 import { decrypt, encrypt } from "./crypto.helper";
 import { remoteStorageService } from "./remote-storage.service";
-import type { StorageConfigResponse, TestStorageConfigInput, UpsertStorageConfigInput } from "./storage-config.dto";
 import { storageConfig } from "./storage-config.schema";
+
+export interface StorageConfigResponse {
+  id: string;
+  enabled: boolean;
+  protocol: string;
+  host: string;
+  port: number;
+  secure: boolean;
+  moviePath: string | null;
+  tvPath: string | null;
+  username: string | null;
+  hasPassword: boolean;
+  deleteLocalAfterTransfer: boolean;
+}
 
 const SINGLETON_ID = "default";
 

@@ -1,9 +1,9 @@
 import { zValidator } from "@hono/zod-validator";
+import { torrentInspectDto, torrentListDto } from "@seedarr/contracts";
 
 import { torrentRateLimiter } from "@/shared/middlewares/rate-limiter.middleware";
 
 import { requireRole } from "@/modules/auth/role.guard";
-import { torrentInspectDto, torrentListDto } from "@/modules/torrent/torrent.dto";
 import { TorrentService } from "./torrent.service";
 
 export const torrentRoutes = TorrentService.createRouter()

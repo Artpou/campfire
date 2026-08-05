@@ -14,6 +14,7 @@
   "references": [
     { "path": "apps/api" },
     { "path": "apps/web" },
+    { "path": "packages/contracts" },
     { "path": "packages/sdk" },
     { "path": "packages/shared" }
   ]

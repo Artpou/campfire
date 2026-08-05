@@ -1,8 +1,4 @@
 import { zValidator } from "@hono/zod-validator";
-
-import { NotFoundError } from "@/shared/errors/error";
-import { tmdbRateLimiter } from "@/shared/middlewares/rate-limiter.middleware";
-
 import {
   tmdbDiscoverDto,
   tmdbIdDto,
@@ -10,7 +6,11 @@ import {
   tmdbListDto,
   tmdbSearchDto,
   tmdbTvSeasonDto,
-} from "@/modules/tmdb/tmdb.dto";
+} from "@seedarr/contracts";
+
+import { NotFoundError } from "@/shared/errors/error";
+import { tmdbRateLimiter } from "@/shared/middlewares/rate-limiter.middleware";
+
 import { TVService } from "./tv.service";
 
 export const tvRoutes = TVService.createTMDBRouter("tv")

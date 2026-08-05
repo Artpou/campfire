@@ -2,7 +2,7 @@ import ms from "ms";
 
 import { logger } from "@/shared/helpers/logger.helper";
 
-import type { FetchOptions } from "./tmdb.dto";
+import type { FetchOptions } from "./tmdb.types";
 
 const CACHE_TTL = ms("1h");
 const cache = new Map<string, { expiresAt: number; value: unknown }>();

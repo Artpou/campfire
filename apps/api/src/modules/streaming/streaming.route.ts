@@ -1,10 +1,10 @@
 import { zValidator } from "@hono/zod-validator";
+import { downloadFilePathParamDto, stringIdParamDto } from "@seedarr/contracts";
 import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { stream } from "hono/streaming";
 
 import { NotFoundError } from "@/shared/errors/error";
-import { downloadFilePathParamDto, stringIdParamDto } from "@/shared/helpers/param.dto";
 
 import { db } from "@/db/db";
 import { authGuard } from "@/modules/auth/auth.guard";

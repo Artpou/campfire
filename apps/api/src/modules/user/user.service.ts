@@ -1,3 +1,4 @@
+import type { CreateUserInput, UpdateUserInput } from "@seedarr/contracts";
 import { count, eq } from "drizzle-orm";
 
 import { ConflictError, ForbiddenError, NotFoundError } from "@/shared/errors/error";
@@ -5,8 +6,7 @@ import { IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { hashPassword } from "@/auth/password.util";
 import { db } from "@/db/db";
-import { user } from "@/modules/user/user.schema";
-import type { CreateUserInput, NewUser, UpdateUserInput, User } from "./user.dto";
+import { type NewUser, type User, user } from "@/modules/user/user.schema";
 
 const userColumns = {
   id: true,

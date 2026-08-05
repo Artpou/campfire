@@ -1,5 +1,5 @@
-import type { MediaEnriched } from "@/modules/media/media.dto";
-import type { TMDBPersonDetails } from "@/modules/tmdb/tmdb.dto";
+import type { MediaEnriched } from "@/modules/media/media.types";
+import type { TMDBPersonDetails } from "@/modules/tmdb/tmdb.types";
 
 export type PersonFilmographyCrew = MediaEnriched & { department: string; job: string };
 

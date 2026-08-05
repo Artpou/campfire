@@ -1,6 +1,6 @@
 import { VIDEO_EXTENSIONS } from "@seedarr/shared";
 
-import type { Download } from "@/modules/download/download.dto";
+import type { Download } from "@/modules/download/download.schema";
 import type { RemoteFileEntry } from "@/modules/storage-config/adapters/storage.adapter";
 import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
 

@@ -4,7 +4,7 @@ import type WebTorrent from "webtorrent";
 
 import { BadRequestError } from "@/shared/errors/error";
 
-import type { TorrentLiveData } from "./download.dto";
+import type { TorrentLiveData } from "./download.schema";
 
 export const extractTorrentLiveData = (torrent: WebTorrent.Torrent): TorrentLiveData => ({
   infoHash: torrent.infoHash,

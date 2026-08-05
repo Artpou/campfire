@@ -1,4 +1,5 @@
-import type { Download, TorrentInspectFile, TorrentStatus } from "@seedarr/sdk";
+import type { TorrentStatus } from "@seedarr/contracts";
+import type { Download, TorrentInspectFile } from "@seedarr/sdk";
 
 export function getDownloadStatus(item: {
   error?: string | null;

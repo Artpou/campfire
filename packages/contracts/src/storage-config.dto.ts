@@ -1,11 +1,6 @@
-import { createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { storageProtocolEnum } from "./adapters/storage.adapter";
-import { storageConfig } from "./storage-config.schema";
-
-export const storageConfigSelectSchema = createSelectSchema(storageConfig);
-export type StorageConfig = z.infer<typeof storageConfigSelectSchema>;
+import { storageProtocolEnum } from "./enums";
 
 export const upsertStorageConfigDto = z.object({
   enabled: z.boolean(),
@@ -30,17 +25,3 @@ export const testStorageConfigDto = z.object({
   password: z.string().max(256).optional(),
 });
 export type TestStorageConfigInput = z.infer<typeof testStorageConfigDto>;
-
-export interface StorageConfigResponse {
-  id: string;
-  enabled: boolean;
-  protocol: string;
-  host: string;
-  port: number;
-  secure: boolean;
-  moviePath: string | null;
-  tvPath: string | null;
-  username: string | null;
-  hasPassword: boolean;
-  deleteLocalAfterTransfer: boolean;
-}

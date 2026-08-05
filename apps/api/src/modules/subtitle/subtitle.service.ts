@@ -1,3 +1,4 @@
+import type { SubtitlesSearchQuery } from "@seedarr/contracts";
 import { sanitizeFileName } from "@seedarr/shared";
 
 import { BadRequestError, NotFoundError, ServiceUnavailableError } from "@/shared/errors/error";
@@ -6,7 +7,7 @@ import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import type { SubdlSearchResponse, SubtitlesSearchQuery } from "./subtitle.dto";
+import type { SubdlSearchResponse } from "./subtitle.types";
 
 const SUBDL_API_BASE = "https://api.subdl.com/api/v1";
 const SUBDL_DL_BASE = "https://dl.subdl.com";

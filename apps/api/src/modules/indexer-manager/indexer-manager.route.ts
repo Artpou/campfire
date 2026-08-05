@@ -1,9 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
-
-import { stringIdParamDto } from "@/shared/helpers/param.dto";
+import { createIndexerManagerDto, stringIdParamDto, updateIndexerManagerDto } from "@seedarr/contracts";
 
 import { requireRole } from "@/modules/auth/role.guard";
-import { createIndexerManagerDto, updateIndexerManagerDto } from "./indexer-manager.dto";
 import { IndexerManagerService } from "./indexer-manager.service";
 
 export const indexerManagerRoutes = IndexerManagerService.createRouter()

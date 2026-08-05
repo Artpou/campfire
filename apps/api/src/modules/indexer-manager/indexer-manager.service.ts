@@ -1,3 +1,5 @@
+import type { CreateIndexerManagerInput, UpdateIndexerManagerInput } from "@seedarr/contracts";
+import { STREMIO_PRESETS } from "@seedarr/shared";
 import { count, eq, inArray } from "drizzle-orm";
 
 import { BadRequestError, NotFoundError } from "@/shared/errors/error";
@@ -8,19 +10,16 @@ import { IdentifiableService } from "@/shared/services/authenticated.service";
 import { db } from "@/db/db";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
-import { indexerManager, type StremioManifest } from "@/modules/indexer-manager/indexer-manager.schema";
+import {
+  type IndexerManager,
+  indexerManager,
+  type StremioManifest,
+} from "@/modules/indexer-manager/indexer-manager.schema";
 import type { IndexerAdapter } from "@/modules/torrent/adapters/indexer.adapter";
 import { JackettAdapter } from "@/modules/torrent/adapters/jackett.adapter";
 import { ProwlarrAdapter } from "@/modules/torrent/adapters/prowlarr.adapter";
 import { StremioAdapter } from "@/modules/torrent/adapters/stremio.adapter";
-import {
-  type CreateIndexerManagerInput,
-  type Indexer,
-  type IndexerManager,
-  type IndexerManagerWithIndexers,
-  STREMIO_PRESETS,
-  type UpdateIndexerManagerInput,
-} from "./indexer-manager.dto";
+import type { Indexer, IndexerManagerWithIndexers } from "./indexer-manager.types";
 
 type IndexerManagerDto = IndexerManager | IndexerManagerWithIndexers;
 

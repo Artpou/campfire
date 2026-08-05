@@ -1,5 +1,5 @@
-import type { MediaEnriched } from "@/modules/media/media.dto";
-import type { TMDBTvDetails } from "@/modules/tmdb/tmdb.dto";
+import type { MediaEnriched } from "@/modules/media/media.types";
+import type { TMDBTvDetails } from "@/modules/tmdb/tmdb.types";
 
 export type TV = {
   id: string;

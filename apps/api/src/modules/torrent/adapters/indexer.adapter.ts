@@ -1,8 +1,11 @@
+import type { TorrentListQuery } from "@seedarr/contracts";
+
 import { BadRequestError, ServiceUnavailableError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
 
-import type { Torrent, torrentListQuery } from "@/modules/torrent/torrent.dto";
-import type { Indexer, IndexerManager, IndexerType } from "@/types";
+import type { IndexerManager, IndexerType } from "@/modules/indexer-manager/indexer-manager.schema";
+import type { Indexer } from "@/modules/indexer-manager/indexer-manager.types";
+import type { Torrent } from "@/modules/torrent/torrent.types";
 
 export abstract class IndexerAdapter {
   readonly indexerManager: IndexerManager;
@@ -29,5 +32,5 @@ export abstract class IndexerAdapter {
     return await response.json();
   }
   abstract getIndexers(): Promise<Indexer[]>;
-  abstract getTorrents(query: torrentListQuery): Promise<Torrent[]>;
+  abstract getTorrents(query: TorrentListQuery): Promise<Torrent[]>;
 }

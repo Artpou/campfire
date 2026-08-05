@@ -1,12 +1,13 @@
+import type { PaginationQuery } from "@seedarr/contracts";
 import { Hono } from "hono";
 
 import { NotFoundError } from "@/shared/errors/error";
-import type { Paginate, PaginationQuery } from "@/shared/helpers/pagination.dto";
 import { toPaginate } from "@/shared/helpers/pagination.helper";
+import type { Paginate } from "@/shared/helpers/pagination.types";
 
 import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
-import type { User } from "../../modules/user/user.dto";
+import type { User } from "@/modules/user/user.schema";
 
 export class AuthenticatedService {
   protected readonly user: User;

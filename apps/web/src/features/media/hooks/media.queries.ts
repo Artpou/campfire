@@ -1,5 +1,6 @@
 import { t } from "@lingui/core/macro";
-import type { ListMediaQuery, Media, Paginate } from "@seedarr/sdk";
+import type { ListMediaQuery, Paginate } from "@seedarr/contracts";
+import type { Media } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { formatError } from "@seedarr/shared";
 import {

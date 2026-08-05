@@ -1,5 +1,6 @@
-export const storageProtocolEnum = ["ftp", "webdav"] as const;
-export type StorageProtocol = (typeof storageProtocolEnum)[number];
+import type { StorageProtocol } from "@seedarr/contracts";
+
+export type { StorageProtocol };
 
 export interface StorageConnectionOptions {
   protocol: StorageProtocol;

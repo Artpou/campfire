@@ -1,8 +1,13 @@
+import type { UpsertSettingsInput } from "@seedarr/contracts";
+
 import { logger } from "@/shared/helpers/logger.helper";
 
 import { db } from "@/db/db";
-import type { SettingsResponse, UpsertSettingsInput } from "./settings.dto";
 import { settings } from "./settings.schema";
+
+export interface SettingsResponse {
+  tmdbApiKey: string | null;
+}
 
 const SINGLETON_ID = "default";
 

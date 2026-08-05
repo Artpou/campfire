@@ -2,7 +2,8 @@ import { useEffect } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { CreateUserInput, UpdateUserInput, User } from "@seedarr/sdk";
+import type { CreateUserInput, UpdateUserInput } from "@seedarr/contracts";
+import type { User } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { useMutation } from "@tanstack/react-query";
 import { CrownIcon, GlassesIcon, ShieldCheckIcon, UserCheckIcon } from "lucide-react";

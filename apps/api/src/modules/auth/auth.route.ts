@@ -1,4 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
+import { loginDto, registerDto } from "@seedarr/contracts";
 import { Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 
@@ -11,7 +12,7 @@ import { createSession, deleteOtherSessions, deleteSession, resolveAuthenticated
 import { IndexerManagerService } from "@/modules/indexer-manager/indexer-manager.service";
 import { ActivityLogService } from "../activity-log/activity-log.service";
 import { UserService } from "../user/user.service";
-import { type AuthUser, loginDto, registerDto } from "./auth.dto";
+import type { AuthUser } from "./auth.types";
 
 export const authRoutes = new Hono()
   .get("/has-owner", async (c) => {

@@ -1,4 +1,4 @@
-import type { UserRole } from "@seedarr/sdk";
+import type { UserRole } from "@seedarr/contracts";
 
 const ROLE_LEVELS: Record<UserRole, number> = {
   owner: 4,

@@ -22,6 +22,10 @@
       "cache": false,
       "persistent": true
     },
+    "//#tsc:watch": {
+      "cache": false,
+      "persistent": true
+    },
     "db:studio": {
       "cache": false,
       "persistent": true

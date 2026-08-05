@@ -1,9 +1,11 @@
 import { filenameParse } from "@ctrl/video-filename-parser";
+import type { TorrentListQuery } from "@seedarr/contracts";
 
 import { BadRequestError } from "@/shared/errors/error";
 
-import type { Indexer, IndexerManager, IndexerType } from "@/types";
-import type { Torrent, torrentListQuery } from "../torrent.dto";
+import type { IndexerManager, IndexerType } from "@/modules/indexer-manager/indexer-manager.schema";
+import type { Indexer } from "@/modules/indexer-manager/indexer-manager.types";
+import type { Torrent } from "../torrent.types";
 import { buildIndexerSearchPlan, searchWithTitleFallback } from "../torrent-search.helper";
 import { IndexerAdapter } from "./indexer.adapter";
 
@@ -55,7 +57,7 @@ export class ProwlarrAdapter extends IndexerAdapter {
       }));
   }
 
-  async getTorrents(query: torrentListQuery): Promise<Torrent[]> {
+  async getTorrents(query: TorrentListQuery): Promise<Torrent[]> {
     const plan = buildIndexerSearchPlan(query.media, (imdbId) => `{ImdbId:${imdbId}}`);
 
     const allResults = await searchWithTitleFallback(plan, async (searchQuery) => {

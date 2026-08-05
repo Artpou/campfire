@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
-import type { IndexerManager, IndexerType, Media, Torrent } from "@seedarr/sdk";
+import type { IndexerType } from "@seedarr/contracts";
+import type { IndexerManager, Media, Torrent } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { queryOptions, useQueries } from "@tanstack/react-query";
 

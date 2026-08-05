@@ -2,7 +2,8 @@ import { useState } from "react";
 
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import { api, type IndexerManager, type StremioManifest, type UpdateIndexerManagerInput, unwrap } from "@seedarr/sdk";
+import type { UpdateIndexerManagerInput } from "@seedarr/contracts";
+import { api, type IndexerManager, type StremioManifest, unwrap } from "@seedarr/sdk";
 import { formatError } from "@seedarr/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { SettingsIcon, TrashIcon } from "lucide-react";

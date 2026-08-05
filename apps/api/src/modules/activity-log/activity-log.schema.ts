@@ -1,28 +1,12 @@
+import { activityLogActionEnum, activityLogTypeEnum } from "@seedarr/contracts";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { createSelectSchema } from "drizzle-zod";
+import type { z } from "zod";
 
 import { user } from "@/modules/user/user.schema";
 
-export const activityLogTypeEnum = ["INFO", "SUCCESS", "WARNING", "ERROR"] as const;
-export type ActivityLogType = (typeof activityLogTypeEnum)[number];
-
-export const activityLogActionEnum = [
-  "USER_LOGIN",
-  "USER_CREATE",
-  "USER_LOGOUT",
-  "MEDIA_SEARCH",
-  "STREAM_START",
-  "DOWNLOAD_START",
-  "DOWNLOAD_PAUSE",
-  "DOWNLOAD_RESUME",
-  "DOWNLOAD_DELETE",
-  "DOWNLOAD_COMPLETE",
-  "DOWNLOAD_TRANSFERRED",
-  "INDEXER_ADD",
-  "INDEXER_DELETE",
-  "REMOTE_SYNC",
-  "SYSTEM_ERROR",
-] as const;
-export type ActivityLogAction = (typeof activityLogActionEnum)[number];
+export type { ActivityLogAction, ActivityLogType } from "@seedarr/contracts";
+export { activityLogActionEnum, activityLogTypeEnum };
 
 export const activityLog = sqliteTable(
   "activityLog",
@@ -41,3 +25,8 @@ export const activityLog = sqliteTable(
   },
   (table) => [index("activityLog_userId_idx").on(table.userId), index("activityLog_createdAt_idx").on(table.createdAt)],
 );
+
+// --- Drizzle-Zod derived schema ---
+
+export const activityLogSelectSchema = createSelectSchema(activityLog);
+export type ActivityLog = z.infer<typeof activityLogSelectSchema>;

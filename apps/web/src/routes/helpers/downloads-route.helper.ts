@@ -1,4 +1,4 @@
-import type { ListMediaQuery } from "@seedarr/sdk";
+import type { ListMediaQuery } from "@seedarr/contracts";
 
 import { getMediaType } from "@/features/media/helpers/media.helper";
 

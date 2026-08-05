@@ -1,8 +1,11 @@
+import { userRoleEnum } from "@seedarr/contracts";
 import { sql } from "drizzle-orm";
 import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import type { z } from "zod";
 
-export const userRoleEnum = ["owner", "admin", "member", "viewer"] as const;
-export type UserRole = (typeof userRoleEnum)[number];
+export type { UserRole } from "@seedarr/contracts";
+export { userRoleEnum };
 
 export const user = sqliteTable(
   "user",
@@ -19,3 +22,12 @@ export const user = sqliteTable(
   },
   (table) => [uniqueIndex("user_single_owner").on(table.role).where(sql`${table.role} = 'owner'`)],
 );
+
+// --- Drizzle-Zod derived schemas ---
+
+export const userSelectSchema = createSelectSchema(user);
+export const userInsertSchema = createInsertSchema(user);
+
+type UserBase = Omit<z.infer<typeof userSelectSchema>, "password">;
+export type User = UserBase;
+export type NewUser = z.input<typeof userInsertSchema>;

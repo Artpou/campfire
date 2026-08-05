@@ -9,8 +9,14 @@
       "ignore": ["src/shared/ui/*.tsx", "lingui.config.ts"]
     },
     "apps/api": {
-      "ignoreBinaries": ["ffmpeg", "ffprobe"]
+      "ignoreBinaries": ["ffmpeg", "ffprobe"],
+      "ignore": [
+        "src/modules/tmdb/tmdb.types.ts",
+        "src/modules/subtitle/subtitle.types.ts",
+        "src/modules/torrent/torrent.types.ts"
+      ]
     },
+    "packages/contracts": {},
     "packages/sdk": {},
     "packages/shared": {}
   }

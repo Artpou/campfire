@@ -1,3 +1,4 @@
+import type { TmdbDiscoverQuery, TmdbKeywordsQuery, TmdbSearchQuery } from "@seedarr/contracts";
 import { Hono } from "hono";
 
 import { ServiceUnavailableError } from "@/shared/errors/error";
@@ -5,11 +6,11 @@ import { logger } from "@/shared/helpers/logger.helper";
 import { type Identifiable, IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
-import type { MediaEnriched } from "@/modules/media/media.dto";
 import { MediaService } from "@/modules/media/media.service";
+import type { MediaEnriched } from "@/modules/media/media.types";
 import { getTmdbApiKey } from "@/modules/settings/tmdb-key.helper";
 import { tmdbMovieToMedia, tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
-import type { User } from "@/types";
+import type { User } from "@/modules/user/user.schema";
 import { getTmdbCache, isCachedPayload, setTmdbCache } from "./tmdb.cache";
 import type {
   FetchOptions,
@@ -21,10 +22,7 @@ import type {
   TMDBProvidersResponse,
   TMDBVideo,
   TMDBVideosResponse,
-  tmdbDiscoverQuery,
-  tmdbKeywordsQuery,
-  tmdbSearchQuery,
-} from "./tmdb.dto";
+} from "./tmdb.types";
 
 const TMDB_API_URL = "https://api.themoviedb.org/3";
 
@@ -62,7 +60,7 @@ function buildUrl(url: string, language: string | undefined, apiKey: string, opt
   return fullUrl.toString();
 }
 
-function normalizeDiscoverOptions(opts: tmdbDiscoverQuery): FetchOptions {
+function normalizeDiscoverOptions(opts: TmdbDiscoverQuery): FetchOptions {
   // biome-ignore lint/suspicious/noExplicitAny: any is used to allow any type of key
   const normalized: Record<string, any> = { ...opts };
   if (opts.sort_by === "vote_average.desc") normalized["vote_count.gte"] = "300";
@@ -159,7 +157,7 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
     });
   }
 
-  async discover(query: tmdbDiscoverQuery): Promise<{ results: MediaEnriched[]; page: number; totalPages: number }> {
+  async discover(query: TmdbDiscoverQuery): Promise<{ results: MediaEnriched[]; page: number; totalPages: number }> {
     const [data, genresData] = await Promise.all([
       this.request<TMDBPaginatedResponse>(`/discover/${this.type}`, normalizeDiscoverOptions(query)),
       this.genres(),
@@ -182,7 +180,7 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
     };
   }
 
-  async search(query: tmdbSearchQuery): Promise<MediaEnriched[]> {
+  async search(query: TmdbSearchQuery): Promise<MediaEnriched[]> {
     const searchResults = await this.request<TMDBPaginatedResponse<TMDBItem & { media_type: string }>>(
       "/search/multi",
       { query: query.q },
@@ -192,7 +190,7 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
     return items.map((item) => mediaMap.find((m) => m.id === item.id) ?? item);
   }
 
-  async searchKeywords(query: tmdbKeywordsQuery): Promise<TMDBKeywordResult[]> {
+  async searchKeywords(query: TmdbKeywordsQuery): Promise<TMDBKeywordResult[]> {
     const data = await this.request<{ results: TMDBKeywordResult[] }>("/search/keyword", { query: query.q });
     return data.results.slice(0, 8);
   }

@@ -1,6 +1,10 @@
+import { storageProtocolEnum } from "@seedarr/contracts";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { createSelectSchema } from "drizzle-zod";
+import type { z } from "zod";
 
-import { storageProtocolEnum } from "@/modules/storage-config/adapters/storage.adapter";
+export type { StorageProtocol } from "@seedarr/contracts";
+export { storageProtocolEnum };
 
 export const storageConfig = sqliteTable("storageConfig", {
   id: text("id")
@@ -20,3 +24,8 @@ export const storageConfig = sqliteTable("storageConfig", {
     .notNull()
     .$defaultFn(() => new Date()),
 });
+
+// --- Drizzle-Zod derived schema ---
+
+export const storageConfigSelectSchema = createSelectSchema(storageConfig);
+export type StorageConfig = z.infer<typeof storageConfigSelectSchema>;

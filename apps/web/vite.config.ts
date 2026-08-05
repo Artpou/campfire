@@ -16,7 +16,6 @@ const config = defineConfig({
       autoCodeSplitting: true,
       routeFileIgnorePattern: "\\.(test|spec|helper)\\.[jt]sx?$|/helpers/",
     }),
-    // TS7 has no programmatic ts.sys API — vite-plugin-checker is unsupported; use `pnpm tsc`
     viteTsConfigPaths({
       projects: ["./tsconfig.json"],
     }),

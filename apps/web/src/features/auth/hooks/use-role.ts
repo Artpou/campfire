@@ -1,4 +1,4 @@
-import type { UserRole } from "@seedarr/sdk";
+import type { UserRole } from "@seedarr/contracts";
 
 import { useAuth } from "../auth-store";
 import { hasMinRole } from "../helpers/role.helper";

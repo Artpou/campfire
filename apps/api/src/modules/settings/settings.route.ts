@@ -1,9 +1,9 @@
 import { zValidator } from "@hono/zod-validator";
+import { upsertSettingsDto } from "@seedarr/contracts";
 import { Hono } from "hono";
 
 import { authGuard } from "@/modules/auth/auth.guard";
 import { requireRole } from "@/modules/auth/role.guard";
-import { upsertSettingsDto } from "./settings.dto";
 import { SettingsService } from "./settings.service";
 import { invalidateTmdbKeyCache } from "./tmdb-key.helper";
 

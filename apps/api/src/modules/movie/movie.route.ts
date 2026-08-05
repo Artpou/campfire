@@ -1,8 +1,8 @@
 import { zValidator } from "@hono/zod-validator";
+import { tmdbDiscoverDto, tmdbIdDto, tmdbKeywordsDto, tmdbListDto, tmdbSearchDto } from "@seedarr/contracts";
 
 import { tmdbRateLimiter } from "@/shared/middlewares/rate-limiter.middleware";
 
-import { tmdbDiscoverDto, tmdbIdDto, tmdbKeywordsDto, tmdbListDto, tmdbSearchDto } from "@/types";
 import { MovieService } from "./movie.service";
 
 export const movieRoutes = MovieService.createTMDBRouter("movie")

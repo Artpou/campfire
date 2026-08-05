@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { CreateIndexerManagerInput } from "@seedarr/sdk";
+import type { CreateIndexerManagerInput } from "@seedarr/contracts";
 import { api, unwrap } from "@seedarr/sdk";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";

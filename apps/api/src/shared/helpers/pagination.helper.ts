@@ -1,4 +1,6 @@
-import type { Paginate, PaginationQuery } from "./pagination.dto";
+import type { PaginationQuery } from "@seedarr/contracts";
+
+import type { Paginate } from "./pagination.types";
 
 export const paginate = (query?: Partial<PaginationQuery>) => {
   if (!query?.page || !query?.limit)

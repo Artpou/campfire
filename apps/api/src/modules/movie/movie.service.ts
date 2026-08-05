@@ -1,11 +1,11 @@
 import { BadRequestError } from "@/shared/errors/error";
 
-import type { MediaEnriched } from "@/modules/media/media.dto";
-import type { TMDBItem, TMDBMovieDetails } from "@/modules/tmdb/tmdb.dto";
+import type { MediaEnriched } from "@/modules/media/media.types";
 import { tmdbMovieToMedia } from "@/modules/tmdb/tmdb.helper";
 import { TMDBService } from "@/modules/tmdb/tmdb.service";
-import type { User } from "@/types";
-import type { Movie } from "./movie.dto";
+import type { TMDBItem, TMDBMovieDetails } from "@/modules/tmdb/tmdb.types";
+import type { User } from "@/modules/user/user.schema";
+import type { Movie } from "./movie.types";
 
 export class MovieService extends TMDBService<Movie> {
   constructor(user: User, locale: string) {

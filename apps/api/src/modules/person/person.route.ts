@@ -1,10 +1,10 @@
 import { zValidator } from "@hono/zod-validator";
+import { tmdbIdDto, tmdbListDto } from "@seedarr/contracts";
 import { Hono } from "hono";
 
 import { tmdbRateLimiter } from "@/shared/middlewares/rate-limiter.middleware";
 
 import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
-import { tmdbIdDto, tmdbListDto } from "@/types";
 import { PersonService } from "./person.service";
 
 export const personRoutes = new Hono<{ Variables: HonoAuthenticatedVariables & { service: PersonService } }>()

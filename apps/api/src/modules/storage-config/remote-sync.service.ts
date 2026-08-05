@@ -1,4 +1,5 @@
 import { filenameParse } from "@ctrl/video-filename-parser";
+import type { ManualSyncInput } from "@seedarr/contracts";
 import { and, eq } from "drizzle-orm";
 
 import { BadRequestError } from "@/shared/errors/error";
@@ -9,12 +10,23 @@ import { db } from "@/db/db";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { download } from "@/modules/download/download.schema";
 import { media } from "@/modules/media/media.schema";
-import type { ManualSyncInput, RemoteSyncResponse } from "@/modules/settings/settings.dto";
 import { getSettingsTmdbApiKey } from "@/modules/settings/tmdb-key.helper";
-import type { TMDBItem, TMDBPaginatedResponse } from "@/modules/tmdb/tmdb.dto";
 import { tmdbMovieToMedia, tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
 import { tmdbRequest } from "@/modules/tmdb/tmdb.service";
+import type { TMDBItem, TMDBPaginatedResponse } from "@/modules/tmdb/tmdb.types";
 import { remoteStorageService } from "./remote-storage.service";
+
+interface RemoteSyncError {
+  name: string;
+  path: string;
+  type: "movie" | "tv";
+}
+
+export interface RemoteSyncResponse {
+  synced: number;
+  skipped: number;
+  errors: RemoteSyncError[];
+}
 
 const BATCH_SIZE = 5;
 const BATCH_DELAY_MS = 250;

@@ -30,3 +30,10 @@ export type TMDBMovieDetails = Movie["movie"];
 export type TMDBPersonDetails = Person["person"];
 export type TMDBTvDetails = TV["tv"];
 export type PaginatedMedia = InferResponseType<ApiClient["media"]["$get"], 200>;
+
+export type TorrentInspectFile = TorrentInspectResult["files"][number];
+export type SubdlSubtitle = SubdlSearchResponse["subtitles"][number];
+export type StremioManifest = NonNullable<IndexerManager["manifest"]>;
+export type TMDBWatchProvider = NonNullable<
+  NonNullable<NonNullable<TMDBMovieDetails["watch/providers"]>["results"]>[string]["flatrate"]
+>[number];

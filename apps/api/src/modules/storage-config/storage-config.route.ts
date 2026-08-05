@@ -1,12 +1,11 @@
 import { zValidator } from "@hono/zod-validator";
+import { manualSyncDto, testStorageConfigDto, upsertStorageConfigDto } from "@seedarr/contracts";
 import { Hono } from "hono";
 import { timeout } from "hono/timeout";
 
 import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
 import { requireRole } from "@/modules/auth/role.guard";
-import { manualSyncDto } from "@/modules/settings/settings.dto";
 import { runManualSync, runRemoteSync } from "./remote-sync.service";
-import { testStorageConfigDto, upsertStorageConfigDto } from "./storage-config.dto";
 import { StorageConfigService } from "./storage-config.service";
 
 const service = new StorageConfigService();

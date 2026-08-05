@@ -1,7 +1,9 @@
 import { filenameParse } from "@ctrl/video-filename-parser";
+import type { TorrentListQuery } from "@seedarr/contracts";
 
-import type { Indexer, IndexerManager } from "@/types";
-import type { Torrent, torrentListQuery } from "../torrent.dto";
+import type { IndexerManager } from "@/modules/indexer-manager/indexer-manager.schema";
+import type { Indexer } from "@/modules/indexer-manager/indexer-manager.types";
+import type { Torrent } from "../torrent.types";
 import { IndexerAdapter } from "./indexer.adapter";
 
 interface StremioTorrent {
@@ -52,7 +54,7 @@ export class StremioAdapter extends IndexerAdapter {
     return Promise.resolve([]);
   }
 
-  async getTorrents(query: torrentListQuery): Promise<Torrent[]> {
+  async getTorrents(query: TorrentListQuery): Promise<Torrent[]> {
     const media = query.media;
 
     let videoId = media.imdbId;

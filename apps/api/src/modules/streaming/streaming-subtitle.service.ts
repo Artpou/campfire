@@ -3,7 +3,7 @@ import { isSubtitleFile } from "@seedarr/shared";
 import { BadRequestError, NotFoundError } from "@/shared/errors/error";
 import { getDownloadsRoot, resolveWithinDownloads } from "@/shared/helpers/path.helper";
 
-import type { Download } from "@/modules/download/download.dto";
+import type { Download } from "@/modules/download/download.schema";
 import fs from "node:fs/promises";
 import * as path from "node:path";
 

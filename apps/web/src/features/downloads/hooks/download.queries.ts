@@ -1,5 +1,6 @@
 import { t } from "@lingui/core/macro";
-import type { Download, DownloadTorrentInput, TorrentInspectFile } from "@seedarr/sdk";
+import type { DownloadTorrentInput } from "@seedarr/contracts";
+import type { Download, TorrentInspectFile } from "@seedarr/sdk";
 import { ApiError, api, getBaseUrl, unwrap } from "@seedarr/sdk";
 import { formatError } from "@seedarr/shared";
 import { type QueryState, queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";

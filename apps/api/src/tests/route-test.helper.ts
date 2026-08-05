@@ -1,4 +1,4 @@
-import type { User } from "@/modules/user/user.dto";
+import type { User } from "@/modules/user/user.schema";
 import { user } from "@/modules/user/user.schema";
 import type { TestDb } from "./test.helper";
 

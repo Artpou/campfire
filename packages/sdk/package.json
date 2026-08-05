@@ -4,15 +4,16 @@
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
-  "types": "./dist/index.d.ts",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./src/index.ts",
       "default": "./src/index.ts"
     }
   },
   "scripts": {
-    "build:types": "tsc --build --force",
+    "build": "pnpm build:types",
+    "build:types": "tsc --build",
     "tsc": "tsc --noEmit"
   },
   "dependencies": {

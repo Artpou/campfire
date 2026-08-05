@@ -26,5 +26,5 @@
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "dist-server", ".turbo", "coverage"],
-  "references": [{ "path": "../../packages/shared" }]
+  "references": [{ "path": "../../packages/contracts" }, { "path": "../../packages/shared" }]
 }

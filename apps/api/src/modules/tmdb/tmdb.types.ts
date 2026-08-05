@@ -1,7 +1,3 @@
-import z from "zod";
-
-import { paginationDto } from "@/shared/helpers/pagination.dto";
-
 export interface TMDBItem {
   id: number;
   title?: string;
@@ -64,6 +60,27 @@ export interface TMDBCrewMember {
   job?: string;
   department?: string;
   profile_path?: string | null;
+}
+
+export interface TMDBGenre {
+  id: number;
+  name: string;
+}
+
+export interface TMDBVideo {
+  iso_639_1: string;
+  iso_3166_1: string;
+  name: string;
+  key: string;
+  site: string;
+  size: number;
+  type: string;
+  official: boolean;
+}
+
+export interface TMDBVideosResponse {
+  id: number;
+  results: TMDBVideo[];
 }
 
 export interface TMDBMovieDetails extends TMDBItem {
@@ -150,22 +167,6 @@ export interface TMDBKeywordResult {
   name: string;
 }
 
-export interface TMDBVideo {
-  iso_639_1: string;
-  iso_3166_1: string;
-  name: string;
-  key: string;
-  site: string;
-  size: number;
-  type: string;
-  official: boolean;
-}
-
-export interface TMDBVideosResponse {
-  id: number;
-  results: TMDBVideo[];
-}
-
 export type FetchOptions = Record<string, string | string[] | undefined>;
 
 export interface FMDBResult {
@@ -182,52 +183,6 @@ export interface FMDBResult {
   jwRating: number;
   tomatoMeter: number;
   tomatoCertifiedFresh: boolean;
-}
-
-export const tmdbListDto = paginationDto.extend({
-  locale: z.string().default("en-US"),
-});
-export type tmdbListQuery = z.infer<typeof tmdbListDto>;
-
-export const tmdbDiscoverDto = tmdbListDto.extend({
-  sort_by: z.string().optional(),
-  with_release_type: z.string().optional(),
-  with_genres: z.string().optional(),
-  with_watch_providers: z.string().optional(),
-  "primary_release_date.gte": z.string().optional(),
-  "primary_release_date.lte": z.string().optional(),
-  with_original_language: z.string().optional(),
-  with_keywords: z.string().optional(),
-  "with_runtime.gte": z.number().optional(),
-  "with_runtime.lte": z.number().optional(),
-  "vote_average.gte": z.number().optional(),
-});
-export type tmdbDiscoverQuery = z.infer<typeof tmdbDiscoverDto>;
-
-export const tmdbSearchDto = tmdbListDto.extend({
-  q: z.string().min(1),
-});
-export type tmdbSearchQuery = z.infer<typeof tmdbSearchDto>;
-
-export const tmdbKeywordsDto = z.object({
-  q: z.string().min(1),
-});
-export type tmdbKeywordsQuery = z.infer<typeof tmdbKeywordsDto>;
-
-export const tmdbTvSeasonDto = z.object({
-  id: z.string(),
-  number: z.string(),
-});
-export type tmdbTvSeasonQuery = z.infer<typeof tmdbTvSeasonDto>;
-
-export const tmdbIdDto = z.object({
-  id: z.string(),
-});
-export type tmdbIdQuery = z.infer<typeof tmdbIdDto>;
-
-export interface TMDBGenre {
-  id: number;
-  name: string;
 }
 
 export interface TMDBPersonCreditCast {

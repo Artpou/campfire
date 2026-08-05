@@ -2,28 +2,16 @@
   "name": "@seedarr/api",
   "version": "1.0.0",
   "private": true,
-  "types": "./dist/app.d.ts",
+  "types": "./src/app.ts",
   "exports": {
     ".": {
-      "types": "./dist/app.d.ts",
+      "types": "./src/app.ts",
       "default": "./src/app.ts"
-    },
-    "./export/inputs": {
-      "types": "./dist/export/inputs.d.ts",
-      "default": "./src/export/inputs.ts"
-    },
-    "./export/schemas": {
-      "types": "./dist/export/schemas.d.ts",
-      "default": "./src/export/schemas.ts"
-    },
-    "./types": {
-      "types": "./dist/types.d.ts",
-      "default": "./src/types.ts"
     }
   },
   "scripts": {
     "dev": "tsx watch --include 'src/**' src/server.ts",
-    "build:types": "tsc --build --force",
+    "build:types": "tsc --build",
     "tsc": "tsc --noEmit",
     "build": "tsup",
     "start": "node dist-server/server.mjs",
@@ -44,6 +32,7 @@
     "@hono/node-server": "^1.14.0",
     "@hono/zod-validator": "^0.8.0",
     "@libsql/client": "^0.15.15",
+    "@seedarr/contracts": "workspace:*",
     "@seedarr/shared": "workspace:*",
     "basic-ftp": "^6.0.1",
     "drizzle-orm": "catalog:",

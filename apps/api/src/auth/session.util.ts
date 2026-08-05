@@ -6,7 +6,7 @@ import { logger } from "@/shared/helpers/logger.helper";
 import { SESSION_DURATION_MS, SESSION_ROTATION_AGE_MS } from "@/auth/auth.constants";
 import { db } from "@/db/db";
 import { session } from "@/modules/auth/auth.schema";
-import type { User } from "@/modules/user/user.dto";
+import type { User } from "@/modules/user/user.schema";
 import { user } from "@/modules/user/user.schema";
 import { randomBytes } from "node:crypto";
 

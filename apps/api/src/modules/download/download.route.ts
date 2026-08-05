@@ -1,12 +1,16 @@
 import { zValidator } from "@hono/zod-validator";
-import { z } from "zod";
+import {
+  deleteDownloadQueryDto,
+  downloadMediaIdParamDto,
+  downloadTorrentDto,
+  reassignMediaDto,
+  stringIdParamDto,
+} from "@seedarr/contracts";
 
 import { NotFoundError } from "@/shared/errors/error";
-import { downloadMediaIdParamDto, stringIdParamDto } from "@/shared/helpers/param.dto";
 import { downloadStartRateLimiter } from "@/shared/middlewares/rate-limiter.middleware";
 
 import { requireRole } from "@/modules/auth/role.guard";
-import { downloadTorrentDto } from "./download.dto";
 import { requireDownloadOwnership } from "./download.guard";
 import { DownloadService } from "./download.service";
 
@@ -91,7 +95,7 @@ export const downloadRoutes = DownloadService.createRouter()
     "/:id/media",
     requireRole("member"),
     zValidator("param", stringIdParamDto),
-    zValidator("json", z.object({ mediaId: z.number().int().positive() })),
+    zValidator("json", reassignMediaDto),
     requireDownloadOwnership,
     async (c) => {
       return c.json(await c.var.service.reassignMedia(getDownloadId(c), c.req.valid("json").mediaId));
@@ -101,14 +105,7 @@ export const downloadRoutes = DownloadService.createRouter()
     "/:id",
     requireRole("member"),
     zValidator("param", stringIdParamDto),
-    zValidator(
-      "query",
-      z.object({
-        dbOnly: z.enum(["true"]).optional(),
-        scope: z.enum(["torrent", "remote", "all"]).optional(),
-        unlink: z.enum(["true"]).optional(),
-      }),
-    ),
+    zValidator("query", deleteDownloadQueryDto),
     requireDownloadOwnership,
     async (c) => {
       const query = c.req.valid("query");

@@ -1,10 +1,10 @@
-import type { tmdbDiscoverQuery } from "@seedarr/sdk";
+import type { TmdbDiscoverQuery } from "@seedarr/contracts";
 import { api, unwrap } from "@seedarr/sdk";
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 
 import { queryClient } from "@/router";
 
-type MovieDiscoverOptions = Omit<tmdbDiscoverQuery, "locale" | "page">;
+type MovieDiscoverOptions = Omit<TmdbDiscoverQuery, "locale" | "page">;
 
 function toDiscoverQuery(options: MovieDiscoverOptions, page: number, locale: string): Record<string, string> {
   const query: Record<string, string> = { locale, page: page.toString() };

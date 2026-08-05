@@ -2,7 +2,7 @@ import React from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { LoginInput } from "@seedarr/sdk";
+import type { LoginInput } from "@seedarr/contracts";
 import { api, unwrap } from "@seedarr/sdk";
 import { formatError } from "@seedarr/shared";
 import { useMutation } from "@tanstack/react-query";

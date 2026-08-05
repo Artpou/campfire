@@ -1,5 +1,5 @@
 import { t } from "@lingui/core/macro";
-import type { UpsertStorageConfigInput } from "@seedarr/sdk";
+import type { UpsertStorageConfigInput } from "@seedarr/contracts";
 import { api, unwrap } from "@seedarr/sdk";
 import { formatError } from "@seedarr/shared";
 import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";

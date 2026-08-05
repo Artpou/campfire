@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { CreateIndexerManagerInput } from "@seedarr/sdk";
+import type { CreateIndexerManagerInput } from "@seedarr/contracts";
 
 import { Button } from "@/shared/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/shared/ui/dialog";

@@ -2,7 +2,8 @@ import { useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { CreateIndexerManagerInput, IndexerManager, StremioManifest } from "@seedarr/sdk";
+import type { CreateIndexerManagerInput } from "@seedarr/contracts";
+import type { IndexerManager, StremioManifest } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PlusIcon } from "lucide-react";

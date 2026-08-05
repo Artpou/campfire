@@ -1,10 +1,12 @@
+import { indexerTypeEnum } from "@seedarr/contracts";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { createSelectSchema } from "drizzle-zod";
+import type { z } from "zod";
 
-export const indexerTypeEnum = ["prowlarr", "jackett", "stremio"] as const;
-export type IndexerType = (typeof indexerTypeEnum)[number];
+export type { IndexerPrivacy, IndexerType } from "@seedarr/contracts";
+export { indexerTypeEnum };
 
 export const indexerPrivacyEnum = ["public", "semi-private", "private"] as const;
-export type IndexerPrivacy = (typeof indexerPrivacyEnum)[number];
 
 export type StremioManifest = {
   id: string;
@@ -37,3 +39,8 @@ export const indexerManager = sqliteTable("indexerManager", {
   disabled: integer("disabled", { mode: "boolean" }).notNull().default(false),
   manifest: text("metadata", { mode: "json" }).$type<StremioManifest>(),
 });
+
+// --- Drizzle-Zod derived schema ---
+
+export const indexerManagerSelectSchema = createSelectSchema(indexerManager);
+export type IndexerManager = z.infer<typeof indexerManagerSelectSchema>;

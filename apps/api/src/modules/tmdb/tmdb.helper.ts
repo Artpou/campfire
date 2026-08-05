@@ -1,7 +1,7 @@
 import { toLatin } from "@/shared/helpers/string.helper";
 
-import type { MediaEnriched } from "@/modules/media/media.dto";
-import type { TMDBGenre, TMDBItem } from "./tmdb.dto";
+import type { MediaEnriched } from "@/modules/media/media.types";
+import type { TMDBGenre, TMDBItem } from "./tmdb.types";
 
 function formatCategories(genres?: TMDBGenre[], genreIds?: number[], genreMap?: Map<number, string>): string | null {
   if (genres && genres.length > 0) {

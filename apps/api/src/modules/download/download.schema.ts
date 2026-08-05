@@ -1,9 +1,12 @@
+import { torrentStatusEnum } from "@seedarr/contracts";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { createSelectSchema } from "drizzle-zod";
+import type { z } from "zod";
 
 import { user } from "@/modules/user/user.schema";
 
-export const torrentStatusEnum = ["queued", "downloading", "completed", "failed", "paused"] as const;
-export type TorrentStatus = (typeof torrentStatusEnum)[number];
+export type { TorrentStatus } from "@seedarr/contracts";
+export { torrentStatusEnum };
 
 export interface TorrentLiveData {
   infoHash: string;
@@ -82,3 +85,16 @@ export const download = sqliteTable(
   },
   (table) => [index("download_userId_idx").on(table.userId), index("download_mediaId_idx").on(table.mediaId)],
 );
+
+// --- Drizzle-Zod derived schema ---
+
+export const downloadSelectSchema = createSelectSchema(download);
+export type Download = z.infer<typeof downloadSelectSchema>;
+
+export interface DownloadStats {
+  count: number;
+  totalSize: number;
+  downloadSpeed: number;
+  uploadSpeed: number;
+  peers: number;
+}

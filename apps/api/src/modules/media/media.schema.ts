@@ -1,11 +1,14 @@
+import { mediaTypeEnum } from "@seedarr/contracts";
 import { relations } from "drizzle-orm";
 import { integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import type { z } from "zod";
 
 import { download } from "@/modules/download/download.schema";
 import { user } from "@/modules/user/user.schema";
 
-export const mediaTypeEnum = ["movie", "tv"] as const;
-export type MediaType = (typeof mediaTypeEnum)[number];
+export type { MediaType } from "@seedarr/contracts";
+export { mediaTypeEnum };
 
 export const media = sqliteTable("media", {
   id: integer("id").primaryKey(),
@@ -101,3 +104,11 @@ export const watchProgressRelations = relations(watchProgress, ({ one }) => ({
 export const torrentDownloadRelations = relations(download, ({ one }) => ({
   media: one(media, { fields: [download.mediaId], references: [media.id] }),
 }));
+
+// --- Drizzle-Zod derived schemas ---
+
+export const mediaInsertSchema = createInsertSchema(media);
+export type MediaInsert = z.infer<typeof mediaInsertSchema>;
+
+export const mediaSelectSchema = createSelectSchema(media);
+export type MediaSelect = z.infer<typeof mediaSelectSchema>;

@@ -1,13 +1,18 @@
 import { BadRequestError } from "@/shared/errors/error";
 import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
-import type { MediaEnriched } from "@/modules/media/media.dto";
 import { MediaService } from "@/modules/media/media.service";
-import type { TMDBItem, TMDBPersonCreditCast, TMDBPersonCreditCrew, TMDBPersonDetails } from "@/modules/tmdb/tmdb.dto";
+import type { MediaEnriched } from "@/modules/media/media.types";
 import { tmdbMovieToMedia, tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
 import { tmdbRequest } from "@/modules/tmdb/tmdb.service";
-import type { User } from "@/types";
-import type { Person, PersonFilmographyCrew } from "./person.dto";
+import type {
+  TMDBItem,
+  TMDBPersonCreditCast,
+  TMDBPersonCreditCrew,
+  TMDBPersonDetails,
+} from "@/modules/tmdb/tmdb.types";
+import type { User } from "@/modules/user/user.schema";
+import type { Person, PersonFilmographyCrew } from "./person.types";
 
 const KNOWN_FOR_LIMIT = 8;
 

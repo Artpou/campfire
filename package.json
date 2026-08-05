@@ -3,7 +3,7 @@
   "version": "0.1.0-beta.0",
   "private": true,
   "scripts": {
-    "dev": "turbo build:types dev db:studio",
+    "dev": "turbo build:types //#tsc:watch dev db:studio",
     "build": "turbo build",
     "lint": "turbo lint",
     "lint:fix": "biome check --write --unsafe .",

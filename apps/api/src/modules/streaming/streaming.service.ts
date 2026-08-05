@@ -16,8 +16,7 @@ import {
 } from "@/shared/helpers/video.helper";
 
 import { db } from "@/db/db";
-import type { Download } from "@/modules/download/download.dto";
-import type { TorrentLiveData } from "@/modules/download/download.schema";
+import type { Download, TorrentLiveData } from "@/modules/download/download.schema";
 import { download as downloadTable } from "@/modules/download/download.schema";
 import { findLargestVideoFile } from "@/modules/download/webtorrent.helper";
 import { torrentClient } from "@/modules/download/webtorrent-manager";

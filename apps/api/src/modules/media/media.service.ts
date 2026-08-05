@@ -1,16 +1,17 @@
+import type { ListMediaQuery, UpdateProgressQuery } from "@seedarr/contracts";
 import { and, desc, eq, exists, inArray } from "drizzle-orm";
 
 import { BadRequestError, NotFoundError } from "@/shared/errors/error";
 import { countSubquery } from "@/shared/helpers/drizzle.helper";
-import type { Paginate } from "@/shared/helpers/pagination.dto";
 import { paginate, toPaginate } from "@/shared/helpers/pagination.helper";
+import type { Paginate } from "@/shared/helpers/pagination.types";
 import { IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { db } from "@/db/db";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import { download } from "@/modules/download/download.schema";
-import { media, userLikes, userWatchList, watchProgress } from "@/modules/media/media.schema";
-import type { ListMediaQuery, MediaEnriched, MediaInsert, UpdateProgressQuery } from "./media.dto";
+import { type MediaInsert, media, userLikes, userWatchList, watchProgress } from "@/modules/media/media.schema";
+import type { MediaEnriched } from "./media.types";
 
 export class MediaService extends IdentifiableService<MediaEnriched> {
   private canSeeAllDownloads(): boolean {

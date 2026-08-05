@@ -1,5 +1,5 @@
 import { Trans } from "@lingui/react/macro";
-import type { Resolution } from "@seedarr/sdk";
+import type { Resolution } from "@seedarr/contracts";
 
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";

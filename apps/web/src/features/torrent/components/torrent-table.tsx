@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 
 import { plural } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { DownloadTorrentInput, IndexerType, Media, Resolution, Torrent } from "@seedarr/sdk";
+import type { DownloadTorrentInput, IndexerType, Resolution } from "@seedarr/contracts";
+import type { Media, Torrent } from "@seedarr/sdk";
 import { ApiError } from "@seedarr/sdk";
 import { formatError } from "@seedarr/shared";
 import { useNavigate } from "@tanstack/react-router";

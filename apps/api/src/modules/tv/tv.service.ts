@@ -1,8 +1,8 @@
-import type { MediaEnriched } from "@/modules/media/media.dto";
-import type { TMDBSeasonDetails, TMDBTvDetails } from "@/modules/tmdb/tmdb.dto";
+import type { MediaEnriched } from "@/modules/media/media.types";
 import { tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
 import { TMDBService } from "@/modules/tmdb/tmdb.service";
-import type { TV } from "@/modules/tv/tv.dto";
+import type { TMDBSeasonDetails, TMDBTvDetails } from "@/modules/tmdb/tmdb.types";
+import type { TV } from "@/modules/tv/tv.types";
 
 export class TVService extends TMDBService<TV> {
   getMany(): Promise<TV[]> {
