@@ -4,6 +4,8 @@ import type { AppType } from "@seedarr/api";
 import { type ApplyGlobalResponse, type ClientResponse, hc, parseResponse } from "hono/client";
 import type { ClientErrorStatusCode, ContentfulStatusCode, ServerErrorStatusCode } from "hono/utils/http-status";
 
+export type { AppType };
+
 export const getBaseUrl = () => {
   if (import.meta.env.DEV) {
     return import.meta.env.VITE_API_URL || "http://localhost:3002";

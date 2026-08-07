@@ -130,7 +130,7 @@ packages/
 pnpm dev          # Start both API + web (+ Drizzle Studio)
 pnpm --filter @seedarr/api dev   # API only (port 3002)
 pnpm --filter @seedarr/web dev            # Web only (port 3000)
-pnpm check        # Full validation: tsc + lint + test + knip
+pnpm check        # Full validation: lint + check-types + test + knip
 pnpm lint:fix     # Auto-fix with Biome
 pnpm db:generate  # Generate Drizzle migrations
 pnpm db:migrate   # Apply migrations

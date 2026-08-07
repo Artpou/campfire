@@ -2,41 +2,49 @@
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
   "tasks": {
-    "db:generate": {
-      "cache": true,
-      "outputs": ["src/db/drizzle/**"]
+    "topo": {
+      "dependsOn": ["^topo"]
     },
     "build": {
       "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": ["dist/**", "dist-server/**"]
     },
     "@seedarr/api#build": {
-      "dependsOn": ["^build", "db:generate"],
+      "dependsOn": ["^build", "db:generate", "build:types"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": ["dist-server/**"]
     },
     "build:types": {
       "dependsOn": ["^build:types"],
       "outputs": ["dist/**"]
     },
+    "check-types": {
+      "dependsOn": ["topo", "^build:types", "^check-types"]
+    },
     "dev": {
       "cache": false,
       "persistent": true
     },
-    "//#tsc:watch": {
-      "cache": false,
-      "persistent": true
+    "db:generate": {
+      "cache": true,
+      "outputs": ["src/db/drizzle/**"]
     },
     "db:studio": {
       "cache": false,
       "persistent": true
     },
-    "tsc": {
-      "dependsOn": ["^build:types"],
-      "outputs": []
+    "lint": {
+      "dependsOn": ["topo"]
     },
-    "lint": { "outputs": [] },
-    "lint:fix": { "outputs": [] },
-    "test": { "outputs": [] },
-    "//#knip": { "cache": false }
+    "lint:fix": {
+      "cache": false
+    },
+    "test": {
+      "dependsOn": ["topo"]
+    },
+    "//#knip": {
+      "cache": false
+    }
   }
 }

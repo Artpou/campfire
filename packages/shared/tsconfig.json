@@ -1,20 +1,5 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "lib": ["ES2022"],
-    "moduleResolution": "bundler",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "allowImportingTsExtensions": true,
-    "composite": true,
-    "declaration": true,
-    "declarationMap": true,
-    "emitDeclarationOnly": true,
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src/**/*.ts"],
+  "extends": "@seedarr/typescript-config/library.json",
+  "include": ["src"],
   "exclude": ["node_modules", "dist"]
 }

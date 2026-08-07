@@ -18,6 +18,9 @@
     },
     "packages/contracts": {},
     "packages/sdk": {},
-    "packages/shared": {}
+    "packages/shared": {},
+    "packages/typescript-config": {
+      "entry": ["*.json"]
+    }
   }
 }

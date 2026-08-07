@@ -130,7 +130,7 @@ pnpm lint:fix
 pnpm format
 
 # Type check
-pnpm tsc
+pnpm check-types
 
 # Run tests
 pnpm test

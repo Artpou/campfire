@@ -1,34 +1,10 @@
 {
+  "extends": "@seedarr/typescript-config/react.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "moduleResolution": "bundler",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolvePackageJsonExports": true,
-    "jsx": "react-jsx",
-    "composite": true,
-    "declaration": true,
-    "declarationMap": true,
-    "emitDeclarationOnly": true,
-    "outDir": "./dist",
-    "rootDir": ".",
     "paths": {
       "@/*": ["./src/*"]
-    },
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true,
-    "allowImportingTsExtensions": true,
-    "verbatimModuleSyntax": true
+    }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts", "lucide-react.d.ts"],
-  "exclude": ["node_modules", "dist", ".turbo", "coverage"],
-  "references": [
-    { "path": "../../packages/contracts" },
-    { "path": "../../packages/sdk" },
-    { "path": "../../packages/shared" }
-  ]
+  "include": ["src", "vite.config.ts", "lucide-react.d.ts"],
+  "exclude": ["node_modules", "dist", ".turbo", "coverage"]
 }
