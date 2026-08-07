@@ -11,7 +11,7 @@ import {
 } from "@/shared/ui/alert-dialog";
 import { Button } from "@/shared/ui/button";
 
-interface DownloadUnavailableDialogProps {
+interface TorrentUnavailableDialogProps {
   open: boolean;
   onRetry: () => void;
   onCancel: () => void;
@@ -20,14 +20,14 @@ interface DownloadUnavailableDialogProps {
   isStoringLocally?: boolean;
 }
 
-export function DownloadUnavailableDialog({
+export function TorrentUnavailableDialog({
   open,
   onRetry,
   onCancel,
   onStoreLocally,
   isRetrying,
   isStoringLocally,
-}: DownloadUnavailableDialogProps) {
+}: TorrentUnavailableDialogProps) {
   const isPending = isRetrying || isStoringLocally;
 
   return (

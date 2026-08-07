@@ -38,5 +38,6 @@ export const movieQueries = {
       },
       getNextPageParam: (lastPage) => (lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined),
       initialPageParam: 1,
+      retry: 1,
     }),
 };

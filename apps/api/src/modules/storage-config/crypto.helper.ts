@@ -4,12 +4,43 @@ const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
 const TAG_LENGTH = 16;
 
-function deriveKey(): Buffer {
+function requireEncryptionSecret(): string {
   const secret = process.env.STORAGE_ENCRYPTION_KEY;
   if (!secret) {
     throw new Error("STORAGE_ENCRYPTION_KEY environment variable is required for storage credential encryption");
   }
-  return crypto.scryptSync(secret, "seedarr-storage-salt", 32);
+  return secret;
+}
+
+function deriveKey(): Buffer {
+  return crypto.scryptSync(requireEncryptionSecret(), "seedarr-storage-salt", 32);
+}
+
+/** HMAC-SHA256 signed token (`payload.sig`, base64url). Reuses STORAGE_ENCRYPTION_KEY. */
+export function signToken(payload: Record<string, unknown>, ttlSeconds: number): string {
+  const body = Buffer.from(JSON.stringify({ ...payload, exp: Math.floor(Date.now() / 1000) + ttlSeconds })).toString(
+    "base64url",
+  );
+  const sig = crypto.createHmac("sha256", requireEncryptionSecret()).update(body).digest("base64url");
+  return `${body}.${sig}`;
+}
+
+export function verifyToken<T extends Record<string, unknown>>(token: string): T | null {
+  const [body, sig] = token.split(".");
+  if (!body || !sig) return null;
+
+  const expected = crypto.createHmac("sha256", requireEncryptionSecret()).update(body).digest("base64url");
+  const sigBuf = Buffer.from(sig);
+  const expectedBuf = Buffer.from(expected);
+  if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) return null;
+
+  try {
+    const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as T & { exp?: number };
+    if (typeof payload.exp !== "number" || payload.exp < Math.floor(Date.now() / 1000)) return null;
+    return payload;
+  } catch {
+    return null;
+  }
 }
 
 export function encrypt(plaintext: string): string {

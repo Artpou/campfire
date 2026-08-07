@@ -2,8 +2,8 @@ import { useMemo, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { Download, Movie, TV } from "@seedarr/sdk";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { ClapperboardIcon, FilmIcon, MagnetIcon, PlayIcon, Trash2Icon } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { ClapperboardIcon, FilmIcon, PlayIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
@@ -20,15 +20,14 @@ import { Button } from "@/shared/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/shared/ui/dialog";
 
 import { useRole } from "@/features/auth/hooks/use-role";
-import { useDownloadDelete } from "@/features/downloads/hooks/download.queries";
-import { WatchProgressBar } from "@/features/media/components/watch-progress-bar";
-import { getPosterUrl, getWatchProgressPercent, hasWatchProgress } from "@/features/media/helpers/media.helper";
+import { useDownloadDelete, useDownloadFile } from "@/features/downloads/hooks/download.queries";
+import { MediaPlayButton } from "@/features/media/components/media-play-button";
+import { getPosterUrl, hasWatchProgress } from "@/features/media/helpers/media.helper";
 import { preloadMoviPlayer } from "@/features/player/helpers/movi-player.helper";
 
 interface MediaPosterProps {
   data: Movie | TV;
   download?: Download | null;
-  type?: "movie" | "tv";
 }
 
 function getDisplayTitle(data: Movie | TV): string {
@@ -38,11 +37,13 @@ function getDisplayTitle(data: Movie | TV): string {
   return "";
 }
 
-export function MediaPoster({ data, download, type = "movie" }: MediaPosterProps) {
+export function MediaPoster({ data, download }: MediaPosterProps) {
   const { role } = useRole();
   const { i18n, t } = useLingui();
   const navigate = useNavigate();
   const deleteTorrent = useDownloadDelete();
+  const downloadFile = useDownloadFile();
+
   const [imgError, setImgError] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -52,8 +53,6 @@ export function MediaPoster({ data, download, type = "movie" }: MediaPosterProps
   const downloadId = download?.id;
   const canPlay = Boolean(downloadId);
   const showWatchProgress = hasWatchProgress(media);
-  const watchProgressPercent = getWatchProgressPercent(media);
-  const isComplete = Boolean(download?.torrent?.done || (!download?.torrent && download?.remoteLocation));
 
   const youtubeTrailer = useMemo(() => {
     const videos = item?.videos?.results;
@@ -109,8 +108,6 @@ export function MediaPoster({ data, download, type = "movie" }: MediaPosterProps
             </button>
           )}
         </div>
-
-        {showWatchProgress && <WatchProgressBar value={watchProgressPercent} />}
       </div>
 
       {youtubeTrailer && (
@@ -133,55 +130,15 @@ export function MediaPoster({ data, download, type = "movie" }: MediaPosterProps
         </Dialog>
       )}
 
+      {downloadId && (
+        <Button variant="secondary" className="w-full" onClick={() => downloadFile.mutateAsync(downloadId)}>
+          <Trans>Download</Trans>
+        </Button>
+      )}
+
       {media && role !== "viewer" && media.id && (
-        <div className="flex w-full gap-2">
-          {canPlay && downloadId ? (
-            <>
-              <Button className="flex-1" asChild>
-                <Link
-                  to="/downloads/$id/play"
-                  params={{ id: downloadId }}
-                  onMouseEnter={preloadMoviPlayer}
-                  onFocus={preloadMoviPlayer}
-                  onPointerDown={preloadMoviPlayer}
-                >
-                  <PlayIcon className="size-3 fill-current" />
-                  {showWatchProgress ? (
-                    <Trans>Resume</Trans>
-                  ) : isComplete ? (
-                    <Trans>Play</Trans>
-                  ) : (
-                    <Trans>Streaming</Trans>
-                  )}
-                </Link>
-              </Button>
-              {type === "movie" && (
-                <Button
-                  size="icon"
-                  variant="destructive"
-                  aria-label={t`Delete`}
-                  onClick={() => setShowDeleteConfirm(true)}
-                  disabled={deleteTorrent.isPending}
-                >
-                  <Trash2Icon className="size-4" />
-                </Button>
-              )}
-            </>
-          ) : (
-            <Button className="w-full" asChild>
-              {type === "tv" ? (
-                <Link to="/tv/$id/torrents" params={{ id: media.id.toString() }}>
-                  <MagnetIcon className="size-3" />
-                  <Trans>Torrents</Trans>
-                </Link>
-              ) : (
-                <Link to="/movies/$id/torrents" params={{ id: media.id.toString() }}>
-                  <MagnetIcon className="size-3" />
-                  <Trans>Torrents</Trans>
-                </Link>
-              )}
-            </Button>
-          )}
+        <div className="flex flex-col w-full gap-2">
+          <MediaPlayButton media={media} />
         </div>
       )}
 

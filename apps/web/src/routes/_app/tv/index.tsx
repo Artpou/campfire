@@ -1,7 +1,6 @@
 import { Trans } from "@lingui/react/macro";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
-import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 
 import { DiscoverPage } from "@/features/media/components/discover-page";
@@ -18,13 +17,6 @@ import { tvQueries } from "@/features/tv/hooks/tv.queries";
 export const Route = createFileRoute("/_app/tv/")({
   component: TVPage,
   validateSearch: validateTvDiscoverSearch,
-  loaderDeps: ({ search }) => search,
-  loader: ({ context, deps }) =>
-    Promise.all([
-      context.queryClient.ensureInfiniteQueryData(
-        tvQueries.discover(buildTvDiscoverOptions(deps), countryToTmdbLocale(context.language)),
-      ),
-    ]),
 });
 
 function TVPage() {

@@ -81,13 +81,7 @@ function MoviePage() {
         remoteDownloads.length > 0 ? <MediaServerTab downloads={remoteDownloads} mediaType="movie" /> : undefined
       }
       serverCount={remoteDownloads.length}
-      defaultTab={
-        hasActiveDownload
-          ? "downloads"
-          : remoteDownloads.length > 0 && torrentDownloads.length === 0
-            ? "server"
-            : "info"
-      }
+      defaultTab={hasActiveDownload ? "downloads" : "info"}
     >
       <MovieCast movie={movie} />
       <MovieRelated

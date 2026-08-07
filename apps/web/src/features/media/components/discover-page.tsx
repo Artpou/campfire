@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 
 import type { Media } from "@seedarr/sdk";
-import type { InfiniteData, UseSuspenseInfiniteQueryOptions } from "@tanstack/react-query";
-import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
+import type { InfiniteData, UseInfiniteQueryOptions } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
+import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { PlaceholderEmpty } from "@/shared/components/seedarr-placeholder";
 import { Container } from "@/shared/ui/container";
 
@@ -20,7 +21,7 @@ type DiscoverPageResult = {
   totalPages: number;
 };
 
-type DiscoverQueryOptions = UseSuspenseInfiniteQueryOptions<
+type DiscoverQueryOptions = UseInfiniteQueryOptions<
   DiscoverPageResult,
   Error,
   InfiniteData<DiscoverPageResult>,
@@ -49,10 +50,10 @@ export function DiscoverPage<TSearch extends { selected?: MediaSelected; with_ge
   emptyTitle,
   emptySubtitle,
 }: DiscoverPageProps<TSearch>) {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery(
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } = useInfiniteQuery(
     queryOptions as DiscoverQueryOptions,
   );
-  const results = data.pages.flatMap((page) => page.results);
+  const results = data?.pages.flatMap((page) => page.results) ?? [];
 
   const handleLoadMore = () => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
@@ -78,7 +79,11 @@ export function DiscoverPage<TSearch extends { selected?: MediaSelected; with_ge
               {filtersSheet}
             </div>
           </div>
-          {results.length === 0 ? (
+          {isPending ? (
+            <div className="flex min-h-48 items-center justify-center">
+              <SeedarrLoader />
+            </div>
+          ) : results.length === 0 ? (
             <PlaceholderEmpty title={emptyTitle} subtitle={emptySubtitle} />
           ) : (
             <MediaGrid items={results} isLoading={isFetchingNextPage} onLoadMore={handleLoadMore} />

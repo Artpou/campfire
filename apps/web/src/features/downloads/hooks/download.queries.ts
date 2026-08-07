@@ -1,7 +1,7 @@
 import { t } from "@lingui/core/macro";
 import type { DownloadTorrentInput } from "@seedarr/contracts";
-import type { Download, TorrentInspectFile } from "@seedarr/sdk";
-import { ApiError, api, getBaseUrl, unwrap } from "@seedarr/sdk";
+import type { Download } from "@seedarr/sdk";
+import { api, getBaseUrl, unwrap } from "@seedarr/sdk";
 import { formatError } from "@seedarr/shared";
 import { type QueryState, queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -9,12 +9,6 @@ import { toast } from "sonner";
 import { translateDownloadError } from "@/features/downloads/helpers/download-error.helper";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 import { tvQueries } from "@/features/tv/hooks/tv.queries";
-
-async function fetchRemoteFiles(id: string): Promise<TorrentInspectFile[]> {
-  const res = await fetch(`${getBaseUrl()}/downloads/${id}/remote-files`, { credentials: "include" });
-  if (!res.ok) throw new ApiError(`Failed to fetch remote files: ${res.status}`, res.status);
-  return res.json();
-}
 
 function invalidateDownloadRelatedQueries(queryClient: ReturnType<typeof useQueryClient>): void {
   queryClient.invalidateQueries({ queryKey: downloadQueries.key });
@@ -39,7 +33,7 @@ export const downloadQueries = {
   remoteFiles: (id: string) =>
     queryOptions({
       queryKey: [...downloadQueries.key, id, "remote-files"],
-      queryFn: () => fetchRemoteFiles(id),
+      queryFn: () => unwrap(api.downloads[":id"]["remote-files"].$get({ param: { id } })),
     }),
   byMedia: (mediaId: number) =>
     queryOptions({
@@ -51,6 +45,13 @@ export const downloadQueries = {
           }),
         ),
       refetchInterval: ({ state }) => refetchDownloadsByMediaInterval({ state }),
+    }),
+  fileStatus: (id: string) =>
+    queryOptions({
+      queryKey: [...downloadQueries.key, id, "file-status"],
+      queryFn: () => unwrap(api.downloads[":id"].fileStatus.$get({ param: { id } })),
+      staleTime: 5 * 60_000,
+      retry: false,
     }),
 };
 
@@ -193,6 +194,26 @@ export function useDownloadReannounce() {
     },
     onError: (error) => {
       toast.error(t`Could not reannounce`, {
+        description: formatError(error),
+      });
+    },
+  });
+}
+
+export function useDownloadFile() {
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { token } = await unwrap(api.downloads[":id"].fileToken.$post({ param: { id } }));
+      const url = `${getBaseUrl()}/download-files/${id}?token=${encodeURIComponent(token)}`;
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.rel = "noopener";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    },
+    onError: (error) => {
+      toast.error(t`Could not download file`, {
         description: formatError(error),
       });
     },

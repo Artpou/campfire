@@ -7,8 +7,8 @@ import * as fsPromises from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app } from "./app";
-import { torrentClient } from "./modules/download/webtorrent-manager";
-import { restoreActiveTorrents, stopHealthCheck } from "./modules/download/webtorrent-sync";
+import { torrentClient } from "./modules/download/webtorrent/webtorrent-manager";
+import { restoreActiveTorrents, stopHealthCheck } from "./modules/download/webtorrent/webtorrent-sync";
 import { logger, startupLogger } from "./shared/helpers/logger.helper";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

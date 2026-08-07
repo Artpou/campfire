@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import type { Media } from "@seedarr/sdk";
 
 export type PosterFormat = "w92" | "w154" | "w185" | "w342" | "w500" | "w780" | "original";
@@ -45,19 +46,26 @@ export function hasWatchProgress(media: Media): boolean {
   );
 }
 
-export function getEndsAtForMedia(media: Media): string | null {
+export function getRemainingTime(media: Media): string | null {
   let remainingSeconds: number | null = null;
 
-  if (media.progress?.position && media.progress.position > 0 && media.progress.duration) {
+  if (media.progress?.duration) {
     remainingSeconds = media.progress.duration - media.progress.position;
   } else if (media.duration && media.duration > 0) {
     remainingSeconds = media.duration * 60;
   }
 
   if (!remainingSeconds || remainingSeconds <= 0) return null;
+  const totalMinutes = Math.ceil(remainingSeconds / 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
 
-  return new Date(Date.now() + remainingSeconds * 1000).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const suffix = totalMinutes > 1 ? t`remaining` : t`remaining`;
+
+  if (hours > 0) {
+    const formattedMinutes = minutes > 0 ? minutes.toString().padStart(2, "0") : "";
+    return `${hours}h${formattedMinutes} ${suffix}`;
+  }
+
+  return `${minutes} minute${minutes > 1 ? "s" : ""} ${suffix}`;
 }

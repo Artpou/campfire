@@ -37,11 +37,7 @@ interface MediaDownloadTabProps {
 
 export function MediaDownloadTab({ downloads }: MediaDownloadTabProps) {
   if (downloads.length === 0) {
-    return (
-      <p className="py-8 text-center text-muted-foreground">
-        <Trans>No downloads yet</Trans>
-      </p>
-    );
+    return null;
   }
 
   return (

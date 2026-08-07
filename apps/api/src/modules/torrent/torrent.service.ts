@@ -5,7 +5,7 @@ import type WebTorrent from "webtorrent";
 import { BadRequestError, NotFoundError, ServiceUnavailableError } from "@/shared/errors/error";
 import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
-import { torrentClient } from "@/modules/download/webtorrent-manager";
+import { torrentClient } from "@/modules/download/webtorrent/webtorrent-manager";
 import { IndexerManagerService } from "@/modules/indexer-manager/indexer-manager.service";
 import type { User } from "@/modules/user/user.schema";
 import type { Torrent, TorrentInspectResult } from "./torrent.types";

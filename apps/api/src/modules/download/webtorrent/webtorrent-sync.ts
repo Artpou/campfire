@@ -13,7 +13,7 @@ import { download } from "@/modules/download/download.schema";
 import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { markTransferStarting, runRemoteTransfer } from "./download-storage.helper";
+import { markTransferStarting, runRemoteTransfer } from "../remote/remote-transfer.helper";
 import { extractTorrentLiveData } from "./webtorrent.helper";
 import { torrentClient } from "./webtorrent-manager";
 

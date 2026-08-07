@@ -5,6 +5,8 @@ import { download } from "@/modules/download/download.schema";
 import { createAuthGuardMock, seedTestUser } from "@/tests/route-test.helper";
 import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
 
+process.env.STORAGE_ENCRYPTION_KEY = "test-storage-encryption-key";
+
 const { fakeUser, testDbRef } = vi.hoisted(() => {
   const fakeUser = { id: "user-1", username: "testuser", role: "member" as const, createdAt: new Date("2024-01-01") };
   const testDbRef = { current: null as TestDb | null };
@@ -56,7 +58,7 @@ vi.mock("@/modules/storage-config/remote-storage.service", () => ({
     remove: vi.fn().mockResolvedValue(undefined),
   },
 }));
-vi.mock("@/modules/download/webtorrent-manager", () => {
+vi.mock("@/modules/download/webtorrent/webtorrent-manager", () => {
   const makeFakeTorrent = () => ({
     on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
       if (event === "ready") setTimeout(() => cb(), 0);
@@ -94,7 +96,7 @@ vi.mock("@/modules/download/webtorrent-manager", () => {
   return {
     torrentClient: {
       downloadPath: "./downloads",
-      getClient: () => ({ add: vi.fn(() => makeFakeTorrent()) }),
+      getClient: () => ({ torrents: [], add: vi.fn(() => makeFakeTorrent()) }),
       getActiveTorrent: vi.fn(() => null),
       deleteActiveTorrent: vi.fn(),
       setActiveTorrent: vi.fn(),
@@ -115,6 +117,7 @@ vi.mock("@/modules/download/webtorrent-sync", () => ({
 }));
 
 const { downloadRoutes } = await import("./download.route");
+const { localFileRoutes } = await import("./local/local-file.route");
 
 const testMedia = {
   id: 42,
@@ -269,6 +272,45 @@ describe("Download Routes", () => {
 
       const body = await bodyOf(await downloadRoutes.request("/dl-del", { method: "DELETE" }));
       expect(body.success).toBe(true);
+    });
+  });
+
+  describe("POST /:id/fileToken + GET /download-files/:id", () => {
+    it("issues a short-lived file token", async () => {
+      testDbRef.current
+        ?.insert(download)
+        .values({
+          id: "dl-file",
+          userId: fakeUser.id,
+          torrent: sampleTorrent({ name: "Movie", done: true }),
+          createdAt: new Date(),
+        })
+        .run();
+
+      const body = await bodyOf(await downloadRoutes.request("/dl-file/fileToken", { method: "POST" }));
+      expect(body.token).toEqual(expect.any(String));
+      expect(body.token.split(".")).toHaveLength(2);
+    });
+
+    it("rejects file download without a valid token", async () => {
+      const res = await localFileRoutes.request("/dl-file?token=invalid");
+      expect(res.status).toBe(401);
+    });
+
+    it("rejects file download when token downloadId does not match", async () => {
+      testDbRef.current
+        ?.insert(download)
+        .values({
+          id: "dl-a",
+          userId: fakeUser.id,
+          torrent: sampleTorrent({ name: "A", done: true }),
+          createdAt: new Date(),
+        })
+        .run();
+
+      const { token } = await bodyOf(await downloadRoutes.request("/dl-a/fileToken", { method: "POST" }));
+      const res = await localFileRoutes.request(`/dl-b?token=${encodeURIComponent(token)}`);
+      expect(res.status).toBe(401);
     });
   });
 });

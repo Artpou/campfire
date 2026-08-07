@@ -13,6 +13,7 @@ import { Readable } from "node:stream";
 import { activityLogRoutes } from "./modules/activity-log/activity-log.route";
 import { authRoutes } from "./modules/auth/auth.route";
 import { downloadRoutes } from "./modules/download/download.route";
+import { localFileRoutes } from "./modules/download/local/local-file.route";
 import { indexerManagerRoutes } from "./modules/indexer-manager/indexer-manager.route";
 import { mediaRoutes } from "./modules/media/media.route";
 import { movieRoutes } from "./modules/movie/movie.route";
@@ -55,6 +56,7 @@ export const app = new Hono<{ Variables: HonoVariables }>()
   .route("/tv", tvRoutes)
   .route("/torrents", torrentRoutes)
   .route("/downloads", downloadRoutes)
+  .route("/download-files", localFileRoutes)
   .route("/streaming", streamingRoutes)
   .route("/subtitles", subtitleRoutes)
   .route("/activity-logs", activityLogRoutes)

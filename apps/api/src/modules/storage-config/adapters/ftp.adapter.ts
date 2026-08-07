@@ -52,6 +52,9 @@ export class FtpAdapter extends StorageAdapter {
       user: opts.username || undefined,
       password: opts.password || undefined,
       secure: opts.secure ?? false,
+      secureOptions: {
+        rejectUnauthorized: true,
+      },
     });
     // Freebox (and similar embedded FTP) often returns empty listings for `LIST -a`.
     // Prefer plain LIST / NLST after connect.

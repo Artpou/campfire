@@ -11,7 +11,7 @@ import { media } from "@/modules/media/media.schema";
 import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
 import { waitUntilNoStreams } from "@/modules/streaming/streaming-lease";
 import fs from "node:fs/promises";
-import { torrentClient, UNMARK_DESTROYING_DELAY_MS } from "./webtorrent-manager";
+import { torrentClient, UNMARK_DESTROYING_DELAY_MS } from "../webtorrent/webtorrent-manager";
 
 const activeTransfers = new Set<string>();
 

@@ -5,7 +5,7 @@ import { Trans } from "@lingui/react/macro";
 import { HoverCard, HoverCardContent, HoverCardPortal, HoverCardTrigger } from "@radix-ui/react-hover-card";
 import type { Media } from "@seedarr/sdk";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { CheckCircle2Icon, ClapperboardIcon, FilmIcon, InfoIcon, PlayIcon, TvIcon } from "lucide-react";
+import { CheckCircle2Icon, ClapperboardIcon, FilmIcon, InfoIcon, TvIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Badge } from "@/shared/ui/badge";
@@ -13,9 +13,8 @@ import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 
 import { DownloadProgress } from "@/features/downloads/components/download-progress";
-import { WatchProgressBar } from "@/features/media/components/watch-progress-bar";
-import { getPosterUrl, getWatchProgressPercent, hasWatchProgress } from "@/features/media/helpers/media.helper";
-import { preloadMoviPlayer } from "@/features/player/helpers/movi-player.helper";
+import { MediaPlayButton } from "@/features/media/components/media-play-button";
+import { getPosterUrl } from "@/features/media/helpers/media.helper";
 import { MediaCardPreview } from "./media-card-preview";
 
 type MediaCardProps = {
@@ -30,34 +29,17 @@ export function MediaCard({ media, mode = "default", className, playable, withTy
   const navigate = useNavigate();
   const [imgError, setImgError] = useState(false);
 
-  const canPlay = Boolean(playable || media.download);
   const detailLinkProps =
     media.type === "tv"
       ? ({ to: "/tv/$id", params: { id: media.id.toString() } } as const)
       : ({ to: "/movies/$id", params: { id: media.id.toString() } } as const);
 
-  const playDownloadId = media.download?.id ?? media.progress?.downloadId ?? undefined;
-  const watchProgressPercent = getWatchProgressPercent(media);
-  const showWatchProgress = hasWatchProgress(media);
-
-  const handlePlay = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (playDownloadId && canPlay) navigate({ to: "/downloads/$id/play", params: { id: playDownloadId } });
-  };
-
   if (mode === "minimal") {
     return (
       <div className={cn("relative aspect-2/3", className)}>
-        <Card
-          className={cn(
-            "overflow-hidden relative pt-0 pb-0 w-full",
-            showWatchProgress ? "h-[calc(100%-0.75rem)]" : "h-full",
-          )}
-        >
+        <Card className="overflow-hidden relative pt-0 pb-0 size-full">
           <img src={getPosterUrl(media.poster_path, "w342")} alt={media.title} className="size-full object-cover" />
         </Card>
-        {showWatchProgress && <WatchProgressBar value={watchProgressPercent} />}
       </div>
     );
   }
@@ -65,12 +47,7 @@ export function MediaCard({ media, mode = "default", className, playable, withTy
   const card = (
     <Link {...detailLinkProps} className="block">
       <div className={cn("relative aspect-2/3", className)}>
-        <Card
-          className={cn(
-            "overflow-hidden relative pt-0 pb-0 border-2 border-transparent transition-colors hover:border-primary w-full",
-            showWatchProgress ? "h-[calc(100%-0.75rem)]" : "h-full",
-          )}
-        >
+        <Card className="overflow-hidden relative pt-0 pb-0 border-2 border-transparent transition-colors hover:border-primary size-full">
           {!imgError && !!media.poster_path ? (
             <img
               src={getPosterUrl(media.poster_path, "w342")}
@@ -128,30 +105,17 @@ export function MediaCard({ media, mode = "default", className, playable, withTy
             </div>
           )}
 
-          {mode === "default" && !playable && canPlay && (
-            <div className="absolute bottom-2 left-2 right-2 z-10 flex gap-1">
-              <Button
-                size="sm"
-                className="flex-1"
-                onClick={handlePlay}
-                onMouseEnter={preloadMoviPlayer}
-                onFocus={preloadMoviPlayer}
-                onPointerDown={preloadMoviPlayer}
-              >
-                <PlayIcon className="size-3.5 mr-1" />
-                {showWatchProgress ? (
-                  <Trans>Resume</Trans>
-                ) : media.download?.torrent?.done || (!media.download?.torrent && media.download?.remoteLocation) ? (
-                  <Trans>Play</Trans>
-                ) : (
-                  <Trans>Streaming</Trans>
-                )}
-              </Button>
-            </div>
-          )}
+          {mode === "default" &&
+            !playable &&
+            media.download &&
+            (media.download.remoteLocation ||
+              media.download.torrent?.done ||
+              (media.download.torrent && !media.download.torrent.paused)) && (
+              <div className="absolute bottom-2 left-2 right-2 z-10 flex gap-1">
+                <MediaPlayButton media={media} size="sm" className="w-full" />
+              </div>
+            )}
         </Card>
-
-        {showWatchProgress && <WatchProgressBar value={watchProgressPercent} />}
       </div>
     </Link>
   );

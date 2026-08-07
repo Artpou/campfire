@@ -24,3 +24,13 @@ export const reassignMediaDto = z.object({
   mediaId: z.number().int().positive(),
 });
 export type ReassignMediaInput = z.infer<typeof reassignMediaDto>;
+
+export const downloadFileQueryDto = z.object({
+  token: z.string().min(1).max(2048),
+});
+export type DownloadFileQuery = z.infer<typeof downloadFileQueryDto>;
+
+export const downloadFileTokenResponseDto = z.object({
+  token: z.string(),
+});
+export type DownloadFileTokenResponse = z.infer<typeof downloadFileTokenResponseDto>;

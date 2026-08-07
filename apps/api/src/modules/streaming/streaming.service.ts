@@ -18,8 +18,8 @@ import {
 import { db } from "@/db/db";
 import type { Download, TorrentLiveData } from "@/modules/download/download.schema";
 import { download as downloadTable } from "@/modules/download/download.schema";
-import { findLargestVideoFile } from "@/modules/download/webtorrent.helper";
-import { torrentClient } from "@/modules/download/webtorrent-manager";
+import { findLargestVideoFile } from "@/modules/download/webtorrent/webtorrent.helper";
+import { torrentClient } from "@/modules/download/webtorrent/webtorrent-manager";
 import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
 import fsSync from "node:fs";
 import fs from "node:fs/promises";

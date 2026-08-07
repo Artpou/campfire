@@ -5,16 +5,7 @@ import type { Media, TMDBTvDetails } from "@seedarr/sdk";
 import { formatRuntime } from "@seedarr/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import {
-  CalendarIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  ClapperboardIcon,
-  ClockIcon,
-  MagnetIcon,
-  PlayIcon,
-  Trash2Icon,
-} from "lucide-react";
+import { CalendarIcon, ChevronDownIcon, ChevronUpIcon, ClapperboardIcon, ClockIcon, MagnetIcon } from "lucide-react";
 
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Badge } from "@/shared/ui/badge";
@@ -26,9 +17,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { useRole } from "@/features/auth/hooks/use-role";
 import { getDownloadStatus } from "@/features/downloads/helpers/downloads.helper";
 import { downloadQueries, useDownloadDelete } from "@/features/downloads/hooks/download.queries";
-import { WatchProgressBar } from "@/features/media/components/watch-progress-bar";
+import { MediaPlayButton } from "@/features/media/components/media-play-button";
 import { getBackdropUrl } from "@/features/media/helpers/media.helper";
-import { preloadMoviPlayer } from "@/features/player/helpers/movi-player.helper";
 import { type EpisodeDeleteLabel, TvEpisodeDeleteDialog } from "@/features/tv/components/tv-episode-delete-dialog";
 import { TvEpisodeDownloadControls } from "@/features/tv/components/tv-episode-download-controls";
 import { TvEpisodeDownloadPanel } from "@/features/tv/components/tv-episode-download-panel";
@@ -111,7 +101,7 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
 
             const isProgressCompleted =
               !!media?.progress?.duration && media.progress.position >= media.progress.duration * 0.95;
-            const hasStarted =
+            const _hasStarted =
               media?.progress &&
               media.progress.position > 0 &&
               !isProgressCompleted &&
@@ -126,7 +116,7 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
                 : null;
 
             const seCode = formatSeasonEpisode(seasonNumber, episode.episode_number);
-            const coveredEpisodes = episodeDownloadId
+            const _coveredEpisodes = episodeDownloadId
               ? getEpisodesCoveredByDownload(episodeDownloadId, episodeDownloadMap).map((covered) => ({
                   ...covered,
                   name: episodeNameByKey.get(`${covered.season}-${covered.episode}`),
@@ -150,11 +140,6 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
                             className="size-full object-cover"
                           />
                         </div>
-                        {hasStarted && media.progress && media.progress.duration > 0 && (
-                          <WatchProgressBar
-                            value={Math.min(100, (media.progress.position / media.progress.duration) * 100)}
-                          />
-                        )}
                       </div>
                     ) : (
                       <div className="w-full aspect-video flex items-center justify-center rounded-md bg-muted">
@@ -162,41 +147,8 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
                       </div>
                     )}
 
-                    {hasDownload && canPlay && (isDownloaded || isDownloading) && (
-                      <div className="flex w-full gap-1">
-                        <Button
-                          size="sm"
-                          variant={isDownloaded || isDownloading ? "default" : "secondary"}
-                          className="flex-1"
-                          asChild
-                        >
-                          <Link
-                            to="/downloads/$id/play"
-                            params={{ id: episodeDownloadId }}
-                            onMouseEnter={preloadMoviPlayer}
-                            onFocus={preloadMoviPlayer}
-                            onPointerDown={preloadMoviPlayer}
-                          >
-                            <PlayIcon className="size-3 mr-1 fill-current" />
-                            {hasStarted ? <Trans>Resume</Trans> : <Trans>Play</Trans>}
-                          </Link>
-                        </Button>
-                        {role !== "viewer" && (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            aria-label={t`Delete`}
-                            onClick={() =>
-                              setDeleteTarget({
-                                downloadId: episodeDownloadId,
-                                episodes: coveredEpisodes,
-                              })
-                            }
-                          >
-                            <Trash2Icon className="size-3.5" />
-                          </Button>
-                        )}
-                      </div>
+                    {media && hasDownload && canPlay && (isDownloaded || isDownloading) && (
+                      <MediaPlayButton media={media} />
                     )}
 
                     {role !== "viewer" && !hasDownload && (

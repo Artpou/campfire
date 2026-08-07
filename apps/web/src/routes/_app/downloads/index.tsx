@@ -15,11 +15,11 @@ import { Input } from "@/shared/ui/input";
 
 import { hasMinRole } from "@/features/auth/helpers/role.helper";
 import { DownloadsStatsPanel } from "@/features/downloads/components/downloads-stats-panel";
+import { ManualSyncWizard } from "@/features/downloads/components/manual-sync-wizard";
 import { downloadStatsQueries } from "@/features/downloads/hooks/download-stats.queries";
 import { MediaCard } from "@/features/media/components/media-card";
 import { MediaTypeTabs } from "@/features/media/components/media-type-tabs";
 import { mediaQueries, refetchMediaInterval } from "@/features/media/hooks/media.queries";
-import { ManualSyncWizard } from "@/features/settings/components/manual-sync-wizard";
 import { useRemoteSync } from "@/features/settings/hooks/remote-sync.queries";
 import { settingsQueries } from "@/features/settings/hooks/settings.queries";
 import { storageConfigQueries } from "@/features/settings/hooks/storage-config.queries";

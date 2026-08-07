@@ -76,7 +76,6 @@ function TVPage() {
       media={media}
       download={liveDownload}
       posterData={data}
-      posterType="tv"
       infoSection={<TvInfo tv={tv} />}
       detailsSection={detailsSection}
       downloadTabContent={torrentDownloads.length > 0 ? <MediaDownloadTab downloads={torrentDownloads} /> : undefined}
@@ -85,13 +84,7 @@ function TVPage() {
         remoteDownloads.length > 0 ? <MediaServerTab downloads={remoteDownloads} mediaType="tv" /> : undefined
       }
       serverCount={remoteDownloads.length}
-      defaultTab={
-        hasActiveDownload
-          ? "downloads"
-          : remoteDownloads.length > 0 && torrentDownloads.length === 0
-            ? "server"
-            : "info"
-      }
+      defaultTab={hasActiveDownload ? "downloads" : "info"}
     >
       <TvEpisodesSection tv={tv} media={data.media} />
       <TvCast tv={tv} />

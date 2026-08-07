@@ -107,8 +107,8 @@ export function TvInfo({ tv }: TvInfoProps) {
           )}
         </div>
         {episodeRuntime && episodeRuntime > 0 && (
-          <Badge variant="secondary">
-            <ClockIcon className="size-4 mr-1" />
+          <Badge variant="secondary" className="text-sm px-2.5 py-1 gap-1.5 mt-2">
+            <ClockIcon className="size-3.5" />
             <Trans>Ends at</Trans>{" "}
             {new Date(Date.now() + episodeRuntime * 60000).toLocaleTimeString([], {
               hour: "2-digit",

@@ -62,10 +62,10 @@ export function MovieInfo({ movie }: MovieInfoProps) {
           <p className="text-sm text-muted-foreground font-medium">{movie.original_title}</p>
         </div>
 
-        <div className="flex items-center gap-2 text-sm font-medium mt-4">
+        <div className="flex items-center gap-2.5 text-sm font-medium mt-4">
           {movie.release_date && (
-            <Badge variant="outline">
-              <CalendarIcon className="size-3" />
+            <Badge variant="outline" className="text-sm px-2.5 py-1 gap-1.5">
+              <CalendarIcon className="size-3.5" />
               {new Date(movie.release_date).toLocaleDateString(undefined, {
                 day: "2-digit",
                 month: "long",
@@ -75,14 +75,14 @@ export function MovieInfo({ movie }: MovieInfoProps) {
           )}
 
           {movie.runtime && (
-            <Badge variant="outline">
-              <ClockIcon className="size-3" />
+            <Badge variant="outline" className="text-sm px-2.5 py-1 gap-1.5">
+              <ClockIcon className="size-3.5" />
               {formatRuntime(movie.runtime)}
             </Badge>
           )}
 
           {movie.runtime && movie.runtime > 0 && (
-            <Badge variant="secondary">
+            <Badge variant="secondary" className="text-sm px-2.5 py-1 gap-1.5">
               <Trans>Ends at</Trans>{" "}
               {new Date(Date.now() + movie.runtime * 60000).toLocaleTimeString([], {
                 hour: "2-digit",

@@ -21,8 +21,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useStartDownload } from "@/features/downloads/hooks/download.queries";
 import { indexersManagerImages } from "@/features/indexers-manager/helpers/indexers-manager.helper";
 import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
-import { DownloadUnavailableDialog } from "./download-unavailable-dialog";
 import { TorrentInspectModal } from "./torrent-inspect-modal";
+import { TorrentUnavailableDialog } from "./torrent-unavailable-dialog";
 
 interface TorrentWithMeta extends Torrent {
   indexerId?: string;
@@ -336,7 +336,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
         magnetUri={selectedMagnetUri}
       />
 
-      <DownloadUnavailableDialog
+      <TorrentUnavailableDialog
         open={unavailableDialogOpen}
         onRetry={handleUnavailableRetry}
         onCancel={handleUnavailableCancel}

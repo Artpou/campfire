@@ -1,10 +1,8 @@
 import type { DownloadTorrentInput } from "@seedarr/contracts";
 import { and, desc, eq, inArray } from "drizzle-orm";
-import type WebTorrent from "webtorrent";
 
 import { BadRequestError, ForbiddenError, NotFoundError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
-import { resolveWithinDownloads } from "@/shared/helpers/path.helper";
 import { IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { db } from "@/db/db";
@@ -12,32 +10,31 @@ import { ActivityLogService } from "@/modules/activity-log/activity-log.service"
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import { download } from "@/modules/download/download.schema";
 import { media, watchProgress } from "@/modules/media/media.schema";
+import { signToken } from "@/modules/storage-config/crypto.helper";
 import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
 import { resolveTorrentSource } from "@/modules/torrent/torrent-source.helper";
-import fs from "node:fs/promises";
-import type { Download, DownloadStats, TorrentLiveData } from "./download.schema";
-import { isTransferInProgress, markTransferStarting, runRemoteTransfer } from "./download-storage.helper";
-import { extractTorrentLiveData, waitForTorrentMetadata } from "./webtorrent.helper";
-import { torrentClient, UNMARK_DESTROYING_DELAY_MS } from "./webtorrent-manager";
-import { clearHandlersForDownload, setupTorrentHandlers } from "./webtorrent-sync";
+import type { Download, DownloadStats } from "./download.schema";
+import { checkFileAvailability } from "./local/local-file.helper";
+import { isTransferInProgress, markTransferStarting, runRemoteTransfer } from "./remote/remote-transfer.helper";
+import { extractTorrentLiveData, waitForTorrentMetadata } from "./webtorrent/webtorrent.helper";
+import {
+  destroyLocalTorrentFiles,
+  pauseTorrent,
+  reannounceTorrent,
+  recheckTorrent,
+  resumeTorrent,
+} from "./webtorrent/webtorrent.service";
+import { torrentClient } from "./webtorrent/webtorrent-manager";
+import { setupTorrentHandlers } from "./webtorrent/webtorrent-sync";
+
+const DOWNLOAD_FILE_TOKEN_TTL_SECONDS = 60;
 
 /** Magnet URIs need longer — peers must be discovered before metadata arrives. */
 const METADATA_TIMEOUT_MAGNET_MS = 10_000;
 /** .torrent buffers already carry metadata; only wait for ready/error. */
 const METADATA_TIMEOUT_FILE_MS = 5_000;
 
-function destroyTorrent(torrent: WebTorrent.Torrent, opts: { destroyStore: boolean }): Promise<void> {
-  return new Promise<void>((resolve) => {
-    try {
-      torrent.destroy(opts, () => resolve());
-    } catch {
-      resolve();
-    }
-  });
-}
-
 export class DownloadService extends IdentifiableService<Download> {
-  /** Members and above share the instance download list; viewers stay scoped to their own. */
   private canSeeAllDownloads(): boolean {
     return this.roleLevel >= ROLE_LEVELS.member;
   }
@@ -80,6 +77,8 @@ export class DownloadService extends IdentifiableService<Download> {
 
     return { count: downloads.length, totalSize, downloadSpeed, uploadSpeed, peers };
   }
+
+  // --- Torrent lifecycle (delegated) ---
 
   async start(input: DownloadTorrentInput): Promise<Download | { status: "REMOTE_UNAVAILABLE" }> {
     const { preferLocal, ...downloadInput } = input;
@@ -142,50 +141,28 @@ export class DownloadService extends IdentifiableService<Download> {
   async pause(id: string): Promise<{ success: true }> {
     const [item] = await this.findMany({ ids: [id] });
     if (!item) throw new NotFoundError("Download");
-
-    const activeTorrent = torrentClient.resolveTorrent(id, item.torrent?.infoHash);
-
-    if (!activeTorrent) {
-      if (item.torrent?.paused) return { success: true };
-
-      const pausedData = { ...item.torrent, paused: true } as TorrentLiveData;
-
-      await db.update(download).set({ torrent: pausedData }).where(eq(download.id, id));
-      logger.info("DOWNLOAD", `Paused (no active session): ${item.torrent?.name || id}`);
-      return { success: true };
-    }
-
-    torrentClient.markDestroying(id);
-    clearHandlersForDownload(id);
-
-    const pausedData = { ...extractTorrentLiveData(activeTorrent), paused: true, downloadSpeed: 0, uploadSpeed: 0 };
-    await db.update(download).set({ torrent: pausedData }).where(eq(download.id, id));
-
-    await destroyTorrent(activeTorrent, { destroyStore: false });
-    torrentClient.deleteActiveTorrent(id);
-
-    logger.info("DOWNLOAD", `Paused: ${activeTorrent.name || id}`);
-    setTimeout(() => torrentClient.unmarkDestroying(id), UNMARK_DESTROYING_DELAY_MS);
-    return { success: true };
+    return pauseTorrent(id, item);
   }
 
   async resume(id: string): Promise<{ success: true }> {
     const [item] = await this.findMany({ ids: [id] });
     if (!item) throw new NotFoundError("Download");
-    if (!item.torrent?.paused) throw new BadRequestError("Torrent is not paused");
-    if (!item.torrent.magnetURI) throw new BadRequestError("No magnet URI found");
-
-    const resumed = await torrentClient.attachTorrent(id, item.torrent.magnetURI, item.torrent.infoHash);
-    setupTorrentHandlers(resumed, id);
-
-    await db
-      .update(download)
-      .set({ torrent: { ...item.torrent, paused: false } as TorrentLiveData })
-      .where(eq(download.id, id));
-
-    logger.info("DOWNLOAD", `Resumed torrent: ${item.torrent.name || id}`);
-    return { success: true };
+    return resumeTorrent(id, item);
   }
+
+  async recheck(id: string): Promise<{ success: true }> {
+    const [item] = await this.findMany({ ids: [id] });
+    if (!item) throw new NotFoundError("Download");
+    return recheckTorrent(id, item);
+  }
+
+  async reannounce(id: string): Promise<{ success: true }> {
+    const [item] = await this.findMany({ ids: [id] });
+    if (!item) throw new NotFoundError("Download");
+    return reannounceTorrent(id, item);
+  }
+
+  // --- Remote / file ---
 
   async transfer(id: string): Promise<{ success: true }> {
     const [item] = await this.findMany({ ids: [id] });
@@ -219,46 +196,14 @@ export class DownloadService extends IdentifiableService<Download> {
     return remoteStorageService.listFiles(item.remoteLocation);
   }
 
-  async recheck(id: string): Promise<{ success: true }> {
-    const [item] = await this.findMany({ ids: [id] });
-    if (!item) throw new NotFoundError("Download");
-    if (!item.torrent?.magnetURI) throw new BadRequestError("No magnet URI found");
-    if (item.torrent.done) throw new BadRequestError("Download is already complete");
-
-    const activeTorrent = torrentClient.resolveTorrent(id, item.torrent.infoHash);
-
-    if (activeTorrent) {
-      torrentClient.markDestroying(id);
-      clearHandlersForDownload(id);
-      await destroyTorrent(activeTorrent, { destroyStore: false });
-      torrentClient.deleteActiveTorrent(id);
-      setTimeout(() => torrentClient.unmarkDestroying(id), UNMARK_DESTROYING_DELAY_MS);
-    }
-
-    const resumed = await torrentClient.attachTorrent(id, item.torrent.magnetURI, item.torrent.infoHash);
-    setupTorrentHandlers(resumed, id);
-
-    await db
-      .update(download)
-      .set({ torrent: { ...item.torrent, paused: false }, error: null })
-      .where(eq(download.id, id));
-
-    logger.info("DOWNLOAD", `Force recheck: ${item.torrent.name || id}`);
-    return { success: true };
+  createFileToken(id: string): { token: string } {
+    return {
+      token: signToken({ downloadId: id, userId: this.user.id }, DOWNLOAD_FILE_TOKEN_TTL_SECONDS),
+    };
   }
 
-  async reannounce(id: string): Promise<{ success: true }> {
-    const [item] = await this.findMany({ ids: [id] });
-    if (!item) throw new NotFoundError("Download");
-
-    const activeTorrent = torrentClient.resolveTorrent(id, item.torrent?.infoHash);
-    if (!activeTorrent) throw new BadRequestError("Torrent has no active session");
-
-    const discovery = (activeTorrent as unknown as { discovery?: { tracker?: { update(): void } } }).discovery;
-    discovery?.tracker?.update();
-
-    logger.info("DOWNLOAD", `Force reannounce: ${item.torrent?.name || id}`);
-    return { success: true };
+  async checkAvailability(id: string): Promise<void> {
+    if (!(await checkFileAvailability(id))) throw new NotFoundError("Download");
   }
 
   async reassignMedia(id: string, newMediaId: number): Promise<{ success: true }> {
@@ -308,7 +253,7 @@ export class DownloadService extends IdentifiableService<Download> {
       return { success: true };
     }
 
-    if (scope === "all" || scope === "torrent") this.destroyLocalTorrent(id, item);
+    if (scope === "all" || scope === "torrent") destroyLocalTorrentFiles(id, item);
 
     if (scope === "all" || scope === "remote") {
       if (item.remoteLocation && !options?.unlink) {
@@ -339,33 +284,5 @@ export class DownloadService extends IdentifiableService<Download> {
     });
 
     return { success: true };
-  }
-
-  private destroyLocalTorrent(id: string, item: Download): void {
-    const torrentName = item.torrent?.name;
-    const torrent =
-      torrentClient.getActiveTorrent(id) ??
-      (item.torrent?.infoHash ? torrentClient.findByInfoHash(item.torrent.infoHash) : undefined);
-
-    if (torrent) {
-      torrentClient.markDestroying(id);
-      torrentClient.deleteActiveTorrent(id);
-      clearHandlersForDownload(id);
-
-      destroyTorrent(torrent, { destroyStore: true })
-        .then(() => logger.info("DOWNLOAD", `Destroyed files for: ${torrentName}`))
-        .catch((err) => logger.error("DOWNLOAD", `Error destroying files`, err));
-
-      setTimeout(() => torrentClient.unmarkDestroying(id), UNMARK_DESTROYING_DELAY_MS);
-    } else if (torrentName) {
-      try {
-        const targetPath = resolveWithinDownloads(torrentName);
-        fs.rm(targetPath, { recursive: true, force: true })
-          .then(() => logger.info("DOWNLOAD", `FS deleted: ${targetPath}`))
-          .catch((err) => logger.error("DOWNLOAD", `FS delete failed for ${targetPath}`, err));
-      } catch (error) {
-        logger.error("DOWNLOAD", `Refusing to delete path outside downloads: ${torrentName}`, error);
-      }
-    }
   }
 }

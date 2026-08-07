@@ -1,12 +1,11 @@
 {
-  "js/ts.tsserver.maxMemory": 4096,
-  "js/ts.tsdk.path": "node_modules/typescript/lib",
-  "js/ts.tsdk.promptToUseWorkspaceVersion": true,
-  "js/ts.preferences.importModuleSpecifier": "non-relative",
-
   "editor.defaultFormatter": "biomejs.biome",
   "editor.formatOnSave": true,
+  "js/ts.preferences.importModuleSpecifier": "non-relative",
+  "js/ts.preferences.autoImportFileExcludePatterns": ["@radix-ui/*"],
+
   "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit",
     "source.organizeImports.biome": "explicit"
   },
   "[json]": { "editor.defaultFormatter": "biomejs.biome" },

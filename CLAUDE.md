@@ -138,7 +138,7 @@ pnpm db:push      # Push schema directly (dev only)
 pnpm --filter @seedarr/api db:studio   # Open Drizzle Studio
 ```
 
-**Always run `pnpm check` before committing.**
+**Human workflow:** Always run `pnpm check` manually before committing.
 
 ## API Patterns
 
@@ -202,3 +202,10 @@ Each module has `{module}.dto.ts`: Zod schemas for validation, TypeScript types 
 ### Icons
 
 - **Lucide React** with `Icon` suffix: `HomeIcon`, `SettingsIcon`
+
+## AI Agent Constraints & Token Economy
+
+- **Do NOT run heavy terminal commands:** Never automatically run `pnpm check`, `pnpm test`, or full build scripts. The user will run tests manually.
+- **Minimal test execution:** If you must verify a fix, run ONLY the specific test file concerned (e.g., `pnpm --filter @seedarr/api test download.route.test.ts`).
+- **Conciseness:** Keep your internal reasoning/thoughts brief. Focus directly on targeted file modifications.
+- **Targeted edits:** Do not read unrelated files. Rely on exact file paths provided by the user.

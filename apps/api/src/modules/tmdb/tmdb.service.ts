@@ -11,7 +11,7 @@ import type { MediaEnriched } from "@/modules/media/media.types";
 import { getTmdbApiKey } from "@/modules/settings/tmdb-key.helper";
 import { tmdbMovieToMedia, tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
 import type { User } from "@/modules/user/user.schema";
-import { getTmdbCache, isCachedPayload, setTmdbCache } from "./tmdb.cache";
+import { getTmdbCache, setTmdbCache } from "./tmdb.cache";
 import type {
   FetchOptions,
   TMDBGenresResponse,
@@ -25,6 +25,7 @@ import type {
 } from "./tmdb.types";
 
 const TMDB_API_URL = "https://api.themoviedb.org/3";
+const TMDB_FETCH_TIMEOUT_MS = 8_000;
 
 const NUMBER_OF_PROVIDERS = 5;
 const TRENDING_LIMIT = 10;
@@ -78,22 +79,18 @@ export async function tmdbRequest<T>(url: string, locale: string, options?: Fetc
   if (!apiKey) throw new ServiceUnavailableError("TMDB (missing API key)");
 
   const fullUrl = buildUrl(url, locale, apiKey, options);
-  const cached = getTmdbCache(fullUrl);
-
-  if (isCachedPayload<T>(cached)) {
+  const cached = getTmdbCache<T>(fullUrl);
+  if (cached !== undefined) {
     logger.debug("TMDB (cached)", `GET ${fullUrl}`);
     return cached;
   }
 
-  const res = await fetch(fullUrl);
-
+  const res = await fetch(fullUrl, { signal: AbortSignal.timeout(TMDB_FETCH_TIMEOUT_MS) });
   if (!res.ok) throw new ServiceUnavailableError(`TMDB (${res.status} ${res.statusText})`);
+
   logger.debug("TMDB", `GET ${fullUrl}`);
-
-  const data = await res.json();
-  if (!isCachedPayload<T>(data)) throw new ServiceUnavailableError("TMDB (invalid response)");
-  setTmdbCache(fullUrl, url, options, data);
-
+  const data = (await res.json()) as T;
+  setTmdbCache(fullUrl, data);
   return data;
 }
 

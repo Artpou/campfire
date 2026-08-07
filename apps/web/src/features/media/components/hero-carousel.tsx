@@ -6,7 +6,7 @@ import type { Media } from "@seedarr/sdk";
 import { formatRuntime } from "@seedarr/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ClockIcon, MagnetIcon, PlayIcon } from "lucide-react";
+import { ClockIcon, MagnetIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
@@ -17,17 +17,10 @@ import { Carousel, type CarouselApi, CarouselContent, CarouselItem } from "@/sha
 
 import { useRole } from "@/features/auth/hooks/use-role";
 import { DownloadProgress } from "@/features/downloads/components/download-progress";
+import { MediaPlayButton } from "@/features/media/components/media-play-button";
 import { MediaRating } from "@/features/media/components/media-rating";
-import { WatchProgressBar } from "@/features/media/components/watch-progress-bar";
-import {
-  getBackdropUrl,
-  getEndsAtForMedia,
-  getPosterUrl,
-  getWatchProgressPercent,
-  hasWatchProgress,
-} from "@/features/media/helpers/media.helper";
+import { getBackdropUrl, getPosterUrl, hasWatchProgress } from "@/features/media/helpers/media.helper";
 import { mediaQueries, refetchLibraryInterval } from "@/features/media/hooks/media.queries";
-import { preloadMoviPlayer } from "@/features/player/helpers/movi-player.helper";
 
 const AUTO_ROTATE_MS = 7000;
 const MAX_OVERVIEW_LENGTH = 220;
@@ -48,13 +41,6 @@ function getTorrentsLinkProps(media: Media) {
     : ({ to: "/movies/$id/torrents", params: { id: media.id.toString() } } as const);
 }
 
-function getPlayLinkProps(media: Media) {
-  const download = media.download;
-  const downloadId = download?.id ?? media.progress?.downloadId;
-  if (!downloadId) return null;
-  return { to: "/downloads/$id/play", params: { id: downloadId } } as const;
-}
-
 interface HeroSlideProps {
   media: Media;
   isLibraryMode: boolean;
@@ -65,8 +51,6 @@ const HeroSlide = memo(function HeroSlide({ media, isLibraryMode }: HeroSlidePro
   const year = media.release_date ? new Date(media.release_date).getFullYear() : "";
   const detailLinkProps = getDetailLinkProps(media);
   const torrentsLinkProps = getTorrentsLinkProps(media);
-  const playLinkProps = getPlayLinkProps(media);
-  const endsAt = getEndsAtForMedia(media);
   const isDownloading = !!media.download && !media.download.torrent?.done && !media.download.remoteLocation;
   const showWatchProgress = isLibraryMode && hasWatchProgress(media);
 
@@ -85,7 +69,7 @@ const HeroSlide = memo(function HeroSlide({ media, isLibraryMode }: HeroSlidePro
       <div className="relative h-full container mx-auto max-w-6xl px-8 md:px-12 flex items-end pb-12 md:pb-16 gap-5 md:gap-8">
         {media.poster_path && (
           <Link {...detailLinkProps} className="hidden sm:block relative shrink-0 group/poster">
-            <div className="relative w-[110px] md:w-[150px] aspect-2/3">
+            <div className="relative w-27.5 md:w-37.5 aspect-2/3">
               <img
                 src={getPosterUrl(media.poster_path, "w342")}
                 alt={media.title}
@@ -99,7 +83,6 @@ const HeroSlide = memo(function HeroSlide({ media, isLibraryMode }: HeroSlidePro
                   <DownloadProgress download={media.download} variant="circular" />
                 </div>
               )}
-              {showWatchProgress && <WatchProgressBar value={getWatchProgressPercent(media)} />}
             </div>
           </Link>
         )}
@@ -112,16 +95,11 @@ const HeroSlide = memo(function HeroSlide({ media, isLibraryMode }: HeroSlidePro
             {media.duration != null && media.duration > 0 && (
               <>
                 {year && <span className="text-muted-foreground/40">·</span>}
-                <Badge variant="outline" className="gap-1">
-                  <ClockIcon className="size-3" />
+                <Badge variant="outline" className="text-sm px-2.5 py-1 gap-1.5">
+                  <ClockIcon className="size-3.5" />
                   {formatRuntime(media.duration)}
                 </Badge>
               </>
-            )}
-            {endsAt && (
-              <Badge variant="secondary">
-                <Trans>Ends at</Trans> {endsAt}
-              </Badge>
             )}
           </div>
 
@@ -138,19 +116,7 @@ const HeroSlide = memo(function HeroSlide({ media, isLibraryMode }: HeroSlidePro
               <MediaRating media={media} size={44} strokeWidth={4} />
             )}
 
-            {role !== "viewer" && isLibraryMode && playLinkProps && (
-              <Button asChild size="lg" className="shadow-lg">
-                <Link
-                  {...playLinkProps}
-                  onMouseEnter={preloadMoviPlayer}
-                  onFocus={preloadMoviPlayer}
-                  onPointerDown={preloadMoviPlayer}
-                >
-                  <PlayIcon className="size-4 fill-current" />
-                  {showWatchProgress ? <Trans>Resume</Trans> : <Trans>Watch</Trans>}
-                </Link>
-              </Button>
-            )}
+            {isLibraryMode && <MediaPlayButton media={media} size="lg" />}
 
             {role !== "viewer" && !isLibraryMode && (
               <Button asChild size="lg" className="shadow-lg">
@@ -179,10 +145,14 @@ export function HeroCarousel({ type }: HeroCarouselProps) {
     ...mediaQueries.library(type),
     refetchInterval: refetchLibraryInterval,
   });
-  const { data: trending, isLoading: isTrendingLoading } = useQuery(mediaQueries.trending(type, locale));
 
   const hasLibrary = !!library?.length;
   const isLibraryMode = hasLibrary;
+
+  const { data: trending, isLoading: isTrendingLoading } = useQuery({
+    ...mediaQueries.trending(type, locale),
+    enabled: !isLibraryLoading && !isLibraryMode,
+  });
 
   const data = useMemo(() => (isLibraryMode ? library : trending) ?? [], [isLibraryMode, library, trending]);
   const hasData = data.length > 0;

@@ -1,56 +1,76 @@
+import { formatError } from "@seedarr/shared";
 import ms from "ms";
 
 import { logger } from "@/shared/helpers/logger.helper";
 
-import type { FetchOptions } from "./tmdb.types";
-
 const CACHE_TTL = ms("1h");
+
+const ALWAYS_CACHED_ROUTES = ["/genre/movie/list", "/watch/providers/movie", "/genre/tv/list", "/watch/providers/tv"];
+
+const DISCOVER_CHECK_PARAMS = [
+  "api_key",
+  "language",
+  "page",
+  "limit",
+  "locale",
+  "with_release_type",
+  "release_date.lte",
+];
+
 const cache = new Map<string, { expiresAt: number; value: unknown }>();
 
-export function getTmdbCache(key: string): unknown | undefined {
-  const entry = cache.get(key);
+export function getTmdbCache<T>(url: string): T | undefined {
+  if (!isCacheableTmdbRequest(url)) return;
+
+  const entry = cache.get(url);
   if (!entry) return;
 
   if (entry.expiresAt <= Date.now()) {
-    cache.delete(key);
+    cache.delete(url);
+    logger.debug("TMDB", `cache expired for ${url}`);
     return;
   }
 
-  return entry.value;
+  return entry.value as T;
 }
 
-export function setTmdbCache(key: string, url: string, options: FetchOptions | undefined, value: unknown): void {
-  if (!isCacheableTmdbRequest(url, options)) return;
-  cache.set(key, { expiresAt: Date.now() + CACHE_TTL, value });
-  logger.debug("TMDB (cached)", `SET ${key}`);
-}
-
-function isCacheableTmdbRequest(url: string, options?: FetchOptions): boolean {
-  if (url === "/genre/movie/list" || url === "/genre/tv/list") return true;
-  if (!options) return false;
-
-  const definedCount = Object.values(options).filter((v) => v !== undefined).length;
-
-  const isFirstPage = String(options.page) === "1";
-
-  if (url === "/discover/movie") {
-    const isTrending =
-      definedCount === 3 &&
-      options["release_date.lte"] !== undefined &&
-      options.sort_by === "popularity.desc" &&
-      options.with_release_type === "4|5";
-
-    const isBase =
-      definedCount === 3 && isFirstPage && options.locale !== undefined && options.with_release_type === "4|5";
-
-    return isTrending || isBase;
+export function setTmdbCache(key: string, value: unknown): void {
+  try {
+    if (!isCacheableTmdbRequest(key)) return;
+    cache.set(key, { expiresAt: Date.now() + CACHE_TTL, value });
+    logger.debug("TMDB", `cache set for ${key}`);
+  } catch (e: unknown) {
+    logger.error("TMDB", `cache error : ${formatError(e)}`);
   }
-
-  if (url === "/discover/tv") {
-    return definedCount === 2 && isFirstPage && options.locale !== undefined;
-  }
-
-  return false;
 }
 
-export const isCachedPayload = <T>(value: unknown): value is T => value !== undefined && value !== null;
+function isCacheableTmdbRequest(key: string): boolean {
+  try {
+    const url = new URL(key);
+    const pathname = url.pathname;
+    const params = url.searchParams;
+
+    if (ALWAYS_CACHED_ROUTES.some((route) => pathname.endsWith(route))) {
+      return true;
+    }
+
+    if (pathname.endsWith("/discover/movie") || pathname.endsWith("/discover/tv")) {
+      const page = params.get("page");
+      const isPageOne = !page || page === "1";
+
+      if (!isPageOne) return false;
+
+      for (const paramKey of params.keys()) {
+        if (!DISCOVER_CHECK_PARAMS.includes(paramKey)) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}

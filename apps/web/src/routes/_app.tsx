@@ -2,7 +2,6 @@ import { msg } from "@lingui/core/macro";
 import { Trans } from "@lingui/react";
 import { Trans as TransMacro } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, isRedirect, Link, Outlet, redirect, useLocation } from "@tanstack/react-router";
 import { AlertTriangleIcon, FilmIcon, LibraryIcon, ListIcon, TvIcon } from "lucide-react";
 import ms from "ms";
@@ -14,18 +13,15 @@ import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-conta
 
 import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";
-import { indexerManagerQueries } from "@/features/torrent/hooks/indexer.queries";
-
-const authQueryOptions = {
-  queryKey: ["auth", "me"],
-  queryFn: () => unwrap(api.auth.me.$get()),
-  staleTime: ms("5m"),
-};
 
 export const Route = createFileRoute("/_app")({
   beforeLoad: async ({ location, context }) => {
     try {
-      const user = await context.queryClient.ensureQueryData(authQueryOptions);
+      const user = await context.queryClient.ensureQueryData({
+        queryKey: ["auth", "me"],
+        queryFn: () => unwrap(api.auth.me.$get()),
+        staleTime: ms("5m"),
+      });
       useAuth.getState().setUser(user);
 
       const isAdmin = user.role === "admin" || user.role === "owner";
@@ -53,9 +49,6 @@ export const Route = createFileRoute("/_app")({
       throw redirect({ to: "/login" });
     }
   },
-  loader: ({ context }) => {
-    return context.queryClient.ensureQueryData(indexerManagerQueries.count());
-  },
   errorComponent: RouteErrorHandler,
   pendingComponent: () => <SeedarrLoaderContainer />,
   component: AuthenticatedLayout,
@@ -75,10 +68,10 @@ const MOBILE_NAV = [
 
 function AuthenticatedLayout() {
   const location = useLocation();
+  const user = useAuth.getState().user;
   const { isAdmin, hasRole } = useRole();
-  const { data: count = 0 } = useSuspenseQuery(indexerManagerQueries.count());
 
-  const isIndexerMisconfigured = isAdmin && count === 0;
+  const isIndexerMisconfigured = isAdmin && user?.countIndexerManagers === 0;
 
   const visibleNavItems = MOBILE_NAV.filter((item) => {
     if (item.minRole && !hasRole(item.minRole)) return false;

@@ -23,7 +23,6 @@ type MediaDetailLayoutProps = {
   media: Media | undefined;
   download?: Media["download"] | null;
   posterData: Movie | TV;
-  posterType?: "movie" | "tv";
   infoSection: ReactNode;
   detailsSection: ReactNode;
   children: ReactNode;
@@ -41,7 +40,6 @@ export function MediaDetailLayout({
   media,
   download,
   posterData,
-  posterType,
   infoSection,
   detailsSection,
   children,
@@ -121,7 +119,7 @@ export function MediaDetailLayout({
           </div>
 
           <div className="lg:w-1/4 max-w-[250px] justify-items-center">
-            <MediaPoster data={posterData} download={download ?? media?.download} type={posterType} />
+            <MediaPoster data={posterData} download={download ?? media?.download} />
           </div>
           <div className="lg:w-3/4">{infoSection}</div>
           <div className="hidden xl:block w-[300px]">{detailsSection}</div>
