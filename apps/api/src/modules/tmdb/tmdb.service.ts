@@ -28,7 +28,6 @@ import type {
 const TMDB_API_URL = "https://api.themoviedb.org/3";
 const TMDB_FETCH_TIMEOUT_MS = 8_000;
 
-const NUMBER_OF_PROVIDERS = 5;
 const TRENDING_LIMIT = 10;
 
 const cache = createCache({
@@ -199,11 +198,12 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
     return this.request<TMDBGenresResponse>(`/genre/${this.type}/list`);
   }
 
-  async providers(): Promise<TMDBProvider[]> {
+  async providers(options?: { limit?: number }): Promise<TMDBProvider[]> {
     const data = await this.request<TMDBProvidersResponse>(`/watch/providers/${this.type}`);
     const country = this.locale.split("-")[1] || "US";
+    const limit = options?.limit;
 
-    return data.results
+    const providers = data.results
       .filter(
         (p, i, self) =>
           p.logo_path &&
@@ -211,13 +211,14 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
           i === self.findIndex((x) => x.provider_name === p.provider_name),
       )
       .sort((a, b) => a.display_priorities[country] - b.display_priorities[country])
-      .slice(0, NUMBER_OF_PROVIDERS)
       .map((p) => ({
         provider_id: p.provider_id,
         provider_name: p.provider_name,
         logo_path: p.logo_path,
         display_priorities: {},
       }));
+
+    return typeof limit === "number" ? providers.slice(0, limit) : providers;
   }
 
   async trailer(id: string): Promise<TMDBVideo | undefined> {

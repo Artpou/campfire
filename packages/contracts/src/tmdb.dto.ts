@@ -14,11 +14,13 @@ export const tmdbDiscoverDto = tmdbListDto.extend({
   with_watch_providers: z.string().optional(),
   "primary_release_date.gte": z.string().optional(),
   "primary_release_date.lte": z.string().optional(),
+  "first_air_date.gte": z.string().optional(),
+  "first_air_date.lte": z.string().optional(),
   with_original_language: z.string().optional(),
   with_keywords: z.string().optional(),
-  "with_runtime.gte": z.number().optional(),
-  "with_runtime.lte": z.number().optional(),
-  "vote_average.gte": z.number().optional(),
+  "with_runtime.gte": z.coerce.number().optional(),
+  "with_runtime.lte": z.coerce.number().optional(),
+  "vote_average.gte": z.coerce.number().optional(),
 });
 export type TmdbDiscoverQuery = z.infer<typeof tmdbDiscoverDto>;
 

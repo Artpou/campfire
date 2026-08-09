@@ -1,15 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
+import type { Media } from "@seedarr/sdk";
 import { useQuery } from "@tanstack/react-query";
-import { FilterIcon, RotateCcwIcon } from "lucide-react";
+import { ClockIcon, FilterIcon, HashIcon, MonitorPlayIcon, RotateCcwIcon, StarIcon, TagsIcon } from "lucide-react";
 
+import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
-import { Input } from "@/shared/ui/input";
+import { DatePicker } from "@/shared/ui/date-picker";
+import { Field, FieldLabel } from "@/shared/ui/field";
 import { Label } from "@/shared/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import {
   Sheet,
   SheetContent,
@@ -21,12 +23,28 @@ import {
 } from "@/shared/ui/sheet";
 import { Slider } from "@/shared/ui/slider";
 
+import { FilterCombobox } from "@/features/media/components/filter-combobox";
+import {
+  type FilterOption,
+  getRuntimePreset,
+  joinFilterIds,
+  optionsFromIds,
+  parseLabeledOptions,
+  type RuntimePreset,
+  runtimePresetToFilters,
+  serializeLabeledOptions,
+  splitFilterIds,
+} from "@/features/media/helpers/filter-options.helper";
+import { getPosterUrl } from "@/features/media/helpers/media.helper";
+import { genreQueries } from "@/features/media/hooks/genre.queries";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
+import { providerQueries } from "@/features/media/hooks/provider.queries";
 
 export interface MediaFiltersValue {
   date_gte?: string;
   date_lte?: string;
-  with_original_language?: string;
+  with_genres?: string;
+  with_watch_providers?: string;
   with_keywords?: string;
   with_keywords_label?: string;
   with_runtime_gte?: number;
@@ -35,6 +53,7 @@ export interface MediaFiltersValue {
 }
 
 interface MediaFiltersSheetProps {
+  type: Media["type"];
   value: MediaFiltersValue;
   onChange: (value: MediaFiltersValue) => void;
   dateLabel: React.ReactNode;
@@ -42,44 +61,46 @@ interface MediaFiltersSheetProps {
   description: React.ReactNode;
   buttonVariant?: "outline" | "secondary";
   dateInputIdPrefix?: string;
+  applyLabel?: React.ReactNode;
 }
 
-const RUNTIME_MIN = 0;
-const RUNTIME_MAX = 400;
 const RATING_MIN = 0;
 const RATING_MAX = 10;
 
-const LANGUAGES = [
-  { code: "any", label: msg`Any language` },
-  { code: "en", label: msg`English` },
-  { code: "fr", label: msg`French` },
-  { code: "es", label: msg`Spanish` },
-  { code: "de", label: msg`German` },
-  { code: "it", label: msg`Italian` },
-  { code: "ja", label: msg`Japanese` },
-  { code: "ko", label: msg`Korean` },
-  { code: "zh", label: msg`Chinese` },
-  { code: "pt", label: msg`Portuguese` },
-  { code: "ru", label: msg`Russian` },
-  { code: "hi", label: msg`Hindi` },
-  { code: "ar", label: msg`Arabic` },
+const RUNTIME_PRESETS: { id: RuntimePreset; label: string }[] = [
+  { id: "short", label: "< 90m" },
+  { id: "medium", label: "90m-120m" },
+  { id: "long", label: "> 120m" },
 ];
 
 function countActive(value: MediaFiltersValue): number {
   let count = 0;
+  if (value.with_genres) count++;
   if (value.date_gte || value.date_lte) count++;
-  if (value.with_original_language) count++;
+  if (value.with_watch_providers) count++;
   if (value.with_keywords) count++;
-  if (
-    (value.with_runtime_gte !== undefined && value.with_runtime_gte > RUNTIME_MIN) ||
-    (value.with_runtime_lte !== undefined && value.with_runtime_lte < RUNTIME_MAX)
-  )
-    count++;
+  if (value.with_runtime_gte !== undefined || value.with_runtime_lte !== undefined) count++;
   if (value.vote_average_gte !== undefined && value.vote_average_gte > RATING_MIN) count++;
   return count;
 }
 
+function FilterSectionLabel({
+  icon: Icon,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
+}) {
+  return (
+    <Label className="flex items-center gap-2">
+      <Icon className="size-4 text-muted-foreground" />
+      {children}
+    </Label>
+  );
+}
+
 export function MediaFiltersSheet({
+  type,
   value,
   onChange,
   dateLabel,
@@ -87,29 +108,71 @@ export function MediaFiltersSheet({
   description,
   buttonVariant = "outline",
   dateInputIdPrefix = "date",
+  applyLabel,
 }: MediaFiltersSheetProps) {
   const { t } = useLingui();
+  const locale = useTmdbLocale();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<MediaFiltersValue>(value);
-  const [keywordQuery, setKeywordQuery] = useState(value.with_keywords_label ?? "");
+  const [keywordQuery, setKeywordQuery] = useState("");
 
   useEffect(() => {
     if (open) {
       setDraft(value);
-      setKeywordQuery(value.with_keywords_label ?? "");
+      setKeywordQuery("");
     }
   }, [open, value]);
 
-  const { data: keywordResults = [], isFetching: isSearchingKeywords } = useQuery({
+  const { data: genres = [] } = useQuery({
+    ...genreQueries.list(type, locale),
+    enabled: open,
+  });
+  const { data: providers = [] } = useQuery({
+    ...providerQueries.list(type, locale),
+    enabled: open,
+  });
+  const { data: keywordResults = [] } = useQuery({
     ...mediaQueries.keywords(keywordQuery),
     enabled: open && keywordQuery.trim().length >= 2,
   });
 
-  const activeCount = countActive(value);
+  const genreOptions = useMemo<FilterOption[]>(
+    () => genres.map((genre) => ({ id: genre.id.toString(), name: genre.name })),
+    [genres],
+  );
+  const providerOptions = useMemo<FilterOption[]>(
+    () =>
+      providers.map((provider) => ({
+        id: provider.provider_id.toString(),
+        name: provider.provider_name,
+        image: getPosterUrl(provider.logo_path, "w92"),
+      })),
+    [providers],
+  );
 
-  const runtimeGte = draft.with_runtime_gte ?? RUNTIME_MIN;
-  const runtimeLte = draft.with_runtime_lte ?? RUNTIME_MAX;
+  const selectedGenres = useMemo(
+    () => optionsFromIds(splitFilterIds(draft.with_genres), genreOptions),
+    [draft.with_genres, genreOptions],
+  );
+  const selectedProviders = useMemo(
+    () => optionsFromIds(splitFilterIds(draft.with_watch_providers), providerOptions),
+    [draft.with_watch_providers, providerOptions],
+  );
+  const selectedKeywords = useMemo(
+    () => parseLabeledOptions(draft.with_keywords, draft.with_keywords_label),
+    [draft.with_keywords, draft.with_keywords_label],
+  );
+  const keywordItems = useMemo(() => {
+    const byId = new Map(selectedKeywords.map((keyword) => [keyword.id, keyword]));
+    for (const result of keywordResults) {
+      byId.set(result.id.toString(), { id: result.id.toString(), name: result.name });
+    }
+    return [...byId.values()];
+  }, [keywordResults, selectedKeywords]);
+
+  const activeCount = countActive(value);
   const ratingGte = draft.vote_average_gte ?? RATING_MIN;
+  const runtimePreset = getRuntimePreset(draft);
 
   const handleApply = () => {
     onChange(draft);
@@ -117,21 +180,26 @@ export function MediaFiltersSheet({
   };
 
   const handleReset = () => {
-    const cleared: MediaFiltersValue = {};
-    setDraft(cleared);
+    const cleared: MediaFiltersValue = {
+      date_gte: undefined,
+      date_lte: undefined,
+      with_genres: undefined,
+      with_watch_providers: undefined,
+      with_keywords: undefined,
+      with_keywords_label: undefined,
+      with_runtime_gte: undefined,
+      with_runtime_lte: undefined,
+      vote_average_gte: undefined,
+    };
+    setDraft({});
     setKeywordQuery("");
     onChange(cleared);
     setOpen(false);
   };
 
-  const handleSelectKeyword = (id: string, name: string) => {
-    setDraft((prev) => ({ ...prev, with_keywords: id, with_keywords_label: name }));
-    setKeywordQuery(name);
-  };
-
-  const handleClearKeyword = () => {
-    setDraft((prev) => ({ ...prev, with_keywords: undefined, with_keywords_label: undefined }));
-    setKeywordQuery("");
+  const handleRuntimePreset = (preset: RuntimePreset) => {
+    const next = runtimePreset === preset ? undefined : preset;
+    setDraft((prev) => ({ ...prev, ...runtimePresetToFilters(next) }));
   };
 
   return (
@@ -144,7 +212,7 @@ export function MediaFiltersSheet({
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-md flex flex-col">
+      <SheetContent className="flex w-full flex-col sm:max-w-md">
         <SheetHeader>
           <SheetTitle>
             <Trans>Filters</Trans>
@@ -152,130 +220,44 @@ export function MediaFiltersSheet({
           <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto px-4 space-y-6">
-          <div className="space-y-2">
-            <Label>{dateLabel}</Label>
-            <div className="grid grid-cols-2 gap-2">
-              <Input
-                type="date"
-                label={<Trans>From</Trans>}
-                id={`${dateInputIdPrefix}-gte`}
-                value={draft.date_gte ?? ""}
-                onChange={(e) => setDraft((prev) => ({ ...prev, date_gte: e.target.value || undefined }))}
-              />
-              <Input
-                type="date"
-                label={<Trans>To</Trans>}
-                id={`${dateInputIdPrefix}-lte`}
-                value={draft.date_lte ?? ""}
-                onChange={(e) => setDraft((prev) => ({ ...prev, date_lte: e.target.value || undefined }))}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor={`${dateInputIdPrefix}-original-language`}>
-              <Trans>Original language</Trans>
-            </Label>
-            <Select
-              value={draft.with_original_language ?? "any"}
-              onValueChange={(v) =>
-                setDraft((prev) => ({ ...prev, with_original_language: v === "any" ? undefined : v }))
-              }
-            >
-              <SelectTrigger id={`${dateInputIdPrefix}-original-language`} className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {LANGUAGES.map((lang) => (
-                  <SelectItem key={lang.code} value={lang.code}>
-                    {t(lang.label)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor={`${dateInputIdPrefix}-keyword-search`}>
-              <Trans>Keyword</Trans>
-            </Label>
-            <div className="space-y-2">
-              {draft.with_keywords && draft.with_keywords_label ? (
-                <div className="flex items-center gap-2">
-                  <Badge variant="default" className="rounded-full">
-                    {draft.with_keywords_label}
-                  </Badge>
-                  <Button variant="ghost" size="sm" onClick={handleClearKeyword}>
-                    <Trans>Remove</Trans>
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <Input
-                    id={`${dateInputIdPrefix}-keyword-search`}
-                    placeholder={t(msg`Search a keyword...`)}
-                    value={keywordQuery}
-                    onChange={(e) => setKeywordQuery(e.target.value)}
-                  />
-                  {keywordQuery.trim().length >= 2 && (
-                    <div className="border rounded-md max-h-40 overflow-y-auto">
-                      {isSearchingKeywords && keywordResults.length === 0 ? (
-                        <p className="text-xs text-muted-foreground p-2">
-                          <Trans>Searching...</Trans>
-                        </p>
-                      ) : keywordResults.length === 0 ? (
-                        <p className="text-xs text-muted-foreground p-2">
-                          <Trans>No keyword found.</Trans>
-                        </p>
-                      ) : (
-                        keywordResults.map((kw) => (
-                          <button
-                            key={kw.id}
-                            type="button"
-                            onClick={() => handleSelectKeyword(kw.id.toString(), kw.name)}
-                            className="w-full text-left px-2 py-1.5 text-sm hover:bg-accent cursor-pointer"
-                          >
-                            {kw.name}
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label>{runtimeLabel}</Label>
-              <span className="text-xs text-muted-foreground">
-                {runtimeGte} - {runtimeLte}
-              </span>
-            </div>
-            <Slider
-              withTooltip
-              min={RUNTIME_MIN}
-              max={RUNTIME_MAX}
-              step={5}
-              value={[runtimeGte, runtimeLte]}
-              onValueChange={(v) =>
-                setDraft((prev) => ({
-                  ...prev,
-                  with_runtime_gte: v[0] === RUNTIME_MIN ? undefined : v[0],
-                  with_runtime_lte: v[1] === RUNTIME_MAX ? undefined : v[1],
-                }))
-              }
+        <div className="flex-1 space-y-8 overflow-y-auto px-4">
+          <div className="grid grid-cols-2 gap-3">
+            <DatePicker
+              id={`${dateInputIdPrefix}-gte`}
+              label={<Trans>From</Trans>}
+              value={draft.date_gte}
+              onChange={(next) => setDraft((prev) => ({ ...prev, date_gte: next }))}
+            />
+            <DatePicker
+              id={`${dateInputIdPrefix}-lte`}
+              label={<Trans>To</Trans>}
+              value={draft.date_lte}
+              onChange={(next) => setDraft((prev) => ({ ...prev, date_lte: next }))}
             />
           </div>
 
+          <Field className="gap-3">
+            <FieldLabel className="flex items-center gap-2">
+              <TagsIcon className="size-4 text-muted-foreground" />
+              <Trans>Genres</Trans>
+            </FieldLabel>
+            <FilterCombobox
+              items={genreOptions}
+              value={selectedGenres}
+              onValueChange={(next) =>
+                setDraft((prev) => ({ ...prev, with_genres: joinFilterIds(next.map((item) => item.id)) }))
+              }
+              placeholder={t(msg`Select genres...`)}
+              emptyLabel={<Trans>No genres found.</Trans>}
+            />
+          </Field>
+
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label>
+              <FilterSectionLabel icon={StarIcon}>
                 <Trans>Minimum rating</Trans>
-              </Label>
-              <span className="text-xs text-muted-foreground">{ratingGte.toFixed(1)}</span>
+              </FilterSectionLabel>
+              <span className="text-xs text-muted-foreground">{ratingGte.toFixed(1)}+</span>
             </div>
             <Slider
               withTooltip
@@ -288,6 +270,71 @@ export function MediaFiltersSheet({
               }
             />
           </div>
+
+          <div className="space-y-3">
+            <FilterSectionLabel icon={ClockIcon}>{runtimeLabel}</FilterSectionLabel>
+            <div className="flex flex-wrap gap-2">
+              {RUNTIME_PRESETS.map((preset) => (
+                <Button
+                  key={preset.id}
+                  type="button"
+                  size="sm"
+                  variant={runtimePreset === preset.id ? "default" : "outline"}
+                  onClick={() => handleRuntimePreset(preset.id)}
+                >
+                  {preset.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <Field className="gap-3">
+            <FieldLabel className="flex items-center gap-2">
+              <MonitorPlayIcon className="size-4 text-muted-foreground" />
+              <Trans>Streaming services</Trans>
+            </FieldLabel>
+            <FilterCombobox
+              items={providerOptions}
+              value={selectedProviders}
+              onValueChange={(next) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  with_watch_providers: joinFilterIds(next.map((item) => item.id)),
+                }))
+              }
+              placeholder={t(msg`Select streaming services...`)}
+              emptyLabel={<Trans>No streaming services found.</Trans>}
+            />
+          </Field>
+
+          <Field className="gap-3">
+            <FieldLabel className="flex items-center gap-2">
+              <HashIcon className="size-4 text-muted-foreground" />
+              <Trans>Keywords</Trans>
+            </FieldLabel>
+            <FilterCombobox
+              items={keywordItems}
+              value={selectedKeywords}
+              onValueChange={(next) => {
+                const serialized = serializeLabeledOptions(next);
+                setDraft((prev) => ({
+                  ...prev,
+                  with_keywords: serialized.ids,
+                  with_keywords_label: serialized.labels,
+                }));
+              }}
+              onInputValueChange={setKeywordQuery}
+              filter={null}
+              placeholder={t(msg`Search and add keywords...`)}
+              emptyLabel={
+                keywordQuery.trim().length < 2 ? (
+                  <Trans>Type at least 2 characters.</Trans>
+                ) : (
+                  <Trans>No keyword found.</Trans>
+                )
+              }
+            />
+          </Field>
         </div>
 
         <SheetFooter className="flex-row gap-2">
@@ -296,7 +343,7 @@ export function MediaFiltersSheet({
             <Trans>Reset</Trans>
           </Button>
           <Button onClick={handleApply} className="flex-1">
-            <Trans>Apply</Trans>
+            {applyLabel ?? <Trans>Show</Trans>}
           </Button>
         </SheetFooter>
       </SheetContent>

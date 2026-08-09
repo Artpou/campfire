@@ -23,7 +23,6 @@ describe("/movies validateSearch", () => {
       with_watch_providers: "8",
       release_date_gte: "2020-01-01",
       release_date_lte: undefined,
-      with_original_language: undefined,
       with_keywords: undefined,
       with_keywords_label: undefined,
       with_runtime_gte: 60,

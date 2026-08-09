@@ -100,7 +100,6 @@ apps/
 │       ├── modules/        # Feature modules
 │       │   └── [module]/
 │       │       ├── [module].schema.ts   # Drizzle table + types
-│       │       ├── [module].dto.ts      # Zod schemas + inferred types
 │       │       ├── [module].route.ts    # Route definitions
 │       │       ├── [module].service.ts  # Business logic
 │       │       └── [module].route.test.ts
@@ -121,6 +120,7 @@ apps/
         └── lib/            # Core utilities (cn)
 packages/
 ├── sdk/                    # @seedarr/sdk — Hono RPC client, unwrap, types re-export
+├── contracts/              # @seedarr/contracts — dtos shared between api and app
 └── shared/                 # @seedarr/shared — formatBytes, formatTime, presets, slugify, toLatin
 ```
 
@@ -137,8 +137,6 @@ pnpm db:migrate   # Apply migrations
 pnpm db:push      # Push schema directly (dev only)
 pnpm --filter @seedarr/api db:studio   # Open Drizzle Studio
 ```
-
-**Human workflow:** Always run `pnpm check` manually before committing.
 
 ## API Patterns
 
@@ -157,7 +155,7 @@ AuthenticatedService        → user in context, createRouter() factory
 
 ### DTO Pattern
 
-Each module has `{module}.dto.ts`: Zod schemas for validation, TypeScript types inferred from schemas, DB types via `createSelectSchema`.
+Use @seedarr/contracts to share dto between app and api
 
 ### Route Conventions
 
@@ -172,13 +170,6 @@ Each module has `{module}.dto.ts`: Zod schemas for validation, TypeScript types 
 - Role hierarchy: owner(4) > admin(3) > member(2) > viewer(1)
 - Session rotation after 24h + in-memory session cache (60s TTL)
 
-### Streaming
-
-- `GET /streaming/:id/direct` — byte-range passthrough (local disk or remote FTP/WebDAV); movi-player demuxes MKV/HEVC in-browser
-- `GET /streaming/:id/live` — continuous fMP4 remux for progressive formats while downloading
-- `GET /streaming/:id/info` — `{ mode: "direct" | "live", duration, seekable, origin }`
-- Subtitles served as-is (SRT/ASS/VTT); parsed client-side by movi-player
-
 ## Frontend Patterns
 
 ### Routing
@@ -192,20 +183,29 @@ Each module has `{module}.dto.ts`: Zod schemas for validation, TypeScript types 
 - `unwrap(api.endpoint.$method(params))` for all API calls (queries **and** mutations)
 - Colocated `*.queries.ts` per feature (queryOptions + mutations)
 - Colocated query keys per feature: `mediaQueries.key`, `downloadQueries.key`, `movieQueries.key`, etc.
-- Zustand for auth user (persisted) + user preferences (torrent filtering)
 
 ### Type Imports
 
-- **Always** import types from `@seedarr/sdk`
+- **Always** import from `@seedarr/sdk` and `@seedarr/contracts`
 - **Never** recreate API types or import from `@seedarr/api` directly
 
 ### Icons
 
 - **Lucide React** with `Icon` suffix: `HomeIcon`, `SettingsIcon`
 
-## AI Agent Constraints & Token Economy
+## AI Agent Constraints
 
-- **Do NOT run heavy terminal commands:** Never automatically run `pnpm check`, `pnpm test`, or full build scripts. The user will run tests manually.
-- **Minimal test execution:** If you must verify a fix, run ONLY the specific test file concerned (e.g., `pnpm --filter @seedarr/api test download.route.test.ts`).
-- **Conciseness:** Keep your internal reasoning/thoughts brief. Focus directly on targeted file modifications.
-- **Targeted edits:** Do not read unrelated files. Rely on exact file paths provided by the user.
+- Keep your internal reasoning/thoughts brief. Focus directly on targeted file modifications.
+- Do not read unrelated files. Rely on exact file paths provided by the user.
+- Be casual unless otherwise specified
+- Suggest solutions that I didn’t think about—anticipate my needs
+- Treat me as an expert
+- Be accurate and thorough
+- Give the answer immediately. Provide detailed explanations and restate my query in your own words if necessary after giving the answer
+- Consider new technologies and contrarian ideas, not just the conventional wisdom
+- You may use high levels of speculation or prediction, just flag it for me
+- If your content policy is an issue, provide the closest acceptable response and explain the content policy issue afterward
+- No need to mention your knowledge cutoff
+- No need to disclose you’re an AI
+- Split into multiple responses if one response isn’t enough to answer the question.
+- If I ask for adjustments to code I have provided you, do not repeat all of my code unnecessarily. Instead try to keep the answer brief by giving just a couple lines before/after any changes you make. Multiple code blocks are ok.

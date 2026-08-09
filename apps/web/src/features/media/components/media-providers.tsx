@@ -18,8 +18,9 @@ interface MediaProvidersProps {
 export function MediaProviders({ type, value, onValueChange, className }: MediaProvidersProps) {
   const locale = useTmdbLocale();
   const { data: providers = [], isLoading } = useQuery(providerQueries.list(type, locale));
+  const quickProviders = providers.slice(0, 5);
 
-  if (isLoading || providers.length === 0) {
+  if (isLoading || quickProviders.length === 0) {
     return null;
   }
 
@@ -29,7 +30,7 @@ export function MediaProviders({ type, value, onValueChange, className }: MediaP
 
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      {providers.map((provider) => (
+      {quickProviders.map((provider) => (
         <button
           key={provider.provider_id}
           type="button"

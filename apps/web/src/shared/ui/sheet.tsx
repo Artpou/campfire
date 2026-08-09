@@ -36,10 +36,23 @@ function SheetOverlay({ className, ...props }: React.ComponentProps<typeof Sheet
   );
 }
 
+function isPortaledOverlayTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return Boolean(
+    target.closest("[data-slot=popover-content]") ||
+      target.closest("[data-slot=combobox-content]") ||
+      target.closest("[data-slot=calendar]") ||
+      target.closest("[data-base-ui-portal]"),
+  );
+}
+
 function SheetContent({
   className,
   children,
   side = "right",
+  onInteractOutside,
+  onPointerDownOutside,
+  onFocusOutside,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left";
@@ -61,6 +74,18 @@ function SheetContent({
             "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom inset-x-0 bottom-0 h-auto border-t",
           className,
         )}
+        onInteractOutside={(event) => {
+          if (isPortaledOverlayTarget(event.target)) event.preventDefault();
+          onInteractOutside?.(event);
+        }}
+        onPointerDownOutside={(event) => {
+          if (isPortaledOverlayTarget(event.target)) event.preventDefault();
+          onPointerDownOutside?.(event);
+        }}
+        onFocusOutside={(event) => {
+          if (isPortaledOverlayTarget(event.target)) event.preventDefault();
+          onFocusOutside?.(event);
+        }}
         {...props}
       >
         {children}

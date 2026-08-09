@@ -12,7 +12,6 @@ type DiscoverQueryOptions = {
   sort_by?: DiscoverSort;
   with_genres?: string;
   with_watch_providers?: string;
-  with_original_language?: string;
   with_keywords?: string;
   "with_runtime.gte"?: number;
   "with_runtime.lte"?: number;
@@ -22,14 +21,10 @@ type DiscoverQueryOptions = {
 type SearchRecord = Record<string, unknown>;
 
 export type MovieDiscoverSearch = MovieFiltersValue & {
-  with_genres?: string;
-  with_watch_providers?: string;
   selected?: MediaSelected;
 };
 
 export type TvDiscoverSearch = TvFiltersValue & {
-  with_genres?: string;
-  with_watch_providers?: string;
   selected?: MediaSelected;
 };
 
@@ -50,7 +45,6 @@ function parseDiscoverFilters(search: SearchRecord) {
     with_genres: parseString(search.with_genres),
     with_watch_providers: parseString(search.with_watch_providers),
     selected: getMediaSelected(search.selected),
-    with_original_language: parseString(search.with_original_language),
     with_keywords: parseString(search.with_keywords),
     with_keywords_label: parseString(search.with_keywords_label),
     with_runtime_gte: parseNumber(search.with_runtime_gte),
@@ -92,7 +86,6 @@ export function buildMovieDiscoverOptions(search: Partial<MovieDiscoverSearch>) 
     with_watch_providers: search.with_watch_providers,
     "primary_release_date.gte": search.release_date_gte ?? (selected === "upcoming" ? today : undefined),
     "primary_release_date.lte": search.release_date_lte,
-    with_original_language: search.with_original_language,
     with_keywords: search.with_keywords,
     "with_runtime.gte": search.with_runtime_gte,
     "with_runtime.lte": search.with_runtime_lte,
@@ -113,7 +106,6 @@ export function buildTvDiscoverOptions(search: Partial<TvDiscoverSearch>): Disco
     with_watch_providers: search.with_watch_providers,
     "first_air_date.gte": search.first_air_date_gte ?? (selected === "upcoming" ? today : undefined),
     "first_air_date.lte": search.first_air_date_lte,
-    with_original_language: search.with_original_language,
     with_keywords: search.with_keywords,
     "with_runtime.gte": search.with_runtime_gte,
     "with_runtime.lte": search.with_runtime_lte,
@@ -125,7 +117,8 @@ export function pickMovieFilters(search: Partial<MovieDiscoverSearch>): MovieFil
   const {
     release_date_gte,
     release_date_lte,
-    with_original_language,
+    with_genres,
+    with_watch_providers,
     with_keywords,
     with_keywords_label,
     with_runtime_gte,
@@ -136,7 +129,8 @@ export function pickMovieFilters(search: Partial<MovieDiscoverSearch>): MovieFil
   return {
     release_date_gte,
     release_date_lte,
-    with_original_language,
+    with_genres,
+    with_watch_providers,
     with_keywords,
     with_keywords_label,
     with_runtime_gte,
@@ -149,7 +143,8 @@ export function pickTvFilters(search: Partial<TvDiscoverSearch>): TvFiltersValue
   const {
     first_air_date_gte,
     first_air_date_lte,
-    with_original_language,
+    with_genres,
+    with_watch_providers,
     with_keywords,
     with_keywords_label,
     with_runtime_gte,
@@ -160,7 +155,8 @@ export function pickTvFilters(search: Partial<TvDiscoverSearch>): TvFiltersValue
   return {
     first_air_date_gte,
     first_air_date_lte,
-    with_original_language,
+    with_genres,
+    with_watch_providers,
     with_keywords,
     with_keywords_label,
     with_runtime_gte,
