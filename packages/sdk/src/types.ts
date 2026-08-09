@@ -25,6 +25,7 @@ export type TmdbKeyStatus = InferResponseType<ApiClient["settings"]["tmdb-key-st
 export type StorageConfig = InferResponseType<ApiClient["storage-config"]["$get"], 200>;
 export type StorageStatus = InferResponseType<ApiClient["storage-config"]["status"]["$get"], 200>;
 export type RemoteSyncResult = InferResponseType<ApiClient["storage-config"]["sync"]["$post"], 200>;
+export type DownloadableFile = InferResponseType<ApiClient["downloads"][":id"]["video-file"]["$get"], 200>;
 
 export type TMDBMovieDetails = Movie["movie"];
 export type TMDBPersonDetails = Person["person"];

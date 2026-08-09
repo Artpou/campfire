@@ -1,17 +1,18 @@
 import type { TmdbDiscoverQuery, TmdbKeywordsQuery, TmdbSearchQuery } from "@seedarr/contracts";
 import { Hono } from "hono";
+import ms from "ms";
 
 import { ServiceUnavailableError } from "@/shared/errors/error";
-import { logger } from "@/shared/helpers/logger.helper";
+import { createCache } from "@/shared/helpers/cache.helper";
 import { type Identifiable, IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
+import { mergeMediaEnrichment } from "@/modules/media/media.helper";
 import { MediaService } from "@/modules/media/media.service";
 import type { MediaEnriched } from "@/modules/media/media.types";
 import { getTmdbApiKey } from "@/modules/settings/tmdb-key.helper";
 import { tmdbMovieToMedia, tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
 import type { User } from "@/modules/user/user.schema";
-import { getTmdbCache, setTmdbCache } from "./tmdb.cache";
 import type {
   FetchOptions,
   TMDBGenresResponse,
@@ -29,6 +30,12 @@ const TMDB_FETCH_TIMEOUT_MS = 8_000;
 
 const NUMBER_OF_PROVIDERS = 5;
 const TRENDING_LIMIT = 10;
+
+const cache = createCache({
+  max: 500,
+  ttl: ms("1h"),
+  name: "tmdb",
+});
 
 function buildUrl(url: string, language: string | undefined, apiKey: string, options?: FetchOptions): string {
   const fullUrl = new URL(`${TMDB_API_URL}${url}`);
@@ -79,18 +86,14 @@ export async function tmdbRequest<T>(url: string, locale: string, options?: Fetc
   if (!apiKey) throw new ServiceUnavailableError("TMDB (missing API key)");
 
   const fullUrl = buildUrl(url, locale, apiKey, options);
-  const cached = getTmdbCache<T>(fullUrl);
-  if (cached !== undefined) {
-    logger.debug("TMDB (cached)", `GET ${fullUrl}`);
-    return cached;
-  }
+  const cached = cache.get(fullUrl) as T | undefined;
+  if (cached !== undefined) return cached;
 
   const res = await fetch(fullUrl, { signal: AbortSignal.timeout(TMDB_FETCH_TIMEOUT_MS) });
   if (!res.ok) throw new ServiceUnavailableError(`TMDB (${res.status} ${res.statusText})`);
 
-  logger.debug("TMDB", `GET ${fullUrl}`);
-  const data = (await res.json()) as T;
-  setTmdbCache(fullUrl, data);
+  const data = (await res.json()) as T & object;
+  cache.set(fullUrl, data);
   return data;
 }
 
@@ -168,8 +171,8 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
     const mediaMap = await this.mediaService.getMany({ ids: items.map((m) => m.id.toString()) });
 
     return {
-      results: items.map((item) => ({
-        ...(mediaMap.find((m) => m.id === item.id) ?? item),
+      results: mergeMediaEnrichment(items, mediaMap).map((item) => ({
+        ...item,
         backdrop_path: item.backdrop_path ?? null,
       })),
       page: data.page,
@@ -184,7 +187,7 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
     );
     const items = searchResults.results.filter((r) => r.media_type === this.type).map((item) => this.toMedia(item));
     const mediaMap = await this.mediaService.getMany({ ids: items.map((m) => m.id.toString()) });
-    return items.map((item) => mediaMap.find((m) => m.id === item.id) ?? item);
+    return mergeMediaEnrichment(items, mediaMap);
   }
 
   async searchKeywords(query: TmdbKeywordsQuery): Promise<TMDBKeywordResult[]> {

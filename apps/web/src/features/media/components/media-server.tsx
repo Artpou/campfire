@@ -23,12 +23,12 @@ import { DownloadMetadata } from "@/features/downloads/components/download-metad
 import { downloadQueries, useDownloadDelete } from "@/features/downloads/hooks/download.queries";
 import { MediaSearchModal } from "@/features/media/components/media-search-modal";
 
-interface MediaServerTabProps {
+interface MediaServerProps {
   downloads: Download[];
   mediaType?: "movie" | "tv";
 }
 
-export function MediaServerTab({ downloads, mediaType }: MediaServerTabProps) {
+export function MediaServer({ downloads, mediaType }: MediaServerProps) {
   if (downloads.length === 0) {
     return (
       <p className="py-8 text-center text-muted-foreground">

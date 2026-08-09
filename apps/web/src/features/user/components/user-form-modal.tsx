@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useMemo } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
@@ -56,42 +56,26 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
   const { t } = useLingui();
   const isEditing = !!user;
 
+  const formValues = useMemo<UserFormData>(
+    () => ({
+      username: user?.username ?? "",
+      password: "",
+      confirmPassword: "",
+      role: user?.role ?? "viewer",
+    }),
+    [user],
+  );
+
   const {
     register,
     handleSubmit,
     watch,
     setValue,
-    reset,
     formState: { errors },
-  } = useForm<UserFormData>({
-    defaultValues: {
-      username: "",
-      password: "",
-      confirmPassword: "",
-      role: "viewer",
-    },
-  });
+  } = useForm<UserFormData>({ values: formValues });
 
   const selectedRole = watch("role");
   const password = watch("password");
-
-  useEffect(() => {
-    if (user) {
-      reset({
-        username: user.username,
-        password: "",
-        confirmPassword: "",
-        role: user.role,
-      });
-    } else {
-      reset({
-        username: "",
-        password: "",
-        confirmPassword: "",
-        role: "viewer",
-      });
-    }
-  }, [user, reset]);
 
   const createMutation = useMutation({
     mutationFn: (data: CreateUserInput) => unwrap(api.users.$post({ json: data })),

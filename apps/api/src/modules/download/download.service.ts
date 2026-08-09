@@ -9,12 +9,13 @@ import { db } from "@/db/db";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import { download } from "@/modules/download/download.schema";
+import { type DownloadableFile, getDownloadableFile } from "@/modules/download/local/local-file.helper";
 import { media, watchProgress } from "@/modules/media/media.schema";
 import { signToken } from "@/modules/storage-config/crypto.helper";
 import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
+import { invalidateStreamSource } from "@/modules/streaming/streaming.service";
 import { resolveTorrentSource } from "@/modules/torrent/torrent-source.helper";
 import type { Download, DownloadStats } from "./download.schema";
-import { checkFileAvailability } from "./local/local-file.helper";
 import { isTransferInProgress, markTransferStarting, runRemoteTransfer } from "./remote/remote-transfer.helper";
 import { extractTorrentLiveData, waitForTorrentMetadata } from "./webtorrent/webtorrent.helper";
 import {
@@ -58,6 +59,12 @@ export class DownloadService extends IdentifiableService<Download> {
     return this.getMany(params);
   }
 
+  private async requireDownload(id: string): Promise<Download> {
+    const [item] = await this.findMany({ ids: [id] });
+    if (!item) throw new NotFoundError("Download");
+    return item;
+  }
+
   async getStats(): Promise<DownloadStats> {
     const downloads = await this.getMany();
 
@@ -77,8 +84,6 @@ export class DownloadService extends IdentifiableService<Download> {
 
     return { count: downloads.length, totalSize, downloadSpeed, uploadSpeed, peers };
   }
-
-  // --- Torrent lifecycle (delegated) ---
 
   async start(input: DownloadTorrentInput): Promise<Download | { status: "REMOTE_UNAVAILABLE" }> {
     const { preferLocal, ...downloadInput } = input;
@@ -139,34 +144,25 @@ export class DownloadService extends IdentifiableService<Download> {
   }
 
   async pause(id: string): Promise<{ success: true }> {
-    const [item] = await this.findMany({ ids: [id] });
-    if (!item) throw new NotFoundError("Download");
-    return pauseTorrent(id, item);
+    return pauseTorrent(id, await this.requireDownload(id));
   }
 
   async resume(id: string): Promise<{ success: true }> {
-    const [item] = await this.findMany({ ids: [id] });
-    if (!item) throw new NotFoundError("Download");
-    return resumeTorrent(id, item);
+    return resumeTorrent(id, await this.requireDownload(id));
   }
 
   async recheck(id: string): Promise<{ success: true }> {
-    const [item] = await this.findMany({ ids: [id] });
-    if (!item) throw new NotFoundError("Download");
-    return recheckTorrent(id, item);
+    return recheckTorrent(id, await this.requireDownload(id));
   }
 
   async reannounce(id: string): Promise<{ success: true }> {
-    const [item] = await this.findMany({ ids: [id] });
-    if (!item) throw new NotFoundError("Download");
-    return reannounceTorrent(id, item);
+    return reannounceTorrent(id, await this.requireDownload(id));
   }
 
   // --- Remote / file ---
 
   async transfer(id: string): Promise<{ success: true }> {
-    const [item] = await this.findMany({ ids: [id] });
-    if (!item) throw new NotFoundError("Download");
+    const item = await this.requireDownload(id);
     if (!item.torrent?.done) throw new BadRequestError("Download is not complete");
     if (!item.torrent.name) throw new BadRequestError("No torrent name found");
     if (item.remoteLocation) throw new BadRequestError("Already present on remote server");
@@ -190,8 +186,7 @@ export class DownloadService extends IdentifiableService<Download> {
   }
 
   async listRemoteFiles(id: string): Promise<{ name: string; path: string; length: number }[]> {
-    const [item] = await this.findMany({ ids: [id] });
-    if (!item) throw new NotFoundError("Download");
+    const item = await this.requireDownload(id);
     if (!item.remoteLocation) return [];
     return remoteStorageService.listFiles(item.remoteLocation);
   }
@@ -202,13 +197,14 @@ export class DownloadService extends IdentifiableService<Download> {
     };
   }
 
-  async checkAvailability(id: string): Promise<void> {
-    if (!(await checkFileAvailability(id))) throw new NotFoundError("Download");
+  async getDownloadableFile(id: string): Promise<DownloadableFile> {
+    const file = await getDownloadableFile(id);
+    if (!file) throw new NotFoundError("Download");
+    return file;
   }
 
   async reassignMedia(id: string, newMediaId: number): Promise<{ success: true }> {
-    const [item] = await this.findMany({ ids: [id] });
-    if (!item) throw new NotFoundError("Download");
+    const item = await this.requireDownload(id);
 
     await db.update(download).set({ mediaId: newMediaId }).where(eq(download.id, id));
 
@@ -227,14 +223,15 @@ export class DownloadService extends IdentifiableService<Download> {
     id: string,
     options?: { dbOnly?: boolean; scope?: "torrent" | "remote" | "all"; unlink?: boolean },
   ): Promise<{ success: true }> {
-    const [item] = await this.findMany({ ids: [id] });
-    if (!item) throw new NotFoundError("Download");
+    const item = await this.requireDownload(id);
 
     if (item.userId !== this.user.id && this.roleLevel < ROLE_LEVELS.admin) {
       throw new ForbiddenError();
     }
 
     const scope = options?.scope ?? "all";
+
+    invalidateStreamSource(id);
 
     if (options?.dbOnly) {
       if (this.roleLevel < ROLE_LEVELS.admin) throw new ForbiddenError();

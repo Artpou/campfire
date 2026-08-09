@@ -68,7 +68,7 @@ export function PersonFilmography({ filmography, departments }: PersonFilmograph
         </Tabs>
       </div>
 
-      <MediaGrid items={items} withLoading={false} search />
+      <MediaGrid items={items} withLoading={false} />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { timeout } from "hono/timeout";
 
 import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
 import { requireRole } from "@/modules/auth/role.guard";
+import { invalidateStorageConfigCache } from "./remote-storage.service";
 import { runManualSync, runRemoteSync } from "./remote-sync.service";
 import { StorageConfigService } from "./storage-config.service";
 
@@ -23,10 +24,13 @@ export const storageConfigRoutes = new Hono<{ Variables: HonoAuthenticatedVariab
   })
   .put("/", zValidator("json", upsertStorageConfigDto), async (c) => {
     const result = await service.upsert(c.req.valid("json"));
+    invalidateStorageConfigCache();
     return c.json(result);
   })
   .delete("/", async (c) => {
-    return c.json(await service.remove());
+    const result = await service.remove();
+    invalidateStorageConfigCache();
+    return c.json(result);
   })
   .post("/test", zValidator("json", testStorageConfigDto), timeout(5000), async (c) => {
     const result = await service.test(c.req.valid("json"));

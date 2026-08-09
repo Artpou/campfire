@@ -1,6 +1,6 @@
 import { BadRequestError } from "@/shared/errors/error";
 
-import type { MediaEnriched } from "@/modules/media/media.types";
+import { mergeMediaEnrichment } from "@/modules/media/media.helper";
 import { tmdbMovieToMedia } from "@/modules/tmdb/tmdb.helper";
 import { TMDBService } from "@/modules/tmdb/tmdb.service";
 import type { TMDBItem, TMDBMovieDetails } from "@/modules/tmdb/tmdb.types";
@@ -44,9 +44,6 @@ export class MovieService extends TMDBService<Movie> {
     });
     const collectionIds = new Set(collectionParts.map((p) => p.id));
 
-    const withMediaStatus = (list: MediaEnriched[]) =>
-      list.map((item) => mediaMap.find((m) => m.id === item.id) ?? item);
-
     const fromTmdb = tmdbMovieToMedia(movieData);
     const fromDb = mediaMap.find((m) => m.id.toString() === id);
 
@@ -56,10 +53,14 @@ export class MovieService extends TMDBService<Movie> {
       media: fromDb ? { ...fromDb, imdbId: fromDb.imdbId || fromTmdb.imdbId } : fromTmdb,
       collection,
       related: {
-        collection: withMediaStatus(allRelated.filter((m) => collectionIds.has(m.id))).sort((a, b) =>
-          (a.release_date ?? "").localeCompare(b.release_date ?? ""),
+        collection: mergeMediaEnrichment(
+          allRelated.filter((m) => collectionIds.has(m.id)),
+          mediaMap,
+        ).sort((a, b) => (a.release_date ?? "").localeCompare(b.release_date ?? "")),
+        recommendations: mergeMediaEnrichment(
+          allRelated.filter((m) => !collectionIds.has(m.id)),
+          mediaMap,
         ),
-        recommendations: withMediaStatus(allRelated.filter((m) => !collectionIds.has(m.id))),
       },
     };
   }

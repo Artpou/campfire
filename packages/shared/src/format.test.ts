@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatBytes, formatRuntime, formatTime } from "./format";
+import { formatBytes, formatRuntime, formatTime, getEndsAt } from "./format";
 
 describe("formatBytes", () => {
   it("returns 0 B for falsy values", () => {
@@ -35,5 +35,17 @@ describe("formatRuntime", () => {
 
   it("formats minutes as hours and minutes", () => {
     expect(formatRuntime(125)).toBe("2h 05min");
+  });
+});
+
+describe("getEndsAt", () => {
+  it("returns null for invalid values", () => {
+    expect(getEndsAt(null)).toBeNull();
+    expect(getEndsAt(0)).toBeNull();
+  });
+
+  it("returns a localized time string", () => {
+    const result = getEndsAt(90);
+    expect(result).toMatch(/\d{1,2}.\d{2}/);
   });
 });

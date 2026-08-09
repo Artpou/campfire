@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { Media, TMDBTvDetails } from "@seedarr/sdk";
-import { formatRuntime } from "@seedarr/shared";
+import type { Download, Media, TMDBTvDetails } from "@seedarr/sdk";
+import { formatRuntime, getEndsAt } from "@seedarr/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { CalendarIcon, ChevronDownIcon, ChevronUpIcon, ClapperboardIcon, ClockIcon, MagnetIcon } from "lucide-react";
@@ -16,8 +16,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { useRole } from "@/features/auth/hooks/use-role";
 import { getDownloadStatus } from "@/features/downloads/helpers/downloads.helper";
-import { downloadQueries, useDownloadDelete } from "@/features/downloads/hooks/download.queries";
-import { MediaPlayButton } from "@/features/media/components/media-play-button";
+import { useDownloadDelete } from "@/features/downloads/hooks/download.queries";
+import { MediaButtonPlay } from "@/features/media/components/button/media-button-play";
 import { getBackdropUrl } from "@/features/media/helpers/media.helper";
 import { type EpisodeDeleteLabel, TvEpisodeDeleteDialog } from "@/features/tv/components/tv-episode-delete-dialog";
 import { TvEpisodeDownloadControls } from "@/features/tv/components/tv-episode-download-controls";
@@ -29,9 +29,10 @@ import { tvQueries } from "@/features/tv/hooks/tv.queries";
 interface TvEpisodesSectionProps {
   tv: TMDBTvDetails;
   media?: Media;
+  downloads: Download[];
 }
 
-export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
+export function TvEpisodesSection({ tv, media, downloads }: TvEpisodesSectionProps) {
   const { role } = useRole();
   const { t } = useLingui();
   const locale = useTmdbLocale();
@@ -52,8 +53,7 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
     enabled: validSeasons.length > 0,
   });
 
-  const { data: mediaDownloads = [] } = useQuery(downloadQueries.byMedia(tv.id));
-  const episodeDownloadMap = useMemo(() => buildEpisodeDownloadMap(mediaDownloads), [mediaDownloads]);
+  const episodeDownloadMap = useMemo(() => buildEpisodeDownloadMap(downloads), [downloads]);
 
   const episodeNameByKey = useMemo(() => {
     const names = new Map<string, string>();
@@ -107,13 +107,7 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
               !isProgressCompleted &&
               media.progress.downloadId === episodeDownloadId;
 
-            const endsAt =
-              episode.runtime && episode.runtime > 0
-                ? new Date(Date.now() + episode.runtime * 60000).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                : null;
+            const endsAt = getEndsAt(episode.runtime);
 
             const seCode = formatSeasonEpisode(seasonNumber, episode.episode_number);
             const _coveredEpisodes = episodeDownloadId
@@ -148,7 +142,7 @@ export function TvEpisodesSection({ tv, media }: TvEpisodesSectionProps) {
                     )}
 
                     {media && hasDownload && canPlay && (isDownloaded || isDownloading) && (
-                      <MediaPlayButton media={media} />
+                      <MediaButtonPlay media={media} />
                     )}
 
                     {role !== "viewer" && !hasDownload && (

@@ -12,12 +12,12 @@ import { Skeleton } from "@/shared/ui/skeleton";
 
 import { genreQueries } from "@/features/media/hooks/genre.queries";
 
-interface MediaCategoryCarouselProps {
+interface MediaCarouselCategoryProps {
   type: Media["type"];
   onValueChange?: (value: string | undefined) => void;
 }
 
-export function MediaCategoryCarousel({ type, onValueChange }: MediaCategoryCarouselProps) {
+export function MediaCarouselCategory({ type, onValueChange }: MediaCarouselCategoryProps) {
   const locale = useTmdbLocale();
   const { data: genres = [], isLoading } = useQuery(genreQueries.list(type, locale));
   const search = useSearch({ strict: false });

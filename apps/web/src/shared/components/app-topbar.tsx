@@ -105,7 +105,7 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
               </Button>
               <Button
                 variant="outline"
-                className="hidden sm:flex relative w-full max-w-xs h-9 justify-start px-3 font-normal text-muted-foreground"
+                className="hidden sm:flex bg-card relative w-full max-w-xs h-9 justify-start px-3 font-normal text-muted-foreground"
                 onClick={() => navigate({ to: "/search", search: { q: "", type: "all" } })}
                 aria-label={t`Search`}
               >

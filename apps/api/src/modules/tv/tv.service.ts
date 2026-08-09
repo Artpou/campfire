@@ -1,4 +1,4 @@
-import type { MediaEnriched } from "@/modules/media/media.types";
+import { mergeMediaEnrichment } from "@/modules/media/media.helper";
 import { tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
 import { TMDBService } from "@/modules/tmdb/tmdb.service";
 import type { TMDBSeasonDetails, TMDBTvDetails } from "@/modules/tmdb/tmdb.types";
@@ -20,9 +20,6 @@ export class TVService extends TMDBService<TV> {
       ids: [id, ...related.map((m) => m.id.toString())],
     });
 
-    const withMediaStatus = (list: MediaEnriched[]) =>
-      list.map((item) => mediaMap.find((m) => m.id === item.id) ?? item);
-
     const fromTmdb = tmdbTVToMedia(tvData);
     const fromDb = mediaMap.find((m) => m.id.toString() === id);
 
@@ -33,7 +30,7 @@ export class TVService extends TMDBService<TV> {
       collection: null,
       related: {
         collection: [],
-        recommendations: withMediaStatus(related),
+        recommendations: mergeMediaEnrichment(related, mediaMap),
       },
     };
   }

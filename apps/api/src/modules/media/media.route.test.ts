@@ -21,6 +21,8 @@ vi.mock("@/modules/auth/auth.guard", () => ({
 
 const { mediaRoutes } = await import("./media.route");
 
+const SAMPLE_MEDIA = { id: 500, type: "movie" as const, title: "Interstellar", imdbId: "tt0000001" };
+
 describe("Media Routes", () => {
   beforeEach(() => {
     testDbRef.current = createTestDb();
@@ -29,13 +31,10 @@ describe("Media Routes", () => {
 
   describe("POST / - upsert", () => {
     it("creates a new media entry", async () => {
-      const res = await mediaRoutes.request(
-        "/",
-        json("POST", { id: 500, type: "movie", title: "Interstellar", imdbId: "tt0000001" }),
-      );
+      const res = await mediaRoutes.request("/", json("POST", SAMPLE_MEDIA));
       expect(res.status).toBe(200);
       const body = await bodyOf(res);
-      expect(body).toMatchObject({ id: 500, title: "Interstellar", likes: 0, watchList: 0 });
+      expect(body).toMatchObject({ id: 500, title: "Interstellar", liked: false, inWatchList: false });
     });
 
     it("returns 400 on invalid body", async () => {
@@ -46,15 +45,12 @@ describe("Media Routes", () => {
 
   describe("with existing media (id: 500)", () => {
     beforeEach(() => {
-      testDbRef.current
-        ?.insert(media)
-        .values({ id: 500, type: "movie", title: "Interstellar", imdbId: "tt0000001" })
-        .run();
+      testDbRef.current?.insert(media).values(SAMPLE_MEDIA).run();
     });
 
     it("GET /:id - returns media with status", async () => {
       const body = await bodyOf(await mediaRoutes.request("/500"));
-      expect(body).toMatchObject({ id: 500, title: "Interstellar", likes: 0, watchList: 0 });
+      expect(body).toMatchObject({ id: 500, title: "Interstellar", liked: false, inWatchList: false });
     });
 
     it("GET /:id - returns 404 for unknown id", async () => {
@@ -63,16 +59,16 @@ describe("Media Routes", () => {
     });
 
     it("POST /:id/like - toggles like on then off", async () => {
-      let body = await bodyOf(await mediaRoutes.request("/500/like", { method: "POST" }));
-      expect(body.likes).toBe(1);
+      let body = await bodyOf(await mediaRoutes.request("/500/like", json("POST", SAMPLE_MEDIA)));
+      expect(body.liked).toBe(true);
 
-      body = await bodyOf(await mediaRoutes.request("/500/like", { method: "POST" }));
-      expect(body.likes).toBe(0);
+      body = await bodyOf(await mediaRoutes.request("/500/like", json("POST", SAMPLE_MEDIA)));
+      expect(body.liked).toBe(false);
     });
 
     it("POST /:id/watchlist - adds to watchlist", async () => {
-      const body = await bodyOf(await mediaRoutes.request("/500/watchlist", { method: "POST" }));
-      expect(body.watchList).toBe(1);
+      const body = await bodyOf(await mediaRoutes.request("/500/watchlist", json("POST", SAMPLE_MEDIA)));
+      expect(body.inWatchList).toBe(true);
     });
   });
 
@@ -100,7 +96,10 @@ describe("Media Routes", () => {
     });
 
     it("filters by like", async () => {
-      await mediaRoutes.request("/1/like", { method: "POST" });
+      await mediaRoutes.request(
+        "/1/like",
+        json("POST", { id: 1, type: "movie", title: "Movie 1", imdbId: "tt0000001" }),
+      );
       const body = await bodyOf(await mediaRoutes.request("/?filter=like&page=1&limit=10"));
       expect(body.results).toHaveLength(1);
       expect(body.results[0].id).toBe(1);

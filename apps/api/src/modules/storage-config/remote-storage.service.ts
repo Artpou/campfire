@@ -1,3 +1,5 @@
+import { createCache } from "@/shared/helpers/cache.helper";
+
 import { db } from "@/db/db";
 import path from "node:path";
 import { FtpAdapter } from "./adapters/ftp.adapter";
@@ -31,101 +33,138 @@ function normalizeBasePath(basePath: string | null | undefined): string {
   return basePath.replace(/^\/+|\/+$/g, "");
 }
 
-class RemoteStorageService {
-  async getConnectionOptions(): Promise<StorageConnectionOptions | null> {
-    const config = await db.query.storageConfig.findFirst();
-    if (!config?.host) return null;
+interface StorageConfigFull {
+  connectionOptions: StorageConnectionOptions | null;
+  enabled: boolean;
+  moviePath: string;
+  tvPath: string;
+  deleteLocalAfterTransfer: boolean;
+}
 
-    return {
-      protocol: config.protocol,
-      host: config.host,
-      port: config.port ?? 21,
-      username: config.username,
-      password: config.password ? decrypt(config.password) : null,
-      secure: config.secure ?? false,
-    };
+const CONFIG_CACHE_KEY = "config";
+
+const configCache = createCache<StorageConfigFull>({
+  max: 1,
+  ttl: 60_000,
+  name: "storage-config",
+});
+
+export function invalidateStorageConfigCache(): void {
+  configCache.clear();
+}
+
+async function loadConfig(): Promise<StorageConfigFull> {
+  const cached = configCache.get(CONFIG_CACHE_KEY);
+  if (cached) return cached;
+
+  const config = await db.query.storageConfig.findFirst();
+
+  const result: StorageConfigFull = {
+    connectionOptions: config?.host
+      ? {
+          protocol: config.protocol,
+          host: config.host,
+          port: config.port ?? 21,
+          username: config.username,
+          password: config.password ? decrypt(config.password) : null,
+          secure: config.secure ?? false,
+        }
+      : null,
+    enabled: config?.enabled === true,
+    moviePath: normalizeBasePath(config?.moviePath),
+    tvPath: normalizeBasePath(config?.tvPath),
+    deleteLocalAfterTransfer: config?.deleteLocalAfterTransfer === true,
+  };
+
+  configCache.set(CONFIG_CACHE_KEY, result);
+  return result;
+}
+
+class RemoteStorageService {
+  private async withAdapter<T>(
+    fallback: T,
+    fn: (adapter: StorageAdapter, opts: StorageConnectionOptions) => Promise<T>,
+  ): Promise<T> {
+    const opts = await this.getConnectionOptions();
+    if (!opts) return fallback;
+    return fn(getAdapter(opts.protocol), opts);
+  }
+
+  private async withRequiredAdapter<T>(
+    fn: (adapter: StorageAdapter, opts: StorageConnectionOptions) => Promise<T>,
+  ): Promise<T> {
+    const opts = await this.getConnectionOptions();
+    if (!opts) throw new Error("Remote storage is not configured");
+    return fn(getAdapter(opts.protocol), opts);
+  }
+
+  async getConnectionOptions(): Promise<StorageConnectionOptions | null> {
+    const config = await loadConfig();
+    return config.connectionOptions;
   }
 
   async resolveTransferPath(torrentName: string, mediaType?: "movie" | "tv" | null): Promise<string> {
-    const config = await db.query.storageConfig.findFirst();
-    const basePath = mediaType === "tv" ? normalizeBasePath(config?.tvPath) : normalizeBasePath(config?.moviePath);
+    const config = await loadConfig();
+    const basePath = mediaType === "tv" ? config.tvPath : config.moviePath;
     return basePath ? path.posix.join(basePath, torrentName) : torrentName;
   }
 
   async isEnabled(): Promise<boolean> {
-    const config = await db.query.storageConfig.findFirst();
-    return config?.enabled === true;
+    const config = await loadConfig();
+    return config.enabled;
   }
 
   async isAvailable(): Promise<boolean> {
     try {
-      const opts = await this.getConnectionOptions();
-      if (!opts) return false;
-      const adapter = getAdapter(opts.protocol);
-      const result = await adapter.testConnection(opts);
-      return result.success;
+      return await this.withAdapter(false, async (adapter, opts) => {
+        const result = await adapter.testConnection(opts);
+        return result.success;
+      });
     } catch {
       return false;
     }
   }
 
   async testConnection(opts: StorageConnectionOptions): Promise<{ success: boolean; error?: string }> {
-    const adapter = getAdapter(opts.protocol);
-    return adapter.testConnection(opts);
+    return getAdapter(opts.protocol).testConnection(opts);
   }
 
   async transferDirectory(localDir: string, remoteDir: string, onProgress?: (progress: number) => void): Promise<void> {
     assertSafePath(remoteDir);
-    const opts = await this.getConnectionOptions();
-    if (!opts) throw new Error("Remote storage is not configured");
-    const adapter = getAdapter(opts.protocol);
-    return adapter.transferDirectory(localDir, remoteDir, opts, onProgress);
+    return this.withRequiredAdapter((adapter, opts) =>
+      adapter.transferDirectory(localDir, remoteDir, opts, onProgress),
+    );
   }
 
   async shouldDeleteLocalAfterTransfer(): Promise<boolean> {
-    const config = await db.query.storageConfig.findFirst();
-    return config?.deleteLocalAfterTransfer === true;
+    const config = await loadConfig();
+    return config.deleteLocalAfterTransfer;
   }
 
   async remove(remotePath: string): Promise<void> {
     assertSafePath(remotePath);
-    const opts = await this.getConnectionOptions();
-    if (!opts) return;
-    const adapter = getAdapter(opts.protocol);
-    return adapter.remove(remotePath, opts);
+    return this.withAdapter(undefined, (adapter, opts) => adapter.remove(remotePath, opts));
   }
 
   async listDirectories(remotePath: string): Promise<RemoteDirectoryEntry[]> {
     assertSafePath(remotePath);
-    const opts = await this.getConnectionOptions();
-    if (!opts) return [];
-    const adapter = getAdapter(opts.protocol);
-    return adapter.listDirectories(remotePath, opts);
+    return this.withAdapter([], (adapter, opts) => adapter.listDirectories(remotePath, opts));
   }
 
   async listFiles(remotePath: string): Promise<RemoteFileEntry[]> {
     assertSafePath(remotePath);
-    const opts = await this.getConnectionOptions();
-    if (!opts) return [];
-    const adapter = getAdapter(opts.protocol);
-    return adapter.listFiles(remotePath, opts);
+    return this.withAdapter([], (adapter, opts) => adapter.listFiles(remotePath, opts));
   }
 
   async moveFile(from: string, to: string): Promise<void> {
     assertSafePath(from);
     assertSafePath(to);
-    const opts = await this.getConnectionOptions();
-    if (!opts) throw new Error("Remote storage is not configured");
-    const adapter = getAdapter(opts.protocol);
-    return adapter.moveFile(from, to, opts);
+    return this.withRequiredAdapter((adapter, opts) => adapter.moveFile(from, to, opts));
   }
 
   async ensureDirectory(remotePath: string): Promise<void> {
     assertSafePath(remotePath);
-    const opts = await this.getConnectionOptions();
-    if (!opts) throw new Error("Remote storage is not configured");
-    const adapter = getAdapter(opts.protocol);
-    return adapter.ensureDirectory(remotePath, opts);
+    return this.withRequiredAdapter((adapter, opts) => adapter.ensureDirectory(remotePath, opts));
   }
 
   async createReadStream(
@@ -133,10 +172,7 @@ class RemoteStorageService {
     range?: { start: number; end: number },
   ): Promise<{ stream: NodeJS.ReadableStream; size: number; cleanup?: () => void } | null> {
     assertSafePath(remotePath);
-    const opts = await this.getConnectionOptions();
-    if (!opts) return null;
-    const adapter = getAdapter(opts.protocol);
-    return adapter.createReadStream(remotePath, opts, range);
+    return this.withAdapter(null, (adapter, opts) => adapter.createReadStream(remotePath, opts, range));
   }
 }
 

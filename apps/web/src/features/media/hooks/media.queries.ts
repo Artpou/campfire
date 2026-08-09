@@ -1,5 +1,5 @@
 import { t } from "@lingui/core/macro";
-import type { ListMediaQuery, Paginate } from "@seedarr/contracts";
+import type { ListMediaQuery, MediaInput, Paginate } from "@seedarr/contracts";
 import type { Media } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { formatError } from "@seedarr/shared";
@@ -15,11 +15,9 @@ import { toast } from "sonner";
 
 import { toPaginationQuery } from "@/shared/helpers/pagination.helper";
 
-function isActiveDownload(download: Media["download"]): boolean {
-  if (!download?.torrent) return false;
-  if (download.torrent.transferring) return true;
-  return !download.torrent.done && !download.torrent.paused;
-}
+import { hasActiveDownload, isActiveDownload } from "@/features/media/helpers/media.helper";
+import { movieQueries } from "@/features/movies/hooks/movie.queries";
+import { tvQueries } from "@/features/tv/hooks/tv.queries";
 
 export const mediaQueries = {
   key: ["media"] as const,
@@ -82,31 +80,36 @@ export const mediaQueries = {
     }),
 };
 
+export const ACTIVE_DOWNLOAD_INTERVAL = 2000;
+
 export function refetchMediaInterval({ state }: { state: QueryState<InfiniteData<Paginate<Media>>> }) {
   const data = state.data;
   if (!data) return false;
 
-  const hasDownloadingMedia = data.pages.some(({ results }) =>
-    results?.some((media: Media) => isActiveDownload(media.download)),
-  );
-
-  return hasDownloadingMedia ? 2000 : false;
+  const hasDownloadingMedia = hasActiveDownload(data);
+  return hasDownloadingMedia ? ACTIVE_DOWNLOAD_INTERVAL : false;
 }
 
 export function refetchLibraryInterval({ state }: { state: QueryState<Media[]> }) {
   const data = state.data;
   if (!data?.length) return false;
 
-  return data.some((media) => isActiveDownload(media.download)) ? 2000 : false;
+  return data.some((media) => isActiveDownload(media.download)) ? ACTIVE_DOWNLOAD_INTERVAL : false;
 }
 
 export function useToggleLike() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (media: Media) => unwrap(api.media[":id"].like.$post({ param: { id: media.id.toString() } })),
+    mutationFn: (media: MediaInput) =>
+      unwrap(api.media[":id"].like.$post({ param: { id: media.id.toString() }, json: media })),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
-      toast.success(data.likes > 0 ? t`Added to your likes` : t`Removed from your likes`, {
+      if (data.type === "movie") {
+        queryClient.invalidateQueries({ queryKey: [...movieQueries.key] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: [...tvQueries.key] });
+      }
+      toast.success(data.liked ? t`Added to your likes` : t`Removed from your likes`, {
         description: data.title,
       });
     },
@@ -121,10 +124,16 @@ export function useToggleLike() {
 export function useToggleWatchList() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (media: Media) => unwrap(api.media[":id"].watchlist.$post({ param: { id: media.id.toString() } })),
+    mutationFn: (media: MediaInput) =>
+      unwrap(api.media[":id"].watchlist.$post({ param: { id: media.id.toString() }, json: media })),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
-      toast.success(data.watchList > 0 ? t`Added to watch list` : t`Removed from watch list`, {
+      if (data.type === "movie") {
+        queryClient.invalidateQueries({ queryKey: [...movieQueries.key] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: [...tvQueries.key] });
+      }
+      toast.success(data.inWatchList ? t`Added to watch list` : t`Removed from watch list`, {
         description: data.title,
       });
     },

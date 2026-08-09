@@ -3,7 +3,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 
-import { DiscoverPage } from "@/features/media/components/discover-page";
+import { MediaDiscover } from "@/features/media/components/media-discover";
+import { MediaProviders } from "@/features/media/components/media-providers";
 import {
   buildMovieDiscoverOptions,
   type MovieDiscoverSearch,
@@ -11,7 +12,6 @@ import {
   validateMovieDiscoverSearch,
 } from "@/features/media/helpers/discover-search.helper";
 import { MovieFiltersSheet } from "@/features/movies/components/movie-filters-sheet";
-import { MovieProviderTabs } from "@/features/movies/components/movie-provider-tabs";
 import { movieQueries } from "@/features/movies/hooks/movie.queries";
 
 export const Route = createFileRoute("/_app/movies/")({
@@ -30,16 +30,17 @@ function MoviesPage() {
   };
 
   return (
-    <DiscoverPage
+    <MediaDiscover
       type="movie"
       search={search}
       queryOptions={movieQueries.discover(discoverOptions, locale)}
       onSearchChange={handleSearchChange}
       providerTabs={
-        <MovieProviderTabs
+        <MediaProviders
+          type="movie"
           className="hidden xl:flex"
           value={search.with_watch_providers}
-          onValueChange={(value) => handleSearchChange({ with_watch_providers: value?.toString() })}
+          onValueChange={(value) => handleSearchChange({ with_watch_providers: value })}
         />
       }
       filtersSheet={<MovieFiltersSheet value={pickMovieFilters(search)} onChange={handleSearchChange} />}

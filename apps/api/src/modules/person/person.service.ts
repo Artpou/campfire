@@ -1,6 +1,7 @@
 import { BadRequestError } from "@/shared/errors/error";
 import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
+import { mergeMediaEnrichment } from "@/modules/media/media.helper";
 import { MediaService } from "@/modules/media/media.service";
 import type { MediaEnriched } from "@/modules/media/media.types";
 import { tmdbMovieToMedia, tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
@@ -108,12 +109,6 @@ export class PersonService extends AuthenticatedService {
     const uniqueIds = [...new Set(allMedia.map((m) => m.id.toString()))];
     const mediaMap = await this.mediaService.getMany({ ids: uniqueIds });
 
-    const withMediaStatus = <T extends MediaEnriched>(list: T[]): T[] =>
-      list.map((item) => {
-        const enriched = mediaMap.find((m) => m.id === item.id);
-        return enriched ? ({ ...item, ...enriched, type: item.type } as T) : item;
-      });
-
     const departments = [...new Set(crewMedia.map((c) => c.department).filter(Boolean))].sort((a, b) =>
       a.localeCompare(b),
     );
@@ -121,10 +116,10 @@ export class PersonService extends AuthenticatedService {
     return {
       id,
       person: personData,
-      knownFor: withMediaStatus(knownForCredits.map(creditToMedia)),
+      knownFor: mergeMediaEnrichment(knownForCredits.map(creditToMedia), mediaMap, { preserveType: true }),
       filmography: {
-        cast: withMediaStatus(castMedia),
-        crew: withMediaStatus(crewMedia),
+        cast: mergeMediaEnrichment(castMedia, mediaMap, { preserveType: true }),
+        crew: mergeMediaEnrichment(crewMedia, mediaMap, { preserveType: true }),
       },
       departments,
     };

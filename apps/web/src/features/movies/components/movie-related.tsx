@@ -2,7 +2,7 @@ import { Trans } from "@lingui/react/macro";
 import type { Media, Movie } from "@seedarr/sdk";
 import { LibraryIcon, SparklesIcon } from "lucide-react";
 
-import { MediaCarousel } from "@/features/media/components/media-carousel";
+import { MediaCarousel } from "@/features/media/components/carousel/media-carousel";
 
 interface MovieRelatedProps {
   collection: Movie["collection"];

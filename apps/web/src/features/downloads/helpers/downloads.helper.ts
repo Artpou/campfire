@@ -1,6 +1,10 @@
 import type { TorrentStatus } from "@seedarr/contracts";
 import type { Download, TorrentInspectFile } from "@seedarr/sdk";
 
+export function hasFiles(download?: Download): boolean {
+  return !!download && (!!download.torrent || !!download.remoteLocation);
+}
+
 export function getDownloadStatus(item: {
   error?: string | null;
   remoteLocation?: string | null;

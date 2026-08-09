@@ -1,4 +1,4 @@
-import { formatError } from "@seedarr/shared";
+import { formatError, isVideoFile } from "@seedarr/shared";
 
 import { logger } from "@/shared/helpers/logger.helper";
 
@@ -13,10 +13,8 @@ import {
   type StorageConnectionOptions,
 } from "./storage.adapter";
 
-const VIDEO_EXT_RE = /\.(mkv|mp4|avi|m4v|mov|wmv|flv|webm|ts|m2ts|mpg|mpeg)$/i;
-
 function hasVideoExtension(name: string): boolean {
-  return VIDEO_EXT_RE.test(name);
+  return isVideoFile(name);
 }
 
 function createByteLimiter(maxBytes: number): Transform {
@@ -53,7 +51,7 @@ export class FtpAdapter extends StorageAdapter {
       password: opts.password || undefined,
       secure: opts.secure ?? false,
       secureOptions: {
-        rejectUnauthorized: true,
+        rejectUnauthorized: false,
       },
     });
     // Freebox (and similar embedded FTP) often returns empty listings for `LIST -a`.

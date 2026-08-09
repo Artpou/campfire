@@ -1,13 +1,8 @@
 import { useMemo } from "react";
 
-import { Trans } from "@lingui/react/macro";
 import type { TMDBMovieDetails } from "@seedarr/sdk";
-import { UsersIcon } from "lucide-react";
 
-import { CarouselItem } from "@/shared/ui/carousel";
-import { CarouselWrapper } from "@/shared/ui/carousel-wrapper";
-
-import { PersonCard } from "@/features/person/components/person-card";
+import { MediaCastCarousel } from "@/features/media/components/carousel/media-carousel-cast";
 
 interface MovieCastProps {
   movie: TMDBMovieDetails;
@@ -24,25 +19,5 @@ export function MovieCast({ movie }: MovieCastProps) {
     return [...directors, ...actors];
   }, [movie.credits]);
 
-  if (castAndCrew.length === 0) return null;
-
-  return (
-    <CarouselWrapper
-      title={
-        <span className="flex items-center gap-2">
-          <UsersIcon className="size-5" />
-          <Trans>Cast & Crew</Trans>
-        </span>
-      }
-    >
-      {castAndCrew.map((person) => (
-        <CarouselItem
-          key={`${person.id}-${person.role}`}
-          className="basis-1/3 sm:basis-1/4 md:basis-1/5 lg:basis-1/7 xl:basis-1/8"
-        >
-          <PersonCard {...person} />
-        </CarouselItem>
-      ))}
-    </CarouselWrapper>
-  );
+  return <MediaCastCarousel people={castAndCrew} />;
 }

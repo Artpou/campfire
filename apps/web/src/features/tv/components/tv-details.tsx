@@ -1,20 +1,15 @@
-import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import type { TMDBTvDetails } from "@seedarr/sdk";
-import { ClockPlusIcon, ExternalLinkIcon, HeartIcon } from "lucide-react";
+import type { Media, TMDBTvDetails } from "@seedarr/sdk";
 
-import { Badge } from "@/shared/ui/badge";
-import { Button } from "@/shared/ui/button";
+import { MediaExternalLinks } from "@/features/media/components/media-external-links";
+import { MediaSocialActions } from "@/features/media/components/media-social-actions";
 
 interface TvDetailsProps {
   tv: TMDBTvDetails;
-  isLiked?: boolean;
-  isInWatchList?: boolean;
-  onToggleLike?: () => void;
-  onToggleWatchList?: () => void;
+  media?: Media | null;
 }
 
-export function TvDetails({ tv, isLiked, isInWatchList, onToggleLike, onToggleWatchList }: TvDetailsProps) {
+export function TvDetails({ tv, media }: TvDetailsProps) {
   const hasAnyDetails =
     tv.status ||
     (tv.networks && tv.networks.length > 0) ||
@@ -25,26 +20,7 @@ export function TvDetails({ tv, isLiked, isInWatchList, onToggleLike, onToggleWa
 
   return (
     <dl className="dark text-foreground space-y-4">
-      <div className="flex gap-3">
-        <Button
-          size="icon-lg"
-          variant={isLiked ? "default" : "outline"}
-          rounded
-          onClick={onToggleLike}
-          aria-label={t`Like`}
-        >
-          <HeartIcon fill={isLiked ? "currentColor" : "none"} />
-        </Button>
-        <Button
-          size="icon-lg"
-          variant={isInWatchList ? "default" : "outline"}
-          rounded
-          onClick={onToggleWatchList}
-          aria-label={t`Watchlist`}
-        >
-          <ClockPlusIcon fill={isInWatchList ? "currentColor" : "none"} />
-        </Button>
-      </div>
+      {media && <MediaSocialActions media={media} />}
 
       {!!tv.status && (
         <div>
@@ -81,26 +57,7 @@ export function TvDetails({ tv, isLiked, isInWatchList, onToggleLike, onToggleWa
           <dd className="text-sm font-semibold">{tv.production_companies.map((c) => c.name).join(", ")}</dd>
         </div>
       )}
-      <div className="space-x-2">
-        {!!tv.external_ids?.imdb_id && (
-          <Badge variant="secondary" className="text-md px-2 py-1">
-            <a href={`https://www.imdb.com/title/${tv.external_ids.imdb_id}`} target="_blank" rel="noopener noreferrer">
-              <div className="flex items-center gap-2">
-                <Trans>IMDb</Trans>
-                <ExternalLinkIcon className="size-4" />
-              </div>
-            </a>
-          </Badge>
-        )}
-        <Badge variant="secondary" className="text-md px-2 py-1">
-          <a href={`https://www.themoviedb.org/tv/${tv.id}`} target="_blank" rel="noopener noreferrer">
-            <div className="flex items-center gap-2">
-              <Trans>TMDB</Trans>
-              <ExternalLinkIcon className="size-4" />
-            </div>
-          </a>
-        </Badge>
-      </div>
+      <MediaExternalLinks type="tv" tmdbId={tv.id} imdbId={tv.external_ids?.imdb_id} />
     </dl>
   );
 }

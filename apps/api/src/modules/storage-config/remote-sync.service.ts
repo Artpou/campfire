@@ -1,5 +1,6 @@
 import { filenameParse } from "@ctrl/video-filename-parser";
 import type { ManualSyncInput } from "@seedarr/contracts";
+import { isVideoFile } from "@seedarr/shared";
 import { and, eq } from "drizzle-orm";
 
 import { BadRequestError } from "@/shared/errors/error";
@@ -30,8 +31,6 @@ export interface RemoteSyncResponse {
 
 const BATCH_SIZE = 5;
 const BATCH_DELAY_MS = 250;
-
-const VIDEO_EXT_RE = /\.(mkv|mp4|avi|m4v|mov|wmv|flv|webm|ts|m2ts|mpg|mpeg)$/i;
 
 const SKIP_DIRECTORY_NAMES = new Set([
   "freebox",
@@ -79,7 +78,7 @@ function isSyncableDir(name: string): boolean {
 }
 
 function isSyncableFile(name: string): boolean {
-  return VIDEO_EXT_RE.test(name);
+  return isVideoFile(name);
 }
 
 function extractTmdbId(name: string): number | null {
@@ -125,7 +124,13 @@ function getTmdbTitle(item: TMDBItem, type: "movie" | "tv"): string {
 
 function tmdbItemToMediaInsert(item: TMDBItem, type: "movie" | "tv") {
   const mapped = type === "movie" ? tmdbMovieToMedia(item) : tmdbTVToMedia(item);
-  const { likes: _likes, watchList: _watchList, download: _download, progress: _progress, ...insertFields } = mapped;
+  const {
+    liked: _liked,
+    inWatchList: _inWatchList,
+    download: _download,
+    progress: _progress,
+    ...insertFields
+  } = mapped;
 
   return {
     ...insertFields,
@@ -133,8 +138,6 @@ function tmdbItemToMediaInsert(item: TMDBItem, type: "movie" | "tv") {
     sanitize_title: toLatin(insertFields.original_title ?? "") ?? insertFields.title,
   };
 }
-
-// --- TMDB resolution ---
 
 async function resolveTmdbMatch(name: string, mediaType: "movie" | "tv"): Promise<TMDBMatch | null> {
   const tmdbId = extractTmdbId(name);

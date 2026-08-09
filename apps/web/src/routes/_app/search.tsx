@@ -13,7 +13,7 @@ import { Container } from "@/shared/ui/container";
 import { Input } from "@/shared/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
-import { MediaCarousel } from "@/features/media/components/media-carousel";
+import { MediaCarousel } from "@/features/media/components/carousel/media-carousel";
 import { MediaGrid } from "@/features/media/components/media-grid";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 import {
@@ -120,7 +120,7 @@ function SearchPage() {
             <SeedarrLoader />
           </div>
         ) : filteredResults.length > 0 ? (
-          <MediaGrid items={filteredResults} search />
+          <MediaGrid items={filteredResults} />
         ) : (
           <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
             <SearchIcon className="size-16 text-muted-foreground/20 mb-4" />

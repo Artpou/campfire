@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
 
-import { Trans } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
+import { formatRuntime } from "@seedarr/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Link, type LinkProps } from "@tanstack/react-router";
-import { ClockIcon, MagnetIcon } from "lucide-react";
+import { ClockIcon } from "lucide-react";
 
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Badge } from "@/shared/ui/badge";
-import { Button } from "@/shared/ui/button";
 
+import { MediaButtonPlay } from "@/features/media/components/button/media-button-play";
+import { MediaButtonTorrent } from "@/features/media/components/button/media-button-torrent";
 import { MediaRating } from "@/features/media/components/media-rating";
+import { MediaSocialActions } from "@/features/media/components/media-social-actions";
 import { getBackdropUrl, getPosterUrl } from "@/features/media/helpers/media.helper";
 import { trailerQueries } from "@/features/media/hooks/trailer.queries";
 
@@ -18,20 +20,6 @@ type MediaCardPreviewProps = {
   media: Media;
   detailLinkProps: LinkProps;
 };
-
-function formatRuntime(minutes: number | null | undefined): string | null {
-  if (!minutes) return null;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h === 0) return `${m}min`;
-  return m > 0 ? `${h}h${m.toString().padStart(2, "0")}` : `${h}h`;
-}
-
-function getEndsAt(minutes: number | null | undefined): string | null {
-  if (!minutes) return null;
-  const end = new Date(Date.now() + minutes * 60_000);
-  return end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
 
 export function MediaCardPreview({ media, detailLinkProps }: MediaCardPreviewProps) {
   const locale = useTmdbLocale();
@@ -80,26 +68,15 @@ export function MediaCardPreview({ media, detailLinkProps }: MediaCardPreviewPro
         </div>
 
         <div className="flex items-center gap-2 text-xs flex-wrap">
+          <MediaSocialActions media={media} />
+
           {!!media.vote_average && media.vote_average > 0 && <MediaRating media={media} size={36} strokeWidth={2} />}
           {year && <Badge variant="outline">{year}</Badge>}
-          {formatRuntime(media.duration) && (
+          {media.duration && media.duration > 0 && (
             <Badge variant="outline">
               <ClockIcon className="size-3" />
               {formatRuntime(media.duration)}
             </Badge>
-          )}
-          {getEndsAt(media.duration) && (
-            <Badge variant="secondary">
-              <Trans>Ends at</Trans> {getEndsAt(media.duration)}
-            </Badge>
-          )}
-          {media.type === "tv" && media.seasons_number && (
-            <>
-              <span>·</span>
-              <span>
-                {media.seasons_number} <Trans>season(s)</Trans>
-              </span>
-            </>
           )}
         </div>
 
@@ -109,18 +86,7 @@ export function MediaCardPreview({ media, detailLinkProps }: MediaCardPreviewPro
 
         {media.overview && <p className="text-sm leading-relaxed line-clamp-3 mt-1">{media.overview}</p>}
 
-        <div className="flex items-center gap-2 pt-1">
-          <Button size="sm" className="flex-1" asChild>
-            <Link
-              {...(media.type === "tv"
-                ? ({ to: "/tv/$id/torrents", params: { id: media.id.toString() } } as const)
-                : ({ to: "/movies/$id/torrents", params: { id: media.id.toString() } } as const))}
-            >
-              <MagnetIcon className="size-3.5" />
-              <Trans>Torrents</Trans>
-            </Link>
-          </Button>
-        </div>
+        {media.download ? <MediaButtonPlay className="w-full" media={media} /> : <MediaButtonTorrent media={media} />}
       </div>
     </>
   );

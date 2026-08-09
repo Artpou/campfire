@@ -8,16 +8,7 @@ import { api, unwrap } from "@seedarr/sdk";
 import { useMutation } from "@tanstack/react-query";
 import { CrownIcon, GlassesIcon, PencilIcon, ShieldCheckIcon, Trash2Icon, UserCheckIcon } from "lucide-react";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/shared/ui/alert-dialog";
+import { DialogDelete } from "@/shared/components/dialog/dialog-delete";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
@@ -199,31 +190,16 @@ export function UsersTable({ users, isLoading, onEditUser, onRefetch }: UsersTab
         </Table>
       </div>
 
-      <AlertDialog open={!!userToDelete} onOpenChange={handleDeleteCancel}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              <Trans>Delete User</Trans>
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              <Trans>
-                Are you sure you want to delete user "{userToDelete?.username}"? This action cannot be undone.
-              </Trans>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleDeleteCancel}>
-              <Trans>Cancel</Trans>
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              <Trans>Delete</Trans>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DialogDelete
+        open={!!userToDelete}
+        setOpen={handleDeleteCancel}
+        validate={handleDeleteConfirm}
+        disabled={deleteMutation.isPending}
+        title={<Trans>Delete User</Trans>}
+        description={
+          <Trans>Are you sure you want to delete user "{userToDelete?.username}"? This action cannot be undone.</Trans>
+        }
+      />
     </>
   );
 }

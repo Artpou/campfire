@@ -9,6 +9,7 @@ import { ActivityLogService } from "@/modules/activity-log/activity-log.service"
 import { download } from "@/modules/download/download.schema";
 import { media } from "@/modules/media/media.schema";
 import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
+import { invalidateStreamSource } from "@/modules/streaming/streaming.service";
 import { waitUntilNoStreams } from "@/modules/streaming/streaming-lease";
 import fs from "node:fs/promises";
 import { torrentClient, UNMARK_DESTROYING_DELAY_MS } from "../webtorrent/webtorrent-manager";
@@ -135,6 +136,7 @@ export async function runRemoteTransfer(
         .where(eq(download.id, downloadId));
     }
 
+    invalidateStreamSource(downloadId);
     logger.info("TRANSFER", `Transfer complete: ${torrentName} -> ${remotePath}`);
 
     const shouldDeleteLocal =

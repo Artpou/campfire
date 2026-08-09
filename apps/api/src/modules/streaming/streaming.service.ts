@@ -1,19 +1,19 @@
-import { formatError, VIDEO_EXTENSIONS } from "@seedarr/shared";
+import { VIDEO_EXTENSIONS } from "@seedarr/shared";
 import { eq } from "drizzle-orm";
 import type { StreamingApi } from "hono/utils/stream";
-import type WebTorrent from "webtorrent";
 
 import { BadRequestError, NotFoundError } from "@/shared/errors/error";
+import { createCache } from "@/shared/helpers/cache.helper";
 import { logger } from "@/shared/helpers/logger.helper";
-import { assertWithinDownloads, resolveWithinDownloads } from "@/shared/helpers/path.helper";
+import { resolveWithinDownloads } from "@/shared/helpers/path.helper";
 import { pipeNodeStream } from "@/shared/helpers/stream.helper";
 import {
   convertToFragmentedMp4Stream,
   getVideoInputFormat,
   probeVideoStreams,
   type RemuxInput,
-  type VideoProbe,
 } from "@/shared/helpers/video.helper";
+import { findLargestVideoInDirectory } from "@/shared/helpers/video-file.helper";
 
 import { db } from "@/db/db";
 import type { Download, TorrentLiveData } from "@/modules/download/download.schema";
@@ -33,15 +33,14 @@ import {
 } from "./streaming.helper";
 import { acquireStreamLease } from "./streaming-lease";
 
-export interface StreamSource {
+/** Resolved source metadata — cacheable (no open streams/handles). */
+export interface StreamSourceInfo {
   size: number;
   fileName: string;
-  stream?: NodeJS.ReadableStream;
   filePath?: string;
   remotePath?: string;
-  torrentFile?: WebTorrent.TorrentFile;
-  cleanup?: () => void;
   isRemote?: boolean;
+  hasTorrentFile?: boolean;
 }
 
 type PlaybackMode = "direct" | "live";
@@ -56,7 +55,6 @@ export interface PlaybackInfo {
 export interface DirectStreamResult {
   status: 200 | 206 | 416;
   headers: Record<string, string>;
-  /** Absent when status=416 (nothing to pipe). */
   pipe?: (honoStream: StreamingApi) => Promise<void>;
 }
 
@@ -65,58 +63,44 @@ export interface LiveStreamResult {
   pipe: (honoStream: StreamingApi) => Promise<void>;
 }
 
+const sourceCache = createCache<StreamSourceInfo>({
+  max: 100,
+  ttl: 5 * 60_000,
+  name: "stream-source",
+});
+
+export function invalidateStreamSource(downloadId: string): void {
+  sourceCache.delete(downloadId);
+}
+
 export class StreamingService {
-  async resolveSource(download: Download): Promise<StreamSource | undefined> {
-    if (download.remoteLocation) {
-      const remote = await this.tryRemoteSource(download);
-      if (remote) return remote;
-    }
+  async resolveSourceInfo(download: Download): Promise<StreamSourceInfo | undefined> {
+    const cached = sourceCache.get(download.id);
+    if (cached) return cached;
 
-    if (download.torrent?.done) {
-      const fromDisk = await this.resolveFromDisk(download);
-      if (fromDisk) return fromDisk;
-    }
-
-    const activeTorrent = torrentClient.getActiveTorrent(download.id);
-    if (activeTorrent) {
-      const videoFile = findLargestVideoFile(activeTorrent);
-      if (!videoFile) return undefined;
-      return {
-        stream: videoFile.createReadStream(),
-        size: videoFile.length,
-        fileName: videoFile.name,
-        torrentFile: videoFile,
-      };
-    }
-
-    return this.resolveFromDisk(download);
+    const info = await this.computeSourceInfo(download);
+    if (info) sourceCache.set(download.id, info);
+    return info;
   }
 
   async getPlaybackInfo(download: Download): Promise<PlaybackInfo> {
-    const source = await this.resolveSource(download);
+    const source = await this.resolveSourceInfo(download);
     if (!source) throw new NotFoundError("Video file");
 
     const origin: PlaybackInfo["origin"] = source.isRemote ? "remote" : source.filePath ? "local" : "torrent";
-    // Prefer byte-range direct whenever we have a seekable handle (disk, remote, or active torrent file).
-    const canDirect = Boolean(source.filePath || source.remotePath || source.torrentFile);
+    const canDirect = Boolean(source.filePath || source.remotePath || source.hasTorrentFile);
     const mode: PlaybackMode = canDirect ? "direct" : "live";
     const duration = await this.resolveDuration(download, source);
 
     logger.info("STREAM", `playback info ${download.id}: mode=${mode} origin=${origin} file=${source.fileName}`);
 
-    return {
-      mode,
-      duration,
-      seekable: mode === "direct",
-      origin,
-    };
+    return { mode, duration, seekable: mode === "direct", origin };
   }
 
-  /** Prepare headers + pipe closure for byte-range direct streaming. */
   async prepareDirectStream(download: Download, rangeHeader: string | undefined): Promise<DirectStreamResult> {
-    const source = await this.resolveSource(download);
+    const source = await this.resolveSourceInfo(download);
     if (!source) throw new NotFoundError("Video file");
-    if (!source.filePath && !source.remotePath && !source.torrentFile) {
+    if (!source.filePath && !source.remotePath && !source.hasTorrentFile) {
       throw new BadRequestError("Direct streaming requires a seekable source");
     }
 
@@ -133,13 +117,12 @@ export class StreamingService {
     return {
       status: range ? 206 : 200,
       headers: buildStreamHeaders(source.fileName, source.size, range),
-      pipe: (honoStream) => this.pipeSource(download.id, source, range, honoStream),
+      pipe: (honoStream) => this.pipeSource(download, source, range, honoStream),
     };
   }
 
-  /** Live fMP4 remux for sources without a seekable handle (fallback while downloading). */
   async prepareLiveStream(download: Download): Promise<LiveStreamResult> {
-    const source = await this.resolveSource(download);
+    const source = await this.resolveSourceInfo(download);
     if (!source) throw new NotFoundError("Video file");
 
     logger.info("STREAM", `live remux ${download.id}: file=${source.fileName}`);
@@ -148,17 +131,71 @@ export class StreamingService {
 
     return {
       headers,
-      pipe: (honoStream) => this.pipeLiveSource(download.id, source, honoStream),
+      pipe: (honoStream) => this.pipeLiveSource(download, source, honoStream),
     };
   }
 
+  // --- Private: source resolution ---
+
+  private async computeSourceInfo(download: Download): Promise<StreamSourceInfo | undefined> {
+    if (download.remoteLocation) {
+      const remote = await this.tryRemoteSource(download);
+      if (remote) return remote;
+    }
+
+    if (download.torrent?.done) {
+      const fromDisk = await this.resolveFromDisk(download);
+      if (fromDisk) return fromDisk;
+    }
+
+    const activeTorrent = torrentClient.getActiveTorrent(download.id);
+    if (activeTorrent) {
+      const videoFile = findLargestVideoFile(activeTorrent);
+      if (!videoFile) return undefined;
+      return { size: videoFile.length, fileName: videoFile.name, hasTorrentFile: true };
+    }
+
+    return this.resolveFromDisk(download);
+  }
+
+  private async tryRemoteSource(item: Download): Promise<StreamSourceInfo | undefined> {
+    if (!item.remoteLocation) return undefined;
+    try {
+      const info = await resolveRemoteVideoInfo(item, item.remoteLocation);
+      if (!info) return undefined;
+      return { size: info.size, fileName: info.fileName, remotePath: info.remotePath, isRemote: true };
+    } catch (error) {
+      logger.warn("STREAM", `Remote source resolve failed: ${error}`);
+      return undefined;
+    }
+  }
+
+  private async resolveFromDisk(download: Download): Promise<StreamSourceInfo | undefined> {
+    const fullPath = resolveWithinDownloads(download.torrent?.name ?? "");
+    try {
+      const stats = await fs.stat(fullPath);
+      if (stats.isFile()) {
+        const fileName = path.basename(fullPath);
+        return VIDEO_EXTENSIONS.test(fileName) ? { size: stats.size, fileName, filePath: fullPath } : undefined;
+      }
+      const largest = await findLargestVideoInDirectory(fullPath);
+      return largest ? { size: largest.size, fileName: largest.fileName, filePath: largest.filePath } : undefined;
+    } catch (error) {
+      if (error instanceof BadRequestError) throw error;
+      if (isFsNotFoundError(error)) return undefined;
+      throw error;
+    }
+  }
+
+  // --- Private: streaming ---
+
   private async pipeSource(
-    downloadId: string,
-    source: StreamSource,
+    download: Download,
+    source: StreamSourceInfo,
     range: ByteRange | undefined,
     honoStream: StreamingApi,
   ): Promise<void> {
-    const releaseLease = acquireStreamLease(downloadId);
+    const releaseLease = acquireStreamLease(download.id);
     const cleanups: Array<() => void> = [];
     honoStream.onAbort(() => {
       for (const fn of cleanups) fn();
@@ -166,7 +203,7 @@ export class StreamingService {
     });
 
     try {
-      const input = await this.openInput(source, range, cleanups);
+      const input = await this.openInput(download, source, range, cleanups);
       if (!input) throw new NotFoundError("Stream source unavailable");
       await pipeNodeStream(honoStream, input);
     } finally {
@@ -174,8 +211,8 @@ export class StreamingService {
     }
   }
 
-  private async pipeLiveSource(downloadId: string, source: StreamSource, honoStream: StreamingApi): Promise<void> {
-    const releaseLease = acquireStreamLease(downloadId);
+  private async pipeLiveSource(download: Download, source: StreamSourceInfo, honoStream: StreamingApi): Promise<void> {
+    const releaseLease = acquireStreamLease(download.id);
     const cleanups: Array<() => void> = [];
     honoStream.onAbort(() => {
       for (const fn of cleanups) fn();
@@ -187,7 +224,7 @@ export class StreamingService {
       if (source.filePath) {
         remuxInput = { filePath: source.filePath };
       } else {
-        const input = await this.openInput(source, undefined, cleanups);
+        const input = await this.openInput(download, source, undefined, cleanups);
         if (!input) throw new NotFoundError("Stream source unavailable");
         remuxInput = { stream: input };
       }
@@ -205,7 +242,8 @@ export class StreamingService {
   }
 
   private async openInput(
-    source: StreamSource,
+    download: Download,
+    source: StreamSourceInfo,
     range: ByteRange | undefined,
     cleanups: Array<() => void>,
   ): Promise<NodeJS.ReadableStream | undefined> {
@@ -221,95 +259,43 @@ export class StreamingService {
       }
     }
 
-    const opened = this.openLocalStream(source, range);
+    const opened = this.openLocalStream(download, source, range);
     cleanups.push(() => {
       if ("destroy" in opened && typeof opened.destroy === "function") opened.destroy();
     });
-    if (source.cleanup) cleanups.push(source.cleanup);
     return opened;
   }
 
-  private openLocalStream(source: StreamSource, range?: ByteRange): NodeJS.ReadableStream {
-    if (source.torrentFile) {
-      return range ? source.torrentFile.createReadStream(range) : source.torrentFile.createReadStream();
+  private openLocalStream(download: Download, source: StreamSourceInfo, range?: ByteRange): NodeJS.ReadableStream {
+    if (source.hasTorrentFile) {
+      const activeTorrent = torrentClient.getActiveTorrent(download.id);
+      if (activeTorrent) {
+        const videoFile = findLargestVideoFile(activeTorrent);
+        if (videoFile) {
+          return range ? videoFile.createReadStream(range) : videoFile.createReadStream();
+        }
+      }
     }
     if (source.filePath) {
       return range ? fsSync.createReadStream(source.filePath, range) : fsSync.createReadStream(source.filePath);
     }
-    if (source.stream) return source.stream;
     throw new Error("No local stream source available");
   }
 
-  private async resolveDuration(download: Download, source: StreamSource): Promise<number | null> {
+  // --- Private: duration ---
+
+  private async resolveDuration(download: Download, source: StreamSourceInfo): Promise<number | null> {
     const cached = download.torrent?.durationSeconds;
     if (cached != null && cached > 0) return cached;
 
-    let probe: VideoProbe | null = null;
-    if (source.filePath) {
-      probe = await probeVideoStreams({ filePath: source.filePath });
-    } else if (source.remotePath) {
-      try {
-        const remote = await remoteStorageService.createReadStream(source.remotePath);
-        if (remote) {
-          probe = await probeVideoStreams({ stream: remote.stream });
-          remote.cleanup?.();
-        }
-      } catch (error) {
-        const message = formatError(error);
-        logger.warn("STREAM", `Remote probe failed for ${download.id}: ${message}`);
-      }
-    }
+    if (!source.filePath) return null;
 
+    const probe = await probeVideoStreams({ filePath: source.filePath });
     if (probe?.duration) {
       await this.cacheDuration(download.id, download.torrent, probe.duration);
       return probe.duration;
     }
     return null;
-  }
-
-  private async tryRemoteSource(item: Download): Promise<StreamSource | undefined> {
-    if (!item.remoteLocation) return undefined;
-    try {
-      const info = await resolveRemoteVideoInfo(item, item.remoteLocation);
-      if (!info) return undefined;
-      return { size: info.size, fileName: info.fileName, remotePath: info.remotePath, isRemote: true };
-    } catch (error) {
-      logger.warn("STREAM", `Remote source resolve failed: ${error}`);
-      return undefined;
-    }
-  }
-
-  private async resolveFromDisk(download: Download): Promise<StreamSource | undefined> {
-    const fullPath = resolveWithinDownloads(download.torrent?.name ?? "");
-    try {
-      const stats = await fs.stat(fullPath);
-      if (stats.isFile()) {
-        const fileName = path.basename(fullPath);
-        return VIDEO_EXTENSIONS.test(fileName) ? { size: stats.size, fileName, filePath: fullPath } : undefined;
-      }
-      return await this.findLargestVideoInFolder(fullPath);
-    } catch (error) {
-      if (error instanceof BadRequestError) throw error;
-      if (isFsNotFoundError(error)) return undefined;
-      throw error;
-    }
-  }
-
-  private async findLargestVideoInFolder(fullPath: string): Promise<StreamSource | undefined> {
-    const files = await fs.readdir(fullPath, { recursive: true, withFileTypes: true });
-    const videoFiles = await Promise.all(
-      files
-        .filter((file) => file.isFile() && VIDEO_EXTENSIONS.test(file.name))
-        .map(async (file) => {
-          const filePath = path.join(file.parentPath || fullPath, file.name);
-          assertWithinDownloads(filePath);
-          const fileStats = await fs.stat(filePath);
-          return { path: filePath, name: file.name, size: fileStats.size };
-        }),
-    );
-    if (videoFiles.length === 0) return undefined;
-    const largest = videoFiles.sort((a, b) => b.size - a.size)[0];
-    return { size: largest.size, fileName: largest.name, filePath: largest.path };
   }
 
   private async cacheDuration(

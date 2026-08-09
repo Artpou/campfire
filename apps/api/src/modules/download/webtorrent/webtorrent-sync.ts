@@ -5,12 +5,14 @@ import type WebTorrent from "webtorrent";
 import { logger } from "@/shared/helpers/logger.helper";
 import { resolveWithinDownloads } from "@/shared/helpers/path.helper";
 import { probeVideoDuration } from "@/shared/helpers/video.helper";
+import { findLargestVideoInDirectory } from "@/shared/helpers/video-file.helper";
 
 import { db } from "@/db/db";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import type { TorrentLiveData } from "@/modules/download/download.schema";
 import { download } from "@/modules/download/download.schema";
 import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
+import { invalidateStreamSource } from "@/modules/streaming/streaming.service";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { markTransferStarting, runRemoteTransfer } from "../remote/remote-transfer.helper";
@@ -79,6 +81,7 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
   torrent.on("done", async () => {
     try {
       logger.info("WEBTORRENT", `Completed: ${torrent.name}`);
+      invalidateStreamSource(downloadId);
       await syncDb(true, { done: true });
 
       let dl = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
@@ -315,18 +318,8 @@ async function probeLargestVideoDuration(torrentName: string): Promise<number | 
       return VIDEO_EXTENSIONS.test(path.basename(root)) ? probeVideoDuration({ filePath: root }) : undefined;
     }
 
-    const entries = await fs.readdir(root, { recursive: true, withFileTypes: true });
-    const videos = await Promise.all(
-      entries
-        .filter((e) => e.isFile() && VIDEO_EXTENSIONS.test(e.name))
-        .map(async (e) => {
-          const filePath = path.join(e.parentPath || root, e.name);
-          const size = (await fs.stat(filePath)).size;
-          return { filePath, size };
-        }),
-    );
-    if (videos.length === 0) return undefined;
-    const largest = videos.sort((a, b) => b.size - a.size)[0];
+    const largest = await findLargestVideoInDirectory(root);
+    if (!largest) return undefined;
     return probeVideoDuration({ filePath: largest.filePath });
   } catch {
     return undefined;

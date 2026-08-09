@@ -10,13 +10,20 @@ import type { SeedarrRouterContext } from "@/router";
 
 const TanStackDevtools = import.meta.env.DEV
   ? lazy(async () => {
-      const { TanStackDevtools } = await import("@tanstack/react-devtools");
-      const { TanStackRouterDevtoolsPanel } = await import("@tanstack/react-router-devtools");
+      const [{ TanStackDevtools }, { TanStackRouterDevtoolsPanel }, { ReactQueryDevtoolsPanel }] = await Promise.all([
+        import("@tanstack/react-devtools"),
+        import("@tanstack/react-router-devtools"),
+        import("@tanstack/react-query-devtools"),
+      ]);
+
       return {
         default: () => (
           <TanStackDevtools
             config={{ position: "bottom-right" }}
-            plugins={[{ name: "Tanstack Router", render: <TanStackRouterDevtoolsPanel /> }]}
+            plugins={[
+              { name: "Tanstack Router", render: <TanStackRouterDevtoolsPanel /> },
+              { name: "React Query", render: <ReactQueryDevtoolsPanel /> },
+            ]}
           />
         ),
       };

@@ -8,28 +8,28 @@ import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { PlaceholderEmpty } from "@/shared/components/seedarr-placeholder";
 import { Container } from "@/shared/ui/container";
 
-import { HeroCarousel } from "@/features/media/components/hero-carousel";
-import { MediaCategoryCarousel } from "@/features/media/components/media-category-carousel";
+import { MediaCarouselCategory } from "@/features/media/components/carousel/media-carousel-category";
+import { MediaHeroCarousel } from "@/features/media/components/carousel/media-carousel-hero";
 import { MediaGrid } from "@/features/media/components/media-grid";
-import { MediaSortTabs } from "@/features/media/components/media-sort-tabs";
+import { MediaSortTabs } from "@/features/media/components/tabs/media-tabs-sort";
 
 type MediaSelected = "home" | "cinema" | "top-rated" | "upcoming";
 
-type DiscoverPageResult = {
+type DiscoverResult = {
   results: Media[];
   page: number;
   totalPages: number;
 };
 
 type DiscoverQueryOptions = UseInfiniteQueryOptions<
-  DiscoverPageResult,
+  DiscoverResult,
   Error,
-  InfiniteData<DiscoverPageResult>,
+  InfiniteData<DiscoverResult>,
   readonly unknown[],
   number
 >;
 
-type DiscoverPageProps<TSearch extends { selected?: MediaSelected; with_genres?: string }> = {
+type MediaDiscover<TSearch extends { selected?: MediaSelected; with_genres?: string }> = {
   type: "movie" | "tv";
   search: TSearch;
   queryOptions: object;
@@ -40,7 +40,7 @@ type DiscoverPageProps<TSearch extends { selected?: MediaSelected; with_genres?:
   emptySubtitle: ReactNode;
 };
 
-export function DiscoverPage<TSearch extends { selected?: MediaSelected; with_genres?: string }>({
+export function MediaDiscover<TSearch extends { selected?: MediaSelected; with_genres?: string }>({
   type,
   search,
   queryOptions,
@@ -49,7 +49,7 @@ export function DiscoverPage<TSearch extends { selected?: MediaSelected; with_ge
   filtersSheet,
   emptyTitle,
   emptySubtitle,
-}: DiscoverPageProps<TSearch>) {
+}: MediaDiscover<TSearch>) {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } = useInfiniteQuery(
     queryOptions as DiscoverQueryOptions,
   );
@@ -61,9 +61,9 @@ export function DiscoverPage<TSearch extends { selected?: MediaSelected; with_ge
 
   return (
     <>
-      <HeroCarousel type={type} />
+      <MediaHeroCarousel type={type} />
       <Container>
-        <MediaCategoryCarousel
+        <MediaCarouselCategory
           type={type}
           onValueChange={(value) => onSearchChange({ with_genres: value } as Partial<TSearch>)}
         />
@@ -86,7 +86,7 @@ export function DiscoverPage<TSearch extends { selected?: MediaSelected; with_ge
           ) : results.length === 0 ? (
             <PlaceholderEmpty title={emptyTitle} subtitle={emptySubtitle} />
           ) : (
-            <MediaGrid items={results} isLoading={isFetchingNextPage} onLoadMore={handleLoadMore} />
+            <MediaGrid items={results} isLoading={isFetchingNextPage} onLoadMore={handleLoadMore} hideType />
           )}
         </div>
       </Container>

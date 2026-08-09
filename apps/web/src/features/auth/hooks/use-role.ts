@@ -1,7 +1,6 @@
-import type { UserRole } from "@seedarr/contracts";
+import { hasMinRole, type UserRole } from "@seedarr/contracts";
 
 import { useAuth } from "../auth-store";
-import { hasMinRole } from "../helpers/role.helper";
 
 export function useRole() {
   const user = useAuth((state) => state.user);

@@ -17,7 +17,7 @@ function TabsList({
     <TabsPrimitive.List
       data-slot="tabs-list"
       className={cn(
-        "bg-muted text-muted-foreground inline-flex w-fit items-center justify-center rounded-lg p-[3px]",
+        "bg-card text-muted-foreground inline-flex w-fit items-center justify-center rounded-lg p-[3px]",
         className,
       )}
       {...props}
@@ -49,4 +49,4 @@ function TabsContent({ className, ...props }: React.ComponentProps<typeof TabsPr
   return <TabsPrimitive.Content data-slot="tabs-content" className={cn("flex-1 outline-none", className)} {...props} />;
 }
 
-export { Tabs, TabsList, TabsTrigger, TabsContent };
+export { Tabs, TabsContent, TabsList, TabsTrigger };

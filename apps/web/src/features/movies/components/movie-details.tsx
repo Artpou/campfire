@@ -1,17 +1,12 @@
-import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import type { TMDBMovieDetails } from "@seedarr/sdk";
-import { ClockPlusIcon, ExternalLinkIcon, HeartIcon } from "lucide-react";
+import type { Media, TMDBMovieDetails } from "@seedarr/sdk";
 
-import { Badge } from "@/shared/ui/badge";
-import { Button } from "@/shared/ui/button";
+import { MediaExternalLinks } from "@/features/media/components/media-external-links";
+import { MediaSocialActions } from "@/features/media/components/media-social-actions";
 
 interface MovieDetailsProps {
   movie: TMDBMovieDetails;
-  isLiked?: boolean;
-  isInWatchList?: boolean;
-  onToggleLike?: () => void;
-  onToggleWatchList?: () => void;
+  media?: Media | null;
 }
 
 const formatCurrency = (amount?: number) => {
@@ -23,7 +18,7 @@ const formatCurrency = (amount?: number) => {
   }).format(amount);
 };
 
-export function MovieDetails({ movie, isLiked, isInWatchList, onToggleLike, onToggleWatchList }: MovieDetailsProps) {
+export function MovieDetails({ movie, media }: MovieDetailsProps) {
   const hasAnyDetails =
     movie.status ||
     (movie.budget && movie.budget > 0) ||
@@ -34,26 +29,7 @@ export function MovieDetails({ movie, isLiked, isInWatchList, onToggleLike, onTo
 
   return (
     <dl className="dark text-foreground space-y-4">
-      <div className="flex gap-3">
-        <Button
-          size="icon-lg"
-          variant={isLiked ? "default" : "outline"}
-          rounded
-          onClick={onToggleLike}
-          aria-label={t`Like`}
-        >
-          <HeartIcon fill={isLiked ? "currentColor" : "none"} />
-        </Button>
-        <Button
-          size="icon-lg"
-          variant={isInWatchList ? "default" : "outline"}
-          rounded
-          onClick={onToggleWatchList}
-          aria-label={t`Watchlist`}
-        >
-          <ClockPlusIcon fill={isInWatchList ? "currentColor" : "none"} />
-        </Button>
-      </div>
+      {media && <MediaSocialActions media={media} />}
 
       {!!movie.status && (
         <div>
@@ -90,30 +66,7 @@ export function MovieDetails({ movie, isLiked, isInWatchList, onToggleLike, onTo
           <dd className="text-sm font-semibold">{movie.production_companies.map((c) => c.name).join(", ")}</dd>
         </div>
       )}
-      <div className="space-x-2">
-        {!!movie.external_ids && (
-          <Badge variant="secondary" className="text-md px-2 py-1">
-            <a
-              href={`https://www.imdb.com/title/${movie.external_ids.imdb_id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <div className="flex items-center gap-2">
-                <Trans>IMDb</Trans>
-                <ExternalLinkIcon className="size-4" />
-              </div>
-            </a>
-          </Badge>
-        )}
-        <Badge variant="secondary" className="text-md px-2 py-1">
-          <a href={`https://www.themoviedb.org/movie/${movie.id}`} target="_blank" rel="noopener noreferrer">
-            <div className="flex items-center gap-2">
-              <Trans>TMDB</Trans>
-              <ExternalLinkIcon className="size-4" />
-            </div>
-          </a>
-        </Badge>
-      </div>
+      <MediaExternalLinks type="movie" tmdbId={movie.id} imdbId={movie.external_ids?.imdb_id} />
     </dl>
   );
 }

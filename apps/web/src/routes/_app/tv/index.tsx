@@ -3,7 +3,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 
-import { DiscoverPage } from "@/features/media/components/discover-page";
+import { MediaDiscover } from "@/features/media/components/media-discover";
+import { MediaProviders } from "@/features/media/components/media-providers";
 import {
   buildTvDiscoverOptions,
   pickTvFilters,
@@ -11,7 +12,6 @@ import {
   validateTvDiscoverSearch,
 } from "@/features/media/helpers/discover-search.helper";
 import { TvFiltersSheet } from "@/features/tv/components/tv-filters-sheet";
-import { TVProviderTabs } from "@/features/tv/components/tv-provider-tabs";
 import { tvQueries } from "@/features/tv/hooks/tv.queries";
 
 export const Route = createFileRoute("/_app/tv/")({
@@ -30,16 +30,17 @@ function TVPage() {
   };
 
   return (
-    <DiscoverPage
+    <MediaDiscover
       type="tv"
       search={search}
       queryOptions={tvQueries.discover(discoverOptions, locale)}
       onSearchChange={handleSearchChange}
       providerTabs={
-        <TVProviderTabs
+        <MediaProviders
+          type="tv"
           className="hidden xl:flex"
           value={search.with_watch_providers}
-          onValueChange={(value) => handleSearchChange(value)}
+          onValueChange={(value) => handleSearchChange({ with_watch_providers: value })}
         />
       }
       filtersSheet={<TvFiltersSheet value={pickTvFilters(search)} onChange={handleSearchChange} />}

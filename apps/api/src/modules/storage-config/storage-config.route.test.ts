@@ -30,6 +30,7 @@ vi.mock("@/modules/auth/role.guard", async (importOriginal) => {
 });
 
 vi.mock("@/modules/storage-config/remote-storage.service", () => ({
+  invalidateStorageConfigCache: vi.fn(),
   remoteStorageService: {
     testConnection: vi.fn().mockResolvedValue({ success: true }),
     isAvailable: vi.fn().mockResolvedValue(true),

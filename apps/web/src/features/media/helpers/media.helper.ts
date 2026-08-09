@@ -1,5 +1,7 @@
 import { t } from "@lingui/core/macro";
+import type { Paginate } from "@seedarr/contracts";
 import type { Media } from "@seedarr/sdk";
+import type { InfiniteData } from "@tanstack/react-query";
 
 export type PosterFormat = "w92" | "w154" | "w185" | "w342" | "w500" | "w780" | "original";
 
@@ -68,4 +70,14 @@ export function getRemainingTime(media: Media): string | null {
   }
 
   return `${minutes} minute${minutes > 1 ? "s" : ""} ${suffix}`;
+}
+
+export function isActiveDownload(download: Media["download"]): boolean {
+  if (!download?.torrent) return false;
+  if (download.torrent.transferring) return true;
+  return !download.torrent.done && !download.torrent.paused;
+}
+
+export function hasActiveDownload(data: InfiniteData<Paginate<Media>>): boolean {
+  return data.pages.some((page) => page.results.some((media) => isActiveDownload(media.download)));
 }

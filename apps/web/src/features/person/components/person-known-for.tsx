@@ -1,7 +1,7 @@
 import { Trans } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
 
-import { MediaCarousel } from "@/features/media/components/media-carousel";
+import { MediaCarousel } from "@/features/media/components/carousel/media-carousel";
 
 interface PersonKnownForProps {
   knownFor: Media[];

@@ -6,9 +6,9 @@ import { HardDriveIcon, ServerIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { DownloadFilesList } from "@/features/downloads/components/download-files-list";
-import { DownloadNetworkCard } from "@/features/downloads/components/download-network-card";
-import { DownloadNetworkChart } from "@/features/downloads/components/download-network-chart";
 import { DownloadProgress } from "@/features/downloads/components/download-progress";
+import { DownloadNetworkCard } from "@/features/downloads/components/network/download-network-card";
+import { DownloadNetworkChart } from "@/features/downloads/components/network/download-network-chart";
 import { getDownloadStatus, getTorrentFiles } from "@/features/downloads/helpers/downloads.helper";
 import { downloadQueries } from "@/features/downloads/hooks/download.queries";
 

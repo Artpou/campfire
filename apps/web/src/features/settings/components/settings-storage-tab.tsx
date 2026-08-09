@@ -14,6 +14,7 @@ import {
   Trash2Icon,
   TvIcon,
 } from "lucide-react";
+import { useForm } from "react-hook-form";
 
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
@@ -30,6 +31,17 @@ type Protocol = "ftp" | "webdav";
 
 const DEFAULT_PORTS: Record<Protocol, number> = { ftp: 21, webdav: 443 };
 
+interface StorageFormData {
+  protocol: Protocol;
+  host: string;
+  port: number;
+  secure: boolean;
+  moviePath: string;
+  tvPath: string;
+  username: string;
+  password: string;
+}
+
 export function SettingsStorageTab() {
   const { t } = useLingui();
   const { data: config, isLoading } = useQuery(storageConfigQueries.get());
@@ -38,69 +50,82 @@ export function SettingsStorageTab() {
   const testMutation = useTestStorageConnection();
 
   const [enabled, setEnabled] = useState(false);
-  const [protocol, setProtocol] = useState<Protocol>("ftp");
-  const [host, setHost] = useState("");
-  const [port, setPort] = useState(21);
-  const [secure, setSecure] = useState(false);
-  const [moviePath, setMoviePath] = useState("");
-  const [tvPath, setTvPath] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [deleteLocalAfterTransfer, setDeleteLocalAfterTransfer] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [enabling, setEnabling] = useState(false);
 
+  const { register, watch, setValue, reset, handleSubmit } = useForm<StorageFormData>({
+    defaultValues: {
+      protocol: "ftp",
+      host: "",
+      port: 21,
+      secure: false,
+      moviePath: "",
+      tvPath: "",
+      username: "",
+      password: "",
+    },
+  });
+
+  const protocol = watch("protocol");
+  const host = watch("host");
+
   useEffect(() => {
     if (!initialized && config && !isLoading) {
       const proto = (config.protocol as Protocol) || "ftp";
       setEnabled(config.enabled);
-      setProtocol(proto);
-      setHost(config.host);
-      setPort(config.port ?? DEFAULT_PORTS[proto]);
-      setSecure(config.secure ?? false);
-      setMoviePath(config.moviePath ?? "");
-      setTvPath(config.tvPath ?? "");
-      setUsername(config.username ?? "");
       setDeleteLocalAfterTransfer(config.deleteLocalAfterTransfer ?? false);
+      reset({
+        protocol: proto,
+        host: config.host,
+        port: config.port ?? DEFAULT_PORTS[proto],
+        secure: config.secure ?? false,
+        moviePath: config.moviePath ?? "",
+        tvPath: config.tvPath ?? "",
+        username: config.username ?? "",
+        password: "",
+      });
       setInitialized(true);
     }
-  }, [initialized, config, isLoading]);
+  }, [initialized, config, isLoading, reset]);
 
   const hasRequiredFields = Boolean(host);
-  const connectionPayload = {
-    protocol,
-    host,
-    port,
-    secure,
-    username: username || undefined,
-    password: password || undefined,
-  };
 
-  const configPayload = (overrides: Partial<{ enabled: boolean; deleteLocalAfterTransfer: boolean }> = {}) => ({
+  const buildPayload = (
+    data: StorageFormData,
+    overrides: Partial<{ enabled: boolean; deleteLocalAfterTransfer: boolean }> = {},
+  ) => ({
     enabled: overrides.enabled ?? enabled,
-    protocol,
-    host,
-    port,
-    secure,
-    moviePath: moviePath || undefined,
-    tvPath: tvPath || undefined,
-    username: username || undefined,
-    password: password || undefined,
+    protocol: data.protocol,
+    host: data.host,
+    port: data.port,
+    secure: data.secure,
+    moviePath: data.moviePath || undefined,
+    tvPath: data.tvPath || undefined,
+    username: data.username || undefined,
+    password: data.password || undefined,
     deleteLocalAfterTransfer: overrides.deleteLocalAfterTransfer ?? deleteLocalAfterTransfer,
   });
 
-  const handleSave = () => {
-    upsertMutation.mutate(configPayload());
-  };
+  const handleSave = handleSubmit((data) => {
+    upsertMutation.mutate(buildPayload(data));
+  });
 
-  const handleTest = () => {
-    testMutation.mutate(connectionPayload);
-  };
+  const handleTest = handleSubmit((data) => {
+    testMutation.mutate({
+      protocol: data.protocol,
+      host: data.host,
+      port: data.port,
+      secure: data.secure,
+      username: data.username || undefined,
+      password: data.password || undefined,
+    });
+  });
 
-  const handleToggleAutoTransfer = async () => {
+  const handleToggleAutoTransfer = handleSubmit(async (data) => {
     if (enabled) {
-      await upsertMutation.mutateAsync(configPayload({ enabled: false }));
+      await upsertMutation.mutateAsync(buildPayload(data, { enabled: false }));
       setEnabled(false);
       return;
     }
@@ -109,27 +134,34 @@ export function SettingsStorageTab() {
 
     setEnabling(true);
     try {
-      const result = await testMutation.mutateAsync(connectionPayload);
+      const result = await testMutation.mutateAsync({
+        protocol: data.protocol,
+        host: data.host,
+        port: data.port,
+        secure: data.secure,
+        username: data.username || undefined,
+        password: data.password || undefined,
+      });
       if (!result.success) return;
-      await upsertMutation.mutateAsync(configPayload({ enabled: true }));
+      await upsertMutation.mutateAsync(buildPayload(data, { enabled: true }));
       setEnabled(true);
     } finally {
       setEnabling(false);
     }
-  };
+  });
 
-  const handleToggleDeleteLocal = async () => {
+  const handleToggleDeleteLocal = handleSubmit(async (data) => {
     if (!hasRequiredFields) return;
     const next = !deleteLocalAfterTransfer;
-    await upsertMutation.mutateAsync(configPayload({ deleteLocalAfterTransfer: next }));
+    await upsertMutation.mutateAsync(buildPayload(data, { deleteLocalAfterTransfer: next }));
     setDeleteLocalAfterTransfer(next);
-  };
+  });
 
   const handleProtocolChange = (value: string) => {
     const newProtocol = value as Protocol;
-    setProtocol(newProtocol);
-    setPort(DEFAULT_PORTS[newProtocol]);
-    setSecure(newProtocol === "webdav");
+    setValue("protocol", newProtocol);
+    setValue("port", DEFAULT_PORTS[newProtocol]);
+    setValue("secure", newProtocol === "webdav");
   };
 
   return (
@@ -170,25 +202,13 @@ export function SettingsStorageTab() {
                 <Label htmlFor="ftp-host">
                   <Trans>Host</Trans>
                 </Label>
-                <Input
-                  id="ftp-host"
-                  placeholder={t`192.168.1.254 or hostname`}
-                  value={host}
-                  onChange={(e) => setHost(e.target.value)}
-                />
+                <Input id="ftp-host" placeholder={t`192.168.1.254 or hostname`} {...register("host")} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="ftp-port">
                   <Trans>Port</Trans>
                 </Label>
-                <Input
-                  id="ftp-port"
-                  type="number"
-                  min={1}
-                  max={65535}
-                  value={port}
-                  onChange={(e) => setPort(Number(e.target.value))}
-                />
+                <Input id="ftp-port" type="number" min={1} max={65535} {...register("port", { valueAsNumber: true })} />
               </div>
             </div>
 
@@ -197,13 +217,7 @@ export function SettingsStorageTab() {
                 <Label htmlFor="ftp-username">
                   <Trans>Username</Trans>
                 </Label>
-                <Input
-                  id="ftp-username"
-                  placeholder={t`Optional`}
-                  autoComplete="off"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                />
+                <Input id="ftp-username" placeholder={t`Optional`} autoComplete="off" {...register("username")} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="ftp-password">
@@ -215,9 +229,8 @@ export function SettingsStorageTab() {
                     type={showPassword ? "text" : "password"}
                     placeholder={config?.hasPassword ? t`••••••• (unchanged)` : t`Optional`}
                     autoComplete="off"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
                     className="pr-10"
+                    {...register("password")}
                   />
                   <button
                     type="button"
@@ -231,13 +244,7 @@ export function SettingsStorageTab() {
             </div>
 
             <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="ftp-secure"
-                checked={secure}
-                onChange={(e) => setSecure(e.target.checked)}
-                className="rounded border-border"
-              />
+              <input type="checkbox" id="ftp-secure" className="rounded border-border" {...register("secure")} />
               <Label htmlFor="ftp-secure" className="text-sm cursor-pointer">
                 <Trans>Use FTPS (FTP over TLS)</Trans>
               </Label>
@@ -250,12 +257,7 @@ export function SettingsStorageTab() {
                 <Label htmlFor="webdav-host">
                   <Trans>Host</Trans>
                 </Label>
-                <Input
-                  id="webdav-host"
-                  placeholder={t`nas.local or 192.168.1.254`}
-                  value={host}
-                  onChange={(e) => setHost(e.target.value)}
-                />
+                <Input id="webdav-host" placeholder={t`nas.local or 192.168.1.254`} {...register("host")} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="webdav-port">
@@ -266,8 +268,7 @@ export function SettingsStorageTab() {
                   type="number"
                   min={1}
                   max={65535}
-                  value={port}
-                  onChange={(e) => setPort(Number(e.target.value))}
+                  {...register("port", { valueAsNumber: true })}
                 />
               </div>
             </div>
@@ -277,13 +278,7 @@ export function SettingsStorageTab() {
                 <Label htmlFor="webdav-username">
                   <Trans>Username</Trans>
                 </Label>
-                <Input
-                  id="webdav-username"
-                  placeholder={t`Optional`}
-                  autoComplete="off"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                />
+                <Input id="webdav-username" placeholder={t`Optional`} autoComplete="off" {...register("username")} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="webdav-password">
@@ -295,9 +290,8 @@ export function SettingsStorageTab() {
                     type={showPassword ? "text" : "password"}
                     placeholder={config?.hasPassword ? t`••••••• (unchanged)` : t`Optional`}
                     autoComplete="off"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
                     className="pr-10"
+                    {...register("password")}
                   />
                   <button
                     type="button"
@@ -311,13 +305,7 @@ export function SettingsStorageTab() {
             </div>
 
             <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="webdav-secure"
-                checked={secure}
-                onChange={(e) => setSecure(e.target.checked)}
-                className="rounded border-border"
-              />
+              <input type="checkbox" id="webdav-secure" className="rounded border-border" {...register("secure")} />
               <Label htmlFor="webdav-secure" className="text-sm cursor-pointer">
                 <Trans>Use HTTPS</Trans>
               </Label>
@@ -331,24 +319,14 @@ export function SettingsStorageTab() {
               <FilmIcon className="size-3.5" />
               <Trans>Movie path</Trans>
             </Label>
-            <Input
-              id="movie-path"
-              placeholder={t`e.g. Movies (optional)`}
-              value={moviePath}
-              onChange={(e) => setMoviePath(e.target.value)}
-            />
+            <Input id="movie-path" placeholder={t`e.g. Movies (optional)`} {...register("moviePath")} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="tv-path" className="flex items-center gap-2">
               <TvIcon className="size-3.5" />
               <Trans>TV Shows path</Trans>
             </Label>
-            <Input
-              id="tv-path"
-              placeholder={t`e.g. TV Shows (optional)`}
-              value={tvPath}
-              onChange={(e) => setTvPath(e.target.value)}
-            />
+            <Input id="tv-path" placeholder={t`e.g. TV Shows (optional)`} {...register("tvPath")} />
           </div>
         </div>
 

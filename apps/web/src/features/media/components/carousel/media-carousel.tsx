@@ -5,7 +5,7 @@ import type { Media } from "@seedarr/sdk";
 import { CarouselItem } from "@/shared/ui/carousel";
 import { CarouselWrapper } from "@/shared/ui/carousel-wrapper";
 
-import { MediaCard } from "@/features/media/components/media-card";
+import { MediaCard } from "@/features/media/components/card/media-card";
 
 const MAX_ITEMS = 20;
 interface MediaCarouselProps {
@@ -23,7 +23,7 @@ export function MediaCarousel({ title, data, seeMoreTo }: MediaCarouselProps) {
     <CarouselWrapper title={title} seeMoreTo={seeMoreTo}>
       {displayedData.map((item, index) => (
         <CarouselItem key={item.id || index}>
-          <MediaCard media={item} mode="preview" />
+          <MediaCard media={item} withPreview />
         </CarouselItem>
       ))}
     </CarouselWrapper>

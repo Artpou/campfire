@@ -1,51 +1,53 @@
-import { t } from "@lingui/core/macro";
-import { Trans } from "@lingui/react/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
-import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { LoaderCircleIcon, PlayIcon } from "lucide-react";
-import { toast } from "sonner";
+import { PlayIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button, type ButtonProps } from "@/shared/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/ui/tooltip";
 
-import { downloadQueries } from "@/features/downloads/hooks/download.queries";
 import { getRemainingTime, getWatchProgressPercent, hasWatchProgress } from "@/features/media/helpers/media.helper";
 import { preloadMoviPlayer } from "@/features/player/helpers/movi-player.helper";
 
-interface MediaPlayButtonProps extends ButtonProps {
+interface MediaButtonPlayProps extends ButtonProps {
   media: Media;
+  circular?: boolean;
 }
 
-export const MediaPlayButton = ({ media, className, ...props }: MediaPlayButtonProps) => {
+export const MediaButtonPlay = ({ media, className, circular = false, ...props }: MediaButtonPlayProps) => {
+  const { t } = useLingui();
   const navigate = useNavigate();
-
-  const playDownloadId = media.download?.id ?? media.progress?.downloadId ?? undefined;
-
-  const { data: fileStatus, isLoading } = useQuery({
-    ...downloadQueries.fileStatus(playDownloadId ?? ""),
-    enabled: Boolean(playDownloadId),
-  });
 
   const showWatchProgress = hasWatchProgress(media);
   const watchProgressPercent = getWatchProgressPercent(media);
   const remainingTime = getRemainingTime(media);
 
-  const available = fileStatus?.available ?? false;
-  const disabled = !isLoading && !available;
-
   const handlePlay = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (disabled) {
-      toast.error(t`File not available`, { description: t`The download file is no longer accessible.` });
-      return;
-    }
-    if (playDownloadId) navigate({ to: "/downloads/$id/play", params: { id: playDownloadId } });
+    if (media.download?.id) navigate({ to: "/downloads/$id/play", params: { id: media.download.id } });
   };
 
-  if (!playDownloadId) return null;
+  if (!media.download?.id) return null;
+
+  if (circular) {
+    return (
+      <button
+        type="button"
+        className={cn("cursor-pointer", className)}
+        onClick={handlePlay}
+        onMouseEnter={preloadMoviPlayer}
+        onFocus={preloadMoviPlayer}
+        onPointerDown={preloadMoviPlayer}
+        aria-label={t`Play`}
+      >
+        <span className="flex items-center justify-center size-16 rounded-full bg-primary/80 shadow-lg opacity-80 group-hover/poster:opacity-100 group-hover/poster:bg-primary group-hover/poster:scale-105 transition-all duration-300">
+          <PlayIcon className="size-8 text-white fill-current ml-1" />
+        </span>
+      </button>
+    );
+  }
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -55,18 +57,16 @@ export const MediaPlayButton = ({ media, className, ...props }: MediaPlayButtonP
             size="sm"
             className={cn(
               "relative overflow-hidden",
-              showWatchProgress && !disabled && "bg-primary/40 hover:bg-primary/60",
-              disabled && "opacity-50",
+              showWatchProgress && "bg-primary/40 hover:bg-primary/60",
               className,
             )}
             onClick={handlePlay}
             onMouseEnter={preloadMoviPlayer}
             onFocus={preloadMoviPlayer}
             onPointerDown={preloadMoviPlayer}
-            disabled={disabled}
             {...props}
           >
-            {showWatchProgress && !disabled && (
+            {showWatchProgress && (
               <div
                 className="absolute inset-y-0 left-0 bg-primary transition-all duration-300 pointer-events-none rounded-md"
                 style={{ width: `${watchProgressPercent}%` }}
@@ -74,11 +74,7 @@ export const MediaPlayButton = ({ media, className, ...props }: MediaPlayButtonP
             )}
 
             <span className="relative z-10 flex items-center justify-center">
-              {isLoading ? (
-                <LoaderCircleIcon className="size-3.5 mr-1 animate-spin" />
-              ) : (
-                <PlayIcon className="size-3.5 mr-1" />
-              )}
+              <PlayIcon className="size-3.5 mr-1" />
               {showWatchProgress ? (
                 <Trans>Resume</Trans>
               ) : media.download?.torrent?.done || (!media.download?.torrent && media.download?.remoteLocation) ? (

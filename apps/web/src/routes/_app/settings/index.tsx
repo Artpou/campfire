@@ -4,16 +4,7 @@ import { Trans } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import {
-  ActivityIcon,
-  HardDriveIcon,
-  LogOutIcon,
-  RssIcon,
-  ServerIcon,
-  SettingsIcon,
-  UsersIcon,
-  WrenchIcon,
-} from "lucide-react";
+import { ActivityIcon, HardDriveIcon, LogOutIcon, RssIcon, ServerIcon, SettingsIcon, UsersIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/shared/ui/button";
@@ -25,7 +16,6 @@ import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";
 import { AppVersionBadge } from "@/features/settings/components/app-version-badge";
 import { SettingsActivityTab } from "@/features/settings/components/settings-activity-tab";
-import { SettingsAdvancedTab } from "@/features/settings/components/settings-advanced-tab";
 import { SettingsGeneralTab } from "@/features/settings/components/settings-general-tab";
 import { SettingsIndexersTab } from "@/features/settings/components/settings-indexers-tab";
 import { SettingsStorageTab } from "@/features/settings/components/settings-storage-tab";
@@ -50,7 +40,6 @@ function SettingsPage() {
     { id: "storage" as const, label: <Trans>Storage</Trans>, icon: ServerIcon, adminOnly: true },
     { id: "activity" as const, label: <Trans>Activity</Trans>, icon: ActivityIcon, adminOnly: false },
     { id: "users" as const, label: <Trans>Users</Trans>, icon: UsersIcon, adminOnly: true },
-    { id: "advanced" as const, label: <Trans>Advanced</Trans>, icon: WrenchIcon, adminOnly: true },
   ];
 
   const visibleTabs = tabs.filter((tab) => !tab.adminOnly || isAdmin);
@@ -137,7 +126,6 @@ function SettingsPage() {
           {activeTab === "indexers" && isAdmin && <SettingsIndexersTab />}
           {activeTab === "storage" && isAdmin && <SettingsStorageTab />}
           {activeTab === "users" && isAdmin && <SettingsUsersTab />}
-          {activeTab === "advanced" && isAdmin && <SettingsAdvancedTab />}
         </div>
 
         <div className="md:hidden space-y-3">

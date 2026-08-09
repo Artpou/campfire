@@ -30,3 +30,12 @@ export function formatRuntime(minutes: number | null | undefined): string {
 
   return `${hours}h ${mins}min`;
 }
+
+/** Clock time when a runtime (minutes) started now would end. */
+export function getEndsAt(minutes: number | null | undefined, locale?: string): string | null {
+  if (!minutes || minutes <= 0) return null;
+  return new Date(Date.now() + minutes * 60_000).toLocaleTimeString(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}

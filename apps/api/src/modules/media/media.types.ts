@@ -5,8 +5,8 @@ import { download } from "@/modules/download/download.schema";
 import { mediaSelectSchema, watchProgress } from "@/modules/media/media.schema";
 
 const mediaSchema = mediaSelectSchema.extend({
-  likes: z.number(),
-  watchList: z.number(),
+  liked: z.boolean(),
+  inWatchList: z.boolean(),
   download: createSelectSchema(download).optional(),
   progress: createSelectSchema(watchProgress)
     .pick({

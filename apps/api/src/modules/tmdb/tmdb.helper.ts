@@ -55,8 +55,8 @@ function toMedia(
     categories,
     backdrop_path: item.backdrop_path ?? null,
     imdbId: item.imdb_id ?? item.external_ids?.imdb_id ?? "",
-    likes: 0,
-    watchList: 0,
+    liked: false,
+    inWatchList: false,
   };
 }
 

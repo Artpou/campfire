@@ -2,16 +2,9 @@ import { api, unwrap } from "@seedarr/sdk";
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import type { TvShowQueryOptions } from "tmdb-ts";
 
-import { queryClient } from "@/router";
+import { toDiscoverQuery } from "@/shared/helpers/query.helper";
 
-function toDiscoverQuery(options: TvShowQueryOptions, page: number, locale: string): Record<string, string> {
-  const query: Record<string, string> = { locale, page: page.toString() };
-  for (const [key, value] of Object.entries(options)) {
-    if (value === undefined || key === "page") continue;
-    query[key] = Array.isArray(value) ? value.join(",") : String(value);
-  }
-  return query;
-}
+import { queryClient } from "@/router";
 
 export const tvQueries = {
   key: ["tv"] as const,

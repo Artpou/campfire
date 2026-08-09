@@ -17,7 +17,7 @@ import { Carousel, type CarouselApi, CarouselContent, CarouselItem } from "@/sha
 
 import { useRole } from "@/features/auth/hooks/use-role";
 import { DownloadProgress } from "@/features/downloads/components/download-progress";
-import { MediaPlayButton } from "@/features/media/components/media-play-button";
+import { MediaButtonPlay } from "@/features/media/components/button/media-button-play";
 import { MediaRating } from "@/features/media/components/media-rating";
 import { getBackdropUrl, getPosterUrl, hasWatchProgress } from "@/features/media/helpers/media.helper";
 import { mediaQueries, refetchLibraryInterval } from "@/features/media/hooks/media.queries";
@@ -25,7 +25,7 @@ import { mediaQueries, refetchLibraryInterval } from "@/features/media/hooks/med
 const AUTO_ROTATE_MS = 7000;
 const MAX_OVERVIEW_LENGTH = 220;
 
-interface HeroCarouselProps {
+interface MediaHeroCarouselProps {
   type: Media["type"];
 }
 
@@ -116,7 +116,7 @@ const HeroSlide = memo(function HeroSlide({ media, isLibraryMode }: HeroSlidePro
               <MediaRating media={media} size={44} strokeWidth={4} />
             )}
 
-            {isLibraryMode && <MediaPlayButton media={media} size="lg" />}
+            {isLibraryMode && <MediaButtonPlay media={media} size="lg" />}
 
             {role !== "viewer" && !isLibraryMode && (
               <Button asChild size="lg" className="shadow-lg">
@@ -139,7 +139,7 @@ const HeroSlide = memo(function HeroSlide({ media, isLibraryMode }: HeroSlidePro
   );
 });
 
-export function HeroCarousel({ type }: HeroCarouselProps) {
+export function MediaHeroCarousel({ type }: MediaHeroCarouselProps) {
   const locale = useTmdbLocale();
   const { data: library, isLoading: isLibraryLoading } = useQuery({
     ...mediaQueries.library(type),
@@ -225,7 +225,7 @@ export function HeroCarousel({ type }: HeroCarouselProps) {
       {!!data?.length && data.length > 1 && (
         <div className="absolute md:bottom-2 left-0 right-0 z-10">
           <div className="container mx-auto max-w-6xl px-4 md:px-6 flex items-center justify-center">
-            <div className="flex items-center gap-1.5" role="tablist" aria-label={t`Carousel navigation`}>
+            <div className="flex items-center gap-2" role="tablist" aria-label={t`Carousel navigation`}>
               {data.map((item, index) => (
                 <button
                   key={`dot-${item.type}-${item.id}`}
@@ -236,9 +236,7 @@ export function HeroCarousel({ type }: HeroCarouselProps) {
                   onClick={scrollHandlers[index]}
                   className={cn(
                     "rounded-full transition-all duration-300",
-                    index === selectedIndex
-                      ? "w-5 h-1.5 bg-primary"
-                      : "w-1.5 h-1.5 bg-foreground/25 hover:bg-foreground/50",
+                    index === selectedIndex ? "w-5 h-2 bg-primary" : "w-2 h-2 bg-foreground/25 hover:bg-foreground/50",
                   )}
                 />
               ))}

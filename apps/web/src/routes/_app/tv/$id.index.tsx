@@ -9,9 +9,8 @@ import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 
 import { downloadQueries } from "@/features/downloads/hooks/download.queries";
 import { MediaDetailLayout } from "@/features/media/components/media-detail-layout";
-import { MediaDownloadTab } from "@/features/media/components/media-download-tab";
-import { MediaServerTab } from "@/features/media/components/media-server-tab";
-import { useToggleLike, useToggleWatchList } from "@/features/media/hooks/media.queries";
+import { MediaDownload } from "@/features/media/components/media-download";
+import { MediaServer } from "@/features/media/components/media-server";
 import { TvCast } from "@/features/tv/components/tv-cast";
 import { TvDetails } from "@/features/tv/components/tv-details";
 import { TvEpisodesSection } from "@/features/tv/components/tv-episodes-section";
@@ -35,15 +34,9 @@ function TVPage() {
   const locale = useTmdbLocale();
   const { data } = useSuspenseQuery(tvQueries.details(params.id, locale));
 
-  const toggleLike = useToggleLike();
-  const toggleWatchList = useToggleWatchList();
-
   const { tv, media, related } = data;
 
-  const { data: mediaDownloads = [] } = useQuery({
-    ...downloadQueries.byMedia(tv.id),
-    enabled: Boolean(media?.id),
-  });
+  const { data: mediaDownloads = [] } = useQuery(downloadQueries.byMedia(media));
 
   const liveDownload = useMemo(() => {
     if (!media) return null;
@@ -56,15 +49,7 @@ function TVPage() {
   const torrentDownloads = useMemo(() => mediaDownloads.filter((d) => d.torrent), [mediaDownloads]);
   const remoteDownloads = useMemo(() => mediaDownloads.filter((d) => d.remoteLocation), [mediaDownloads]);
 
-  const detailsSection = (
-    <TvDetails
-      tv={tv}
-      isLiked={media ? media.likes > 0 : undefined}
-      isInWatchList={media ? media.watchList > 0 : undefined}
-      onToggleLike={() => media && toggleLike.mutate(media)}
-      onToggleWatchList={() => media && toggleWatchList.mutate(media)}
-    />
-  );
+  const detailsSection = <TvDetails tv={tv} media={media} />;
 
   const hasActiveDownload = torrentDownloads.some((d) => d.torrent && !d.torrent.done);
 
@@ -78,15 +63,15 @@ function TVPage() {
       posterData={data}
       infoSection={<TvInfo tv={tv} />}
       detailsSection={detailsSection}
-      downloadTabContent={torrentDownloads.length > 0 ? <MediaDownloadTab downloads={torrentDownloads} /> : undefined}
+      downloadTabContent={torrentDownloads.length > 0 ? <MediaDownload downloads={torrentDownloads} /> : undefined}
       downloadCount={torrentDownloads.length}
       serverTabContent={
-        remoteDownloads.length > 0 ? <MediaServerTab downloads={remoteDownloads} mediaType="tv" /> : undefined
+        remoteDownloads.length > 0 ? <MediaServer downloads={remoteDownloads} mediaType="tv" /> : undefined
       }
       serverCount={remoteDownloads.length}
       defaultTab={hasActiveDownload ? "downloads" : "info"}
     >
-      <TvEpisodesSection tv={tv} media={data.media} />
+      <TvEpisodesSection tv={tv} media={media} downloads={mediaDownloads} />
       <TvCast tv={tv} />
       <TvRelated recommendedTV={related.recommendations} />
     </MediaDetailLayout>

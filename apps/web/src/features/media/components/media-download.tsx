@@ -5,25 +5,16 @@ import type { Download } from "@seedarr/sdk";
 import { formatBytes } from "@seedarr/shared";
 import { AlertCircleIcon, MegaphoneIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/shared/ui/alert-dialog";
+import { DialogDelete } from "@/shared/components/dialog/dialog-delete";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 
 import { DownloadFilesList } from "@/features/downloads/components/download-files-list";
 import { DownloadMetadata } from "@/features/downloads/components/download-metadata";
-import { DownloadNetworkCard } from "@/features/downloads/components/download-network-card";
-import { DownloadNetworkChart } from "@/features/downloads/components/download-network-chart";
 import { DownloadProgress } from "@/features/downloads/components/download-progress";
+import { DownloadNetworkCard } from "@/features/downloads/components/network/download-network-card";
+import { DownloadNetworkChart } from "@/features/downloads/components/network/download-network-chart";
 import { getDownloadStatus, getTorrentFiles } from "@/features/downloads/helpers/downloads.helper";
 import {
   useDownloadDelete,
@@ -31,11 +22,11 @@ import {
   useDownloadRecheck,
 } from "@/features/downloads/hooks/download.queries";
 
-interface MediaDownloadTabProps {
+interface MediaDownloadProps {
   downloads: Download[];
 }
 
-export function MediaDownloadTab({ downloads }: MediaDownloadTabProps) {
+export function MediaDownload({ downloads }: MediaDownloadProps) {
   if (downloads.length === 0) {
     return null;
   }
@@ -163,32 +154,18 @@ function DownloadEntry({ download }: { download: Download }) {
       {/* Separator between entries */}
       <div className="border-b border-border/50" />
 
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              <Trans>Delete Download</Trans>
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              <Trans>
-                This will stop the torrent and delete local files. If a remote copy exists, it will not be affected.
-              </Trans>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>
-              <Trans>Cancel</Trans>
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={deleteTorrent.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/80"
-            >
-              <Trans>Delete</Trans>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DialogDelete
+        open={showDeleteConfirm}
+        setOpen={setShowDeleteConfirm}
+        validate={handleDelete}
+        disabled={deleteTorrent.isPending}
+        title={<Trans>Delete Download</Trans>}
+        description={
+          <Trans>
+            This will stop the torrent and delete local files. If a remote copy exists, it will not be affected.
+          </Trans>
+        }
+      />
     </div>
   );
 }

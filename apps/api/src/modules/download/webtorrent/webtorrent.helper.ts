@@ -3,6 +3,7 @@ import { formatError } from "@seedarr/shared";
 import type WebTorrent from "webtorrent";
 
 import { BadRequestError } from "@/shared/errors/error";
+import { pickLargestVideoFromEntries } from "@/shared/helpers/video-file.helper";
 
 import type { TorrentLiveData } from "../download.schema";
 
@@ -43,13 +44,7 @@ export const extractTorrentLiveData = (torrent: WebTorrent.Torrent): TorrentLive
 });
 
 export function findLargestVideoFile(torrent: WebTorrent.Torrent): WebTorrent.TorrentFile | null {
-  const videoExtensions = /\.(mp4|mkv|avi|mov|webm|flv|wmv|m4v)$/i;
-
-  const videoFiles = torrent.files
-    .filter((file) => videoExtensions.test(file.name))
-    .sort((a, b) => b.length - a.length);
-
-  return videoFiles[0] || null;
+  return pickLargestVideoFromEntries(torrent.files) ?? null;
 }
 
 export function waitForTorrentMetadata(torrent: WebTorrent.Torrent, timeoutMs: number): Promise<void> {

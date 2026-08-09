@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
+import { hasMinRole } from "@seedarr/contracts";
 import type { Media } from "@seedarr/sdk";
 import { api } from "@seedarr/sdk";
 import { formatError } from "@seedarr/shared";
@@ -13,9 +14,8 @@ import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
 import { Container } from "@/shared/ui/container";
 
-import { hasMinRole } from "@/features/auth/helpers/role.helper";
 import { buildSubtitleTracks } from "@/features/downloads/helpers/subtitle-tracks.helper";
-import { downloadQueries, refetchDownloadInterval } from "@/features/downloads/hooks/download.queries";
+import { downloadQueries } from "@/features/downloads/hooks/download.queries";
 import { hasWatchProgress } from "@/features/media/helpers/media.helper";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 import { Player } from "@/features/player/components/player";
@@ -52,16 +52,10 @@ function VideoPlayerPage() {
   const { t } = useLingui();
   const queryClient = useQueryClient();
 
-  const { data: download } = useSuspenseQuery({
-    ...downloadQueries.details(id),
-    refetchInterval: refetchDownloadInterval,
-  });
+  const { data: download } = useSuspenseQuery(downloadQueries.details(id));
   // biome-ignore lint/style/noNonNullAssertion: mediaId is set for playable downloads
   const { data: media } = useSuspenseQuery(mediaQueries.details(download.mediaId!));
-  const { data: playbackInfo } = useSuspenseQuery({
-    ...downloadQueries.playbackInfo(id),
-    refetchInterval: download.torrent?.done ? false : 3000,
-  });
+  const { data: playbackInfo } = useSuspenseQuery(downloadQueries.playbackInfo(id));
   const { data: externalSubtitles } = useSuspenseQuery(subtitleQueries.external(id));
 
   const displayName = download.torrent?.name || media.title;

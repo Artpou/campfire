@@ -1,5 +1,7 @@
 import { VIDEO_EXTENSIONS } from "@seedarr/shared";
 
+import { pickLargestVideoFromEntries } from "@/shared/helpers/video-file.helper";
+
 import type { Download } from "@/modules/download/download.schema";
 import type { RemoteFileEntry } from "@/modules/storage-config/adapters/storage.adapter";
 import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
@@ -64,15 +66,11 @@ export function isFsNotFoundError(error: unknown): boolean {
 }
 
 function pickLargestVideoFromTorrent(download: Download): { name: string; path: string; length: number } | null {
-  const videos = (download.torrent?.files ?? [])
-    .filter((f) => VIDEO_EXTENSIONS.test(f.name))
-    .sort((a, b) => b.length - a.length);
-  return videos[0] ?? null;
+  return pickLargestVideoFromEntries(download.torrent?.files ?? []) ?? null;
 }
 
 function pickLargestVideoFromRemoteFiles(files: RemoteFileEntry[]): RemoteFileEntry | null {
-  const videos = files.filter((f) => VIDEO_EXTENSIONS.test(f.name)).sort((a, b) => b.length - a.length);
-  return videos[0] ?? null;
+  return pickLargestVideoFromEntries(files) ?? null;
 }
 
 function relativeToTorrentRoot(download: Download, videoPath: string, fallbackName: string): string {

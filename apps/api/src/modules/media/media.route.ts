@@ -15,13 +15,11 @@ export const mediaRoutes = MediaService.createRouter()
   .post("/", requireRole("member"), zValidator("json", mediaInputSchema), async (c) => {
     return c.json(await c.var.service.upsert(c.req.valid("json")));
   })
-  .post("/:id/like", zValidator("param", mediaIdParamDto), async (c) => {
-    const { id } = c.req.valid("param");
-    return c.json(await c.var.service.toggleLike(Number(id)));
+  .post("/:id/like", zValidator("json", mediaInputSchema), async (c) => {
+    return c.json(await c.var.service.toggleLike(c.req.valid("json")));
   })
-  .post("/:id/watchlist", zValidator("param", mediaIdParamDto), async (c) => {
-    const { id } = c.req.valid("param");
-    return c.json(await c.var.service.toggleWatchList(Number(id)));
+  .post("/:id/watchlist", zValidator("json", mediaInputSchema), async (c) => {
+    return c.json(await c.var.service.toggleWatchList(c.req.valid("json")));
   })
   .patch("/:id/progress", zValidator("param", mediaIdParamDto), zValidator("json", updateProgressDto), async (c) => {
     const { id } = c.req.valid("param");

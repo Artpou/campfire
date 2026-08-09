@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
+import { hasMinRole } from "@seedarr/contracts";
 import type { Media } from "@seedarr/sdk";
 import { formatBytes } from "@seedarr/shared";
 import { useQuery, useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { ArrowDownIcon, ArrowUpIcon, InfoIcon, Loader2Icon, RefreshCwIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpIcon, Loader2Icon, RefreshCwIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/shared/ui/button";
@@ -13,13 +14,12 @@ import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
 import { Input } from "@/shared/ui/input";
 
-import { hasMinRole } from "@/features/auth/helpers/role.helper";
-import { DownloadsStatsPanel } from "@/features/downloads/components/downloads-stats-panel";
 import { ManualSyncWizard } from "@/features/downloads/components/manual-sync-wizard";
-import { downloadStatsQueries } from "@/features/downloads/hooks/download-stats.queries";
-import { MediaCard } from "@/features/media/components/media-card";
-import { MediaTypeTabs } from "@/features/media/components/media-type-tabs";
-import { mediaQueries, refetchMediaInterval } from "@/features/media/hooks/media.queries";
+import { downloadQueries } from "@/features/downloads/hooks/download.queries";
+import { MediaCard } from "@/features/media/components/card/media-card";
+import { MediaTypeTabs } from "@/features/media/components/tabs/media-tabs-type";
+import { hasActiveDownload } from "@/features/media/helpers/media.helper";
+import { ACTIVE_DOWNLOAD_INTERVAL, mediaQueries, refetchMediaInterval } from "@/features/media/hooks/media.queries";
 import { useRemoteSync } from "@/features/settings/hooks/remote-sync.queries";
 import { settingsQueries } from "@/features/settings/hooks/settings.queries";
 import { storageConfigQueries } from "@/features/settings/hooks/storage-config.queries";
@@ -44,7 +44,6 @@ function DownloadsPage() {
   const { type } = Route.useSearch();
   const { t } = useLingui();
   const [search, setSearch] = useState("");
-  const [statsOpen, setStatsOpen] = useState(false);
 
   const { data } = useSuspenseInfiniteQuery({
     ...mediaQueries.list({ filter: "downloaded", type }),
@@ -52,7 +51,10 @@ function DownloadsPage() {
   });
   const results = data?.pages.flatMap((page) => page.results) ?? [];
 
-  const { data: stats } = useQuery({ ...downloadStatsQueries.get(), refetchInterval: 2000 });
+  const { data: stats } = useQuery({
+    ...downloadQueries.stats(),
+    refetchInterval: hasActiveDownload(data) ? ACTIVE_DOWNLOAD_INTERVAL : false,
+  });
 
   const filteredResults = useMemo(() => {
     const sorted = [...results].sort((a, b) => {
@@ -90,9 +92,6 @@ function DownloadsPage() {
 
         {stats && (
           <div className="flex items-center gap-4 flex-wrap">
-            <Button variant="outline" size="sm" onClick={() => setStatsOpen(true)}>
-              <InfoIcon className="size-4" />
-            </Button>
             <div className="flex items-center gap-6 flex-wrap flex-1">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">
@@ -125,7 +124,7 @@ function DownloadsPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-6 gap-4">
             {filteredResults.map((media) => {
               if (!media.download) return null;
-              return <MediaCard key={media.download.id} media={media} />;
+              return <MediaCard key={media.download.id} media={media} withDownload />;
             })}
           </div>
         ) : (
@@ -138,8 +137,6 @@ function DownloadsPage() {
           </Card>
         )}
       </div>
-
-      <DownloadsStatsPanel open={statsOpen} onOpenChange={setStatsOpen} />
     </Container>
   );
 }

@@ -3,7 +3,8 @@ import { eq } from "drizzle-orm";
 
 import { NotFoundError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
-import { assertWithinDownloads, resolveWithinDownloads } from "@/shared/helpers/path.helper";
+import { resolveWithinDownloads } from "@/shared/helpers/path.helper";
+import { findLargestVideoInDirectory } from "@/shared/helpers/video-file.helper";
 
 import { db } from "@/db/db";
 import type { Download } from "@/modules/download/download.schema";
@@ -12,7 +13,6 @@ import { remoteStorageService } from "@/modules/storage-config/remote-storage.se
 import { isFsNotFoundError, resolveRemoteVideoInfo } from "@/modules/streaming/streaming.helper";
 import fs from "node:fs/promises";
 import * as path from "node:path";
-import { torrentClient } from "../webtorrent/webtorrent-manager";
 
 export type DownloadableFile = {
   fileName: string;
@@ -28,20 +28,9 @@ async function resolveLocalFile(item: Download): Promise<{ filePath: string; fil
     const stats = await fs.stat(fullPath);
     if (stats.isFile()) return { filePath: fullPath, fileName: path.basename(fullPath), size: stats.size };
 
-    const files = await fs.readdir(fullPath, { recursive: true, withFileTypes: true });
-    const mediaFiles = await Promise.all(
-      files
-        .filter((file) => file.isFile() && VIDEO_EXTENSIONS.test(file.name))
-        .map(async (file) => {
-          const filePath = path.join(file.parentPath || fullPath, file.name);
-          assertWithinDownloads(filePath);
-          const fileStats = await fs.stat(filePath);
-          return { filePath, name: file.name, size: fileStats.size };
-        }),
-    );
-    if (mediaFiles.length === 0) return { filePath: fullPath, fileName: item.torrent?.name ?? "download", size: 0 };
-    const largest = mediaFiles.sort((a, b) => b.size - a.size)[0];
-    return { filePath: largest.filePath, fileName: largest.name, size: largest.size };
+    const largest = await findLargestVideoInDirectory(fullPath);
+    if (!largest) return { filePath: fullPath, fileName: item.torrent?.name ?? "download", size: 0 };
+    return { filePath: largest.filePath, fileName: largest.fileName, size: largest.size };
   } catch (error) {
     if (isFsNotFoundError(error)) return { filePath: fullPath, fileName: item.torrent?.name ?? "download", size: 0 };
     throw error;
@@ -89,43 +78,8 @@ export async function getDownloadableFile(id: string): Promise<DownloadableFile>
   const remote = await resolveReadableRemoteFile(item);
   if (remote) return remote;
 
-  if (item.torrent?.done) {
-    const local = await resolveLocalFile(item);
-    if (local.size > 0) return { fileName: local.fileName, size: local.size, filePath: local.filePath };
-  }
+  const local = await resolveLocalFile(item);
+  if (local.size > 0) return { fileName: local.fileName, size: local.size, filePath: local.filePath };
 
   throw new NotFoundError("Downloadable file");
-}
-
-/** True when an in-progress torrent can be streamed (active session or known video files). */
-function canStreamActiveTorrent(item: Download): boolean {
-  if (!item.torrent || item.torrent.done || item.torrent.paused) return false;
-
-  const active = torrentClient.resolveTorrent(item.id, item.torrent.infoHash);
-  if (active) return true;
-
-  return (item.torrent.files ?? []).some((f) => VIDEO_EXTENSIONS.test(f.name));
-}
-
-/**
- * Ensure a file can actually be read for playback/download:
- * verified remote video, completed local video on disk, or streamable active torrent.
- */
-export async function checkFileAvailability(downloadId: string): Promise<boolean> {
-  const item = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
-  if (!item) return false;
-
-  const remote = await resolveReadableRemoteFile(item);
-  if (remote && remote.size > 0) return true;
-
-  if (item.torrent?.done) {
-    try {
-      const local = await resolveLocalFile(item);
-      return local.size > 0;
-    } catch {
-      return false;
-    }
-  }
-
-  return canStreamActiveTorrent(item);
 }

@@ -7,12 +7,10 @@ import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-conta
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 
-import { useRole } from "@/features/auth/hooks/use-role";
 import { downloadQueries } from "@/features/downloads/hooks/download.queries";
 import { MediaDetailLayout } from "@/features/media/components/media-detail-layout";
-import { MediaDownloadTab } from "@/features/media/components/media-download-tab";
-import { MediaServerTab } from "@/features/media/components/media-server-tab";
-import { useToggleLike, useToggleWatchList } from "@/features/media/hooks/media.queries";
+import { MediaDownload } from "@/features/media/components/media-download";
+import { MediaServer } from "@/features/media/components/media-server";
 import { MovieCast } from "@/features/movies/components/movie-cast";
 import { MovieDetails } from "@/features/movies/components/movie-details";
 import { MovieInfo } from "@/features/movies/components/movie-info";
@@ -30,17 +28,10 @@ function MoviePage() {
   const params = Route.useParams();
   const locale = useTmdbLocale();
   const { data } = useSuspenseQuery(movieQueries.details(params.id, locale));
-  const { role } = useRole();
-
-  const toggleLike = useToggleLike();
-  const toggleWatchList = useToggleWatchList();
 
   const { media, movie } = data;
 
-  const { data: mediaDownloads = [] } = useQuery({
-    ...downloadQueries.byMedia(media?.id ?? 0),
-    enabled: role !== "viewer" && Boolean(media?.id),
-  });
+  const { data: mediaDownloads = [] } = useQuery(downloadQueries.byMedia(media));
 
   const liveDownload = useMemo(() => {
     if (!media) return null;
@@ -53,15 +44,7 @@ function MoviePage() {
   const torrentDownloads = useMemo(() => mediaDownloads.filter((d) => d.torrent), [mediaDownloads]);
   const remoteDownloads = useMemo(() => mediaDownloads.filter((d) => d.remoteLocation), [mediaDownloads]);
 
-  const detailsSection = (
-    <MovieDetails
-      movie={movie}
-      isLiked={media ? media.likes > 0 : undefined}
-      isInWatchList={media ? media.watchList > 0 : undefined}
-      onToggleLike={() => toggleLike.mutate(media)}
-      onToggleWatchList={() => toggleWatchList.mutate(media)}
-    />
-  );
+  const detailsSection = <MovieDetails movie={movie} media={media} />;
 
   const hasActiveDownload = torrentDownloads.some((d) => d.torrent && !d.torrent.done);
 
@@ -75,10 +58,10 @@ function MoviePage() {
       posterData={data}
       infoSection={<MovieInfo movie={movie} />}
       detailsSection={detailsSection}
-      downloadTabContent={torrentDownloads.length > 0 ? <MediaDownloadTab downloads={torrentDownloads} /> : undefined}
+      downloadTabContent={torrentDownloads.length > 0 ? <MediaDownload downloads={torrentDownloads} /> : undefined}
       downloadCount={torrentDownloads.length}
       serverTabContent={
-        remoteDownloads.length > 0 ? <MediaServerTab downloads={remoteDownloads} mediaType="movie" /> : undefined
+        remoteDownloads.length > 0 ? <MediaServer downloads={remoteDownloads} mediaType="movie" /> : undefined
       }
       serverCount={remoteDownloads.length}
       defaultTab={hasActiveDownload ? "downloads" : "info"}

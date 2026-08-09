@@ -2,7 +2,7 @@ import { type ReactNode, useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { Media, Movie, TV } from "@seedarr/sdk";
-import { ClockPlusIcon, DownloadIcon, HeartIcon, InfoIcon, ServerIcon, TvIcon } from "lucide-react";
+import { DownloadIcon, InfoIcon, ServerIcon, TvIcon } from "lucide-react";
 
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/sh
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { MediaPoster } from "@/features/media/components/media-poster";
+import { MediaSocialActions } from "@/features/media/components/media-social-actions";
 import { getBackdropUrl, getPosterUrl } from "@/features/media/helpers/media.helper";
 import { useToggleLike, useToggleWatchList } from "@/features/media/hooks/media.queries";
 
@@ -53,11 +54,11 @@ export function MediaDetailLayout({
   const toggleLike = useToggleLike();
   const toggleWatchList = useToggleWatchList();
 
-  const handleToggleLike = () => {
+  const _handleToggleLike = () => {
     media && toggleLike.mutate(media);
   };
 
-  const handleToggleWatchList = () => {
+  const _handleToggleWatchList = () => {
     media && toggleWatchList.mutate(media);
   };
 
@@ -83,30 +84,6 @@ export function MediaDetailLayout({
                   <Button size="icon-lg" variant="outline" rounded>
                     <InfoIcon />
                   </Button>
-                  <Button
-                    size="icon-lg"
-                    variant={media && media.likes > 0 ? "default" : "outline"}
-                    rounded
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleToggleLike();
-                    }}
-                    disabled={!media}
-                  >
-                    <HeartIcon fill={media && media.likes > 0 ? "currentColor" : "none"} />
-                  </Button>
-                  <Button
-                    size="icon-lg"
-                    variant={media && media.watchList > 0 ? "default" : "outline"}
-                    rounded
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleToggleWatchList();
-                    }}
-                    disabled={!media}
-                  >
-                    <ClockPlusIcon fill={media && media.watchList > 0 ? "currentColor" : "none"} />
-                  </Button>
                 </div>
               </SheetTrigger>
               <SheetContent side="right" className="w-[350px] sm:w-[400px]">
@@ -116,6 +93,7 @@ export function MediaDetailLayout({
                 <div className="mx-4">{detailsSection}</div>
               </SheetContent>
             </Sheet>
+            {media && <MediaSocialActions media={media} className="mt-2 flex flex-col" />}
           </div>
 
           <div className="lg:w-1/4 max-w-[250px] justify-items-center">

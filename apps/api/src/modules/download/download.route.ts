@@ -33,10 +33,9 @@ export const downloadRoutes = DownloadService.createRouter()
     const { id } = c.req.valid("param");
     return c.json(await c.var.service.listRemoteFiles(id));
   })
-  .get("/:id/fileStatus", zValidator("param", stringIdParamDto), async (c) => {
+  .get("/:id/video-file", zValidator("param", stringIdParamDto), async (c) => {
     const { id } = c.req.valid("param");
-    await c.var.service.checkAvailability(id);
-    return c.json({ available: true as const });
+    return c.json(await c.var.service.getDownloadableFile(id));
   })
   .post(
     "/:id/fileToken",
