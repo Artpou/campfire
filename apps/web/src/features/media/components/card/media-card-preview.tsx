@@ -9,7 +9,9 @@ import { ClockIcon } from "lucide-react";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Badge } from "@/shared/ui/badge";
 
+import { useRole } from "@/features/auth/hooks/use-role";
 import { MediaButtonPlay } from "@/features/media/components/button/media-button-play";
+import { MediaButtonRequest } from "@/features/media/components/button/media-button-request";
 import { MediaButtonTorrent } from "@/features/media/components/button/media-button-torrent";
 import { MediaRating } from "@/features/media/components/media-rating";
 import { MediaSocialActions } from "@/features/media/components/media-social-actions";
@@ -23,6 +25,7 @@ type MediaCardPreviewProps = {
 
 export function MediaCardPreview({ media, detailLinkProps }: MediaCardPreviewProps) {
   const locale = useTmdbLocale();
+  const { role } = useRole();
   const [enabled, setEnabled] = useState(false);
 
   useEffect(() => {
@@ -86,7 +89,13 @@ export function MediaCardPreview({ media, detailLinkProps }: MediaCardPreviewPro
 
         {media.overview && <p className="text-sm leading-relaxed line-clamp-3 mt-1">{media.overview}</p>}
 
-        {media.download ? <MediaButtonPlay className="w-full" media={media} /> : <MediaButtonTorrent media={media} />}
+        {media.download ? (
+          <MediaButtonPlay className="w-full" media={media} />
+        ) : role === "viewer" ? (
+          <MediaButtonRequest media={media} className="w-full" />
+        ) : (
+          <MediaButtonTorrent media={media} />
+        )}
       </div>
     </>
   );

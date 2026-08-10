@@ -6,7 +6,6 @@ import type { CreateUserInput, UpdateUserInput } from "@seedarr/contracts";
 import type { User } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { useMutation } from "@tanstack/react-query";
-import { CrownIcon, GlassesIcon, ShieldCheckIcon, UserCheckIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/shared/ui/button";
@@ -16,6 +15,7 @@ import { Label } from "@/shared/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 
 import { useRole } from "@/features/auth/hooks/use-role";
+import { ROLE_LABELS, roleConfig } from "@/features/user/components/role-badge";
 
 type UserFormData = CreateUserInput & { confirmPassword: string };
 
@@ -24,32 +24,6 @@ interface UserFormModalProps {
   onClose: () => void;
   user?: User | null;
 }
-
-const ROLE_LABELS: Record<string, ReturnType<typeof msg>> = {
-  owner: msg`Owner`,
-  admin: msg`Admin`,
-  member: msg`Member`,
-  viewer: msg`Viewer`,
-};
-
-const roleConfig = {
-  owner: {
-    icon: CrownIcon,
-    color: "var(--role-owner)",
-  },
-  admin: {
-    icon: ShieldCheckIcon,
-    color: "var(--role-admin)",
-  },
-  member: {
-    icon: UserCheckIcon,
-    color: "var(--role-member)",
-  },
-  viewer: {
-    icon: GlassesIcon,
-    color: "var(--role-viewer)",
-  },
-};
 
 export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
   const { role: currentUserRole } = useRole();

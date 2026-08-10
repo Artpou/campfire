@@ -9,9 +9,11 @@ import { cn } from "@/lib/utils";
 import { DialogDelete } from "@/shared/components/dialog/dialog-delete";
 import { Img } from "@/shared/ui/image";
 
+import { useRole } from "@/features/auth/hooks/use-role";
 import { downloadQueries, useDownloadDelete } from "@/features/downloads/hooks/download.queries";
 import { MediaDownloadButton } from "@/features/media/components/button/media-button-download";
 import { MediaButtonPlay } from "@/features/media/components/button/media-button-play";
+import { MediaButtonRequest } from "@/features/media/components/button/media-button-request";
 import { MediaButtonTorrent } from "@/features/media/components/button/media-button-torrent";
 import { MediaButtonTrailer } from "@/features/media/components/button/media-button-trailer";
 import { getPosterUrl, hasWatchProgress } from "@/features/media/helpers/media.helper";
@@ -30,6 +32,7 @@ function getDisplayTitle(data: Movie | TV): string {
 
 export function MediaPoster({ data, download }: MediaPosterProps) {
   const deleteTorrent = useDownloadDelete();
+  const { role } = useRole();
   const { media } = data;
 
   const { data: videoFile, isLoading: isVideoFileLoading } = useQuery({
@@ -78,7 +81,8 @@ export function MediaPoster({ data, download }: MediaPosterProps) {
       {canDownload && <MediaDownloadButton media={media} videoFile={videoFile} />}
 
       {!download && <MediaButtonTrailer title={displayTitle} data={data} />}
-      {!download && <MediaButtonTorrent media={media} />}
+      {!download && role !== "viewer" && <MediaButtonTorrent media={media} />}
+      {!download && role === "viewer" && <MediaButtonRequest media={media} className="w-full" />}
 
       <div className="flex flex-col w-full gap-2">
         <MediaButtonPlay media={media} disabled={!canPlay} />

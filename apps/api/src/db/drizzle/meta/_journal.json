@@ -22,6 +22,20 @@
       "when": 1785789722437,
       "tag": "0002_flippant_robin_chapel",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1786353778173,
+      "tag": "0003_uneven_eternals",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1786355958897,
+      "tag": "0004_flowery_johnny_blaze",
+      "breakpoints": true
     }
   ]
 }

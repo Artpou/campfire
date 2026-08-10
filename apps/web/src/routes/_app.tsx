@@ -3,7 +3,7 @@ import { Trans } from "@lingui/react";
 import { Trans as TransMacro } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
 import { createFileRoute, isRedirect, Link, Outlet, redirect, useLocation } from "@tanstack/react-router";
-import { AlertTriangleIcon, FilmIcon, LibraryIcon, ListIcon, TvIcon } from "lucide-react";
+import { AlertTriangleIcon, FilmIcon, LibraryIcon, TvIcon, UserIcon } from "lucide-react";
 import ms from "ms";
 
 import { cn } from "@/lib/utils";
@@ -54,16 +54,23 @@ export const Route = createFileRoute("/_app")({
   component: AuthenticatedLayout,
 });
 
-const MOBILE_NAV = [
+interface MobileNavItem {
+  title: ReturnType<typeof msg>;
+  url: string;
+  icon: typeof FilmIcon;
+  minRole?: "member" | "admin" | "owner";
+  matchPrefix?: string;
+}
+
+const MOBILE_NAV_STATIC: MobileNavItem[] = [
   { title: msg({ id: "nav.movies", message: "Movies" }), url: "/movies", icon: FilmIcon },
   { title: msg({ id: "nav.tv-shows", message: "TV Shows" }), url: "/tv", icon: TvIcon },
   {
     title: msg({ id: "nav.library", message: "Library" }),
     url: "/downloads",
     icon: LibraryIcon,
-    minRole: "member" as const,
+    minRole: "member",
   },
-  { title: msg({ id: "nav.lists", message: "Lists" }), url: "/lists", icon: ListIcon, matchPrefix: "/lists" },
 ];
 
 function AuthenticatedLayout() {
@@ -73,7 +80,17 @@ function AuthenticatedLayout() {
 
   const isIndexerMisconfigured = isAdmin && user?.countIndexerManagers === 0;
 
-  const visibleNavItems = MOBILE_NAV.filter((item) => {
+  const mobileNav: MobileNavItem[] = [
+    ...MOBILE_NAV_STATIC,
+    {
+      title: msg({ id: "nav.profile", message: "Profile" }),
+      url: user ? `/user/${user.id}` : "/user",
+      icon: UserIcon,
+      matchPrefix: "/user",
+    },
+  ];
+
+  const visibleNavItems = mobileNav.filter((item) => {
     if (item.minRole && !hasRole(item.minRole)) return false;
     return true;
   });

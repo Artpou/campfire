@@ -38,3 +38,6 @@ export type StremioManifest = NonNullable<IndexerManager["manifest"]>;
 export type TMDBWatchProvider = NonNullable<
   NonNullable<NonNullable<TMDBMovieDetails["watch/providers"]>["results"]>[string]["flatrate"]
 >[number];
+
+type RequestsListResponse = InferResponseType<ApiClient["requests"]["$get"], 200>;
+export type MediaRequest = RequestsListResponse["results"][number];

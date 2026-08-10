@@ -87,6 +87,8 @@ async function fetchSessionWithUser(token: string): Promise<{
       user: {
         id: user.id,
         username: user.username,
+        pseudo: user.pseudo,
+        avatarPath: user.avatarPath,
         role: user.role,
         createdAt: user.createdAt,
       },

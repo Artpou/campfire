@@ -2,11 +2,9 @@ import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
-import { FileIcon, GlobeIcon, KeyIcon, Loader2Icon, MoonIcon, PaletteIcon, SaveIcon, SunIcon } from "lucide-react";
+import { FileIcon, KeyIcon, Loader2Icon, SaveIcon } from "lucide-react";
 
-import { SelectI18nLang } from "@/shared/components/select/select-i18n-lang";
 import { SelectQuality } from "@/shared/components/select/select-quality";
-import { useTheme } from "@/shared/hooks/use-theme";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
@@ -16,7 +14,6 @@ import { useUserPreferences } from "@/features/settings/stores/user-preference-s
 import { settingsQueries, useUpsertSettings } from "../hooks/settings.queries";
 
 export function SettingsGeneralTab() {
-  const { theme, toggleTheme } = useTheme();
   const { isAdmin } = useRole();
   const quality = useUserPreferences((s) => s.quality);
   const maxSize = useUserPreferences((s) => s.maxSize);
@@ -28,25 +25,6 @@ export function SettingsGeneralTab() {
       <h2>
         <Trans>General</Trans>
       </h2>
-
-      <div className="flex items-center justify-between gap-4 border rounded-md p-4">
-        <h3 className="flex items-center gap-3">
-          <GlobeIcon className="size-4" />
-          <Trans>Language</Trans>
-        </h3>
-        <SelectI18nLang />
-      </div>
-
-      <div className="flex items-center justify-between gap-4 border rounded-md p-4">
-        <h3 className="flex items-center gap-3">
-          <PaletteIcon className="size-4" />
-          <Trans>Theme</Trans>
-        </h3>
-        <Button variant="secondary" onClick={toggleTheme}>
-          {theme === "dark" ? <SunIcon className="size-4" /> : <MoonIcon className="size-4" />}
-          {theme === "dark" ? <Trans>Light mode</Trans> : <Trans>Dark mode</Trans>}
-        </Button>
-      </div>
 
       <div className="flex flex-col gap-4 border rounded-md p-4">
         <h3 className="flex items-center gap-3">

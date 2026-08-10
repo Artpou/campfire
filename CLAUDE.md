@@ -195,6 +195,7 @@ Use @seedarr/contracts to share dto between app and api
 
 ## AI Agent Constraints
 
+- Use `pnpm check` globally without `cd` if you need to check something (lint, test...)
 - Keep your internal reasoning/thoughts brief. Focus directly on targeted file modifications.
 - Do not read unrelated files. Rely on exact file paths provided by the user.
 - Be casual unless otherwise specified

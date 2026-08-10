@@ -8,6 +8,7 @@ export * from "./indexer-manager.dto";
 export * from "./media.dto";
 export * from "./pagination.dto";
 export * from "./params.dto";
+export * from "./request.dto";
 export * from "./settings.dto";
 export * from "./storage-config.dto";
 export * from "./subtitle.dto";

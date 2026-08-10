@@ -1,19 +1,17 @@
 import { useState } from "react";
 
-import { msg } from "@lingui/core/macro";
-import { Trans, useLingui } from "@lingui/react/macro";
-import type { UserRole } from "@seedarr/contracts";
+import { Trans } from "@lingui/react/macro";
 import type { User } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { useMutation } from "@tanstack/react-query";
-import { CrownIcon, GlassesIcon, PencilIcon, ShieldCheckIcon, Trash2Icon, UserCheckIcon } from "lucide-react";
+import { PencilIcon, Trash2Icon } from "lucide-react";
 
 import { DialogDelete } from "@/shared/components/dialog/dialog-delete";
-import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
 import { useRole } from "@/features/auth/hooks/use-role";
+import { RoleBadge } from "@/features/user/components/role-badge";
 
 interface UsersTableProps {
   users: User[];
@@ -22,45 +20,7 @@ interface UsersTableProps {
   onRefetch: () => void;
 }
 
-const roleConfig: Record<
-  UserRole,
-  {
-    icon: typeof CrownIcon;
-    color: string;
-    bgColor: string;
-  }
-> = {
-  owner: {
-    icon: CrownIcon,
-    color: "var(--red)",
-    bgColor: "oklch(from var(--red) l c h / 0.1)",
-  },
-  admin: {
-    icon: ShieldCheckIcon,
-    color: "var(--purple)",
-    bgColor: "oklch(from var(--purple) l c h / 0.1)",
-  },
-  member: {
-    icon: UserCheckIcon,
-    color: "var(--primary)",
-    bgColor: "oklch(from var(--primary) l c h / 0.1)",
-  },
-  viewer: {
-    icon: GlassesIcon,
-    color: "var(--blue)",
-    bgColor: "oklch(from var(--blue) l c h / 0.1)",
-  },
-};
-
-const ROLE_LABELS: Record<UserRole, ReturnType<typeof msg>> = {
-  owner: msg`Owner`,
-  admin: msg`Admin`,
-  member: msg`Member`,
-  viewer: msg`Viewer`,
-};
-
 export function UsersTable({ users, isLoading, onEditUser, onRefetch }: UsersTableProps) {
-  const { t } = useLingui();
   const { role } = useRole();
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
@@ -96,7 +56,7 @@ export function UsersTable({ users, isLoading, onEditUser, onRefetch }: UsersTab
     return canEditUser(targetUser);
   };
 
-  const formatDate = (date: string) => {
+  const formatDate = (date: Date | string) => {
     return new Intl.DateTimeFormat(navigator.language, {
       year: "numeric",
       month: "long",
@@ -142,49 +102,36 @@ export function UsersTable({ users, isLoading, onEditUser, onRefetch }: UsersTab
                 </TableCell>
               </TableRow>
             ) : (
-              users.map((user) => {
-                const RoleIcon = roleConfig[user.role].icon;
-                return (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.username}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="secondary"
-                        className="gap-1.5"
-                        style={{
-                          backgroundColor: roleConfig[user.role].bgColor,
-                          color: roleConfig[user.role].color,
-                        }}
-                      >
-                        <RoleIcon className="size-3.5" />
-                        {t(ROLE_LABELS[user.role])}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{formatDate(user.createdAt)}</TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2 min-h-8 items-center">
-                        {canEditUser(user) && (
-                          <Button variant="secondary" size="sm" onClick={() => onEditUser(user)} className="h-8 gap-2">
-                            <PencilIcon className="size-3.5" />
-                            <Trans>Edit</Trans>
-                          </Button>
-                        )}
-                        {canDeleteUser(user) && (
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteClick(user)}
-                            className="h-8 gap-2"
-                          >
-                            <Trash2Icon className="size-3.5" />
-                            <Trans>Delete</Trans>
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
+              users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell className="font-medium">{user.pseudo || user.username}</TableCell>
+                  <TableCell>
+                    <RoleBadge role={user.role} />
+                  </TableCell>
+                  <TableCell>{formatDate(user.createdAt)}</TableCell>
+                  <TableCell>
+                    <div className="flex justify-end gap-2 min-h-8 items-center">
+                      {canEditUser(user) && (
+                        <Button variant="secondary" size="sm" onClick={() => onEditUser(user)} className="h-8 gap-2">
+                          <PencilIcon className="size-3.5" />
+                          <Trans>Edit</Trans>
+                        </Button>
+                      )}
+                      {canDeleteUser(user) && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteClick(user)}
+                          className="h-8 gap-2"
+                        >
+                          <Trash2Icon className="size-3.5" />
+                          <Trans>Delete</Trans>
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
             )}
           </TableBody>
         </Table>

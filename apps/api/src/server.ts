@@ -77,6 +77,11 @@ const start = async () => {
   await fsPromises.mkdir(downloadsPath, { recursive: true });
   logger.info("STARTUP", `Downloads directory: ${downloadsPath}`);
 
+  const { getAvatarsRoot } = await import("./shared/helpers/path.helper");
+  const avatarsPath = getAvatarsRoot();
+  await fsPromises.mkdir(avatarsPath, { recursive: true });
+  logger.info("STARTUP", `Avatars directory: ${avatarsPath}`);
+
   torrentClient
     .initialize()
     .then(() => {

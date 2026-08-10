@@ -15,3 +15,14 @@ export const updateUserDto = z.object({
   role: z.enum(userRoleEnum).optional(),
 });
 export type UpdateUserInput = z.infer<typeof updateUserDto>;
+
+export const updateProfileDto = z.object({
+  pseudo: z.string().trim().min(1).max(64).nullable().optional(),
+});
+export type UpdateProfileInput = z.infer<typeof updateProfileDto>;
+
+export const changePasswordDto = z.object({
+  oldPassword: z.string().min(1).max(128),
+  newPassword: z.string().min(8).max(128),
+});
+export type ChangePasswordInput = z.infer<typeof changePasswordDto>;

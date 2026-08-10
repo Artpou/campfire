@@ -4,12 +4,13 @@ import { msg } from "@lingui/core/macro";
 import { Trans } from "@lingui/react";
 import { useLingui } from "@lingui/react/macro";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { FilmIcon, ListIcon, MonitorIcon, SearchIcon, SettingsIcon, TvIcon } from "lucide-react";
+import { FilmIcon, MonitorIcon, SearchIcon, SettingsIcon, TvIcon, UserIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { SelectI18nLang } from "@/shared/components/select/select-i18n-lang";
 import { Button } from "@/shared/ui/button";
 
+import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";
 
 interface AppTopbarProps {
@@ -22,7 +23,7 @@ const NAV_LINKS = [
   { title: msg({ id: "nav.library", message: "Library" }), url: "/downloads", icon: MonitorIcon },
 ] as const;
 
-const LISTS_LINK = msg({ id: "nav.lists", message: "Lists" });
+const PROFILE_LINK = msg({ id: "nav.profile", message: "Profile" });
 
 export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -30,6 +31,7 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
   const navigate = useNavigate();
   const { t } = useLingui();
   const { hasRole } = useRole();
+  const currentUser = useAuth((s) => s.user);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -40,7 +42,7 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const isListsActive = location.pathname.startsWith("/lists");
+  const isProfileActive = location.pathname.startsWith("/user");
 
   return (
     <header
@@ -80,16 +82,18 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
                   );
                 })}
 
-                <Button
-                  variant="ghost"
-                  asChild
-                  className={cn("font-medium", isListsActive && "text-foreground bg-accent")}
-                >
-                  <Link to="/lists" search={{ tab: "watch-list" }}>
-                    <ListIcon className="size-4" />
-                    <Trans id={LISTS_LINK.id} />
-                  </Link>
-                </Button>
+                {currentUser && (
+                  <Button
+                    variant="ghost"
+                    asChild
+                    className={cn("font-medium", isProfileActive && "text-foreground bg-accent")}
+                  >
+                    <Link to="/user/$id" params={{ id: currentUser.id }}>
+                      <UserIcon className="size-4" />
+                      <Trans id={PROFILE_LINK.id} />
+                    </Link>
+                  </Button>
+                )}
               </nav>
             </div>
 

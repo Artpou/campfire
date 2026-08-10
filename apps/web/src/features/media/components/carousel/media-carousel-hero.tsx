@@ -18,6 +18,7 @@ import { Carousel, type CarouselApi, CarouselContent, CarouselItem } from "@/sha
 import { useRole } from "@/features/auth/hooks/use-role";
 import { DownloadProgress } from "@/features/downloads/components/download-progress";
 import { MediaButtonPlay } from "@/features/media/components/button/media-button-play";
+import { MediaButtonRequest } from "@/features/media/components/button/media-button-request";
 import { MediaRating } from "@/features/media/components/media-rating";
 import { getBackdropUrl, getPosterUrl, hasWatchProgress } from "@/features/media/helpers/media.helper";
 import { mediaQueries, refetchLibraryInterval } from "@/features/media/hooks/media.queries";
@@ -118,7 +119,7 @@ const HeroSlide = memo(function HeroSlide({ media, isLibraryMode }: HeroSlidePro
 
             {isLibraryMode && <MediaButtonPlay media={media} size="lg" />}
 
-            {role !== "viewer" && !isLibraryMode && (
+            {!isLibraryMode && role !== "viewer" && (
               <Button asChild size="lg" className="shadow-lg">
                 <Link {...torrentsLinkProps}>
                   <MagnetIcon className="size-4" />
@@ -126,6 +127,8 @@ const HeroSlide = memo(function HeroSlide({ media, isLibraryMode }: HeroSlidePro
                 </Link>
               </Button>
             )}
+
+            {!isLibraryMode && role === "viewer" && <MediaButtonRequest media={media} size="lg" />}
 
             <Button asChild variant="secondary" size="lg">
               <Link {...detailLinkProps}>

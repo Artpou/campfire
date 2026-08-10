@@ -32,6 +32,10 @@ const config = defineConfig({
         target: apiTarget,
         changeOrigin: true,
       },
+      "/avatars": {
+        target: apiTarget,
+        changeOrigin: true,
+      },
     },
   },
   build: {

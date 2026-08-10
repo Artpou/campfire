@@ -2,16 +2,19 @@ import type { ReactNode } from "react";
 
 import type { Media } from "@seedarr/sdk";
 import type { InfiniteData, UseInfiniteQueryOptions } from "@tanstack/react-query";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { PlaceholderEmpty } from "@/shared/components/seedarr-placeholder";
 import { Container } from "@/shared/ui/container";
 
+import { useRole } from "@/features/auth/hooks/use-role";
 import { MediaCarouselCategory } from "@/features/media/components/carousel/media-carousel-category";
 import { MediaHeroCarousel } from "@/features/media/components/carousel/media-carousel-hero";
 import { MediaGrid } from "@/features/media/components/media-grid";
 import { MediaSortTabs } from "@/features/media/components/tabs/media-tabs-sort";
+import { RequestCarousel } from "@/features/request/components/request-carousel";
+import { requestQueries } from "@/features/request/hooks/request.queries";
 
 type MediaSelected = "home" | "cinema" | "top-rated" | "upcoming";
 
@@ -50,6 +53,12 @@ export function MediaDiscover<TSearch extends { selected?: MediaSelected; with_g
   emptyTitle,
   emptySubtitle,
 }: MediaDiscover<TSearch>) {
+  const { isAdmin } = useRole();
+  const { data: pendingRequests } = useQuery({
+    ...requestQueries.byType(type),
+    enabled: isAdmin,
+  });
+
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } = useInfiniteQuery(
     queryOptions as DiscoverQueryOptions,
   );
@@ -63,6 +72,12 @@ export function MediaDiscover<TSearch extends { selected?: MediaSelected; with_g
     <>
       <MediaHeroCarousel type={type} />
       <Container>
+        {isAdmin && pendingRequests && pendingRequests.length > 0 && (
+          <RequestCarousel
+            requests={pendingRequests}
+            seeMoreTo={type === "movie" ? "/movies/requests" : "/tv/requests"}
+          />
+        )}
         <MediaCarouselCategory
           type={type}
           onValueChange={(value) => onSearchChange({ with_genres: value } as Partial<TSearch>)}

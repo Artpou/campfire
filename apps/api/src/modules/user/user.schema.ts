@@ -15,6 +15,8 @@ export const user = sqliteTable(
       .$defaultFn(() => crypto.randomUUID()),
     username: text("username").notNull().unique(),
     password: text("password").notNull(),
+    pseudo: text("pseudo"),
+    avatarPath: text("avatar_path"),
     role: text("role", { enum: userRoleEnum }).notNull().default("viewer"),
     createdAt: integer("createdAt", { mode: "timestamp" })
       .notNull()

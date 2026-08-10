@@ -24,7 +24,8 @@ export type MediaInput = z.infer<typeof mediaInputSchema>;
 
 export const listMediaDto = paginationDto.extend({
   type: z.enum(mediaTypeEnum).optional(),
-  filter: z.enum(["like", "watch-list", "downloaded"]).optional(),
+  filter: z.enum(["like", "watch-list", "downloaded", "history"]).optional(),
+  userId: z.string().optional(),
 });
 export type ListMediaQuery = z.infer<typeof listMediaDto>;
 

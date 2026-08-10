@@ -39,8 +39,9 @@ coverage/
 *.db-shm
 *.db-wal
 
-# API downloads
+# API private files
 apps/api/downloads/
+apps/api/avatars/
 
 # SWC cache & plugins
 .swc/

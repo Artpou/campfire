@@ -59,29 +59,42 @@ export class MediaService extends IdentifiableService<MediaEnriched> {
   }
 
   async list(query: ListMediaQuery): Promise<Paginate<MediaEnriched>> {
-    const { type, filter, ids } = query;
+    const { type, filter, ids, userId } = query;
+    const targetUserId = userId ?? this.user.id;
 
     const conditions = [];
     if (type) conditions.push(eq(media.type, type));
     if (ids) conditions.push(inArray(media.id, ids.map(Number)));
 
     if (filter) {
-      const FILTER_TABLE_MAP = {
-        like: userLikes,
-        "watch-list": userWatchList,
-        downloaded: download,
-      } as const;
+      if (filter === "history") {
+        conditions.push(
+          exists(
+            db
+              .select()
+              .from(watchProgress)
+              .where(and(eq(watchProgress.userId, targetUserId), eq(watchProgress.mediaId, media.id))),
+          ),
+        );
+      } else {
+        const FILTER_TABLE_MAP = {
+          like: userLikes,
+          "watch-list": userWatchList,
+          downloaded: download,
+        } as const;
 
-      const table = FILTER_TABLE_MAP[filter];
-      const scopeToUser = filter !== "downloaded" || !this.canSeeAllDownloads();
-      conditions.push(
-        exists(
-          db
-            .select()
-            .from(table)
-            .where(and(scopeToUser ? eq(table.userId, this.user.id) : undefined, eq(table.mediaId, media.id))),
-        ),
-      );
+        const table = FILTER_TABLE_MAP[filter];
+        const scopeToUser = filter !== "downloaded" || !this.canSeeAllDownloads();
+        const filterUserId = userId ?? (scopeToUser ? this.user.id : undefined);
+        conditions.push(
+          exists(
+            db
+              .select()
+              .from(table)
+              .where(and(filterUserId ? eq(table.userId, filterUserId) : undefined, eq(table.mediaId, media.id))),
+          ),
+        );
+      }
     }
 
     const mediaIds = (

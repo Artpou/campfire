@@ -18,12 +18,6 @@ export function joinFilterIds(ids: string[]): string | undefined {
   return ids.length > 0 ? ids.join("|") : undefined;
 }
 
-export function toggleFilterId(value: string | undefined, id: string): string | undefined {
-  const ids = splitFilterIds(value);
-  const next = ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id];
-  return joinFilterIds(next);
-}
-
 export function parseLabeledOptions(ids?: string, labels?: string): FilterOption[] {
   const idList = splitFilterIds(ids);
   const labelList = splitFilterIds(labels);
