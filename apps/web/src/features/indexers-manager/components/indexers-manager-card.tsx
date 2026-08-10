@@ -107,13 +107,8 @@ export function IndexersManagerCard({ manager }: IndexersManagerCardProps) {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {!isStremio && (
-              <Button variant="outline" onClick={() => setDialogOpen("edit")}>
-                <SettingsIcon />
-              </Button>
-            )}
-            <Button variant="destructive" onClick={() => setDialogOpen("delete")}>
-              <TrashIcon />
+            {!isStremio && <Button variant="outline" onClick={() => setDialogOpen("edit")} icon={SettingsIcon} />}
+            <Button variant="destructive" onClick={() => setDialogOpen("delete")} icon={TrashIcon}>
               <Trans>Uninstall</Trans>
             </Button>
           </div>

@@ -77,21 +77,13 @@ function SearchPage() {
     });
   };
 
+  const placeholder =
+    type === "movie" ? t`Search a movie...` : type === "tv" ? t`Search a TV show...` : t`Search movies and TV shows...`;
+
   return (
     <Container>
       <div className="space-y-6">
         <div className="flex flex-col gap-4">
-          <div className="relative w-full">
-            <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground pointer-events-none" />
-            <Input
-              h="lg"
-              placeholder={t`Search movies and TV shows...`}
-              value={query}
-              search
-              onChange={(e) => setQuery(e.target.value)}
-              autoFocus
-            />
-          </div>
           <Tabs value={type} onValueChange={handleTypeChange}>
             <TabsList size="lg" className="w-full sm:w-fit">
               <TabsTrigger value="all" size="lg" className="flex-1 sm:flex-none">
@@ -108,6 +100,17 @@ function SearchPage() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
+          <div className="relative w-full">
+            <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground pointer-events-none" />
+            <Input
+              h="lg"
+              placeholder={placeholder}
+              value={query}
+              search
+              onChange={(e) => setQuery(e.target.value)}
+              autoFocus
+            />
+          </div>
         </div>
 
         {!q ? (

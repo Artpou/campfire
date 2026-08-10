@@ -49,7 +49,7 @@ export function PersonInfo({ person }: PersonInfoProps) {
   const displayedBio = !expanded && isLongBio ? `${biography.slice(0, BIO_PREVIEW_LENGTH).trimEnd()}…` : biography;
 
   return (
-    <div className="dark text-foreground flex flex-col gap-4">
+    <div className="text-foreground flex flex-col gap-4">
       <div>
         <h1 className="md:text-5xl tracking-tight">{person.name}</h1>
 

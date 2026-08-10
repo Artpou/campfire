@@ -9,6 +9,7 @@ export const downloadTorrentDto = z.object({
   origin: z.string().max(256).optional(),
   quality: z.string().max(64).optional(),
   language: z.string().max(64).optional(),
+  container: z.string().max(16).optional(),
   preferLocal: z.boolean().optional(),
 });
 export type DownloadTorrentInput = z.infer<typeof downloadTorrentDto>;
@@ -34,3 +35,9 @@ export const downloadFileTokenResponseDto = z.object({
   token: z.string(),
 });
 export type DownloadFileTokenResponse = z.infer<typeof downloadFileTokenResponseDto>;
+
+export const batchDeleteDownloadsDto = z.object({
+  ids: z.array(z.string().uuid()).min(1).max(100),
+  dbOnly: z.boolean().optional(),
+});
+export type BatchDeleteDownloadsInput = z.infer<typeof batchDeleteDownloadsDto>;

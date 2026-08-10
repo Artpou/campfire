@@ -50,16 +50,26 @@ export function TorrentUnavailableDialog({
         </AlertDialogHeader>
 
         <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
-          <Button onClick={onRetry} disabled={isPending} className="w-full">
-            {isRetrying ? <Loader2Icon className="size-4 animate-spin" /> : <RefreshCwIcon className="size-4" />}
+          <Button
+            onClick={onRetry}
+            disabled={isPending}
+            className="w-full"
+            icon={isRetrying ? undefined : RefreshCwIcon}
+          >
+            {isRetrying && <Loader2Icon className="size-4 animate-spin" />}
             <Trans>Retry</Trans>
           </Button>
-          <Button variant="secondary" onClick={onStoreLocally} disabled={isPending} className="w-full">
-            {isStoringLocally ? <Loader2Icon className="size-4 animate-spin" /> : <HardDriveIcon className="size-4" />}
+          <Button
+            variant="secondary"
+            onClick={onStoreLocally}
+            disabled={isPending}
+            className="w-full"
+            icon={isStoringLocally ? undefined : HardDriveIcon}
+          >
+            {isStoringLocally && <Loader2Icon className="size-4 animate-spin" />}
             <Trans>Store locally</Trans>
           </Button>
-          <Button variant="outline" onClick={onCancel} disabled={isPending} className="w-full">
-            <XIcon className="size-4" />
+          <Button variant="outline" onClick={onCancel} disabled={isPending} className="w-full" icon={XIcon}>
             <Trans>Cancel</Trans>
           </Button>
         </AlertDialogFooter>

@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 > Single source of truth for Cursor, Claude Code, and Gemini AI agents.
 
@@ -25,7 +25,9 @@ Download
  ├── userId FK → User
  ├── mediaId FK → Media (set on creation via TMDB upsert)
  ├── torrent: JSON blob (TorrentLiveData — progress, speed, files, peers...)
+ ├── size (bytes — from torrent.length on start, or remote listing on sync)
  ├── origin, quality, language (from torrent search metadata)
+ ├── remoteLocation (optional — remote storage path)
  └── error: string | null
 
 ActivityLog
@@ -73,7 +75,7 @@ IndexerManager → multiple configs (Jackett, Prowlarr, Stremio addons/presets)
 
 - 2 space indentation
 - 120 character line width
-- No semicolons
+- Semicolons (Biome default / codebase convention)
 - Double quotes for strings
 
 ### File Naming
@@ -195,18 +197,9 @@ Use @seedarr/contracts to share dto between app and api
 
 ## AI Agent Constraints
 
-- Use `pnpm check` globally without `cd` if you need to check something (lint, test...)
-- Keep your internal reasoning/thoughts brief. Focus directly on targeted file modifications.
-- Do not read unrelated files. Rely on exact file paths provided by the user.
-- Be casual unless otherwise specified
-- Suggest solutions that I didn’t think about—anticipate my needs
-- Treat me as an expert
-- Be accurate and thorough
-- Give the answer immediately. Provide detailed explanations and restate my query in your own words if necessary after giving the answer
-- Consider new technologies and contrarian ideas, not just the conventional wisdom
-- You may use high levels of speculation or prediction, just flag it for me
-- If your content policy is an issue, provide the closest acceptable response and explain the content policy issue afterward
-- No need to mention your knowledge cutoff
-- No need to disclose you’re an AI
-- Split into multiple responses if one response isn’t enough to answer the question.
-- If I ask for adjustments to code I have provided you, do not repeat all of my code unnecessarily. Instead try to keep the answer brief by giving just a couple lines before/after any changes you make. Multiple code blocks are ok.
+- Run `pnpm check` to validate changes (lint, typecheck, tests)
+- Keep internal reasoning brief. Focus directly on file modifications.
+- Do not read unrelated files. Rely on exact file paths provided.
+- Give the answer/code immediately. Explanations should follow, not precede.
+- Do not repeat all provided code when making adjustments; show targeted diffs/snippets.
+- Do not edit generated files (`routeTree.gen.ts`).

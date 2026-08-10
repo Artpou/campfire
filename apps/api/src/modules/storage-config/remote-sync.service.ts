@@ -1,6 +1,6 @@
 import { filenameParse } from "@ctrl/video-filename-parser";
 import type { ManualSyncInput } from "@seedarr/contracts";
-import { isVideoFile } from "@seedarr/shared";
+import { getVideoContainer, isVideoFile } from "@seedarr/shared";
 import { and, eq } from "drizzle-orm";
 
 import { BadRequestError } from "@/shared/errors/error";
@@ -91,7 +91,17 @@ function extractImdbId(name: string): string | null {
   return match ? match[1] : null;
 }
 
-function parseEntry(name: string, isTv: boolean): { title: string; year: number | null; seasons: number[] } {
+function parseEntry(
+  name: string,
+  isTv: boolean,
+): {
+  title: string;
+  year: number | null;
+  seasons: number[];
+  quality: string | null;
+  language: string | null;
+  container: string | null;
+} {
   const parsed = filenameParse(name, isTv);
 
   let title = parsed.title;
@@ -104,8 +114,11 @@ function parseEntry(name: string, isTv: boolean): { title: string; year: number 
 
   const year = parsed.year ? Number.parseInt(parsed.year, 10) : null;
   const seasons = isTv && "seasons" in parsed ? ((parsed.seasons as number[]) ?? []) : [];
+  const quality = parsed.resolution ?? null;
+  const language = parsed.languages?.[0] ?? null;
+  const container = getVideoContainer(name);
 
-  return { title, year, seasons };
+  return { title, year, seasons, quality, language, container };
 }
 
 function extractYear(dateStr?: string | null): number | null {
@@ -374,7 +387,7 @@ async function processEntry(
 
   if (existingLocations.has(remoteLocation.toLowerCase())) return "skipped";
 
-  const { title, seasons } = parseEntry(name, mediaType === "tv");
+  const { title, seasons, quality, language, container } = parseEntry(name, mediaType === "tv");
   if (title && existingTitles.has(title.toLowerCase())) return "skipped";
 
   const match = await resolveTmdbMatch(name, mediaType);
@@ -418,11 +431,23 @@ async function processEntry(
 
   await db.insert(media).values(mediaInsert).onConflictDoUpdate({ target: media.id, set: mediaInsert });
 
+  let remoteSize: number | null = null;
+  try {
+    const files = await remoteStorageService.listFiles(downloadLocation);
+    remoteSize = files.reduce((sum, f) => sum + f.length, 0) || null;
+  } catch {
+    /* size remains null */
+  }
+
   await db.insert(download).values({
     userId,
     mediaId: tmdbItem.id,
     origin: "remote-sync",
+    quality,
+    language,
+    container,
     remoteLocation: downloadLocation,
+    size: remoteSize,
     torrent: null,
   });
 
@@ -449,11 +474,26 @@ export async function runManualSync(userId: string, input: ManualSyncInput): Pro
   });
 
   if (!existing) {
+    let remoteSize: number | null = null;
+    try {
+      const files = await remoteStorageService.listFiles(input.remotePath);
+      remoteSize = files.reduce((sum, f) => sum + f.length, 0) || null;
+    } catch {
+      /* size remains null */
+    }
+
+    const fileName = input.remotePath.split("/").pop() ?? input.remotePath;
+    const { quality, language, container } = parseEntry(fileName, input.type === "tv");
+
     await db.insert(download).values({
       userId,
       mediaId: input.mediaId,
       origin: "remote-sync",
+      quality,
+      language,
+      container,
       remoteLocation: input.remotePath,
+      size: remoteSize,
       torrent: null,
     });
   }

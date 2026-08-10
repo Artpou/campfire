@@ -27,9 +27,9 @@ export const MediaDownloadButton = ({ media, videoFile, className, ...props }: M
             variant="secondary"
             className={cn("w-full", className)}
             onClick={() => downloadFile.mutateAsync(media?.download?.id ?? "")}
+            icon={DownloadIcon}
             {...props}
           >
-            <DownloadIcon className="size-3" />
             <Trans>Download</Trans>
           </Button>
         </TooltipTrigger>

@@ -6,7 +6,7 @@ import type { Media } from "@seedarr/sdk";
 import { formatRuntime } from "@seedarr/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ClockIcon, MagnetIcon } from "lucide-react";
+import { ClockIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
@@ -16,11 +16,11 @@ import { Button } from "@/shared/ui/button";
 import { Carousel, type CarouselApi, CarouselContent, CarouselItem } from "@/shared/ui/carousel";
 
 import { useRole } from "@/features/auth/hooks/use-role";
-import { DownloadProgress } from "@/features/downloads/components/download-progress";
 import { MediaButtonPlay } from "@/features/media/components/button/media-button-play";
 import { MediaButtonRequest } from "@/features/media/components/button/media-button-request";
-import { MediaRating } from "@/features/media/components/media-rating";
-import { getBackdropUrl, getPosterUrl, hasWatchProgress } from "@/features/media/helpers/media.helper";
+import { MediaButtonTorrent } from "@/features/media/components/button/media-button-torrent";
+import { MediaCard } from "@/features/media/components/card/media-card";
+import { getBackdropUrl, getPosterUrl } from "@/features/media/helpers/media.helper";
 import { mediaQueries, refetchLibraryInterval } from "@/features/media/hooks/media.queries";
 
 const AUTO_ROTATE_MS = 7000;
@@ -36,12 +36,6 @@ function getDetailLinkProps(media: Media) {
     : ({ to: "/movies/$id", params: { id: media.id.toString() } } as const);
 }
 
-function getTorrentsLinkProps(media: Media) {
-  return media.type === "tv"
-    ? ({ to: "/tv/$id/torrents", params: { id: media.id.toString() } } as const)
-    : ({ to: "/movies/$id/torrents", params: { id: media.id.toString() } } as const);
-}
-
 interface HeroSlideProps {
   media: Media;
   isLibraryMode: boolean;
@@ -51,10 +45,6 @@ const HeroSlide = memo(function HeroSlide({ media, isLibraryMode }: HeroSlidePro
   const { role } = useRole();
   const year = media.release_date ? new Date(media.release_date).getFullYear() : "";
   const detailLinkProps = getDetailLinkProps(media);
-  const torrentsLinkProps = getTorrentsLinkProps(media);
-  const isDownloading = !!media.download && !media.download.torrent?.done && !media.download.remoteLocation;
-  const showWatchProgress = isLibraryMode && hasWatchProgress(media);
-
   const backdropUrl = getBackdropUrl(media.backdrop_path, "w1280") || getPosterUrl(media.poster_path, "w780");
 
   return (
@@ -68,25 +58,9 @@ const HeroSlide = memo(function HeroSlide({ media, isLibraryMode }: HeroSlidePro
       </div>
 
       <div className="relative h-full container mx-auto max-w-6xl px-8 md:px-12 flex items-end pb-12 md:pb-16 gap-5 md:gap-8">
-        {media.poster_path && (
-          <Link {...detailLinkProps} className="hidden sm:block relative shrink-0 group/poster">
-            <div className="relative w-27.5 md:w-37.5 aspect-2/3">
-              <img
-                src={getPosterUrl(media.poster_path, "w342")}
-                alt={media.title}
-                className={cn(
-                  "w-full rounded-lg object-cover border border-border/60 shadow-2xl transition-transform group-hover/poster:scale-[1.02]",
-                  showWatchProgress ? "h-[calc(100%-0.75rem)]" : "h-full",
-                )}
-              />
-              {isLibraryMode && isDownloading && media.download && (
-                <div className="absolute top-2 left-2">
-                  <DownloadProgress download={media.download} variant="circular" />
-                </div>
-              )}
-            </div>
-          </Link>
-        )}
+        <div className="relative w-27.5 md:w-37.5 aspect-2/3">
+          <MediaCard media={media} hideButton hideType />
+        </div>
 
         <div className="max-w-2xl space-y-3 min-w-0">
           <h1>{media.title}</h1>
@@ -113,22 +87,9 @@ const HeroSlide = memo(function HeroSlide({ media, isLibraryMode }: HeroSlidePro
           )}
 
           <div className="flex items-center gap-3 pt-1">
-            {media.vote_average != null && media.vote_average > 0 && (
-              <MediaRating media={media} size={44} strokeWidth={4} />
-            )}
-
             {isLibraryMode && <MediaButtonPlay media={media} size="lg" />}
-
-            {!isLibraryMode && role !== "viewer" && (
-              <Button asChild size="lg" className="shadow-lg">
-                <Link {...torrentsLinkProps}>
-                  <MagnetIcon className="size-4" />
-                  <Trans>Torrents</Trans>
-                </Link>
-              </Button>
-            )}
-
-            {!isLibraryMode && role === "viewer" && <MediaButtonRequest media={media} size="lg" />}
+            {!isLibraryMode && role === "viewer" && <MediaButtonTorrent media={media} size="lg" />}
+            {!isLibraryMode && role !== "viewer" && <MediaButtonRequest media={media} size="lg" />}
 
             <Button asChild variant="secondary" size="lg">
               <Link {...detailLinkProps}>

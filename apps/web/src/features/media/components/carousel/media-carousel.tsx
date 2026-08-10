@@ -12,9 +12,10 @@ interface MediaCarouselProps {
   title: string | ReactNode;
   data: Media[];
   seeMoreTo?: string;
+  hideType?: boolean;
 }
 
-export function MediaCarousel({ title, data, seeMoreTo }: MediaCarouselProps) {
+export function MediaCarousel({ title, data, seeMoreTo, hideType }: MediaCarouselProps) {
   const displayedData = useMemo(() => data.slice(0, MAX_ITEMS), [data]);
 
   if (!data || data.length === 0) return null;
@@ -23,7 +24,7 @@ export function MediaCarousel({ title, data, seeMoreTo }: MediaCarouselProps) {
     <CarouselWrapper title={title} seeMoreTo={seeMoreTo}>
       {displayedData.map((item, index) => (
         <CarouselItem key={item.id || index}>
-          <MediaCard media={item} withPreview />
+          <MediaCard media={item} withPreview hideType={hideType} />
         </CarouselItem>
       ))}
     </CarouselWrapper>

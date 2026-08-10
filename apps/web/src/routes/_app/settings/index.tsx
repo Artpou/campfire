@@ -113,8 +113,7 @@ function SettingsPage() {
               </CardContent>
             </Card>
 
-            <Button variant="destructive" className="w-full" onClick={handleSignOut}>
-              <LogOutIcon className="size-4" />
+            <Button variant="destructive" className="w-full" onClick={handleSignOut} icon={LogOutIcon}>
               <Trans>Sign out</Trans>
             </Button>
           </div>
@@ -139,8 +138,7 @@ function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Button variant="destructive" className="w-full" onClick={handleSignOut}>
-            <LogOutIcon className="size-4" />
+          <Button variant="destructive" className="w-full" onClick={handleSignOut} icon={LogOutIcon}>
             <Trans>Sign out</Trans>
           </Button>
         </div>

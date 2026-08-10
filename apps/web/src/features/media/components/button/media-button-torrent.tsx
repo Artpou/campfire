@@ -3,26 +3,20 @@ import type { Media } from "@seedarr/sdk";
 import { Link } from "@tanstack/react-router";
 import { MagnetIcon } from "lucide-react";
 
-import { Button } from "@/shared/ui/button";
+import { Button, type ButtonProps } from "@/shared/ui/button";
 
-interface MediaButtonTorrentProps {
+interface MediaButtonTorrentProps extends ButtonProps {
   media: Media;
 }
 
-export function MediaButtonTorrent({ media }: MediaButtonTorrentProps) {
+export function MediaButtonTorrent({ media, className, ...props }: MediaButtonTorrentProps) {
+  const to = media.type === "tv" ? "/tv/$id/torrents" : "/movies/$id/torrents";
+
   return (
-    <Button className="w-full" asChild>
-      {media.type === "tv" ? (
-        <Link to="/tv/$id/torrents" params={{ id: media.id.toString() }}>
-          <MagnetIcon className="size-3" />
-          <Trans>Torrents</Trans>
-        </Link>
-      ) : (
-        <Link to="/movies/$id/torrents" params={{ id: media.id.toString() }}>
-          <MagnetIcon className="size-3" />
-          <Trans>Torrents</Trans>
-        </Link>
-      )}
+    <Button asChild icon={MagnetIcon} {...props}>
+      <Link to={to} params={{ id: media.id.toString() }}>
+        <Trans>Torrents</Trans>
+      </Link>
     </Button>
   );
 }

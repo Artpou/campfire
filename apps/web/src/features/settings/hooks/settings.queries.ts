@@ -12,6 +12,12 @@ export const settingsQueries = {
       queryKey: [...settingsQueries.key],
       queryFn: () => unwrap(api.settings.$get()),
     }),
+  ui: () =>
+    queryOptions({
+      queryKey: [...settingsQueries.key, "ui"] as const,
+      queryFn: () => unwrap(api.settings.ui.$get()),
+      staleTime: 60_000,
+    }),
   tmdbKeyStatus: () =>
     queryOptions({
       queryKey: [...settingsQueries.key, "tmdb-key-status"] as const,

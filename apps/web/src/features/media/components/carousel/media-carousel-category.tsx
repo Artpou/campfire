@@ -8,6 +8,7 @@ import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Card, CardContent } from "@/shared/ui/card";
 import { CarouselItem } from "@/shared/ui/carousel";
 import { CarouselWrapper } from "@/shared/ui/carousel-wrapper";
+import { Img } from "@/shared/ui/image";
 import { Skeleton } from "@/shared/ui/skeleton";
 
 import { genreQueries } from "@/features/media/hooks/genre.queries";
@@ -56,7 +57,7 @@ export function MediaCarouselCategory({ type, onValueChange }: MediaCarouselCate
         >
           <Card className="group h-24 py-0 cursor-pointer overflow-hidden" onClick={() => handleGenreClick(genre.id)}>
             <CardContent className="relative h-full p-0">
-              <img
+              <Img
                 src={`/${type}/category/${genre.id}.jpg`}
                 alt={genre.name}
                 className={cn(

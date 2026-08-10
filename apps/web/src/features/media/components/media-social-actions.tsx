@@ -25,7 +25,7 @@ export function MediaSocialActions({ media, className }: MediaSocialActionsProps
         onClick={() => toggleLike.mutate(media)}
         aria-label={t`Like`}
       >
-        <HeartIcon fill={media.liked ? "currentColor" : "none"} />
+        <HeartIcon className={cn(media.liked && "fill-white")} />
       </Button>
       <Button
         size="icon-lg"
@@ -34,7 +34,7 @@ export function MediaSocialActions({ media, className }: MediaSocialActionsProps
         onClick={() => toggleWatchList.mutate(media)}
         aria-label={t`Watchlist`}
       >
-        <ClockPlusIcon fill={media.inWatchList ? "currentColor" : "none"} />
+        <ClockPlusIcon className={cn(media.inWatchList && "text-white")} />
       </Button>
     </div>
   );

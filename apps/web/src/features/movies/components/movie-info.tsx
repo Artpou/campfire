@@ -60,7 +60,7 @@ export function MovieInfo({ movie }: MovieInfoProps) {
       )}
 
       <div className="flex items-center gap-4">
-        <MediaRating media={movie} size={52} strokeWidth={5} />
+        <MediaRating media={movie} />
         <MediaWatchProviders watchProviders={movie["watch/providers"]} mediaName={movie.title ?? ""} />
       </div>
     </div>

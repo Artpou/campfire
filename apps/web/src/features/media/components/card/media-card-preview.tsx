@@ -13,9 +13,9 @@ import { useRole } from "@/features/auth/hooks/use-role";
 import { MediaButtonPlay } from "@/features/media/components/button/media-button-play";
 import { MediaButtonRequest } from "@/features/media/components/button/media-button-request";
 import { MediaButtonTorrent } from "@/features/media/components/button/media-button-torrent";
+import { MediaImg } from "@/features/media/components/media-image";
 import { MediaRating } from "@/features/media/components/media-rating";
 import { MediaSocialActions } from "@/features/media/components/media-social-actions";
-import { getBackdropUrl, getPosterUrl } from "@/features/media/helpers/media.helper";
 import { trailerQueries } from "@/features/media/hooks/trailer.queries";
 
 type MediaCardPreviewProps = {
@@ -54,11 +54,7 @@ export function MediaCardPreview({ media, detailLinkProps }: MediaCardPreviewPro
               title={trailer.name}
             />
           ) : (
-            <img
-              src={getBackdropUrl(media.backdrop_path, "w780") || getPosterUrl(media.poster_path, "w500")}
-              alt={media.title}
-              className="size-full object-cover"
-            />
+            <MediaImg media={media} type="backdrop" />
           )}
         </div>
       </Link>
@@ -73,7 +69,7 @@ export function MediaCardPreview({ media, detailLinkProps }: MediaCardPreviewPro
         <div className="flex items-center gap-2 text-xs flex-wrap">
           <MediaSocialActions media={media} />
 
-          {!!media.vote_average && media.vote_average > 0 && <MediaRating media={media} size={36} strokeWidth={2} />}
+          {!!media.vote_average && media.vote_average > 0 && <MediaRating media={media} />}
           {year && <Badge variant="outline">{year}</Badge>}
           {media.duration && media.duration > 0 && (
             <Badge variant="outline">
@@ -90,11 +86,11 @@ export function MediaCardPreview({ media, detailLinkProps }: MediaCardPreviewPro
         {media.overview && <p className="text-sm leading-relaxed line-clamp-3 mt-1">{media.overview}</p>}
 
         {media.download ? (
-          <MediaButtonPlay className="w-full" media={media} />
+          <MediaButtonPlay media={media} className="w-full" />
         ) : role === "viewer" ? (
           <MediaButtonRequest media={media} className="w-full" />
         ) : (
-          <MediaButtonTorrent media={media} />
+          <MediaButtonTorrent media={media} className="w-full" />
         )}
       </div>
     </>

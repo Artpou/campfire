@@ -90,6 +90,9 @@ async function fetchSessionWithUser(token: string): Promise<{
         pseudo: user.pseudo,
         avatarPath: user.avatarPath,
         role: user.role,
+        showWatchList: user.showWatchList,
+        showLikes: user.showLikes,
+        showWatchHistory: user.showWatchHistory,
         createdAt: user.createdAt,
       },
     })

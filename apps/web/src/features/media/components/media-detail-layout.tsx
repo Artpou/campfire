@@ -81,9 +81,7 @@ export function MediaDetailLayout({
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
               <SheetTrigger asChild>
                 <div className="flex flex-col gap-3">
-                  <Button size="icon-lg" variant="outline" rounded>
-                    <InfoIcon />
-                  </Button>
+                  <Button size="icon-lg" variant="outline" rounded icon={InfoIcon} />
                 </div>
               </SheetTrigger>
               <SheetContent side="right" className="w-[350px] sm:w-[400px]">

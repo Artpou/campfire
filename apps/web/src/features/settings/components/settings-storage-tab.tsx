@@ -7,7 +7,6 @@ import {
   EyeOffIcon,
   FilmIcon,
   GlobeIcon,
-  Loader2Icon,
   NetworkIcon,
   RefreshCwIcon,
   ServerIcon,
@@ -331,13 +330,16 @@ export function SettingsStorageTab() {
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2">
-          <Button variant="secondary" onClick={handleTest} disabled={!hasRequiredFields || testMutation.isPending}>
-            {testMutation.isPending && !enabling && <Loader2Icon className="size-4 animate-spin" />}
+          <Button
+            variant="secondary"
+            onClick={handleTest}
+            disabled={!hasRequiredFields}
+            loading={testMutation.isPending && !enabling}
+          >
             <Trans>Test connection</Trans>
           </Button>
 
-          <Button onClick={handleSave} disabled={!hasRequiredFields || upsertMutation.isPending}>
-            {upsertMutation.isPending && <Loader2Icon className="size-4 animate-spin" />}
+          <Button onClick={handleSave} disabled={!hasRequiredFields} loading={upsertMutation.isPending}>
             <Trans>Save configuration</Trans>
           </Button>
         </div>
@@ -363,9 +365,9 @@ export function SettingsStorageTab() {
             variant={enabled ? "secondary" : "default"}
             size="sm"
             onClick={handleToggleAutoTransfer}
-            disabled={!hasRequiredFields || enabling || testMutation.isPending || upsertMutation.isPending}
+            disabled={!hasRequiredFields || upsertMutation.isPending}
+            loading={enabling || (testMutation.isPending && !enabled)}
           >
-            {(enabling || (testMutation.isPending && !enabled)) && <Loader2Icon className="size-4 animate-spin" />}
             {enabled ? <Trans>Disable</Trans> : <Trans>Enable</Trans>}
           </Button>
         </div>
@@ -391,9 +393,9 @@ export function SettingsStorageTab() {
               variant={deleteLocalAfterTransfer ? "secondary" : "default"}
               size="sm"
               onClick={handleToggleDeleteLocal}
-              disabled={!hasRequiredFields || upsertMutation.isPending}
+              disabled={!hasRequiredFields}
+              loading={upsertMutation.isPending}
             >
-              {upsertMutation.isPending && <Loader2Icon className="size-4 animate-spin" />}
               {deleteLocalAfterTransfer ? <Trans>Disable</Trans> : <Trans>Enable</Trans>}
             </Button>
           </div>

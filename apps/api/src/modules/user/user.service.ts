@@ -23,6 +23,9 @@ const userColumns = {
   pseudo: true,
   avatarPath: true,
   role: true,
+  showWatchList: true,
+  showLikes: true,
+  showWatchHistory: true,
   createdAt: true,
 } as const;
 
@@ -106,6 +109,9 @@ export class UserService extends IdentifiableService<User> {
         pseudo: user.pseudo,
         avatarPath: user.avatarPath,
         role: user.role,
+        showWatchList: user.showWatchList,
+        showLikes: user.showLikes,
+        showWatchHistory: user.showWatchHistory,
         createdAt: user.createdAt,
       });
 
@@ -161,8 +167,20 @@ export class UserService extends IdentifiableService<User> {
   }
 
   async updateProfile(input: UpdateProfileInput): Promise<User> {
-    if (input.pseudo !== undefined) {
-      await db.update(user).set({ pseudo: input.pseudo }).where(eq(user.id, this.user.id));
+    const data: Partial<{
+      pseudo: string | null;
+      showWatchList: boolean;
+      showLikes: boolean;
+      showWatchHistory: boolean;
+    }> = {};
+
+    if (input.pseudo !== undefined) data.pseudo = input.pseudo;
+    if (input.showWatchList !== undefined) data.showWatchList = input.showWatchList;
+    if (input.showLikes !== undefined) data.showLikes = input.showLikes;
+    if (input.showWatchHistory !== undefined) data.showWatchHistory = input.showWatchHistory;
+
+    if (Object.keys(data).length > 0) {
+      await db.update(user).set(data).where(eq(user.id, this.user.id));
     }
     return this.get(this.user.id);
   }

@@ -53,11 +53,8 @@ function IndexerDashboardPage() {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 p-8">
         <p className="text-muted-foreground">{t(msg`No indexer configured.`)}</p>
-        <Button asChild>
-          <Link to="/settings">
-            <ArrowLeftIcon className="size-4" />
-            {t(msg`Back to settings`)}
-          </Link>
+        <Button asChild icon={ArrowLeftIcon}>
+          <Link to="/settings">{t(msg`Back to settings`)}</Link>
         </Button>
       </div>
     );
@@ -66,16 +63,12 @@ function IndexerDashboardPage() {
   return (
     <div className="flex flex-col h-[90vh]">
       <div className="flex items-center gap-2 p-3 border-b bg-background">
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/settings">
-            <ArrowLeftIcon className="size-4" />
-            {t(msg`Back`)}
-          </Link>
+        <Button asChild variant="ghost" size="sm" icon={ArrowLeftIcon}>
+          <Link to="/settings">{t(msg`Back`)}</Link>
         </Button>
         <div className="flex-1 text-sm text-muted-foreground truncate">{url}</div>
-        <Button asChild variant="outline" size="sm">
+        <Button asChild variant="outline" size="sm" icon={ExternalLinkIcon}>
           <a href={url} target="_blank" rel="noopener noreferrer">
-            <ExternalLinkIcon className="size-4" />
             {t(msg`Open in new tab`)}
           </a>
         </Button>
@@ -88,9 +81,8 @@ function IndexerDashboardPage() {
               msg`This indexer cannot be embedded in an iframe (security restrictions). Open it in a new tab instead.`,
             )}
           </p>
-          <Button asChild>
+          <Button asChild icon={ExternalLinkIcon}>
             <a href={url} target="_blank" rel="noopener noreferrer">
-              <ExternalLinkIcon className="size-4" />
               {t(msg`Open indexer dashboard`)}
             </a>
           </Button>

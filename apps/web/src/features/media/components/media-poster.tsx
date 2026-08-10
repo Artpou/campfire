@@ -1,16 +1,13 @@
-import { useState } from "react";
-
-import { Trans } from "@lingui/react/macro";
 import type { Download, Movie, TV } from "@seedarr/sdk";
 import { useQuery } from "@tanstack/react-query";
 import { ClapperboardIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { DialogDelete } from "@/shared/components/dialog/dialog-delete";
 import { Img } from "@/shared/ui/image";
 
 import { useRole } from "@/features/auth/hooks/use-role";
-import { downloadQueries, useDownloadDelete } from "@/features/downloads/hooks/download.queries";
+import { DownloadDeleteButton } from "@/features/downloads/components/download-delete-button";
+import { downloadQueries } from "@/features/downloads/hooks/download.queries";
 import { MediaDownloadButton } from "@/features/media/components/button/media-button-download";
 import { MediaButtonPlay } from "@/features/media/components/button/media-button-play";
 import { MediaButtonRequest } from "@/features/media/components/button/media-button-request";
@@ -31,7 +28,6 @@ function getDisplayTitle(data: Movie | TV): string {
 }
 
 export function MediaPoster({ data, download }: MediaPosterProps) {
-  const deleteTorrent = useDownloadDelete();
   const { role } = useRole();
   const { media } = data;
 
@@ -40,17 +36,10 @@ export function MediaPoster({ data, download }: MediaPosterProps) {
     enabled: !!download?.id,
   });
 
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
   const displayTitle = getDisplayTitle(data);
   const showWatchProgress = hasWatchProgress(media);
   const canPlay = !isVideoFileLoading && download && !!videoFile;
   const canDownload = canPlay && (!download.torrent || download.torrent.done);
-
-  const handleDelete = (dbOnly: boolean) => {
-    if (!download?.id) return;
-    deleteTorrent.mutate({ id: download.id, dbOnly }, { onSuccess: () => setShowDeleteConfirm(false) });
-  };
 
   return (
     <div className="flex flex-col shrink-0 space-y-2 items-center max-w-[230px] w-full">
@@ -86,16 +75,8 @@ export function MediaPoster({ data, download }: MediaPosterProps) {
 
       <div className="flex flex-col w-full gap-2">
         <MediaButtonPlay media={media} disabled={!canPlay} />
+        <DownloadDeleteButton media={media} download={download ?? null} />
       </div>
-
-      <DialogDelete
-        open={showDeleteConfirm}
-        setOpen={setShowDeleteConfirm}
-        validate={() => handleDelete(false)}
-        disabled={deleteTorrent.isPending}
-        title={<Trans>Delete Download</Trans>}
-        description={<Trans>Are you sure you want to delete this download? This action cannot be undone.</Trans>}
-      />
     </div>
   );
 }

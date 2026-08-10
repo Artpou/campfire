@@ -62,9 +62,8 @@ export function RequestCard({ request, className }: RequestCardProps) {
             dismiss.mutate(request.id);
           }}
           disabled={dismiss.isPending}
-        >
-          <XIcon className="size-3" />
-        </Button>
+          icon={XIcon}
+        />
       )}
     </div>
   );

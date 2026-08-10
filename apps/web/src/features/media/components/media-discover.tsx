@@ -4,7 +4,6 @@ import type { Media } from "@seedarr/sdk";
 import type { InfiniteData, UseInfiniteQueryOptions } from "@tanstack/react-query";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
-import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { PlaceholderEmpty } from "@/shared/components/seedarr-placeholder";
 import { Container } from "@/shared/ui/container";
 
@@ -78,10 +77,6 @@ export function MediaDiscover<TSearch extends { selected?: MediaSelected; with_g
             seeMoreTo={type === "movie" ? "/movies/requests" : "/tv/requests"}
           />
         )}
-        <MediaCarouselCategory
-          type={type}
-          onValueChange={(value) => onSearchChange({ with_genres: value } as Partial<TSearch>)}
-        />
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-4">
             <MediaSortTabs
@@ -94,10 +89,12 @@ export function MediaDiscover<TSearch extends { selected?: MediaSelected; with_g
               {filtersSheet}
             </div>
           </div>
+          <MediaCarouselCategory
+            type={type}
+            onValueChange={(value) => onSearchChange({ with_genres: value } as Partial<TSearch>)}
+          />
           {isPending ? (
-            <div className="flex min-h-48 items-center justify-center">
-              <SeedarrLoader />
-            </div>
+            <MediaGrid items={[]} isLoading />
           ) : results.length === 0 ? (
             <PlaceholderEmpty title={emptyTitle} subtitle={emptySubtitle} />
           ) : (

@@ -1,33 +1,39 @@
+import type { Download } from "@seedarr/sdk";
+import { formatBytes } from "@seedarr/shared";
+
 import { cn } from "@/lib/utils";
+import { Flag } from "@/shared/components/flag";
 import { Badge } from "@/shared/ui/badge";
 
 interface DownloadMetadataProps {
-  origin?: string | null;
-  quality?: string | null;
-  language?: string | null;
+  download: Download;
   className?: string;
 }
 
-export function DownloadMetadata({ origin, quality, language, className }: DownloadMetadataProps) {
-  if (!origin && !quality && !language) {
-    return null;
-  }
+export function DownloadMetadata({ download, className }: DownloadMetadataProps) {
+  const size = download.size ?? download.torrent?.length ?? null;
 
   return (
-    <div className={cn("flex flex-wrap gap-1", className)}>
-      {origin && (
+    <div className={cn("flex flex-wrap items-center gap-1", className)}>
+      {download.language && <Flag lang={download.language} />}
+      {download.quality && (
         <Badge variant="outline" className="text-xs">
-          {origin}
+          {download.quality}
         </Badge>
       )}
-      {quality && (
+      {download.container && (
         <Badge variant="outline" className="text-xs">
-          {quality}
+          {download.container}
         </Badge>
       )}
-      {language && (
+      {size != null && size > 0 && (
         <Badge variant="outline" className="text-xs">
-          {language}
+          {formatBytes(size)}
+        </Badge>
+      )}
+      {download.origin && (
+        <Badge variant="outline" className="text-xs">
+          {download.origin}
         </Badge>
       )}
     </div>

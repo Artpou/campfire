@@ -72,10 +72,13 @@ export const download = sqliteTable(
     origin: text("origin"),
     quality: text("quality"),
     language: text("language"),
+    container: text("container"),
 
     createdAt: integer("createdAt", { mode: "timestamp" })
       .notNull()
       .$defaultFn(() => new Date()),
+
+    size: integer("size"),
 
     remoteLocation: text("remote_location"),
 

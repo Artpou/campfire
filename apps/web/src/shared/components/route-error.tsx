@@ -45,12 +45,10 @@ export function RouteErrorHandler({ error, reset }: ErrorComponentProps) {
         )}
 
         <div className="flex items-center justify-center gap-3">
-          <Button variant="outline" onClick={() => router.history.back()}>
-            <Undo2Icon className="size-4" />
+          <Button variant="outline" onClick={() => router.history.back()} icon={Undo2Icon}>
             <Trans>Go back</Trans>
           </Button>
-          <Button onClick={reset}>
-            <RefreshCwIcon className="size-4" />
+          <Button onClick={reset} icon={RefreshCwIcon}>
             <Trans>Retry</Trans>
           </Button>
         </div>

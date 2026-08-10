@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { Media, Person } from "@seedarr/sdk";
+import { ClapperboardIcon } from "lucide-react";
 
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
@@ -43,7 +44,8 @@ export function PersonFilmography({ filmography, departments }: PersonFilmograph
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-end justify-between gap-4 flex-wrap">
-        <h2 className="text-xl font-bold">
+        <h2 className="text-xl font-bold flex items-center gap-2">
+          <ClapperboardIcon className="size-5" />
           <Trans>Filmography</Trans>
         </h2>
         <Tabs value={activeTab} onValueChange={setActiveTab}>

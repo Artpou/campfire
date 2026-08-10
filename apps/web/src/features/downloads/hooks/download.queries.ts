@@ -131,6 +131,17 @@ export const useDownloadDelete = createDownloadActionMutation<DeleteDownloadPara
   errorMsg: () => t`Could not delete download`,
 });
 
+interface BatchDeleteParams {
+  ids: string[];
+  dbOnly?: boolean;
+}
+
+export const useBatchDeleteDownloads = createDownloadActionMutation<BatchDeleteParams>({
+  mutationFn: ({ ids, dbOnly }) => unwrap(api.downloads["batch-delete"].$post({ json: { ids, dbOnly } })),
+  successMsg: () => t`Downloads deleted`,
+  errorMsg: () => t`Could not delete downloads`,
+});
+
 export const useDownloadReassignMedia = createDownloadActionMutation<{ id: string; mediaId: number }>({
   mutationFn: ({ id, mediaId }) => unwrap(api.downloads[":id"].media.$patch({ param: { id }, json: { mediaId } })),
   successMsg: () => t`Media reassigned`,

@@ -1,7 +1,7 @@
 import type { ListMediaQuery, UpdateProgressQuery } from "@seedarr/contracts";
 import { and, desc, eq, exists, inArray, sql } from "drizzle-orm";
 
-import { BadRequestError, NotFoundError } from "@/shared/errors/error";
+import { BadRequestError, ForbiddenError, NotFoundError } from "@/shared/errors/error";
 import { paginate, toPaginate } from "@/shared/helpers/pagination.helper";
 import type { Paginate } from "@/shared/helpers/pagination.types";
 import { IdentifiableService } from "@/shared/services/authenticated.service";
@@ -10,11 +10,32 @@ import { db } from "@/db/db";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import { download } from "@/modules/download/download.schema";
 import { type MediaInsert, media, userLikes, userWatchList, watchProgress } from "@/modules/media/media.schema";
+import { user } from "@/modules/user/user.schema";
 import type { MediaEnriched } from "./media.types";
 
 export class MediaService extends IdentifiableService<MediaEnriched> {
   private canSeeAllDownloads(): boolean {
     return this.roleLevel >= ROLE_LEVELS.member;
+  }
+
+  private async assertCanViewUserCollection(
+    targetUserId: string,
+    filter: "like" | "watch-list" | "history",
+  ): Promise<void> {
+    if (targetUserId === this.user.id) return;
+
+    const target = await db.query.user.findFirst({
+      where: eq(user.id, targetUserId),
+      columns: { showWatchList: true, showLikes: true, showWatchHistory: true },
+    });
+    if (!target) throw new NotFoundError("User");
+
+    const allowed =
+      filter === "watch-list" ? target.showWatchList : filter === "like" ? target.showLikes : target.showWatchHistory;
+
+    if (!allowed) {
+      throw new ForbiddenError("This collection is private");
+    }
   }
 
   async getMany(pagination: Partial<ListMediaQuery>): Promise<MediaEnriched[]> {
@@ -61,6 +82,10 @@ export class MediaService extends IdentifiableService<MediaEnriched> {
   async list(query: ListMediaQuery): Promise<Paginate<MediaEnriched>> {
     const { type, filter, ids, userId } = query;
     const targetUserId = userId ?? this.user.id;
+
+    if (filter === "like" || filter === "watch-list" || filter === "history") {
+      await this.assertCanViewUserCollection(targetUserId, filter);
+    }
 
     const conditions = [];
     if (type) conditions.push(eq(media.type, type));

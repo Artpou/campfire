@@ -74,8 +74,7 @@ export function SettingsIndexersTab() {
             h="lg"
             search
           />
-          <Button onClick={() => setAddDialogOpen(true)} className="w-full sm:w-auto shrink-0">
-            <PlusIcon className="size-4" />
+          <Button onClick={() => setAddDialogOpen(true)} className="w-full sm:w-auto shrink-0" icon={PlusIcon}>
             <Trans>Add indexer</Trans>
           </Button>
         </div>

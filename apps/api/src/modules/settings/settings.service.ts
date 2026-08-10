@@ -7,6 +7,11 @@ import { settings } from "./settings.schema";
 
 export interface SettingsResponse {
   tmdbApiKey: string | null;
+  showMediaRatings: boolean;
+}
+
+export interface SettingsUiResponse {
+  showMediaRatings: boolean;
 }
 
 const SINGLETON_ID = "default";
@@ -22,6 +27,14 @@ export class SettingsService {
     const row = await db.query.settings.findFirst();
     return {
       tmdbApiKey: maskApiKey(row?.tmdbApiKey ?? null),
+      showMediaRatings: row?.showMediaRatings ?? false,
+    };
+  }
+
+  async getUi(): Promise<SettingsUiResponse> {
+    const row = await db.query.settings.findFirst();
+    return {
+      showMediaRatings: row?.showMediaRatings ?? false,
     };
   }
 
@@ -31,6 +44,8 @@ export class SettingsService {
     const values = {
       id: existing?.id ?? SINGLETON_ID,
       tmdbApiKey: input.tmdbApiKey !== undefined ? input.tmdbApiKey || null : (existing?.tmdbApiKey ?? null),
+      showMediaRatings:
+        input.showMediaRatings !== undefined ? input.showMediaRatings : (existing?.showMediaRatings ?? false),
       updatedAt: new Date(),
     };
 
@@ -40,6 +55,7 @@ export class SettingsService {
 
     return {
       tmdbApiKey: maskApiKey(values.tmdbApiKey),
+      showMediaRatings: values.showMediaRatings,
     };
   }
 

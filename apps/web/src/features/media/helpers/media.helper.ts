@@ -5,7 +5,7 @@ import type { InfiniteData } from "@tanstack/react-query";
 
 export type PosterFormat = "w92" | "w154" | "w185" | "w342" | "w500" | "w780" | "original";
 
-export function getPosterUrl(path?: string | null, format: PosterFormat = "w500"): string {
+export function getPosterUrl(path?: string | null, format: PosterFormat = "w342"): string {
   if (!path) return "";
 
   if (path.includes("https")) {

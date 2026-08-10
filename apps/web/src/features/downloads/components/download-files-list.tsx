@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { TorrentInspectFile } from "@seedarr/sdk";
-import { formatBytes, SUBTITLE_EXTENSIONS, VIDEO_EXTENSIONS } from "@seedarr/shared";
+import { SUBTITLE_EXTENSIONS, VIDEO_EXTENSIONS } from "@seedarr/shared";
 import { ChevronDownIcon, ChevronUpIcon, FileIcon, VideoIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -10,18 +10,12 @@ import { Flag } from "@/shared/components/flag";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 
-import { DownloadMetadata } from "@/features/downloads/components/download-metadata";
-
 interface DownloadFilesListProps {
   className?: string;
   files: TorrentInspectFile[];
   title?: string;
   collapsible?: boolean;
   defaultExpanded?: boolean;
-  availableOnServer?: boolean;
-  origin?: string | null;
-  quality?: string | null;
-  language?: string | null;
 }
 
 type FileType = "video" | "subtitle" | "other";
@@ -54,22 +48,12 @@ function sortFiles(files: TorrentInspectFile[]): TorrentInspectFile[] {
   });
 }
 
-export function DownloadFilesList({
-  className,
-  files,
-  title,
-  defaultExpanded = true,
-  availableOnServer: _availableOnServer = false,
-  origin,
-  quality,
-  language,
-}: DownloadFilesListProps) {
+export function DownloadFilesList({ className, files, title, defaultExpanded = true }: DownloadFilesListProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   if (!files || files.length === 0) return null;
 
   const sortedFiles = sortFiles(files);
-  const totalSize = files.reduce((acc, file) => acc + file.length, 0);
   const subtitleCount = files.filter((file) => getFileType(file.name) === "subtitle").length;
   const videoType = getVideoType(files);
 
@@ -98,7 +82,6 @@ export function DownloadFilesList({
                 {videoType}
               </Badge>
             )}
-            <DownloadMetadata origin={origin} quality={quality} language={language} className="contents" />
             {subtitleCount > 0 && (
               <Badge variant="secondary" className="text-xs">
                 <Trans>{subtitleCount} subtitles</Trans>
@@ -107,7 +90,6 @@ export function DownloadFilesList({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">{formatBytes(totalSize)}</span>
           <Button variant="ghost" size="icon-sm" onClick={() => setExpanded(!expanded)}>
             {expanded ? <ChevronUpIcon className="size-4" /> : <ChevronDownIcon className="size-4" />}
           </Button>

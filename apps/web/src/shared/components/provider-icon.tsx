@@ -42,8 +42,7 @@ export function ProviderIcon({ provider, name, fullButton = false }: ProviderIco
 
   if (fullButton) {
     return (
-      <Button variant="secondary" onClick={() => window.open(redirectUrl, "_blank")}>
-        <ExternalLinkIcon className="size-4 mr-1" />
+      <Button variant="secondary" onClick={() => window.open(redirectUrl, "_blank")} icon={ExternalLinkIcon}>
         <Trans>Watch on</Trans> {provider.provider_name}
       </Button>
     );

@@ -11,4 +11,4 @@ export {
 } from "./stremio-presets";
 export { parseString, sanitizeFileName, slugify, toLatin } from "./string";
 export { isSubtitleFile, SUBTITLE_EXTENSIONS } from "./subtitles";
-export { isVideoFile, pickLargestBySize, VIDEO_EXTENSIONS } from "./video";
+export { getVideoContainer, isVideoFile, pickLargestBySize, VIDEO_EXTENSIONS } from "./video";

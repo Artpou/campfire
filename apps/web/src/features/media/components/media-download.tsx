@@ -51,8 +51,6 @@ function DownloadEntry({ download }: { download: Download }) {
   const torrentFiles = getTorrentFiles(download);
   const hasTorrentFiles = torrentFiles.length > 0;
   const { downloadSpeed, uploadSpeed, numPeers } = download.torrent ?? {};
-  const metadata = { origin: download.origin, quality: download.quality, language: download.language };
-
   const isPaused = status === "paused";
   const isCompleted = status === "completed";
   const isActive =
@@ -72,7 +70,7 @@ function DownloadEntry({ download }: { download: Download }) {
         <div className="min-w-0 flex-1">
           <h3 className="font-semibold truncate">{download.torrent?.name || download.id}</h3>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <DownloadMetadata {...metadata} />
+            <DownloadMetadata download={download} />
             {totalSize > 0 && <span className="text-xs text-muted-foreground">{formatBytes(totalSize)}</span>}
             {status === "failed" && (
               <Badge variant="destructive" className="text-xs">
@@ -89,8 +87,8 @@ function DownloadEntry({ download }: { download: Download }) {
               onClick={() => recheckTorrent.mutate(download.id)}
               disabled={recheckTorrent.isPending}
               aria-label={t`Force recheck`}
+              icon={RefreshCwIcon}
             >
-              <RefreshCwIcon className="size-3.5" />
               <span className="hidden sm:inline">
                 <Trans>Recheck</Trans>
               </span>
@@ -102,8 +100,8 @@ function DownloadEntry({ download }: { download: Download }) {
               onClick={() => reannounce.mutate(download.id)}
               disabled={reannounce.isPending}
               aria-label={t`Force reannounce`}
+              icon={MegaphoneIcon}
             >
-              <MegaphoneIcon className="size-3.5" />
               <span className="hidden sm:inline">
                 <Trans>Reannounce</Trans>
               </span>
@@ -115,9 +113,8 @@ function DownloadEntry({ download }: { download: Download }) {
             onClick={() => setShowDeleteConfirm(true)}
             disabled={deleteTorrent.isPending}
             aria-label={t`Delete`}
-          >
-            <Trash2Icon className="size-3.5" />
-          </Button>
+            icon={Trash2Icon}
+          />
         </div>
       </div>
 
@@ -146,7 +143,7 @@ function DownloadEntry({ download }: { download: Download }) {
         </div>
         {hasTorrentFiles && (
           <Card className="p-4 gap-0">
-            <DownloadFilesList files={torrentFiles} {...metadata} />
+            <DownloadFilesList files={torrentFiles} />
           </Card>
         )}
       </div>

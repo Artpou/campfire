@@ -16,8 +16,7 @@ export function MediaButtonRequest({ media, size, className }: MediaButtonReques
   const { mutate, isPending } = useCreateRequest();
 
   return (
-    <Button size={size} className={className} onClick={() => mutate(media)} disabled={isPending}>
-      <BellPlusIcon className="size-4" />
+    <Button size={size} className={className} onClick={() => mutate(media)} disabled={isPending} icon={BellPlusIcon}>
       <Trans>Request</Trans>
     </Button>
   );

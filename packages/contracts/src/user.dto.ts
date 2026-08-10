@@ -18,6 +18,9 @@ export type UpdateUserInput = z.infer<typeof updateUserDto>;
 
 export const updateProfileDto = z.object({
   pseudo: z.string().trim().min(1).max(64).nullable().optional(),
+  showWatchList: z.boolean().optional(),
+  showLikes: z.boolean().optional(),
+  showWatchHistory: z.boolean().optional(),
 });
 export type UpdateProfileInput = z.infer<typeof updateProfileDto>;
 

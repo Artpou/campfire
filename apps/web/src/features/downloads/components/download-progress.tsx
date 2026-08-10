@@ -17,8 +17,7 @@ const CIRCULAR_STROKE = 4;
 interface DownloadProgressProps {
   download: Download;
   variant?: "bar" | "circular";
-  /** Larger typography for the download detail page (bar only). */
-  size?: "default" | "lg";
+  size?: "sm" | "md" | "lg";
   /** Override pause/resume (e.g. when the parent already owns the mutations). */
   onPauseResume?: () => void;
 }
@@ -49,12 +48,7 @@ function usePauseToggle(download: Download, onPauseResume?: () => void) {
   };
 }
 
-export function DownloadProgress({
-  download,
-  variant = "bar",
-  size = "default",
-  onPauseResume,
-}: DownloadProgressProps) {
+export function DownloadProgress({ download, variant = "bar", size = "md", onPauseResume }: DownloadProgressProps) {
   if (variant === "circular") return <CircularProgress download={download} onPauseResume={onPauseResume} />;
 
   return <BarProgress download={download} size={size} onPauseResume={onPauseResume} />;
@@ -118,28 +112,30 @@ function BarProgress({
   onPauseResume,
 }: {
   download: Download;
-  size: "default" | "lg";
+  size: "sm" | "md" | "lg";
   onPauseResume?: () => void;
 }) {
+  const { t } = useLingui();
   const { toggle, isPending } = usePauseToggle(download, onPauseResume);
 
-  const isLg = size === "lg";
-  const textSize = isLg ? "text-xl font-bold" : "text-sm font-semibold";
-  const iconSize = isLg ? "size-4" : "size-3.5";
+  const textSize =
+    size === "lg" ? "text-xl font-bold" : size === "sm" ? "text-xs font-medium" : "text-sm font-semibold";
 
   if (download.torrent?.transferring) {
     const progress = (download.torrent?.transferProgress ?? 0) * 100;
     const transferSpeed = download.torrent?.transferSpeed ?? 0;
 
     return (
-      <div>
+      <div className="space-y-1">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
-            <span className={`${textSize} text-blue-500`}>{progress.toFixed(isLg ? 1 : 0)}%</span>
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <UploadIcon className="size-3" />
-              <Trans>Transferring</Trans>
-            </Badge>
+            <span className={`${textSize} text-blue-500`}>{progress.toFixed(size === "lg" ? 1 : 0)}%</span>
+            {size !== "sm" && (
+              <Badge variant="secondary" className="flex items-center gap-1">
+                <UploadIcon className="size-3" />
+                <Trans>Transferring</Trans>
+              </Badge>
+            )}
           </div>
           {transferSpeed > 0 && <span className="text-xs text-muted-foreground">{formatBytes(transferSpeed)}/s</span>}
         </div>
@@ -148,7 +144,6 @@ function BarProgress({
     );
   }
 
-  // Cas 2 : Téléchargement actif ou en pause
   const status = getDownloadStatus(download);
   if (status !== "downloading" && status !== "queued" && status !== "paused") return null;
 
@@ -156,6 +151,38 @@ function BarProgress({
   const sizeBytes = download.torrent?.length ?? 0;
   const downloaded = download.torrent?.downloaded ?? 0;
   const progress = (download.torrent?.progress ?? (sizeBytes > 0 ? downloaded / sizeBytes : 0)) * 100;
+
+  if (size === "sm") {
+    return (
+      <div className="flex gap-1 items-center max-w-[600px]">
+        <Badge variant="secondary">
+          {isPaused ? (
+            <span className={textSize}>
+              <Trans>Paused</Trans>
+            </span>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <span className={textSize}>{progress.toFixed(0)}%</span>
+              <span className="text-xs text-popover-foreground flex items-center gap-1 truncate">
+                <ClockIcon className="size-3 shrink-0" />
+                {formatTime(download.torrent?.timeRemaining)}
+              </span>
+            </div>
+          )}
+        </Badge>
+
+        <Progress value={progress} variant={isPaused ? "paused" : "default"} />
+
+        <Button
+          size="icon-xs"
+          onClick={toggle}
+          disabled={!onPauseResume && isPending}
+          icon={isPaused ? DownloadIcon : PauseIcon}
+          aria-label={isPaused ? t`Resume` : t`Pause`}
+        />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -167,7 +194,7 @@ function BarProgress({
             </span>
           ) : (
             <>
-              <span className={textSize}>{progress.toFixed(isLg ? 1 : 0)}%</span>
+              <span className={textSize}>{progress.toFixed(size === "lg" ? 1 : 0)}%</span>
               <Badge variant="secondary" className="flex items-center gap-1">
                 <ClockIcon className="size-3" />
                 <span>{formatTime(download.torrent?.timeRemaining)}</span>
@@ -182,9 +209,13 @@ function BarProgress({
 
       <div className="flex gap-2 items-center">
         <Progress value={progress} variant={isPaused ? "paused" : "default"} className="flex-1" />
-        <Button size={isLg ? "default" : "sm"} onClick={toggle} disabled={!onPauseResume && isPending}>
-          {isPaused ? <DownloadIcon className={iconSize} /> : <PauseIcon className={iconSize} />}
-          <span>{isPaused ? <Trans>Resume</Trans> : <Trans>Pause</Trans>}</span>
+        <Button
+          size={size === "lg" ? "default" : "sm"}
+          onClick={toggle}
+          disabled={!onPauseResume && isPending}
+          icon={isPaused ? DownloadIcon : PauseIcon}
+        >
+          {isPaused ? <Trans>Resume</Trans> : <Trans>Pause</Trans>}
         </Button>
       </div>
     </div>

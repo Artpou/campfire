@@ -103,7 +103,6 @@ export function MediaFiltersSheet({
   type,
   value,
   onChange,
-  dateLabel,
   runtimeLabel,
   description,
   buttonVariant = "outline",
@@ -205,8 +204,13 @@ export function MediaFiltersSheet({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant={buttonVariant} size="icon-lg" className="relative" aria-label={t(msg`Filters`)}>
-          <FilterIcon />
+        <Button
+          variant={buttonVariant}
+          size="icon-lg"
+          className="relative"
+          aria-label={t(msg`Filters`)}
+          icon={FilterIcon}
+        >
           {activeCount > 0 && (
             <Badge className="absolute -top-1 -right-1 size-5 rounded-full p-0 text-[10px]">{activeCount}</Badge>
           )}
@@ -338,8 +342,7 @@ export function MediaFiltersSheet({
         </div>
 
         <SheetFooter className="flex-row gap-2">
-          <Button variant="outline" onClick={handleReset} className="flex-1">
-            <RotateCcwIcon className="mr-2 size-4" />
+          <Button variant="outline" onClick={handleReset} className="flex-1" icon={RotateCcwIcon}>
             <Trans>Reset</Trans>
           </Button>
           <Button onClick={handleApply} className="flex-1">

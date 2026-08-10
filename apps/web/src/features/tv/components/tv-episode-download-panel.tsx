@@ -27,12 +27,6 @@ export function TvEpisodeDownloadPanel({ download }: TvEpisodeDownloadPanelProps
   const hasTorrentFiles = torrentFiles.length > 0;
   const hasRemoteLocation = Boolean(download.remoteLocation);
   const { downloadSpeed, uploadSpeed, numPeers } = download.torrent ?? {};
-  const availableOnServer = Boolean(download.remoteLocation);
-  const metadata = {
-    origin: download.origin,
-    quality: download.quality,
-    language: download.language,
-  };
 
   const isDownloading = Boolean(download.torrent && (!download.torrent.done || download.torrent.transferring));
   const showSeedStats = Boolean(download.torrent?.done && !download.torrent.transferring);
@@ -62,11 +56,11 @@ export function TvEpisodeDownloadPanel({ download }: TvEpisodeDownloadPanelProps
             {seedStats}
           </div>
           <TabsContent value="local">
-            <DownloadFilesList files={torrentFiles} availableOnServer={availableOnServer} {...metadata} />
+            <DownloadFilesList files={torrentFiles} />
           </TabsContent>
           <TabsContent value="remote">
             {remoteFiles ? (
-              <DownloadFilesList files={remoteFiles} {...metadata} />
+              <DownloadFilesList files={remoteFiles} />
             ) : (
               <p className="text-sm text-muted-foreground py-4">
                 <Trans>Loading remote files…</Trans>
@@ -79,14 +73,14 @@ export function TvEpisodeDownloadPanel({ download }: TvEpisodeDownloadPanelProps
           {seedStats}
           {!hasTorrentFiles && hasRemoteLocation ? (
             remoteFiles ? (
-              <DownloadFilesList files={remoteFiles} availableOnServer {...metadata} />
+              <DownloadFilesList files={remoteFiles} />
             ) : isRemoteFilesLoading ? (
               <p className="text-sm text-muted-foreground py-4">
                 <Trans>Loading remote files…</Trans>
               </p>
             ) : null
           ) : hasTorrentFiles ? (
-            <DownloadFilesList files={torrentFiles} availableOnServer={availableOnServer} {...metadata} />
+            <DownloadFilesList files={torrentFiles} />
           ) : null}
         </div>
       )}

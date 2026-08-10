@@ -1,5 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import {
+  batchDeleteDownloadsDto,
   deleteDownloadQueryDto,
   downloadMediaIdParamDto,
   downloadTorrentDto,
@@ -114,6 +115,11 @@ export const downloadRoutes = DownloadService.createRouter()
       return c.json(await c.var.service.reassignMedia(getDownloadId(c), c.req.valid("json").mediaId));
     },
   )
+  .post("/batch-delete", requireRole("member"), zValidator("json", batchDeleteDownloadsDto), async (c) => {
+    const { ids, dbOnly } = c.req.valid("json");
+    const results = await c.var.service.batchDelete(ids, { dbOnly });
+    return c.json(results);
+  })
   .delete(
     "/:id",
     requireRole("member"),

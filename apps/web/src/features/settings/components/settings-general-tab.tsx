@@ -2,29 +2,127 @@ import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
-import { FileIcon, KeyIcon, Loader2Icon, SaveIcon } from "lucide-react";
+import {
+  EyeIcon,
+  FileIcon,
+  GlobeIcon,
+  KeyIcon,
+  MoonIcon,
+  PaletteIcon,
+  SaveIcon,
+  StarIcon,
+  SunIcon,
+} from "lucide-react";
 
+import { SelectI18nLang } from "@/shared/components/select/select-i18n-lang";
 import { SelectQuality } from "@/shared/components/select/select-quality";
+import { useTheme } from "@/shared/hooks/use-theme";
 import { Button } from "@/shared/ui/button";
+import { Checkbox } from "@/shared/ui/checkbox";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 
+import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";
 import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
+import { PasswordChangeModal } from "@/features/user/components/password-change-modal";
+import { useUpdateProfile } from "@/features/user/hooks/user.queries";
 import { settingsQueries, useUpsertSettings } from "../hooks/settings.queries";
 
 export function SettingsGeneralTab() {
-  const { isAdmin } = useRole();
+  const { isAdmin, isOwner } = useRole();
   const quality = useUserPreferences((s) => s.quality);
   const maxSize = useUserPreferences((s) => s.maxSize);
   const setQuality = useUserPreferences((s) => s.setQuality);
   const setMaxSize = useUserPreferences((s) => s.setMaxSize);
+  const { theme, toggleTheme } = useTheme();
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const currentUser = useAuth((s) => s.user);
+  const updateProfile = useUpdateProfile();
 
   return (
     <section className="space-y-6">
       <h2>
         <Trans>General</Trans>
       </h2>
+
+      <div className="flex flex-col gap-4 border rounded-md p-4">
+        <h3 className="flex items-center gap-3">
+          <PaletteIcon className="size-4" />
+          <Trans>Appearance</Trans>
+        </h3>
+        <div className="flex items-center justify-between gap-4">
+          <div className="space-y-1">
+            <Label>
+              <Trans>Language</Trans>
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              <Trans>Interface language for Seedarr.</Trans>
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <GlobeIcon className="size-4 text-muted-foreground" />
+            <SelectI18nLang />
+          </div>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <div className="space-y-1">
+            <Label>
+              <Trans>Theme</Trans>
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              <Trans>Switch between light and dark mode.</Trans>
+            </p>
+          </div>
+          <Button variant="secondary" onClick={toggleTheme}>
+            {theme === "dark" ? <SunIcon className="size-4" /> : <MoonIcon className="size-4" />}
+            {theme === "dark" ? <Trans>Light mode</Trans> : <Trans>Dark mode</Trans>}
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-4 border rounded-md p-4">
+        <h3 className="flex items-center gap-3">
+          <KeyIcon className="size-4" />
+          <Trans>Password</Trans>
+        </h3>
+        <Button variant="secondary" onClick={() => setPasswordOpen(true)}>
+          <Trans>Change Password</Trans>
+        </Button>
+      </div>
+
+      {currentUser && (
+        <div className="flex flex-col gap-4 border rounded-md p-4">
+          <h3 className="flex items-center gap-3">
+            <EyeIcon className="size-4" />
+            <Trans>Profile visibility</Trans>
+          </h3>
+          <PrivacyToggle
+            id="show-watch-list"
+            label={<Trans>Show watch list</Trans>}
+            description={<Trans>Allow others to see your watch list on your profile.</Trans>}
+            checked={currentUser.showWatchList ?? true}
+            disabled={updateProfile.isPending}
+            onCheckedChange={(checked) => updateProfile.mutate({ showWatchList: checked })}
+          />
+          <PrivacyToggle
+            id="show-likes"
+            label={<Trans>Show liked</Trans>}
+            description={<Trans>Allow others to see titles you liked.</Trans>}
+            checked={currentUser.showLikes ?? true}
+            disabled={updateProfile.isPending}
+            onCheckedChange={(checked) => updateProfile.mutate({ showLikes: checked })}
+          />
+          <PrivacyToggle
+            id="show-history"
+            label={<Trans>Show watch history</Trans>}
+            description={<Trans>Allow others to see your watch history.</Trans>}
+            checked={currentUser.showWatchHistory ?? false}
+            disabled={updateProfile.isPending}
+            onCheckedChange={(checked) => updateProfile.mutate({ showWatchHistory: checked })}
+          />
+        </div>
+      )}
 
       <div className="flex flex-col gap-4 border rounded-md p-4">
         <h3 className="flex items-center gap-3">
@@ -71,8 +169,75 @@ export function SettingsGeneralTab() {
         </div>
       </div>
 
+      {isOwner && <ShowMediaRatingsSection />}
       {isAdmin && <TmdbApiKeySection />}
+
+      <PasswordChangeModal open={passwordOpen} onOpenChange={setPasswordOpen} />
     </section>
+  );
+}
+
+function PrivacyToggle({
+  id,
+  label,
+  description,
+  checked,
+  disabled,
+  onCheckedChange,
+}: {
+  id: string;
+  label: React.ReactNode;
+  description: React.ReactNode;
+  checked: boolean;
+  disabled?: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <div className="space-y-1">
+        <Label htmlFor={id}>{label}</Label>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+      <Checkbox
+        id={id}
+        checked={checked}
+        disabled={disabled}
+        onCheckedChange={(v: boolean | "indeterminate") => onCheckedChange(v === true)}
+      />
+    </div>
+  );
+}
+
+function ShowMediaRatingsSection() {
+  const { data: settings } = useQuery(settingsQueries.get());
+  const upsertSettings = useUpsertSettings();
+  const checked = settings?.showMediaRatings ?? false;
+
+  return (
+    <div className="flex flex-col gap-4 border rounded-md p-4">
+      <h3 className="flex items-center gap-3">
+        <StarIcon className="size-4" />
+        <Trans>Catalog</Trans>
+      </h3>
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-1">
+          <Label htmlFor="show-media-ratings">
+            <Trans>Show ratings on posters</Trans>
+          </Label>
+          <p className="text-sm text-muted-foreground">
+            <Trans>Display TMDB scores on movie and TV cards in the catalog.</Trans>
+          </p>
+        </div>
+        <Checkbox
+          id="show-media-ratings"
+          checked={checked}
+          disabled={upsertSettings.isPending}
+          onCheckedChange={(v: boolean | "indeterminate") => {
+            upsertSettings.mutate({ showMediaRatings: v === true });
+          }}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -116,12 +281,7 @@ function TmdbApiKeySection() {
               setTouched(true);
             }}
           />
-          <Button size="sm" disabled={!touched || upsertSettings.isPending} onClick={handleSave}>
-            {upsertSettings.isPending ? (
-              <Loader2Icon className="size-4 animate-spin" />
-            ) : (
-              <SaveIcon className="size-4" />
-            )}
+          <Button size="sm" disabled={!touched} loading={upsertSettings.isPending} onClick={handleSave} icon={SaveIcon}>
             <Trans>Save</Trans>
           </Button>
         </div>

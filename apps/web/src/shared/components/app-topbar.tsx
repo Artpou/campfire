@@ -73,9 +73,9 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
                       variant="ghost"
                       asChild
                       className={cn("font-medium", isActive && "text-foreground bg-accent")}
+                      icon={item.icon}
                     >
                       <Link to={item.url} search={{}}>
-                        <item.icon className="size-4" />
                         <Trans id={item.title.id} />
                       </Link>
                     </Button>
@@ -87,9 +87,9 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
                     variant="ghost"
                     asChild
                     className={cn("font-medium", isProfileActive && "text-foreground bg-accent")}
+                    icon={UserIcon}
                   >
                     <Link to="/user/$id" params={{ id: currentUser.id }}>
-                      <UserIcon className="size-4" />
                       <Trans id={PROFILE_LINK.id} />
                     </Link>
                   </Button>
@@ -104,23 +104,20 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
                 className="sm:hidden"
                 onClick={() => navigate({ to: "/search", search: { q: "", type: "all" } })}
                 aria-label={t`Search`}
-              >
-                <SearchIcon className="size-5" />
-              </Button>
+                icon={SearchIcon}
+              />
               <Button
                 variant="outline"
                 className="hidden sm:flex bg-card relative w-full max-w-xs h-9 justify-start px-3 font-normal text-muted-foreground"
                 onClick={() => navigate({ to: "/search", search: { q: "", type: "all" } })}
                 aria-label={t`Search`}
+                icon={SearchIcon}
               >
-                <SearchIcon className="size-4 mr-2 shrink-0" />
                 {t`Search...`}
               </Button>
 
-              <Button variant="ghost" size="icon" asChild aria-label={t`Settings`}>
-                <Link to="/settings" search={{}}>
-                  <SettingsIcon className="size-5" />
-                </Link>
+              <Button variant="ghost" size="icon" asChild aria-label={t`Settings`} icon={SettingsIcon}>
+                <Link to="/settings" search={{}} />
               </Button>
             </div>
           </>

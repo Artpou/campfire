@@ -2,7 +2,6 @@ import { useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { Download } from "@seedarr/sdk";
-import { formatBytes } from "@seedarr/shared";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRightLeftIcon, Trash2Icon } from "lucide-react";
 
@@ -68,9 +67,6 @@ function ServerEntry({ download, mediaType }: { download: Download; mediaType?: 
     );
   };
 
-  const metadata = { origin: download.origin, quality: download.quality, language: download.language };
-  const totalSize = remoteFiles?.reduce((acc, f) => acc + f.length, 0) ?? 0;
-
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3">
@@ -84,24 +80,26 @@ function ServerEntry({ download, mediaType }: { download: Download; mediaType?: 
             <p className="text-xs text-muted-foreground font-mono truncate mt-0.5">{download.remoteLocation}</p>
           )}
           <div className="flex items-center gap-2 mt-1 flex-wrap">
-            <DownloadMetadata {...metadata} />
-            {totalSize > 0 && <span className="text-xs text-muted-foreground">{formatBytes(totalSize)}</span>}
+            <DownloadMetadata download={download} />
           </div>
         </div>
 
         <div className="flex items-center gap-1">
-          <Button size="sm" variant="secondary" onClick={() => setShowChangeMedia(true)} aria-label={t`Change media`}>
-            <ArrowRightLeftIcon className="size-3.5" />
-          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => setShowChangeMedia(true)}
+            aria-label={t`Change media`}
+            icon={ArrowRightLeftIcon}
+          />
           <Button
             size="sm"
             variant="destructive"
             onClick={() => setShowDeleteConfirm(true)}
             disabled={deleteDownload.isPending}
             aria-label={t`Delete`}
-          >
-            <Trash2Icon className="size-3.5" />
-          </Button>
+            icon={Trash2Icon}
+          />
         </div>
       </div>
 
@@ -110,7 +108,7 @@ function ServerEntry({ download, mediaType }: { download: Download; mediaType?: 
           <Trans>Loading remote files…</Trans>
         </p>
       ) : remoteFiles && remoteFiles.length > 0 ? (
-        <DownloadFilesList files={remoteFiles} {...metadata} />
+        <DownloadFilesList files={remoteFiles} />
       ) : null}
 
       <div className="border-b border-border/50" />

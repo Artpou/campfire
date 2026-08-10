@@ -3,6 +3,9 @@
   "ignore": ["scripts/*"],
   "ignoreDependencies": ["@lingui/swc-plugin"],
   "tags": ["-lintignore"],
+  "rules": {
+    "types": "warn"
+  },
   "workspaces": {
     ".": {},
     "apps/web": {

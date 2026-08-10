@@ -74,7 +74,7 @@ export class DownloadService extends IdentifiableService<Download> {
     let peers = 0;
 
     for (const dl of downloads) {
-      totalSize += dl.torrent?.length ?? 0;
+      totalSize += dl.size ?? dl.torrent?.length ?? 0;
       if (dl.torrent && !dl.torrent.done && !dl.torrent.paused) {
         downloadSpeed += dl.torrent.downloadSpeed ?? 0;
         uploadSpeed += dl.torrent.uploadSpeed ?? 0;
@@ -116,6 +116,7 @@ export class DownloadService extends IdentifiableService<Download> {
           ...downloadInput,
           userId: this.user.id,
           mediaId: newMedia.id,
+          size: liveData.length || null,
           torrent: liveData,
         })
         .returning();
@@ -217,6 +218,32 @@ export class DownloadService extends IdentifiableService<Download> {
     });
 
     return { success: true };
+  }
+
+  async batchDelete(ids: string[], options?: { dbOnly?: boolean }): Promise<{ deleted: number; skipped: number }> {
+    const rows = await db.query.download.findMany({
+      where: inArray(download.id, ids),
+      columns: { id: true, userId: true },
+    });
+
+    let deleted = 0;
+    let skipped = 0;
+
+    for (const row of rows) {
+      const canDelete = row.userId === this.user.id || this.roleLevel >= ROLE_LEVELS.admin;
+      if (!canDelete) {
+        skipped++;
+        continue;
+      }
+      try {
+        await this.delete(row.id, { dbOnly: options?.dbOnly, scope: "all" });
+        deleted++;
+      } catch {
+        skipped++;
+      }
+    }
+
+    return { deleted, skipped };
   }
 
   async delete(

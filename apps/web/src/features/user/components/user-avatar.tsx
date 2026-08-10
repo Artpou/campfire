@@ -19,7 +19,7 @@ interface UserAvatarProps {
   className?: string;
 }
 
-export function getAvatarUrl(userId: string, avatarPath: string | null | undefined): string | null {
+function getAvatarUrl(userId: string, avatarPath: string | null | undefined): string | null {
   if (!avatarPath) return null;
   return `/avatars/${userId}?v=${encodeURIComponent(avatarPath)}`;
 }

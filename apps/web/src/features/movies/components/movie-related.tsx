@@ -27,6 +27,7 @@ export function MovieRelated({ collection, collectionMedia, recommendedMovies }:
             </span>
           }
           data={collectionMedia}
+          hideType
         />
       )}
       {hasRecommendations && (
@@ -38,6 +39,7 @@ export function MovieRelated({ collection, collectionMedia, recommendedMovies }:
             </span>
           }
           data={recommendedMovies}
+          hideType
         />
       )}
     </>

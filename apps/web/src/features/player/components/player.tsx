@@ -57,12 +57,19 @@ export function Player({
   onAddSubtitlesRef.current = onAddSubtitles;
 
   const [isEngineLoading, setIsEngineLoading] = useState(true);
+  const [_remountKey, setRemountKey] = useState(0);
+  const hasRetriedRef = useRef(false);
 
   const tracksKey = useMemo(
     () => JSON.stringify(tracks.map((t) => [t.src, t.label, t.srclang, t.default, t.format])),
     [tracks],
   );
   const resumeAt = Number.isFinite(startAt) && startAt >= 1 ? Math.floor(startAt) : 0;
+
+  useEffect(() => {
+    hasRetriedRef.current = false;
+    setRemountKey(0);
+  }, []);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -79,6 +86,14 @@ export function Player({
       if (cancelled) return;
       const detail = errorDetail(event);
       console.error("[movi-player] error", detail);
+
+      // Transient decode/open failures (e.g. stream not ready yet) — remount once.
+      if (!hasRetriedRef.current) {
+        hasRetriedRef.current = true;
+        setRemountKey((k) => k + 1);
+        return;
+      }
+
       onErrorRef.current?.(detail);
     };
 

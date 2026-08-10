@@ -18,6 +18,9 @@ export const user = sqliteTable(
     pseudo: text("pseudo"),
     avatarPath: text("avatar_path"),
     role: text("role", { enum: userRoleEnum }).notNull().default("viewer"),
+    showWatchList: integer("show_watch_list", { mode: "boolean" }).notNull().default(true),
+    showLikes: integer("show_likes", { mode: "boolean" }).notNull().default(true),
+    showWatchHistory: integer("show_watch_history", { mode: "boolean" }).notNull().default(false),
     createdAt: integer("createdAt", { mode: "timestamp" })
       .notNull()
       .$defaultFn(() => new Date()),

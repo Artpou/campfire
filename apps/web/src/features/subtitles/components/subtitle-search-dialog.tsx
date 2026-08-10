@@ -212,8 +212,8 @@ function SubtitleRow({
             mediaTitle,
           })
         }
+        icon={DownloadIcon}
       >
-        <DownloadIcon className="size-4" />
         {isDownloading ? <Trans>Adding…</Trans> : <Trans>Add</Trans>}
       </Button>
     </li>

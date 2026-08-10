@@ -1,8 +1,9 @@
-import type * as React from "react";
+import { Children, cloneElement, isValidElement, type ReactElement } from "react";
 
 import { Slot } from "@radix-ui/react-slot";
 import { Link } from "@tanstack/react-router";
 import { cva, type VariantProps } from "class-variance-authority";
+import { Loader2Icon, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { TooltipWrapper } from "@/shared/ui/tooltip-wrapper";
@@ -43,7 +44,17 @@ export type ButtonProps = React.ComponentProps<"button"> &
     to?: React.ComponentProps<typeof Link>["to"];
     tooltip?: React.ReactNode;
     rounded?: boolean;
+    /** Lucide icon rendered before children; size follows the button size variant via CSS. */
+    icon?: LucideIcon;
+    /** When true, shows a spinner and disables the button. */
+    loading?: boolean;
   };
+
+function renderIcon(Icon: LucideIcon | undefined, loading: boolean) {
+  if (loading) return <Loader2Icon className="animate-spin" />;
+  if (Icon) return <Icon />;
+  return null;
+}
 
 function Button({
   className,
@@ -54,29 +65,58 @@ function Button({
   to,
   tooltip,
   rounded = false,
+  icon: Icon,
+  loading = false,
+  disabled,
   ...props
 }: ButtonProps) {
   const Comp = asChild ? Slot : "button";
+  const isDisabled = disabled || loading;
+  const classNames = cn(buttonVariants({ variant, size, className }), rounded && "rounded-full");
 
-  const button = to ? (
+  let body: React.ReactNode;
+
+  if (asChild) {
+    const child = Children.only(children);
+    if (!isValidElement(child)) {
+      throw new Error("Button asChild expects a single React element child");
+    }
+    const element = child as ReactElement<{ children?: React.ReactNode }>;
+    body = cloneElement(
+      element,
+      undefined,
+      <>
+        {renderIcon(Icon, loading)}
+        {element.props.children}
+      </>,
+    );
+  } else if (to) {
+    body = (
+      <Link to={to}>
+        {renderIcon(Icon, loading)}
+        {children}
+      </Link>
+    );
+  } else {
+    body = (
+      <>
+        {renderIcon(Icon, loading)}
+        {children}
+      </>
+    );
+  }
+
+  const button = (
     <Comp
       data-slot="button"
       data-variant={variant}
       data-size={size}
-      className={cn(buttonVariants({ variant, size, className }), rounded && "rounded-full")}
+      className={classNames}
+      disabled={asChild ? undefined : isDisabled}
+      aria-disabled={asChild && isDisabled ? true : undefined}
       {...props}
     >
-      <Link to={to}>{children}</Link>
-    </Comp>
-  ) : (
-    <Comp
-      data-slot="button"
-      data-variant={variant}
-      data-size={size}
-      className={cn(buttonVariants({ variant, size, className }), rounded && "rounded-full")}
-      {...props}
-    >
-      {children}
+      {body}
     </Comp>
   );
 

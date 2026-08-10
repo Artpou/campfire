@@ -18,9 +18,10 @@ interface DialogDeleteProps {
   title: React.ReactNode;
   description: React.ReactNode;
   disabled?: boolean;
+  extra?: React.ReactNode;
 }
 
-export function DialogDelete({ open, setOpen, validate, title, description, disabled }: DialogDeleteProps) {
+export function DialogDelete({ open, setOpen, validate, title, description, disabled, extra }: DialogDeleteProps) {
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogContent>
@@ -28,6 +29,7 @@ export function DialogDelete({ open, setOpen, validate, title, description, disa
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
+        {extra}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={disabled}>
             <Trans>Cancel</Trans>

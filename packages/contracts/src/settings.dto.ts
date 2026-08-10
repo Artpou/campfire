@@ -4,6 +4,7 @@ import { mediaTypeEnum } from "./enums";
 
 export const upsertSettingsDto = z.object({
   tmdbApiKey: z.string().max(256).optional(),
+  showMediaRatings: z.boolean().optional(),
 });
 export type UpsertSettingsInput = z.infer<typeof upsertSettingsDto>;
 

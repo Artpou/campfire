@@ -32,8 +32,7 @@ export function MediaButtonTrailer({ title, data }: MediaButtonTrailerProps) {
   return (
     <Dialog>
       <DialogTrigger className="cursor-pointer" asChild>
-        <Button variant="secondary" className="w-full">
-          <FilmIcon className="size-3" />
+        <Button variant="secondary" className="w-full" icon={FilmIcon}>
           <Trans>Watch Trailer</Trans>
         </Button>
       </DialogTrigger>

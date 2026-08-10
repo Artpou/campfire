@@ -2,11 +2,11 @@ import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+export interface ImgProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   fallback?: React.ReactNode;
 }
 
-export function Img({ fallback, className, src, ...props }: ImageWithFallbackProps) {
+export function Img({ fallback, className, src, ...props }: ImgProps) {
   const [error, setError] = useState(false);
 
   if (error || !src || src === "") {

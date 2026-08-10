@@ -81,8 +81,8 @@ export function SettingsActivityTab() {
                           e.stopPropagation();
                           setSelectedLog(log);
                         }}
+                        icon={InfoIcon}
                       >
-                        <InfoIcon className="size-4" />
                         <Trans>Details</Trans>
                       </Button>
                     </div>

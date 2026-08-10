@@ -142,9 +142,8 @@ export function TorrentIndexersTable({ sources, indexerStats, onVisibilityChange
           </TableBody>
         </Table>
       </div>
-      <Button asChild variant="outline" className="w-full">
+      <Button asChild variant="outline" className="w-full" icon={SettingsIcon}>
         <Link to="/settings">
-          <SettingsIcon className="size-4" />
           <Trans>Configure indexers</Trans>
         </Link>
       </Button>

@@ -15,6 +15,7 @@ import { Skeleton } from "@/shared/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { useRole } from "@/features/auth/hooks/use-role";
+import { DownloadDeleteButton } from "@/features/downloads/components/download-delete-button";
 import { getDownloadStatus } from "@/features/downloads/helpers/downloads.helper";
 import { useDownloadDelete } from "@/features/downloads/hooks/download.queries";
 import { MediaButtonPlay } from "@/features/media/components/button/media-button-play";
@@ -145,8 +146,10 @@ export function TvEpisodesSection({ tv, media, downloads }: TvEpisodesSectionPro
                       <MediaButtonPlay media={media} />
                     )}
 
+                    {media && episodeDownload && <DownloadDeleteButton media={media} download={episodeDownload} />}
+
                     {role !== "viewer" && !hasDownload && (
-                      <Button size="sm" className="w-full" asChild>
+                      <Button size="sm" className="w-full" asChild icon={MagnetIcon}>
                         <Link
                           to="/tv/$id/torrents"
                           params={{ id: tv.id.toString() }}
@@ -155,7 +158,6 @@ export function TvEpisodesSection({ tv, media, downloads }: TvEpisodesSectionPro
                             episode: episode.episode_number,
                           }}
                         >
-                          <MagnetIcon className="size-3 mr-1" />
                           <Trans>Torrents</Trans>
                         </Link>
                       </Button>

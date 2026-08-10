@@ -47,8 +47,7 @@ export function SettingsUsersTab() {
           </p>
         </div>
         {isAdmin && (
-          <Button onClick={handleCreateUser}>
-            <UserPlusIcon className="size-4" />
+          <Button onClick={handleCreateUser} icon={UserPlusIcon}>
             <Trans>Create User</Trans>
           </Button>
         )}

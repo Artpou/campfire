@@ -103,7 +103,7 @@ export function TvInfo({ tv }: TvInfoProps) {
       )}
 
       <div className="flex items-center gap-4">
-        <MediaRating media={tv} size={52} strokeWidth={5} />
+        <MediaRating media={tv} />
         <MediaWatchProviders watchProviders={tv["watch/providers"]} mediaName={tv.name ?? ""} />
       </div>
     </div>
