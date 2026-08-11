@@ -33,7 +33,7 @@ export const torrentTableFeatures = tableFeatures({
   sortFns: { alphanumeric: sortFn_alphanumeric, text: sortFn_text },
 });
 
-export type TorrentTableFeatures = typeof torrentTableFeatures;
+type TorrentTableFeatures = typeof torrentTableFeatures;
 
 const columnHelper = createColumnHelper<TorrentTableFeatures, TorrentWithMeta>();
 

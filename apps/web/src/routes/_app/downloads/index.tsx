@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
 import { hasMinRole } from "@seedarr/contracts";
@@ -6,6 +6,7 @@ import type { Media } from "@seedarr/sdk";
 import { formatBytes } from "@seedarr/shared";
 import { useQuery, useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useIntersectionObserver } from "@uidotdev/usehooks";
 import { ArrowDownIcon, ArrowUpIcon, RefreshCwIcon } from "lucide-react";
 import { toast } from "sonner";
 
@@ -14,8 +15,8 @@ import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
 import { Input } from "@/shared/ui/input";
 
+import { DownloadTable } from "@/features/downloads/components/download-table";
 import { ManualSyncWizard } from "@/features/downloads/components/manual-sync-wizard";
-import { MediaTable } from "@/features/downloads/components/media-table";
 import { downloadQueries } from "@/features/downloads/hooks/download.queries";
 import { MediaCard } from "@/features/media/components/card/media-card";
 import { MediaTypeTabs } from "@/features/media/components/tabs/media-tabs-type";
@@ -49,11 +50,15 @@ function DownloadsPage() {
   const [search, setSearch] = useState("");
   const viewMode = useUserPreferences((s) => s.viewMode);
 
-  const { data } = useSuspenseInfiniteQuery({
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery({
     ...mediaQueries.list({ filter: "downloaded", type }),
     refetchInterval: refetchMediaInterval,
   });
   const results = data?.pages.flatMap((page) => page.results) ?? [];
+
+  const handleLoadMore = () => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+  };
 
   const { data: stats } = useQuery({
     ...downloadQueries.stats(),
@@ -78,14 +83,6 @@ function DownloadsPage() {
   return (
     <Container>
       <div className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <MediaTabsViewMode />
-            <MediaTypeTabs value={type} />
-          </div>
-          <SyncButton />
-        </div>
-
         {stats && (
           <div className="flex items-center gap-6 flex-wrap">
             <div className="flex items-center gap-2">
@@ -118,6 +115,14 @@ function DownloadsPage() {
           </div>
         )}
 
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <MediaTabsViewMode />
+            <MediaTypeTabs value={type} />
+          </div>
+          <SyncButton />
+        </div>
+
         <Input
           type="text"
           h="lg"
@@ -130,14 +135,9 @@ function DownloadsPage() {
 
         {filteredResults.length > 0 ? (
           viewMode === "grid" ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-6 gap-4">
-              {filteredResults.map((media) => {
-                if (!media.download) return null;
-                return <MediaCard key={media.download.id} media={media} withDownload />;
-              })}
-            </div>
+            <DownloadsGrid media={filteredResults} isLoading={isFetchingNextPage} onLoadMore={handleLoadMore} />
           ) : (
-            <MediaTable media={filteredResults} />
+            <DownloadTable media={filteredResults} isLoadingMore={isFetchingNextPage} onLoadMore={handleLoadMore} />
           )
         ) : (
           <Card>
@@ -150,6 +150,38 @@ function DownloadsPage() {
         )}
       </div>
     </Container>
+  );
+}
+
+function DownloadsGrid({
+  media,
+  isLoading,
+  onLoadMore,
+}: {
+  media: Media[];
+  isLoading: boolean;
+  onLoadMore: () => void;
+}) {
+  const [sentinelRef, entry] = useIntersectionObserver({ threshold: 1 });
+  const onLoadMoreRef = useRef(onLoadMore);
+  onLoadMoreRef.current = onLoadMore;
+
+  useEffect(() => {
+    if (entry?.isIntersecting && !isLoading && onLoadMoreRef.current) {
+      onLoadMoreRef.current();
+    }
+  }, [entry?.isIntersecting, isLoading]);
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-6 gap-4">
+        {media.map((item) => {
+          if (!item.download) return null;
+          return <MediaCard key={item.download.id} media={item} withDownload />;
+        })}
+      </div>
+      <div ref={sentinelRef} className="h-4" aria-hidden />
+    </div>
   );
 }
 

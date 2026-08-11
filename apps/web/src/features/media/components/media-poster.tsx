@@ -67,10 +67,10 @@ export function MediaPoster({ data, download }: MediaPosterProps) {
         </div>
       </div>
 
-      {canDownload && <MediaDownloadButton media={media} videoFile={videoFile} />}
+      {canDownload && <MediaDownloadButton media={media} videoFile={videoFile} className="w-full" />}
 
-      {!download && <MediaButtonTrailer title={displayTitle} data={data} />}
-      {!download && role !== "viewer" && <MediaButtonTorrent media={media} />}
+      {!download && <MediaButtonTrailer title={displayTitle} data={data} className="w-full" />}
+      {!download && role !== "viewer" && <MediaButtonTorrent media={media} className="w-full" />}
       {!download && role === "viewer" && <MediaButtonRequest media={media} className="w-full" />}
 
       <div className="flex flex-col w-full gap-2">

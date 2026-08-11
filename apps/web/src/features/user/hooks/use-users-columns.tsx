@@ -23,7 +23,7 @@ export const usersTableFeatures = tableFeatures({
   sortFns: { alphanumeric: sortFn_alphanumeric, text: sortFn_text },
 });
 
-export type UsersTableFeatures = typeof usersTableFeatures;
+type UsersTableFeatures = typeof usersTableFeatures;
 
 const columnHelper = createColumnHelper<UsersTableFeatures, User>();
 

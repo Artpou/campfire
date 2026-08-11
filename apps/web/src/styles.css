@@ -48,6 +48,7 @@ code {
   --color-blue: var(--blue);
   --color-purple: var(--purple);
   --color-red: var(--red);
+  --color-yellow: var(--yellow);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -93,6 +94,7 @@ code {
   --red: oklch(0.62 0.18 25);
   --purple: oklch(0.6 0.15 275);
   --blue: oklch(0.65 0.13 210);
+  --yellow: oklch(82.8% 0.189 84.429);
 }
 
 .light {

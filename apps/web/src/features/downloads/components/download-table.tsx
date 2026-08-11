@@ -1,9 +1,10 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
 import { useNavigate } from "@tanstack/react-router";
 import { type RowSelectionState, type SortingState, useTable } from "@tanstack/react-table";
+import { useIntersectionObserver } from "@uidotdev/usehooks";
 import { Trash2Icon } from "lucide-react";
 
 import { DialogDelete } from "@/shared/components/dialog/dialog-delete";
@@ -16,16 +17,18 @@ import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";
 import { useBatchDeleteDownloads } from "@/features/downloads/hooks/download.queries";
 import {
+  downloadTableFeatures,
   type MediaWithDownload,
-  mediaTableFeatures,
-  useMediaTableColumns,
-} from "@/features/downloads/hooks/use-media-table-columns";
+  useDownloadTableColumns,
+} from "@/features/downloads/hooks/use-download-table-columns";
 
-interface MediaTableProps {
+interface DownloadTableProps {
   media: Media[];
+  onLoadMore?: () => void;
+  isLoadingMore?: boolean;
 }
 
-export function MediaTable({ media }: MediaTableProps) {
+export function DownloadTable({ media, onLoadMore, isLoadingMore }: DownloadTableProps) {
   const navigate = useNavigate();
   const { isAdmin } = useRole();
   const currentUser = useAuth((s) => s.user);
@@ -55,10 +58,20 @@ export function MediaTable({ media }: MediaTableProps) {
     setDeleteDialogOpen(true);
   }, []);
 
-  const columns = useMediaTableColumns({ canDelete, onPlay, onDelete });
+  const columns = useDownloadTableColumns({ canDelete, onPlay, onDelete });
+
+  const [sentinelRef, entry] = useIntersectionObserver({ threshold: 1 });
+  const onLoadMoreRef = useRef(onLoadMore);
+  onLoadMoreRef.current = onLoadMore;
+
+  useEffect(() => {
+    if (entry?.isIntersecting && !isLoadingMore && onLoadMoreRef.current) {
+      onLoadMoreRef.current();
+    }
+  }, [entry?.isIntersecting, isLoadingMore]);
 
   const table = useTable({
-    features: mediaTableFeatures,
+    features: downloadTableFeatures,
     data: items,
     columns,
     getRowId: (row) => row.download.id,
@@ -84,7 +97,7 @@ export function MediaTable({ media }: MediaTableProps) {
   };
 
   return (
-    <>
+    <div className="space-y-2">
       {someSelected && (
         <div className="flex items-center gap-3 rounded-md border bg-muted/50 px-4 py-2 mb-2">
           <span className="text-sm font-medium">
@@ -101,6 +114,8 @@ export function MediaTable({ media }: MediaTableProps) {
         empty={<Trans>No downloads</Trans>}
         onRowClick={(row) => navigate({ to: "/downloads/$id", params: { id: row.original.download.id } })}
       />
+
+      {onLoadMore && <div ref={sentinelRef} className="h-4" aria-hidden />}
 
       <DialogDelete
         open={deleteDialogOpen}
@@ -132,6 +147,6 @@ export function MediaTable({ media }: MediaTableProps) {
           </div>
         }
       />
-    </>
+    </div>
   );
 }

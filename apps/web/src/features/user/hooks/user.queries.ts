@@ -86,3 +86,79 @@ export function useUploadAvatar() {
     },
   });
 }
+
+export function useSyncLetterboxd() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`${getBaseUrl()}/users/me/letterboxd/sync`, {
+        method: "POST",
+        credentials: "include",
+        signal: AbortSignal.timeout(10 * 60 * 1000),
+      });
+      if (!res.ok) {
+        let message = `API Error: ${res.status}`;
+        try {
+          const body = (await res.json()) as { error?: string };
+          if (body?.error) message = body.error;
+        } catch {
+          // ignore
+        }
+        throw new Error(message);
+      }
+      return res.json() as Promise<{ synced: number; skipped: number; errors: number }>;
+    },
+    onSuccess: (data) => {
+      invalidateUserQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: ["media"] });
+      toast.success(t`Letterboxd synchronized`, {
+        description: t`${data.synced} imported · ${data.skipped} skipped · ${data.errors} errors`,
+      });
+    },
+    onError: (error) => {
+      toast.error(t`Letterboxd sync failed`, { description: formatError(error) });
+    },
+  });
+}
+
+export function useImportLetterboxd() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`${getBaseUrl()}/users/me/letterboxd/import`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+        signal: AbortSignal.timeout(10 * 60 * 1000),
+      });
+      if (!res.ok) {
+        let message = `API Error: ${res.status}`;
+        try {
+          const body = (await res.json()) as { error?: string };
+          if (body?.error) message = body.error;
+        } catch {
+          // ignore
+        }
+        throw new Error(message);
+      }
+      return res.json() as Promise<{ synced: number; skipped: number; errors: number }>;
+    },
+    onSuccess: async (data) => {
+      invalidateUserQueries(queryClient);
+      queryClient.invalidateQueries({ queryKey: ["media"] });
+      const current = useAuth.getState().user;
+      if (current) {
+        const profile = await queryClient.fetchQuery(userQueries.details(current.id));
+        useAuth.getState().setUser({ ...current, letterboxdUsername: profile.letterboxdUsername });
+      }
+      toast.success(t`Letterboxd imported`, {
+        description: t`${data.synced} imported · ${data.skipped} skipped · ${data.errors} errors`,
+      });
+    },
+    onError: (error) => {
+      toast.error(t`Letterboxd import failed`, { description: formatError(error) });
+    },
+  });
+}

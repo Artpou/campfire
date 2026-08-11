@@ -60,6 +60,28 @@ export const userWatchList = sqliteTable(
   (table) => [primaryKey({ columns: [table.userId, table.mediaId] })],
 );
 
+/** User rating (0–10) + optional comment — Letterboxd-compatible scale. */
+export const userReviews = sqliteTable(
+  "userReviews",
+  {
+    userId: text("userId")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    mediaId: integer("mediaId")
+      .notNull()
+      .references(() => media.id, { onDelete: "cascade" }),
+    score: real("score").notNull(),
+    comment: text("comment"),
+    createdAt: integer("createdAt", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer("updatedAt", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.mediaId] })],
+);
+
 export const watchProgress = sqliteTable(
   "watchProgress",
   {
@@ -85,6 +107,7 @@ export const watchProgress = sqliteTable(
 export const mediaRelations = relations(media, ({ many }) => ({
   likes: many(userLikes),
   watchList: many(userWatchList),
+  reviews: many(userReviews),
   downloads: many(download),
   progress: many(watchProgress),
 }));
@@ -95,6 +118,10 @@ export const userLikesRelations = relations(userLikes, ({ one }) => ({
 
 export const userWatchListRelations = relations(userWatchList, ({ one }) => ({
   media: one(media, { fields: [userWatchList.mediaId], references: [media.id] }),
+}));
+
+export const userReviewsRelations = relations(userReviews, ({ one }) => ({
+  media: one(media, { fields: [userReviews.mediaId], references: [media.id] }),
 }));
 
 export const watchProgressRelations = relations(watchProgress, ({ one }) => ({

@@ -4,8 +4,12 @@ export const toPaginationQuery = <T extends Record<string, unknown>>(
   query: T,
   options: { pageParam?: number; limit?: number },
 ) => {
-  return toApiQuery(query, {
-    page: options.pageParam?.toString() ?? "1",
-    limit: options.limit?.toString() ?? "20",
-  });
+  const limitValue = options.limit ?? query.limit ?? 20;
+  return toApiQuery(
+    { ...query, page: undefined, limit: undefined },
+    {
+      page: options.pageParam?.toString() ?? "1",
+      limit: String(limitValue),
+    },
+  );
 };

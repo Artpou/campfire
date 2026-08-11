@@ -4,15 +4,16 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import type { Movie, TV } from "@seedarr/sdk";
 import { FilmIcon } from "lucide-react";
 
-import { Button } from "@/shared/ui/button";
+import { cn } from "@/lib/utils";
+import { Button, type ButtonProps } from "@/shared/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/shared/ui/dialog";
 
-interface MediaButtonTrailerProps {
+interface MediaButtonTrailerProps extends Omit<ButtonProps, "onClick"> {
   title: string;
   data: Movie | TV;
 }
 
-export function MediaButtonTrailer({ title, data }: MediaButtonTrailerProps) {
+export function MediaButtonTrailer({ title, data, className, ...props }: MediaButtonTrailerProps) {
   const item = "movie" in data ? data.movie : data.tv;
   const { i18n } = useLingui();
 
@@ -32,7 +33,7 @@ export function MediaButtonTrailer({ title, data }: MediaButtonTrailerProps) {
   return (
     <Dialog>
       <DialogTrigger className="cursor-pointer" asChild>
-        <Button variant="secondary" className="w-full" icon={FilmIcon}>
+        <Button variant="secondary" className={cn(className)} icon={FilmIcon} {...props}>
           <Trans>Watch Trailer</Trans>
         </Button>
       </DialogTrigger>

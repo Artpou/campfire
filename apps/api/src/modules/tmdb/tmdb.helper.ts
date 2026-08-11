@@ -57,6 +57,9 @@ function toMedia(
     imdbId: item.imdb_id ?? item.external_ids?.imdb_id ?? "",
     liked: false,
     inWatchList: false,
+    userScore: null,
+    userComment: null,
+    userReviewAt: null,
   };
 }
 

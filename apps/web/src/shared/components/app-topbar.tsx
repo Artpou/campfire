@@ -101,20 +101,10 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="sm:hidden"
                 onClick={() => navigate({ to: "/search", search: { q: "", type: "all" } })}
                 aria-label={t`Search`}
                 icon={SearchIcon}
               />
-              <Button
-                variant="outline"
-                className="hidden sm:flex bg-card relative w-full max-w-xs h-9 justify-start px-3 font-normal text-muted-foreground"
-                onClick={() => navigate({ to: "/search", search: { q: "", type: "all" } })}
-                aria-label={t`Search`}
-                icon={SearchIcon}
-              >
-                {t`Search...`}
-              </Button>
 
               <Button variant="ghost" size="icon" asChild aria-label={t`Settings`} icon={SettingsIcon}>
                 <Link to="/settings" search={{}} />

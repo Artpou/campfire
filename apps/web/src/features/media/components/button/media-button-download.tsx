@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shar
 
 import { useDownloadFile } from "@/features/downloads/hooks/download.queries";
 
-interface MediaDownloadButtonProps extends ButtonProps {
+interface MediaDownloadButtonProps extends Omit<ButtonProps, "onClick"> {
   media: Media;
   videoFile: DownloadableFile;
 }

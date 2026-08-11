@@ -22,12 +22,31 @@ export const mediaInputSchema = z.object({
 });
 export type MediaInput = z.infer<typeof mediaInputSchema>;
 
+export const upsertReviewDto = z.object({
+  score: z.number().min(0).max(10),
+  comment: z.string().trim().max(4000).nullable().optional(),
+  /** ISO date (YYYY-MM-DD) — updates review createdAt. */
+  watchedAt: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  media: mediaInputSchema.optional(),
+});
+export type UpsertReviewInput = z.infer<typeof upsertReviewDto>;
+
 export const listMediaDto = paginationDto.extend({
   type: z.enum(mediaTypeEnum).optional(),
-  filter: z.enum(["like", "watch-list", "downloaded", "history"]).optional(),
+  filter: z.enum(["like", "watch-list", "downloaded", "history", "reviewed", "calendar"]).optional(),
   userId: z.string().optional(),
 });
 export type ListMediaQuery = z.infer<typeof listMediaDto>;
+
+export const letterboxdSyncResponseDto = z.object({
+  synced: z.number(),
+  skipped: z.number(),
+  errors: z.number(),
+});
+export type LetterboxdSyncResponse = z.infer<typeof letterboxdSyncResponseDto>;
 
 export const updateProgressDto = z.object({
   position: z.number().int().min(0),

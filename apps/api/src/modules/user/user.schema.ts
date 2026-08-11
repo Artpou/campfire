@@ -21,6 +21,7 @@ export const user = sqliteTable(
     showWatchList: integer("show_watch_list", { mode: "boolean" }).notNull().default(true),
     showLikes: integer("show_likes", { mode: "boolean" }).notNull().default(true),
     showWatchHistory: integer("show_watch_history", { mode: "boolean" }).notNull().default(false),
+    letterboxdUsername: text("letterboxd_username"),
     createdAt: integer("createdAt", { mode: "timestamp" })
       .notNull()
       .$defaultFn(() => new Date()),

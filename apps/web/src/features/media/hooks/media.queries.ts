@@ -45,7 +45,7 @@ export const mediaQueries = {
           unwrap(api.movies.search.$get({ query: { q: query, locale } })),
           unwrap(api.tv.search.$get({ query: { q: query, locale } })),
         ]);
-        const combined = [...movies, ...tvShows];
+        const combined = [...movies.results, ...tvShows.results];
         return combined.sort((a, b) => {
           if (a.download && !b.download) return -1;
           if (!a.download && b.download) return 1;
@@ -141,6 +141,56 @@ export function useToggleWatchList() {
       toast.error(t`Could not update watch list`, {
         description: formatError(error),
       });
+    },
+  });
+}
+
+function invalidateMediaCaches(queryClient: ReturnType<typeof useQueryClient>, type?: Media["type"]) {
+  queryClient.invalidateQueries({ queryKey: mediaQueries.key });
+  if (type === "movie") queryClient.invalidateQueries({ queryKey: [...movieQueries.key] });
+  if (type === "tv") queryClient.invalidateQueries({ queryKey: [...tvQueries.key] });
+}
+
+export function useUpsertReview() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      media,
+      score,
+      comment,
+      watchedAt,
+    }: {
+      media: Media;
+      score: number;
+      comment?: string | null;
+      watchedAt?: string;
+    }) =>
+      unwrap(
+        api.media[":id"].review.$put({
+          param: { id: media.id.toString() },
+          json: { score, comment, watchedAt, media },
+        }),
+      ),
+    onSuccess: (data) => {
+      invalidateMediaCaches(queryClient, data.type);
+      toast.success(t`Review saved`, { description: data.title });
+    },
+    onError: (error) => {
+      toast.error(t`Could not save review`, { description: formatError(error) });
+    },
+  });
+}
+
+export function useDeleteReview() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (media: Media) => unwrap(api.media[":id"].review.$delete({ param: { id: media.id.toString() } })),
+    onSuccess: (data) => {
+      invalidateMediaCaches(queryClient, data.type);
+      toast.success(t`Rating removed`, { description: data.title });
+    },
+    onError: (error) => {
+      toast.error(t`Could not remove rating`, { description: formatError(error) });
     },
   });
 }

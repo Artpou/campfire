@@ -13,9 +13,17 @@ import { preloadMoviPlayer } from "@/features/player/helpers/movi-player.helper"
 interface MediaButtonPlayProps extends ButtonProps {
   media: Media;
   circular?: boolean;
+  /** Icon-only primary play (downloads table style). */
+  iconOnly?: boolean;
 }
 
-export const MediaButtonPlay = ({ media, className, circular = false, ...props }: MediaButtonPlayProps) => {
+export const MediaButtonPlay = ({
+  media,
+  className,
+  circular = false,
+  iconOnly = false,
+  ...props
+}: MediaButtonPlayProps) => {
   const { t } = useLingui();
   const navigate = useNavigate();
 
@@ -46,6 +54,22 @@ export const MediaButtonPlay = ({ media, className, circular = false, ...props }
           <PlayIcon className="size-8 text-white fill-current ml-1" />
         </span>
       </button>
+    );
+  }
+
+  if (iconOnly) {
+    return (
+      <Button
+        size="sm"
+        icon={PlayIcon}
+        className={className}
+        onClick={handlePlay}
+        onMouseEnter={preloadMoviPlayer}
+        onFocus={preloadMoviPlayer}
+        onPointerDown={preloadMoviPlayer}
+        aria-label={t`Play`}
+        {...props}
+      />
     );
   }
 

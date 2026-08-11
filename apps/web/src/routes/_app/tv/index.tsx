@@ -1,12 +1,12 @@
-import { Trans } from "@lingui/react/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 
 import { MediaDiscover } from "@/features/media/components/media-discover";
-import { MediaProviders } from "@/features/media/components/media-providers";
 import {
   buildTvDiscoverOptions,
+  isDiscoverTextSearch,
   pickTvFilters,
   type TvDiscoverSearch,
   validateTvDiscoverSearch,
@@ -20,9 +20,12 @@ export const Route = createFileRoute("/_app/tv/")({
 });
 
 function TVPage() {
+  const { t } = useLingui();
   const search = Route.useSearch();
   const locale = useTmdbLocale();
   const navigate = useNavigate();
+  const isSearching = isDiscoverTextSearch(search.q);
+  const query = (search.q ?? "").trim();
   const discoverOptions = buildTvDiscoverOptions(search);
 
   const handleSearchChange = (value: Partial<TvDiscoverSearch>) => {
@@ -33,19 +36,12 @@ function TVPage() {
     <MediaDiscover
       type="tv"
       search={search}
-      queryOptions={tvQueries.discover(discoverOptions, locale)}
+      queryOptions={isSearching ? tvQueries.search(query, locale) : tvQueries.discover(discoverOptions, locale)}
       onSearchChange={handleSearchChange}
-      providerTabs={
-        <MediaProviders
-          type="tv"
-          className="hidden xl:flex"
-          value={search.with_watch_providers}
-          onValueChange={(value) => handleSearchChange({ with_watch_providers: value })}
-        />
-      }
       filtersSheet={<TvFiltersSheet value={pickTvFilters(search)} onChange={handleSearchChange} />}
       emptyTitle={<Trans>No TV shows found</Trans>}
       emptySubtitle={<Trans>Try adjusting your filters or search criteria</Trans>}
+      searchPlaceholder={t`Search TV shows...`}
     />
   );
 }

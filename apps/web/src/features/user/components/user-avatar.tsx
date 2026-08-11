@@ -15,9 +15,21 @@ const AVATAR_ACCEPT = ["image/jpeg", "image/png", "image/webp", "image/gif"] as 
 interface UserAvatarProps {
   user: Pick<User, "id" | "avatarPath" | "username" | "pseudo">;
   editable?: boolean;
-  size?: "sm" | "md";
+  size?: "xs" | "sm" | "md";
   className?: string;
 }
+
+const SIZE_CLASS = {
+  xs: "size-8",
+  sm: "size-16",
+  md: "size-20",
+} as const;
+
+const ICON_SIZE_CLASS = {
+  xs: "size-4",
+  sm: "size-7",
+  md: "size-8",
+} as const;
 
 function getAvatarUrl(userId: string, avatarPath: string | null | undefined): string | null {
   if (!avatarPath) return null;
@@ -44,14 +56,14 @@ export function UserAvatar({ user, editable = false, size = "md", className }: U
   };
 
   const avatarUrl = getAvatarUrl(user.id, user.avatarPath);
-  const sizeClass = size === "sm" ? "size-16" : "size-20";
 
   return (
     <div className={cn("relative shrink-0 group", className)}>
       <div
         className={cn(
-          sizeClass,
-          "rounded-full bg-muted border border-border/60 flex items-center justify-center overflow-hidden shadow-lg",
+          SIZE_CLASS[size],
+          "rounded-full bg-muted border border-border/60 flex items-center justify-center overflow-hidden",
+          size === "xs" ? "shadow-sm" : "shadow-lg",
         )}
       >
         {avatarUrl && !previewError ? (
@@ -62,7 +74,7 @@ export function UserAvatar({ user, editable = false, size = "md", className }: U
             onError={() => setPreviewError(true)}
           />
         ) : (
-          <UserIcon className={size === "sm" ? "size-7 text-muted-foreground" : "size-8 text-muted-foreground"} />
+          <UserIcon className={cn(ICON_SIZE_CLASS[size], "text-muted-foreground")} />
         )}
       </div>
 

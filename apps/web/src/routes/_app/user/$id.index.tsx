@@ -1,23 +1,29 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
+import type { Media } from "@seedarr/sdk";
 import { useInfiniteQuery, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { BookmarkIcon, CalendarIcon, ClockIcon, HeartIcon, LockIcon, PencilIcon, SaveIcon } from "lucide-react";
+import { BookmarkIcon, CalendarIcon, ClockIcon, HeartIcon, PencilIcon, SaveIcon } from "lucide-react";
 
 import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
-import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Container } from "@/shared/ui/container";
 import { Input } from "@/shared/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { useAuth } from "@/features/auth/auth-store";
-import { MediaCarousel } from "@/features/media/components/carousel/media-carousel";
+import { MediaCalendar } from "@/features/media/components/media-calendar";
+import { MediaGrid } from "@/features/media/components/media-grid";
+import { MediaTable } from "@/features/media/components/media-table";
+import { MediaTabsViewMode } from "@/features/media/components/tabs/media-tabs-view-mode";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 import { RequestCarousel } from "@/features/request/components/request-carousel";
 import { requestQueries } from "@/features/request/hooks/request.queries";
+import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
 import { RoleBadge } from "@/features/user/components/role-badge";
 import { UserAvatar } from "@/features/user/components/user-avatar";
+import { UserButtonLetterboxd } from "@/features/user/components/user-button-letterboxd";
 import { userQueries, useUpdateProfile } from "@/features/user/hooks/user.queries";
 
 export const Route = createFileRoute("/_app/user/$id/")({
@@ -26,13 +32,40 @@ export const Route = createFileRoute("/_app/user/$id/")({
   pendingComponent: () => <SeedarrLoaderContainer />,
 });
 
-function PrivateBadge() {
-  return (
-    <Badge variant="outline" className="text-xs gap-1 text-muted-foreground">
-      <LockIcon className="size-3" />
-      <Trans>Private</Trans>
-    </Badge>
+type ProfileTab = "calendar" | "watchlist" | "liked" | "history";
+
+function filterMedia(items: Media[], search: string): Media[] {
+  const q = search.trim().toLowerCase();
+  if (!q) return items;
+  return items.filter(
+    (media) => media.title?.toLowerCase().includes(q) || media.original_title?.toLowerCase().includes(q),
   );
+}
+
+function MediaCollectionView({
+  items,
+  viewMode,
+  isLoading,
+  onLoadMore,
+}: {
+  items: Media[];
+  viewMode: "grid" | "list";
+  isLoading?: boolean;
+  onLoadMore?: () => void;
+}) {
+  if (!isLoading && items.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground py-10 text-center">
+        <Trans>Nothing here yet</Trans>
+      </p>
+    );
+  }
+
+  if (viewMode === "grid") {
+    return <MediaGrid items={items} isLoading={isLoading} onLoadMore={onLoadMore} />;
+  }
+
+  return <MediaTable media={items} isLoadingMore={isLoading} onLoadMore={onLoadMore} />;
 }
 
 function UserProfilePage() {
@@ -41,6 +74,9 @@ function UserProfilePage() {
   const currentUser = useAuth((s) => s.user);
   const isOwnProfile = currentUser?.id === id;
   const updateProfile = useUpdateProfile();
+  const viewMode = useUserPreferences((s) => s.viewMode);
+  const [tab, setTab] = useState<ProfileTab>("calendar");
+  const [search, setSearch] = useState("");
 
   const { data: profileUser } = useSuspenseQuery(userQueries.details(id));
 
@@ -60,23 +96,49 @@ function UserProfilePage() {
   const canSeeWatchList = isOwnProfile || profileUser.showWatchList !== false;
   const canSeeLikes = isOwnProfile || profileUser.showLikes !== false;
   const canSeeHistory = isOwnProfile || profileUser.showWatchHistory === true;
+  const canSeeCalendar = canSeeLikes || canSeeHistory;
 
-  const { data: watchListData } = useInfiniteQuery({
-    ...mediaQueries.list({ filter: "watch-list", userId: id, limit: 20 }),
-    enabled: canSeeWatchList,
+  const calendarQuery = useInfiniteQuery({
+    ...mediaQueries.list({ filter: "calendar", userId: id, limit: 100 }),
+    enabled: canSeeCalendar && tab === "calendar",
   });
-  const { data: likesData } = useInfiniteQuery({
-    ...mediaQueries.list({ filter: "like", userId: id, limit: 20 }),
-    enabled: canSeeLikes,
+  const watchListQuery = useInfiniteQuery({
+    ...mediaQueries.list({ filter: "watch-list", userId: id, limit: 40 }),
+    enabled: canSeeWatchList && tab === "watchlist",
   });
-  const { data: historyData } = useInfiniteQuery({
-    ...mediaQueries.list({ filter: "history", userId: id, limit: 20 }),
-    enabled: canSeeHistory,
+  const likesQuery = useInfiniteQuery({
+    ...mediaQueries.list({ filter: "like", userId: id, limit: 40 }),
+    enabled: canSeeLikes && tab === "liked",
+  });
+  const historyQuery = useInfiniteQuery({
+    ...mediaQueries.list({ filter: "history", userId: id, limit: 40 }),
+    enabled: canSeeHistory && tab === "history",
   });
 
-  const watchListItems = watchListData?.pages?.flatMap((p) => p.results) ?? [];
-  const likesItems = likesData?.pages?.flatMap((p) => p.results) ?? [];
-  const historyItems = historyData?.pages?.flatMap((p) => p.results) ?? [];
+  // Load every calendar page so months are complete.
+  useEffect(() => {
+    if (tab !== "calendar") return;
+    if (calendarQuery.hasNextPage && !calendarQuery.isFetchingNextPage) {
+      void calendarQuery.fetchNextPage();
+    }
+  }, [tab, calendarQuery.hasNextPage, calendarQuery.isFetchingNextPage, calendarQuery.fetchNextPage]);
+
+  const calendarItems = useMemo(
+    () => filterMedia(calendarQuery.data?.pages?.flatMap((p) => p.results) ?? [], search),
+    [calendarQuery.data, search],
+  );
+  const watchListItems = useMemo(
+    () => filterMedia(watchListQuery.data?.pages?.flatMap((p) => p.results) ?? [], search),
+    [watchListQuery.data, search],
+  );
+  const likesItems = useMemo(
+    () => filterMedia(likesQuery.data?.pages?.flatMap((p) => p.results) ?? [], search),
+    [likesQuery.data, search],
+  );
+  const historyItems = useMemo(
+    () => filterMedia(historyQuery.data?.pages?.flatMap((p) => p.results) ?? [], search),
+    [historyQuery.data, search],
+  );
   const displayName = profileUser.pseudo || profileUser.username;
 
   const handleSavePseudo = () => {
@@ -84,14 +146,62 @@ function UserProfilePage() {
     updateProfile.mutate({ pseudo: trimmed.length > 0 ? trimmed : null }, { onSuccess: () => setEditingPseudo(false) });
   };
 
+  const availableTabs = useMemo(() => {
+    const tabs: { value: ProfileTab; label: React.ReactNode; icon: typeof CalendarIcon; enabled: boolean }[] = [
+      {
+        value: "calendar",
+        label: <Trans>Calendar</Trans>,
+        icon: CalendarIcon,
+        enabled: canSeeCalendar,
+      },
+      {
+        value: "watchlist",
+        label: <Trans>Watchlist</Trans>,
+        icon: BookmarkIcon,
+        enabled: canSeeWatchList,
+      },
+      {
+        value: "liked",
+        label: <Trans>Liked</Trans>,
+        icon: HeartIcon,
+        enabled: canSeeLikes,
+      },
+      {
+        value: "history",
+        label: <Trans>Watch history</Trans>,
+        icon: ClockIcon,
+        enabled: canSeeHistory,
+      },
+    ];
+    return tabs.filter((item) => item.enabled);
+  }, [canSeeCalendar, canSeeWatchList, canSeeLikes, canSeeHistory]);
+
+  useEffect(() => {
+    if (!availableTabs.some((item) => item.value === tab)) {
+      setTab(availableTabs[0]?.value ?? "calendar");
+    }
+  }, [availableTabs, tab]);
+
+  const activeQuery =
+    tab === "calendar"
+      ? calendarQuery
+      : tab === "watchlist"
+        ? watchListQuery
+        : tab === "liked"
+          ? likesQuery
+          : historyQuery;
+
+  const isInitialLoading = activeQuery.isLoading;
+  const isFetchingMore = activeQuery.isFetchingNextPage;
+
   return (
-    <Container className="space-y-10 pb-20">
+    <Container className="space-y-8 pb-20">
       <div className="flex flex-col lg:flex-row gap-6 items-center lg:items-start relative">
         <div className="max-w-[250px] flex justify-center lg:justify-start">
           <UserAvatar user={profileUser} editable={isOwnProfile} />
         </div>
 
-        <div className="lg:w-3/4 flex flex-col md:flex-row justify-between items-center md:items-start w-full gap-4 text-center md:text-left min-w-0">
+        <div className="flex flex-col md:flex-row justify-between items-center md:items-start w-full gap-4 text-center md:text-left min-w-0">
           <div className="flex flex-col gap-2 w-full max-w-md">
             {editingPseudo && isOwnProfile ? (
               <div className="flex items-center gap-2">
@@ -135,51 +245,55 @@ function UserProfilePage() {
               )}
             </div>
           </div>
+          {isOwnProfile && <UserButtonLetterboxd user={profileUser} />}
         </div>
       </div>
 
       {isOwnProfile && requestsData && requestsData.length > 0 && <RequestCarousel requests={requestsData} />}
 
-      {canSeeLikes && likesItems.length > 0 && (
-        <MediaCarousel
-          title={
-            <span className="flex items-center gap-2">
-              <HeartIcon className="size-5" />
-              <Trans>Liked</Trans>
-              {!profileUser.showLikes && isOwnProfile && <PrivateBadge />}
-            </span>
-          }
-          data={likesItems}
-          seeMoreTo={`/user/${id}/likes`}
-        />
-      )}
+      {availableTabs.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <MediaTabsViewMode />
+            <Tabs value={tab} onValueChange={(v) => setTab(v as ProfileTab)}>
+              <TabsList size="lg">
+                {availableTabs.map(({ value, label, icon: Icon }) => (
+                  <TabsTrigger key={value} value={value} size="lg" className="gap-2">
+                    <Icon className="size-4" />
+                    {label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          </div>
 
-      {canSeeWatchList && watchListItems.length > 0 && (
-        <MediaCarousel
-          title={
-            <span className="flex items-center gap-2">
-              <BookmarkIcon className="size-5" />
-              <Trans>Watch List</Trans>
-              {!profileUser.showWatchList && isOwnProfile && <PrivateBadge />}
-            </span>
-          }
-          data={watchListItems}
-          seeMoreTo={`/user/${id}/watch-list`}
-        />
-      )}
+          <Input
+            type="text"
+            h="lg"
+            search
+            className="w-full"
+            placeholder={t`Search in my profile...`}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
 
-      {canSeeHistory && historyItems.length > 0 && (
-        <MediaCarousel
-          title={
-            <span className="flex items-center gap-2">
-              <ClockIcon className="size-5" />
-              <Trans>Watch History</Trans>
-              {!profileUser.showWatchHistory && isOwnProfile && <PrivateBadge />}
-            </span>
-          }
-          data={historyItems}
-          seeMoreTo={`/user/${id}/history`}
-        />
+          {isInitialLoading ? (
+            <SeedarrLoaderContainer />
+          ) : tab === "calendar" ? (
+            <MediaCalendar items={calendarItems} viewMode={viewMode} />
+          ) : (
+            <MediaCollectionView
+              items={tab === "watchlist" ? watchListItems : tab === "liked" ? likesItems : historyItems}
+              viewMode={viewMode}
+              isLoading={isFetchingMore}
+              onLoadMore={() => {
+                if (activeQuery.hasNextPage && !activeQuery.isFetchingNextPage) {
+                  void activeQuery.fetchNextPage();
+                }
+              }}
+            />
+          )}
+        </div>
       )}
     </Container>
   );

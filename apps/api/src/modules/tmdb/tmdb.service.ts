@@ -16,7 +16,6 @@ import type { User } from "@/modules/user/user.schema";
 import type {
   FetchOptions,
   TMDBGenresResponse,
-  TMDBItem,
   TMDBKeywordResult,
   TMDBPaginatedResponse,
   TMDBProvider,
@@ -179,14 +178,29 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
     };
   }
 
-  async search(query: TmdbSearchQuery): Promise<MediaEnriched[]> {
-    const searchResults = await this.request<TMDBPaginatedResponse<TMDBItem & { media_type: string }>>(
-      "/search/multi",
-      { query: query.q },
-    );
-    const items = searchResults.results.filter((r) => r.media_type === this.type).map((item) => this.toMedia(item));
+  async search(query: TmdbSearchQuery): Promise<{ results: MediaEnriched[]; page: number; totalPages: number }> {
+    const [data, genresData] = await Promise.all([
+      this.request<TMDBPaginatedResponse>(`/search/${this.type}`, {
+        query: query.q,
+        page: String(query.page ?? 1),
+      }),
+      this.genres(),
+    ]);
+    const genreMap = new Map(genresData.genres.map((g) => [g.id, g.name]));
+    const items = data.results.map((item) => ({
+      ...this.toMedia(item, genreMap),
+      backdrop_path: item.backdrop_path ?? null,
+    }));
     const mediaMap = await this.mediaService.getMany({ ids: items.map((m) => m.id.toString()) });
-    return mergeMediaEnrichment(items, mediaMap);
+
+    return {
+      results: mergeMediaEnrichment(items, mediaMap).map((item) => ({
+        ...item,
+        backdrop_path: item.backdrop_path ?? null,
+      })),
+      page: data.page,
+      totalPages: data.total_pages,
+    };
   }
 
   async searchKeywords(query: TmdbKeywordsQuery): Promise<TMDBKeywordResult[]> {

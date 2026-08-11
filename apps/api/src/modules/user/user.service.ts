@@ -26,6 +26,7 @@ const userColumns = {
   showWatchList: true,
   showLikes: true,
   showWatchHistory: true,
+  letterboxdUsername: true,
   createdAt: true,
 } as const;
 
@@ -112,6 +113,7 @@ export class UserService extends IdentifiableService<User> {
         showWatchList: user.showWatchList,
         showLikes: user.showLikes,
         showWatchHistory: user.showWatchHistory,
+        letterboxdUsername: user.letterboxdUsername,
         createdAt: user.createdAt,
       });
 
@@ -172,12 +174,16 @@ export class UserService extends IdentifiableService<User> {
       showWatchList: boolean;
       showLikes: boolean;
       showWatchHistory: boolean;
+      letterboxdUsername: string | null;
     }> = {};
 
     if (input.pseudo !== undefined) data.pseudo = input.pseudo;
     if (input.showWatchList !== undefined) data.showWatchList = input.showWatchList;
     if (input.showLikes !== undefined) data.showLikes = input.showLikes;
     if (input.showWatchHistory !== undefined) data.showWatchHistory = input.showWatchHistory;
+    if (input.letterboxdUsername !== undefined) {
+      data.letterboxdUsername = input.letterboxdUsername ? input.letterboxdUsername.trim().toLowerCase() : null;
+    }
 
     if (Object.keys(data).length > 0) {
       await db.update(user).set(data).where(eq(user.id, this.user.id));

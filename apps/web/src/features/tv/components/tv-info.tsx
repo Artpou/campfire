@@ -1,23 +1,30 @@
+import { useState } from "react";
+
 import { Trans } from "@lingui/react/macro";
-import type { TMDBTvDetails } from "@seedarr/sdk";
+import type { Media, TMDBTvDetails } from "@seedarr/sdk";
 import { formatRuntime, getEndsAt } from "@seedarr/shared";
 import { ClockIcon } from "lucide-react";
 
 import { Flag } from "@/shared/components/flag";
 import { Badge } from "@/shared/ui/badge";
 
-import { MediaRating } from "@/features/media/components/media-rating";
+import { useAuth } from "@/features/auth/auth-store";
+import { MediaReviewModal } from "@/features/media/components/media-review-modal";
+import { MediaUserReview } from "@/features/media/components/media-user-review";
 import { MediaWatchProviders } from "@/features/media/components/media-watch-providers";
 
 interface TvInfoProps {
   tv: TMDBTvDetails;
+  media?: Media | null;
 }
 
-export function TvInfo({ tv }: TvInfoProps) {
+export function TvInfo({ tv, media }: TvInfoProps) {
   const episodeRuntime = tv.episode_run_time?.[0];
   const lastEpisode = tv.last_episode_to_air;
   const nextEpisode = tv.next_episode_to_air;
   const endsAt = getEndsAt(episodeRuntime);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const currentUser = useAuth((s) => s.user);
 
   return (
     <div className="dark text-foreground flex flex-col gap-4">
@@ -103,9 +110,12 @@ export function TvInfo({ tv }: TvInfoProps) {
       )}
 
       <div className="flex items-center gap-4">
-        <MediaRating media={tv} />
         <MediaWatchProviders watchProviders={tv["watch/providers"]} mediaName={tv.name ?? ""} />
       </div>
+
+      {media && currentUser && <MediaUserReview media={media} user={currentUser} onEdit={() => setReviewOpen(true)} />}
+
+      {media && <MediaReviewModal media={media} open={reviewOpen} onOpenChange={setReviewOpen} />}
     </div>
   );
 }

@@ -56,7 +56,7 @@ function MoviePage() {
       media={media}
       download={liveDownload}
       posterData={data}
-      infoSection={<MovieInfo movie={movie} />}
+      infoSection={<MovieInfo movie={movie} media={media} />}
       detailsSection={detailsSection}
       downloadTabContent={torrentDownloads.length > 0 ? <MediaDownload downloads={torrentDownloads} /> : undefined}
       downloadCount={torrentDownloads.length}

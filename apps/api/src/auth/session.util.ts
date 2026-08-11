@@ -93,6 +93,7 @@ async function fetchSessionWithUser(token: string): Promise<{
         showWatchList: user.showWatchList,
         showLikes: user.showLikes,
         showWatchHistory: user.showWatchHistory,
+        letterboxdUsername: user.letterboxdUsername,
         createdAt: user.createdAt,
       },
     })

@@ -21,6 +21,14 @@ export const updateProfileDto = z.object({
   showWatchList: z.boolean().optional(),
   showLikes: z.boolean().optional(),
   showWatchHistory: z.boolean().optional(),
+  letterboxdUsername: z
+    .string()
+    .trim()
+    .min(1)
+    .max(64)
+    .regex(/^[a-zA-Z0-9_]+$/, "Invalid Letterboxd username")
+    .nullable()
+    .optional(),
 });
 export type UpdateProfileInput = z.infer<typeof updateProfileDto>;
 

@@ -90,9 +90,11 @@ describe("TV Routes", () => {
 
       if (url.includes("/discover/tv")) return mockResponse({ results: TRENDING_RESULTS, page: 1, total_pages: 1 });
       if (url.includes("/genre/tv/list")) return mockResponse(TV_GENRES);
-      if (url.includes("/search/multi"))
+      if (url.includes("/search/tv"))
         return mockResponse({
           results: [{ id: 60, name: "Found TV", original_name: "Found TV", media_type: "tv", poster_path: "/s.jpg" }],
+          page: 1,
+          total_pages: 1,
         });
       if (url.includes("/search/keyword")) return mockResponse({ results: [{ id: 1, name: "drama" }] });
       if (url.includes("/watch/providers/tv")) return mockResponse(TV_PROVIDERS);
@@ -147,8 +149,10 @@ describe("TV Routes", () => {
 
   it("GET /search - returns results", async () => {
     const body = await bodyOf(await tvRoutes.request("/search?q=drama&locale=en-US"));
-    expect(body).toHaveLength(1);
-    expect(body[0].title).toBe("Found TV");
+    expect(body.results).toHaveLength(1);
+    expect(body.results[0].title).toBe("Found TV");
+    expect(body.page).toBe(1);
+    expect(body.totalPages).toBe(1);
   });
 
   it("GET /keywords - returns keyword results", async () => {

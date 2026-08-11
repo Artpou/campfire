@@ -48,6 +48,17 @@ export function hasWatchProgress(media: Media): boolean {
   );
 }
 
+/** Watched when completed flag is set or progress ≥ 95%. */
+export function isMediaWatched(media: {
+  progress?: { position: number; duration: number; completed?: boolean | null } | null | undefined;
+}): boolean {
+  const progress = media.progress;
+  if (!progress) return false;
+  if (progress.completed) return true;
+  if (progress.duration <= 0) return false;
+  return progress.position / progress.duration >= 0.95;
+}
+
 export function getRemainingTime(media: Media): string | null {
   let remainingSeconds: number | null = null;
 

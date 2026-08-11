@@ -3,6 +3,7 @@ import type { Media } from "@seedarr/sdk";
 import { Link } from "@tanstack/react-router";
 import { MagnetIcon } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { Button, type ButtonProps } from "@/shared/ui/button";
 
 interface MediaButtonTorrentProps extends ButtonProps {
@@ -13,7 +14,7 @@ export function MediaButtonTorrent({ media, className, ...props }: MediaButtonTo
   const to = media.type === "tv" ? "/tv/$id/torrents" : "/movies/$id/torrents";
 
   return (
-    <Button asChild icon={MagnetIcon} {...props}>
+    <Button asChild icon={MagnetIcon} className={cn(className)} {...props}>
       <Link to={to} params={{ id: media.id.toString() }}>
         <Trans>Torrents</Trans>
       </Link>

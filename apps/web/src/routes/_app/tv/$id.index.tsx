@@ -61,7 +61,7 @@ function TVPage() {
       media={media}
       download={liveDownload}
       posterData={data}
-      infoSection={<TvInfo tv={tv} />}
+      infoSection={<TvInfo tv={tv} media={media} />}
       detailsSection={detailsSection}
       downloadTabContent={torrentDownloads.length > 0 ? <MediaDownload downloads={torrentDownloads} /> : undefined}
       downloadCount={torrentDownloads.length}

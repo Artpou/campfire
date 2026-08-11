@@ -5,16 +5,20 @@ import { and, eq } from "drizzle-orm";
 
 import { BadRequestError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
-import { toLatin } from "@/shared/helpers/string.helper";
 
 import { db } from "@/db/db";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { download } from "@/modules/download/download.schema";
 import { media } from "@/modules/media/media.schema";
 import { getSettingsTmdbApiKey } from "@/modules/settings/tmdb-key.helper";
-import { tmdbMovieToMedia, tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
-import { tmdbRequest } from "@/modules/tmdb/tmdb.service";
-import type { TMDBItem, TMDBPaginatedResponse } from "@/modules/tmdb/tmdb.types";
+import type { TMDBItem } from "@/modules/tmdb/tmdb.types";
+import {
+  fetchTmdbById,
+  fetchTmdbByImdbId,
+  searchTmdbByTitle,
+  sleep,
+  tmdbItemToMediaInsert,
+} from "@/modules/tmdb/tmdb-resolve.helper";
 import { remoteStorageService } from "./remote-storage.service";
 
 interface RemoteSyncError {
@@ -55,21 +59,12 @@ interface SyncEntry {
   basePath: string;
 }
 
-interface TMDBFindResponse {
-  movie_results: TMDBItem[];
-  tv_results: TMDBItem[];
-}
-
 interface TMDBMatch {
   item: TMDBItem;
   resolvedType: "movie" | "tv";
 }
 
 // --- Helpers ---
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 function isSyncableDir(name: string): boolean {
   if (!name || name === "." || name === "..") return false;
@@ -135,79 +130,26 @@ function getTmdbTitle(item: TMDBItem, type: "movie" | "tv"): string {
   return type === "movie" ? (item.title ?? item.name ?? "") : (item.name ?? item.title ?? "");
 }
 
-function tmdbItemToMediaInsert(item: TMDBItem, type: "movie" | "tv") {
-  const mapped = type === "movie" ? tmdbMovieToMedia(item) : tmdbTVToMedia(item);
-  const {
-    liked: _liked,
-    inWatchList: _inWatchList,
-    download: _download,
-    progress: _progress,
-    ...insertFields
-  } = mapped;
-
-  return {
-    ...insertFields,
-    imdbId: insertFields.imdbId || (item as { external_ids?: { imdb_id?: string } }).external_ids?.imdb_id || "",
-    sanitize_title: toLatin(insertFields.original_title ?? "") ?? insertFields.title,
-  };
-}
-
 async function resolveTmdbMatch(name: string, mediaType: "movie" | "tv"): Promise<TMDBMatch | null> {
   const tmdbId = extractTmdbId(name);
   if (tmdbId) {
-    const item = await fetchByTmdbId(tmdbId, mediaType);
+    const item = await fetchTmdbById(tmdbId, mediaType);
     if (item) return { item, resolvedType: mediaType };
   }
 
   const imdbId = extractImdbId(name);
   if (imdbId) {
-    const found = await fetchByImdbId(imdbId);
+    const found = await fetchTmdbByImdbId(imdbId);
     if (found) return { item: found.item, resolvedType: found.type };
   }
 
   const { title, year } = parseEntry(name, mediaType === "tv");
   if (title) {
-    const item = await searchTmdb(title, year, mediaType);
+    const item = await searchTmdbByTitle(title, year, mediaType);
     if (item) return { item, resolvedType: mediaType };
   }
 
   return null;
-}
-
-async function fetchByTmdbId(tmdbId: number, mediaType: "movie" | "tv"): Promise<TMDBItem | null> {
-  try {
-    const endpoint = mediaType === "tv" ? `/tv/${tmdbId}` : `/movie/${tmdbId}`;
-    return await tmdbRequest<TMDBItem & { external_ids?: { imdb_id?: string } }>(endpoint, "", {
-      append_to_response: "external_ids",
-    });
-  } catch {
-    return null;
-  }
-}
-
-async function fetchByImdbId(imdbId: string): Promise<{ item: TMDBItem; type: "movie" | "tv" } | null> {
-  try {
-    const result = await tmdbRequest<TMDBFindResponse>(`/find/${imdbId}`, "", { external_source: "imdb_id" });
-    if (result.movie_results?.length > 0) return { item: result.movie_results[0], type: "movie" };
-    if (result.tv_results?.length > 0) return { item: result.tv_results[0], type: "tv" };
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-async function searchTmdb(title: string, year: number | null, mediaType: "movie" | "tv"): Promise<TMDBItem | null> {
-  try {
-    const endpoint = mediaType === "tv" ? "/search/tv" : "/search/movie";
-    const options: Record<string, string> = { query: title };
-    if (year) {
-      options[mediaType === "tv" ? "first_air_date_year" : "year"] = year.toString();
-    }
-    const result = await tmdbRequest<TMDBPaginatedResponse>(endpoint, "", options);
-    return result.results?.[0] ?? null;
-  } catch {
-    return null;
-  }
 }
 
 // --- Entry collection ---
@@ -463,7 +405,7 @@ export async function runManualSync(userId: string, input: ManualSyncInput): Pro
   const apiKey = await getSettingsTmdbApiKey();
   if (!apiKey) throw new BadRequestError("TMDB API key is required");
 
-  const tmdbItem = await fetchByTmdbId(input.mediaId, input.type);
+  const tmdbItem = await fetchTmdbById(input.mediaId, input.type);
   if (!tmdbItem) throw new BadRequestError("Could not find media on TMDB");
 
   const mediaInsert = tmdbItemToMediaInsert(tmdbItem, input.type);

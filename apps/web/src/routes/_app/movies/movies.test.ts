@@ -28,6 +28,7 @@ describe("/movies validateSearch", () => {
       with_runtime_gte: 60,
       with_runtime_lte: undefined,
       vote_average_gte: 7,
+      q: undefined,
     });
   });
 

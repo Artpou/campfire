@@ -26,24 +26,24 @@ import { getPosterUrl } from "@/features/media/helpers/media.helper";
 
 export type MediaWithDownload = Media & { download: Download };
 
-export const mediaTableFeatures = tableFeatures({
+export const downloadTableFeatures = tableFeatures({
   rowSortingFeature,
   rowSelectionFeature,
   sortedRowModel: createSortedRowModel(),
   sortFns: { alphanumeric: sortFn_alphanumeric, text: sortFn_text },
 });
 
-export type MediaTableFeatures = typeof mediaTableFeatures;
+type DownloadTableFeatures = typeof downloadTableFeatures;
 
-const columnHelper = createColumnHelper<MediaTableFeatures, MediaWithDownload>();
+const columnHelper = createColumnHelper<DownloadTableFeatures, MediaWithDownload>();
 
-interface UseMediaTableColumnsOptions {
+interface UseDownloadTableColumnsOptions {
   canDelete: (download: Download) => boolean;
   onPlay: (downloadId: string) => void;
   onDelete: (rowId: string) => void;
 }
 
-export function useMediaTableColumns({ canDelete, onPlay, onDelete }: UseMediaTableColumnsOptions) {
+export function useDownloadTableColumns({ canDelete, onPlay, onDelete }: UseDownloadTableColumnsOptions) {
   const { t } = useLingui();
 
   return useMemo(

@@ -107,9 +107,11 @@ describe("Movie Routes", () => {
 
       if (url.includes("/discover/movie")) return mockResponse({ results: TRENDING_RESULTS, page: 1, total_pages: 1 });
       if (url.includes("/genre/movie/list")) return mockResponse(GENRES);
-      if (url.includes("/search/multi"))
+      if (url.includes("/search/movie"))
         return mockResponse({
           results: [{ id: 50, title: "Found", original_title: "Found", media_type: "movie", poster_path: "/s.jpg" }],
+          page: 1,
+          total_pages: 1,
         });
       if (url.includes("/search/keyword")) return mockResponse({ results: [{ id: 1, name: "action" }] });
       if (url.includes("/watch/providers/movie")) return mockResponse(PROVIDERS);
@@ -148,8 +150,10 @@ describe("Movie Routes", () => {
 
   it("GET /search - returns results", async () => {
     const body = await bodyOf(await movieRoutes.request("/search?q=test&locale=en-US"));
-    expect(body).toHaveLength(1);
-    expect(body[0].title).toBe("Found");
+    expect(body.results).toHaveLength(1);
+    expect(body.results[0].title).toBe("Found");
+    expect(body.page).toBe(1);
+    expect(body.totalPages).toBe(1);
   });
 
   it("GET /keywords - returns keyword results", async () => {

@@ -1,20 +1,28 @@
+import { useState } from "react";
+
 import { Trans } from "@lingui/react/macro";
-import type { TMDBMovieDetails } from "@seedarr/sdk";
+import type { Media, TMDBMovieDetails } from "@seedarr/sdk";
 import { formatRuntime, getEndsAt } from "@seedarr/shared";
 import { CalendarIcon, ClockIcon } from "lucide-react";
 
 import { Flag } from "@/shared/components/flag";
 import { Badge } from "@/shared/ui/badge";
 
+import { useAuth } from "@/features/auth/auth-store";
 import { MediaRating } from "@/features/media/components/media-rating";
+import { MediaReviewModal } from "@/features/media/components/media-review-modal";
+import { MediaUserReview } from "@/features/media/components/media-user-review";
 import { MediaWatchProviders } from "@/features/media/components/media-watch-providers";
 
 interface MovieInfoProps {
   movie: TMDBMovieDetails;
+  media?: Media | null;
 }
 
-export function MovieInfo({ movie }: MovieInfoProps) {
+export function MovieInfo({ movie, media }: MovieInfoProps) {
   const endsAt = getEndsAt(movie.runtime);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const currentUser = useAuth((s) => s.user);
 
   return (
     <div className="dark text-foreground flex flex-col gap-4">
@@ -60,9 +68,13 @@ export function MovieInfo({ movie }: MovieInfoProps) {
       )}
 
       <div className="flex items-center gap-4">
-        <MediaRating media={movie} />
+        {media && <MediaRating media={media} />}
         <MediaWatchProviders watchProviders={movie["watch/providers"]} mediaName={movie.title ?? ""} />
       </div>
+
+      {media && currentUser && <MediaUserReview media={media} user={currentUser} onEdit={() => setReviewOpen(true)} />}
+
+      {media && <MediaReviewModal media={media} open={reviewOpen} onOpenChange={setReviewOpen} />}
     </div>
   );
 }

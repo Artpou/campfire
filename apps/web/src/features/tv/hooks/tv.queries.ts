@@ -46,4 +46,19 @@ export const tvQueries = {
       initialPageParam: 1,
       retry: 1,
     }),
+
+  search: (q: string, locale: string) =>
+    infiniteQueryOptions({
+      queryKey: [...tvQueries.key, "search", q, locale],
+      queryFn: async ({ pageParam = 1 }) => {
+        const data = await unwrap(api.tv.search.$get({ query: { q, locale, page: pageParam.toString() } }));
+        for (const media of data.results) {
+          queryClient.setQueryData(["media", media.id], media);
+        }
+        return data;
+      },
+      getNextPageParam: (lastPage) => (lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined),
+      initialPageParam: 1,
+      retry: 1,
+    }),
 };

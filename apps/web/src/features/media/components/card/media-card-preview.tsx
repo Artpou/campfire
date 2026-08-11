@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 
 import type { Media } from "@seedarr/sdk";
-import { formatRuntime } from "@seedarr/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Link, type LinkProps } from "@tanstack/react-router";
-import { ClockIcon } from "lucide-react";
 
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Badge } from "@/shared/ui/badge";
@@ -67,16 +65,8 @@ export function MediaCardPreview({ media, detailLinkProps }: MediaCardPreviewPro
         </div>
 
         <div className="flex items-center gap-2 text-xs flex-wrap">
-          <MediaSocialActions media={media} />
-
           {!!media.vote_average && media.vote_average > 0 && <MediaRating media={media} />}
           {year && <Badge variant="outline">{year}</Badge>}
-          {media.duration && media.duration > 0 && (
-            <Badge variant="outline">
-              <ClockIcon className="size-3" />
-              {formatRuntime(media.duration)}
-            </Badge>
-          )}
         </div>
 
         {categories.length > 0 && (
@@ -84,6 +74,8 @@ export function MediaCardPreview({ media, detailLinkProps }: MediaCardPreviewPro
         )}
 
         {media.overview && <p className="text-sm leading-relaxed line-clamp-3 mt-1">{media.overview}</p>}
+
+        <MediaSocialActions media={media} className="flex-row justify-between" size="lg" />
 
         {media.download ? (
           <MediaButtonPlay media={media} className="w-full" />

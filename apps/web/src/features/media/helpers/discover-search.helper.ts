@@ -1,5 +1,7 @@
+import type { Media } from "@seedarr/sdk";
 import { parseNumber, parseString, todayIsoDate } from "@seedarr/shared";
 
+import { splitFilterIds } from "@/features/media/helpers/filter-options.helper";
 import type { MovieFiltersValue } from "@/features/movies/components/movie-filters-sheet";
 import type { TvFiltersValue } from "@/features/tv/components/tv-filters-sheet";
 
@@ -22,11 +24,59 @@ type SearchRecord = Record<string, unknown>;
 
 export type MovieDiscoverSearch = MovieFiltersValue & {
   selected?: MediaSelected;
+  q?: string;
 };
 
 export type TvDiscoverSearch = TvFiltersValue & {
   selected?: MediaSelected;
+  q?: string;
 };
+
+export function isDiscoverTextSearch(q?: string): boolean {
+  return (q?.trim().length ?? 0) >= 2;
+}
+
+/** Client-side filters applicable to TMDB search results (tabs / providers / keywords ignored). */
+export function filterSearchResultsByDiscoverFilters(
+  results: Media[],
+  filters: {
+    with_genres?: string;
+    vote_average_gte?: number;
+    date_gte?: string;
+    date_lte?: string;
+    with_runtime_gte?: number;
+    with_runtime_lte?: number;
+  },
+  genreNameById: Map<string, string>,
+): Media[] {
+  return results.filter((media) => {
+    const genreIds = splitFilterIds(filters.with_genres);
+    if (genreIds.length > 0) {
+      const categories = (media.categories ?? "").toLowerCase();
+      const matched = genreIds.some((id) => {
+        const name = genreNameById.get(id)?.toLowerCase();
+        return name ? categories.includes(name) : false;
+      });
+      if (!matched) return false;
+    }
+
+    if (filters.vote_average_gte != null && (media.vote_average ?? 0) < filters.vote_average_gte) {
+      return false;
+    }
+
+    if (filters.date_gte && media.release_date && media.release_date < filters.date_gte) return false;
+    if (filters.date_lte && media.release_date && media.release_date > filters.date_lte) return false;
+
+    if (filters.with_runtime_gte != null && media.duration != null && media.duration < filters.with_runtime_gte) {
+      return false;
+    }
+    if (filters.with_runtime_lte != null && media.duration != null && media.duration > filters.with_runtime_lte) {
+      return false;
+    }
+
+    return true;
+  });
+}
 
 export function isMediaSelected(value: string): value is MediaSelected {
   for (const option of MEDIA_SELECTED) {
@@ -56,6 +106,7 @@ function parseDiscoverFilters(search: SearchRecord) {
 export function validateMovieDiscoverSearch(search: SearchRecord): Partial<MovieDiscoverSearch> {
   return {
     ...parseDiscoverFilters(search),
+    q: parseString(search.q),
     release_date_gte: parseString(search.release_date_gte),
     release_date_lte: parseString(search.release_date_lte),
   };
@@ -64,6 +115,7 @@ export function validateMovieDiscoverSearch(search: SearchRecord): Partial<Movie
 export function validateTvDiscoverSearch(search: SearchRecord): Partial<TvDiscoverSearch> {
   return {
     ...parseDiscoverFilters(search),
+    q: parseString(search.q),
     first_air_date_gte: parseString(search.first_air_date_gte),
     first_air_date_lte: parseString(search.first_air_date_lte),
   };

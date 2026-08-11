@@ -1,5 +1,11 @@
 import { zValidator } from "@hono/zod-validator";
-import { listMediaDto, mediaIdParamDto, mediaInputSchema, updateProgressDto } from "@seedarr/contracts";
+import {
+  listMediaDto,
+  mediaIdParamDto,
+  mediaInputSchema,
+  updateProgressDto,
+  upsertReviewDto,
+} from "@seedarr/contracts";
 
 import { requireRole } from "@/modules/auth/role.guard";
 import { MediaService } from "./media.service";
@@ -20,6 +26,21 @@ export const mediaRoutes = MediaService.createRouter()
   })
   .post("/:id/watchlist", zValidator("json", mediaInputSchema), async (c) => {
     return c.json(await c.var.service.toggleWatchList(c.req.valid("json")));
+  })
+  .put("/:id/review", zValidator("param", mediaIdParamDto), zValidator("json", upsertReviewDto), async (c) => {
+    const { id } = c.req.valid("param");
+    const body = c.req.valid("json");
+    return c.json(
+      await c.var.service.upsertReview(
+        Number(id),
+        { score: body.score, comment: body.comment, watchedAt: body.watchedAt },
+        body.media,
+      ),
+    );
+  })
+  .delete("/:id/review", zValidator("param", mediaIdParamDto), async (c) => {
+    const { id } = c.req.valid("param");
+    return c.json(await c.var.service.deleteReview(Number(id)));
   })
   .patch("/:id/progress", zValidator("param", mediaIdParamDto), zValidator("json", updateProgressDto), async (c) => {
     const { id } = c.req.valid("param");

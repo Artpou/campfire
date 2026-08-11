@@ -118,6 +118,8 @@ function VideoPlayerPage() {
             position,
             duration,
             downloadId: id,
+            completed: duration > 0 && position / duration >= 0.95,
+            updatedAt: new Date().toISOString(),
           },
         };
       });

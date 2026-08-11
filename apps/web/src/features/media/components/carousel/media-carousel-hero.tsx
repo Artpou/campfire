@@ -48,7 +48,7 @@ const HeroSlide = memo(function HeroSlide({ media, isLibraryMode }: HeroSlidePro
   const backdropUrl = getBackdropUrl(media.backdrop_path, "w1280") || getPosterUrl(media.poster_path, "w780");
 
   return (
-    <div className="relative w-full h-[360px] md:h-[400px]">
+    <div className="relative w-full h-[280px] md:h-[320px]">
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${backdropUrl})` }}
@@ -57,24 +57,25 @@ const HeroSlide = memo(function HeroSlide({ media, isLibraryMode }: HeroSlidePro
         <div className="absolute inset-0 bg-linear-to-t from-background via-background/30 to-transparent" />
       </div>
 
-      <div className="relative h-full container mx-auto max-w-6xl px-8 md:px-12 flex items-end pb-12 md:pb-16 gap-5 md:gap-8">
-        <div className="relative w-27.5 md:w-37.5 aspect-2/3">
+      <div className="relative h-full container mx-auto max-w-6xl px-5 md:px-8 flex items-end pb-8 md:pb-10 gap-3 md:gap-5">
+        <div className="relative hidden md:block w-28 md:w-32 aspect-2/3 shrink-0">
           <MediaCard media={media} hideButton hideType />
         </div>
 
-        <div className="max-w-2xl space-y-3 min-w-0">
-          <h1>{media.title}</h1>
+        <div className="max-w-2xl space-y-2 min-w-0 flex-1">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{media.title}</h1>
 
           <div className="flex items-center gap-2 flex-wrap text-sm">
-            {year && <span className="text-muted-foreground font-medium">{year}</span>}
+            {year && (
+              <Badge variant="outline" className="text-sm px-2.5 py-1">
+                {year}
+              </Badge>
+            )}
             {media.duration != null && media.duration > 0 && (
-              <>
-                {year && <span className="text-muted-foreground/40">·</span>}
-                <Badge variant="outline" className="text-sm px-2.5 py-1 gap-1.5">
-                  <ClockIcon className="size-3.5" />
-                  {formatRuntime(media.duration)}
-                </Badge>
-              </>
+              <Badge variant="outline" className="text-sm px-2.5 py-1 gap-1.5">
+                <ClockIcon className="size-3.5" />
+                {formatRuntime(media.duration)}
+              </Badge>
             )}
           </div>
 
@@ -86,7 +87,7 @@ const HeroSlide = memo(function HeroSlide({ media, isLibraryMode }: HeroSlidePro
             </p>
           )}
 
-          <div className="flex items-center gap-3 pt-1">
+          <div className="flex items-center gap-3 pt-0.5">
             {isLibraryMode && <MediaButtonPlay media={media} size="lg" />}
             {!isLibraryMode && role === "viewer" && <MediaButtonTorrent media={media} size="lg" />}
             {!isLibraryMode && role !== "viewer" && <MediaButtonRequest media={media} size="lg" />}
@@ -158,7 +159,7 @@ export function MediaHeroCarousel({ type }: MediaHeroCarouselProps) {
 
   if (isLoading) {
     return (
-      <div className="h-[400px] md:h-[450px] flex items-center justify-center">
+      <div className="h-[280px] md:h-[320px] flex items-center justify-center">
         <SeedarrLoader />
       </div>
     );
@@ -187,7 +188,7 @@ export function MediaHeroCarousel({ type }: MediaHeroCarouselProps) {
       </Carousel>
 
       {!!data?.length && data.length > 1 && (
-        <div className="absolute md:bottom-2 left-0 right-0 z-10">
+        <div className="absolute bottom-1 md:bottom-2 left-0 right-0 z-10">
           <div className="container mx-auto max-w-6xl px-4 md:px-6 flex items-center justify-center">
             <div className="flex items-center gap-2" role="tablist" aria-label={t`Carousel navigation`}>
               {data.map((item, index) => (
