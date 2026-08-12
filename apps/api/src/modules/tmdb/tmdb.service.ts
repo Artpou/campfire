@@ -2,7 +2,7 @@ import type { TmdbDiscoverQuery, TmdbKeywordsQuery, TmdbSearchQuery } from "@see
 import { Hono } from "hono";
 import ms from "ms";
 
-import { ServiceUnavailableError } from "@/shared/errors/error";
+import { NotFoundError, ServiceUnavailableError } from "@/shared/errors/error";
 import { createCache } from "@/shared/helpers/cache.helper";
 import { type Identifiable, IdentifiableService } from "@/shared/services/authenticated.service";
 
@@ -88,6 +88,7 @@ export async function tmdbRequest<T>(url: string, locale: string, options?: Fetc
   if (cached !== undefined) return cached;
 
   const res = await fetch(fullUrl, { signal: AbortSignal.timeout(TMDB_FETCH_TIMEOUT_MS) });
+  if (res.status === 404) throw new NotFoundError("Media");
   if (!res.ok) throw new ServiceUnavailableError(`TMDB (${res.status} ${res.statusText})`);
 
   const data = (await res.json()) as T & object;

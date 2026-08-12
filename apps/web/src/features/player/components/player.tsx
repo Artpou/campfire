@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 
-import { cn } from "@/lib/utils";
 import { Spinner } from "@/shared/ui/spinner";
 
 import { resolveSubtitleTracksToBlobs, type SubtitleTrack } from "@/features/downloads/helpers/subtitle-tracks.helper";
@@ -212,7 +211,7 @@ export function Player({
   }, [src, tracksKey, enableSubtitleDelay, resumeAt]);
 
   return (
-    <div className={cn("relative w-full", className)}>
+    <>
       {isEngineLoading && (
         <div
           className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black aspect-video"
@@ -225,6 +224,6 @@ export function Player({
         </div>
       )}
       <div ref={hostRef} />
-    </div>
+    </>
   );
 }

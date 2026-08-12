@@ -41,26 +41,21 @@ export function MediaCarouselHorizontal({ title, medias, seeMoreTo, seeMoreSearc
           onFocus={item.download?.id ? preloadMoviPlayer : undefined}
           onPointerDown={item.download?.id ? preloadMoviPlayer : undefined}
         >
-          <Link
-            to={item.download?.id ? "/downloads/$id/play" : item.type === "tv" ? "/tv/$id" : "/movies/$id"}
-            params={{ id: item.download?.id?.toString() || "" }}
-          >
-            <MediaCardHorizontal media={item}>
-              <div className="flex items-end justify-between gap-1">
-                {getRemainingTime(item) && <Badge variant="secondary">{getRemainingTime(item)}</Badge>}
+          <MediaCardHorizontal media={item}>
+            <div className="flex items-end justify-between gap-1">
+              {getRemainingTime(item) && <Badge variant="secondary">{getRemainingTime(item)}</Badge>}
 
-                <Link to={item.type === "tv" ? "/tv/$id" : "/movies/$id"} params={{ id: item.id.toString() }}>
-                  <Button variant="secondary" size="icon" icon={InfoIcon} aria-label="Info" />
-                </Link>
-              </div>
+              <Link to={item.type === "tv" ? "/tv/$id" : "/movies/$id"} params={{ id: item.id.toString() }}>
+                <Button variant="secondary" size="icon" icon={InfoIcon} aria-label="Info" />
+              </Link>
+            </div>
 
-              <div
-                className="absolute left-0 bottom-0 h-1.5 bg-primary rounded-r-md"
-                style={{ width: `${getWatchProgressPercent(item)}%` }}
-              />
-              <div className="w-full absolute left-0 bottom-0 h-1.5 bg-primary/40" />
-            </MediaCardHorizontal>
-          </Link>
+            <div
+              className="absolute left-0 bottom-0 h-1.5 bg-primary rounded-r-md"
+              style={{ width: `${getWatchProgressPercent(item)}%` }}
+            />
+            <div className="w-full absolute left-0 bottom-0 h-1.5 bg-primary/40" />
+          </MediaCardHorizontal>
         </CarouselItem>
       ))}
     </CarouselWrapper>

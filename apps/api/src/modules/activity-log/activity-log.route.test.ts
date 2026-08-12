@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { session } from "@/modules/auth/auth.schema";
 import { user } from "@/modules/user/user.schema";
 import { bodyOf, createTestDb, type TestDb } from "@/tests/test.helper";
+import { createHash } from "node:crypto";
 import { activityLog } from "./activity-log.schema";
 import { ActivityLogService } from "./activity-log.service";
 
@@ -23,6 +24,10 @@ const OWNER_TOKEN = "owner-session-token";
 const MEMBER_TOKEN = "member-session-token";
 const VIEWER_TOKEN = "viewer-session-token";
 
+function hashToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
 function seedUsers(db: TestDb) {
   db.insert(user)
     .values([
@@ -35,9 +40,9 @@ function seedUsers(db: TestDb) {
   const future = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   db.insert(session)
     .values([
-      { token: OWNER_TOKEN, userId: "owner-1", expiresAt: future, createdAt: new Date() },
-      { token: MEMBER_TOKEN, userId: "member-1", expiresAt: future, createdAt: new Date() },
-      { token: VIEWER_TOKEN, userId: "viewer-1", expiresAt: future, createdAt: new Date() },
+      { token: hashToken(OWNER_TOKEN), userId: "owner-1", expiresAt: future, createdAt: new Date() },
+      { token: hashToken(MEMBER_TOKEN), userId: "member-1", expiresAt: future, createdAt: new Date() },
+      { token: hashToken(VIEWER_TOKEN), userId: "viewer-1", expiresAt: future, createdAt: new Date() },
     ])
     .run();
 }

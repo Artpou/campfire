@@ -1,0 +1,26 @@
+---
+description: Avoid invalid DOM nesting that triggers React hydrate/validateDOMNesting warnings
+globs: apps/web/**/*.{tsx,jsx}
+alwaysApply: false
+---
+
+# React DOM nesting
+
+Seedarr web is client-rendered, but React still warns with messages like
+`In HTML, <button> cannot be a descendant of <button>` / hydration errors when the DOM is invalid.
+
+## Never nest interactive elements
+
+- Do **not** put `<button>` (or Radix primitives that render `button`, e.g. `Checkbox`, `Switch`) inside `Button`.
+- Do **not** put `<button>` / `Button` inside `<a>` / `Link`.
+- Do **not** nest `<a>` / `Link` inside another `Link`.
+
+## Patterns to use instead
+
+- Visual-only indicators inside a `Button` (e.g. a `<span>` check box), not another interactive primitive.
+- Card navigation: prefer `navigate()` + `onClick` on a non-link container, or wrap **only** non-interactive regions (poster/title) in `Link`. Keep action buttons as siblings with `stopPropagation`.
+- Carousel / request cards: one outer navigation target; info/action controls must not be nested links/buttons inside that target.
+
+## Quick check
+
+If removing a wrapper `Link`/`Button` still leaves working clicks on children, the nesting was wrong.

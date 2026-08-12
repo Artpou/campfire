@@ -1,15 +1,13 @@
 import { useMemo, useState } from "react";
 
-import { msg } from "@lingui/core/macro";
-import { useLingui } from "@lingui/react/macro";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Container } from "@/shared/ui/container";
 
+import { MediaCardHorizontal } from "@/features/media/components/card/media-card-horizontal";
 import { movieQueries } from "@/features/movies/hooks/movie.queries";
 import { TorrentIndexersTable } from "@/features/torrent/components/torrent-indexers-table";
 import { TorrentTable } from "@/features/torrent/components/torrent-table";
@@ -27,7 +25,6 @@ export const Route = createFileRoute("/_app/movies/$id/torrents")({
 
 function MovieTorrentsPage() {
   const params = Route.useParams();
-  const { t } = useLingui();
 
   const locale = useTmdbLocale();
   const { data: movie } = useSuspenseQuery(movieQueries.details(params.id, locale));
@@ -45,13 +42,7 @@ function MovieTorrentsPage() {
 
   return (
     <Container>
-      <AppBreadcrumb
-        items={[
-          { name: t(msg`Movies`), link: "/movies" },
-          { name: media.title, link: `/movies/${params.id}` },
-          { name: t(msg`Torrents`) },
-        ]}
-      />
+      <MediaCardHorizontal media={media} withOverview withSocialActions />
 
       {sources.length > 1 ? (
         <div className="xl:grid xl:grid-cols-7 xl:gap-6">

@@ -1,17 +1,16 @@
 import { useMemo, useState } from "react";
 
-import { msg } from "@lingui/core/macro";
-import { Trans, useLingui } from "@lingui/react/macro";
+import { Trans } from "@lingui/react/macro";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
-import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Container } from "@/shared/ui/container";
 import { Label } from "@/shared/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 
+import { MediaCardHorizontal } from "@/features/media/components/card/media-card-horizontal";
 import { TorrentIndexersTable } from "@/features/torrent/components/torrent-indexers-table";
 import { TorrentTable } from "@/features/torrent/components/torrent-table";
 import { indexerQueries } from "@/features/torrent/hooks/indexer.queries";
@@ -53,7 +52,6 @@ function TVTorrentsPage() {
   const params = Route.useParams();
   const search = Route.useSearch();
   const navigate = useNavigate();
-  const { t } = useLingui();
 
   const locale = useTmdbLocale();
   const { data: tvData } = useSuspenseQuery(tvQueries.details(params.id, locale));
@@ -103,13 +101,7 @@ function TVTorrentsPage() {
 
   return (
     <Container>
-      <AppBreadcrumb
-        items={[
-          { name: t(msg`TV Shows`), link: "/tv" },
-          { name: media.title, link: `/tv/${params.id}` },
-          { name: t(msg`Torrents`) },
-        ]}
-      />
+      <MediaCardHorizontal media={media} withOverview withSocialActions />
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-end mb-4">
         <div className="flex flex-col gap-2 w-full sm:w-48">

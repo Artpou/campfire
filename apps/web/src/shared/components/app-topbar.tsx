@@ -4,10 +4,11 @@ import { msg } from "@lingui/core/macro";
 import { Trans } from "@lingui/react";
 import { useLingui } from "@lingui/react/macro";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { FilmIcon, MonitorIcon, SearchIcon, SettingsIcon, TvIcon, UserIcon } from "lucide-react";
+import { FilmIcon, MonitorIcon, MoonIcon, SearchIcon, SettingsIcon, SunIcon, TvIcon, UserIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { SelectI18nLang } from "@/shared/components/select/select-i18n-lang";
+import { useTheme } from "@/shared/hooks/use-theme";
 import { Button } from "@/shared/ui/button";
 
 import { useAuth } from "@/features/auth/auth-store";
@@ -30,6 +31,7 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
   const navigate = useNavigate();
   const { t } = useLingui();
   const currentUser = useAuth((s) => s.user);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -101,6 +103,8 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
                 aria-label={t`Search`}
                 icon={SearchIcon}
               />
+
+              <Button variant="ghost" size="icon" onClick={toggleTheme} icon={theme === "dark" ? SunIcon : MoonIcon} />
 
               <Button variant="ghost" size="icon" asChild aria-label={t`Settings`} icon={SettingsIcon}>
                 <Link to="/settings" search={{}} />

@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ClockPlusIcon, HeartIcon } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { handleSafeClick } from "@/shared/helpers/button.helper";
 import { Badge } from "@/shared/ui/badge";
 import { Card } from "@/shared/ui/card";
@@ -54,8 +55,13 @@ export function MediaCard({
     !(!media.download.torrent && media.download.remoteLocation);
 
   const card = (
-    <Link {...detailLinkProps} className={className}>
-      <Card className="relative group overflow-hidden pt-0 pb-0 border-2 border-transparent transition-colors hover:border-primary size-full">
+    <Card
+      className={cn(
+        "relative group overflow-hidden pt-0 pb-0 border-2 border-transparent transition-colors hover:border-primary size-full",
+        className,
+      )}
+    >
+      <Link {...detailLinkProps}>
         <MediaImg media={media} type="poster" />
 
         {media.download && showDownloadProgress && (
@@ -88,8 +94,8 @@ export function MediaCard({
         )}
 
         {children}
-      </Card>
-    </Link>
+      </Link>
+    </Card>
   );
 
   if (!showPreview) {

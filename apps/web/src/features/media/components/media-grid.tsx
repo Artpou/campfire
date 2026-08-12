@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import type { Media } from "@seedarr/sdk";
 import { useIntersectionObserver } from "@uidotdev/usehooks";
@@ -29,13 +29,18 @@ export function MediaGrid({
   const onLoadMoreRef = useRef(onLoadMore);
   onLoadMoreRef.current = onLoadMore;
 
+  const displayedItems = useMemo(() => {
+    if (!items || items.length === 0) return [];
+    return new Map(items.map((item) => [item.id, item]));
+  }, [items]);
+
   useEffect(() => {
     if (entry?.isIntersecting && !isLoading && onLoadMoreRef.current) {
       onLoadMoreRef.current();
     }
   }, [entry?.isIntersecting, isLoading]);
 
-  if (!isLoading && (!items || !items.length)) return null;
+  if (!isLoading && (!displayedItems || items.length === 0)) return null;
 
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(165px,1fr))] gap-4">

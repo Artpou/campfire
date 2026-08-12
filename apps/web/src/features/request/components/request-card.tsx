@@ -1,5 +1,4 @@
 import type { Media, MediaRequest } from "@seedarr/sdk";
-import { Link } from "@tanstack/react-router";
 
 import { useRole } from "@/features/auth/hooks/use-role";
 import { MediaCardHorizontal } from "@/features/media/components/card/media-card-horizontal";
@@ -18,8 +17,18 @@ export function RequestCard({ request }: RequestCardProps) {
   const status = request.status ?? "pending";
   const media = request.media as Media;
 
-  const card = (
-    <MediaCardHorizontal media={media}>
+  return (
+    <MediaCardHorizontal
+      media={media}
+      link={
+        canTorrent && status === "pending"
+          ? {
+              to: media.type === "tv" ? "/tv/$id/torrents" : "/movies/$id/torrents",
+              params: { id: media.id.toString() },
+            }
+          : undefined
+      }
+    >
       <div className="space-y-2">
         <UserProfile className="flex w-fit mb-0" user={{ ...request.user, avatarPath: null }} size="xs" />
 
@@ -31,14 +40,4 @@ export function RequestCard({ request }: RequestCardProps) {
       </div>
     </MediaCardHorizontal>
   );
-
-  if (canTorrent && status === "pending") {
-    return (
-      <Link to={media.type === "tv" ? "/tv/$id/torrents" : "/movies/$id/torrents"} params={{ id: media.id.toString() }}>
-        {card}
-      </Link>
-    );
-  }
-
-  return card;
 }

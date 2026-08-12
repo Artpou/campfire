@@ -9,12 +9,10 @@ export interface SeedarrRouterContext {
   language: string;
 }
 
+/** At most 1 retry, and only for network/unknown errors (no HTTP status). */
 function shouldRetry(failureCount: number, error: unknown): boolean {
-  if (failureCount >= 3) return false;
-  if (error && typeof error === "object" && "status" in error) {
-    const status = (error as { status: number }).status;
-    if (status >= 400 && status < 500) return false;
-  }
+  if (failureCount >= 1) return false;
+  if (error && typeof error === "object" && "status" in error) return false;
   return true;
 }
 

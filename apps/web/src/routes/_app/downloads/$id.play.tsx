@@ -9,11 +9,12 @@ import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 
-import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
+import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
 
 import { buildSubtitleTracks } from "@/features/downloads/helpers/subtitle-tracks.helper";
 import { downloadQueries } from "@/features/downloads/hooks/download.queries";
+import { MediaCardHorizontal } from "@/features/media/components/card/media-card-horizontal";
 import { hasWatchProgress } from "@/features/media/helpers/media.helper";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 import { Player } from "@/features/player/components/player";
@@ -177,14 +178,6 @@ function VideoPlayerPage() {
   return (
     <Container className="max-w-7xl">
       <div className="space-y-4">
-        <AppBreadcrumb
-          items={[
-            { name: t(msg`Downloads`), link: "/downloads" },
-            { name: displayName, link: `/downloads/${id}` },
-            { name: t(msg`Play`) },
-          ]}
-        />
-
         {subtitleDialogOpen && (
           <SubtitleSearchDialog
             open={subtitleDialogOpen}
@@ -195,18 +188,22 @@ function VideoPlayerPage() {
           />
         )}
 
-        <div className="w-full bg-black rounded-lg overflow-hidden">
-          <Player
-            src={streamUrl}
-            tracks={subtitleTracks}
-            startAt={resumePosition}
-            onPlayer={handlePlayer}
-            onLoadedMetadata={handleLoadedMetadata}
-            onError={handlePlaybackError}
-            onAddSubtitles={download.mediaId != null ? () => setSubtitleDialogOpen(true) : undefined}
-            enableSubtitleDelay
-          />
+        <div className="flex justify-center">
+          <Card className="w-[70%] pb-0 pt-0 overflow-hidden">
+            <Player
+              src={streamUrl}
+              tracks={subtitleTracks}
+              startAt={resumePosition}
+              onPlayer={handlePlayer}
+              onLoadedMetadata={handleLoadedMetadata}
+              onError={handlePlaybackError}
+              onAddSubtitles={download.mediaId != null ? () => setSubtitleDialogOpen(true) : undefined}
+              enableSubtitleDelay
+            />
+          </Card>
         </div>
+
+        <MediaCardHorizontal media={media} withOverview withSocialActions withDownload />
       </div>
     </Container>
   );

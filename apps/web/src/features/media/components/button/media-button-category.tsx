@@ -1,7 +1,8 @@
 import { Trans, useLingui } from "@lingui/react/macro";
+import { CheckIcon } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { Button } from "@/shared/ui/button";
-import { Checkbox } from "@/shared/ui/checkbox";
 
 import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
 
@@ -20,7 +21,15 @@ export function MediaButtonCategory() {
       aria-pressed={showCategories}
       aria-label={t`Category`}
     >
-      <Checkbox checked={showCategories} className="pointer-events-none" tabIndex={-1} />
+      <span
+        aria-hidden
+        className={cn(
+          "flex size-4 shrink-0 items-center justify-center rounded-[4px] border border-muted-foreground",
+          showCategories && "border-primary bg-primary text-primary-foreground",
+        )}
+      >
+        {showCategories ? <CheckIcon className="size-3.5" /> : null}
+      </span>
       <Trans>Category</Trans>
     </Button>
   );

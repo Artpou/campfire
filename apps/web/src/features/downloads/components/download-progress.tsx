@@ -3,6 +3,7 @@ import type { Download } from "@seedarr/sdk";
 import { formatBytes, formatTime } from "@seedarr/shared";
 import { ClockIcon, DownloadIcon, PauseIcon, UploadIcon } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Progress } from "@/shared/ui/progress";
@@ -16,6 +17,7 @@ const CIRCULAR_STROKE = 4;
 
 interface DownloadProgressProps {
   download: Download;
+  className?: string;
   variant?: "bar" | "circular";
   size?: "sm" | "md" | "lg";
   /** Override pause/resume (e.g. when the parent already owns the mutations). */
@@ -48,10 +50,16 @@ function usePauseToggle(download: Download, onPauseResume?: () => void) {
   };
 }
 
-export function DownloadProgress({ download, variant = "bar", size = "md", onPauseResume }: DownloadProgressProps) {
+export function DownloadProgress({
+  download,
+  className,
+  variant = "bar",
+  size = "md",
+  onPauseResume,
+}: DownloadProgressProps) {
   if (variant === "circular") return <CircularProgress download={download} onPauseResume={onPauseResume} />;
 
-  return <BarProgress download={download} size={size} onPauseResume={onPauseResume} />;
+  return <BarProgress download={download} className={className} size={size} onPauseResume={onPauseResume} />;
 }
 
 function CircularProgress({ download, onPauseResume }: { download: Download; onPauseResume?: () => void }) {
@@ -108,10 +116,12 @@ function CircularProgress({ download, onPauseResume }: { download: Download; onP
 
 function BarProgress({
   download,
+  className,
   size,
   onPauseResume,
 }: {
   download: Download;
+  className?: string;
   size: "sm" | "md" | "lg";
   onPauseResume?: () => void;
 }) {
@@ -126,7 +136,7 @@ function BarProgress({
     const transferSpeed = download.torrent?.transferSpeed ?? 0;
 
     return (
-      <div className="space-y-1">
+      <div className={cn("space-y-1", className)}>
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <span className={`${textSize} text-blue-500`}>{progress.toFixed(size === "lg" ? 1 : 0)}%</span>
@@ -154,7 +164,7 @@ function BarProgress({
 
   if (size === "sm") {
     return (
-      <div className="flex gap-1 items-center max-w-[600px]">
+      <div className={cn("flex gap-1 items-center max-w-[600px]", className)}>
         <Badge variant="secondary">
           {isPaused ? (
             <span className={textSize}>
@@ -185,7 +195,7 @@ function BarProgress({
   }
 
   return (
-    <div>
+    <div className={cn(className)}>
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           {isPaused ? (

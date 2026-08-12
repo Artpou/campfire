@@ -2,11 +2,10 @@ import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
-import { FileIcon, GlobeIcon, KeyIcon, MoonIcon, PaletteIcon, SaveIcon, StarIcon, SunIcon } from "lucide-react";
+import { FileIcon, GlobeIcon, KeyIcon, PaletteIcon, SaveIcon, StarIcon } from "lucide-react";
 
 import { SelectI18nLang } from "@/shared/components/select/select-i18n-lang";
 import { SelectQuality } from "@/shared/components/select/select-quality";
-import { useTheme } from "@/shared/hooks/use-theme";
 import { Button } from "@/shared/ui/button";
 import { Checkbox } from "@/shared/ui/checkbox";
 import { Input } from "@/shared/ui/input";
@@ -23,7 +22,6 @@ export function SettingsGeneralTab() {
   const maxSize = useUserPreferences((s) => s.maxSize);
   const setQuality = useUserPreferences((s) => s.setQuality);
   const setMaxSize = useUserPreferences((s) => s.setMaxSize);
-  const { theme, toggleTheme } = useTheme();
   const [passwordOpen, setPasswordOpen] = useState(false);
 
   return (
@@ -51,20 +49,6 @@ export function SettingsGeneralTab() {
             <SelectI18nLang />
           </div>
         </div>
-        <div className="flex items-center justify-between gap-4">
-          <div className="space-y-1">
-            <Label>
-              <Trans>Theme</Trans>
-            </Label>
-            <p className="text-sm text-muted-foreground">
-              <Trans>Switch between light and dark mode.</Trans>
-            </p>
-          </div>
-          <Button variant="secondary" onClick={toggleTheme}>
-            {theme === "dark" ? <SunIcon className="size-4" /> : <MoonIcon className="size-4" />}
-            {theme === "dark" ? <Trans>Light mode</Trans> : <Trans>Dark mode</Trans>}
-          </Button>
-        </div>
       </div>
 
       <div className="flex items-center justify-between gap-4 border rounded-md p-4">
@@ -76,6 +60,9 @@ export function SettingsGeneralTab() {
           <Trans>Change Password</Trans>
         </Button>
       </div>
+
+      {isAdmin && <TmdbApiKeySection />}
+      {isOwner && <ShowMediaRatingsSection />}
 
       <div className="flex flex-col gap-4 border rounded-md p-4">
         <h3 className="flex items-center gap-3">
@@ -121,9 +108,6 @@ export function SettingsGeneralTab() {
           </div>
         </div>
       </div>
-
-      {isOwner && <ShowMediaRatingsSection />}
-      {isAdmin && <TmdbApiKeySection />}
 
       <PasswordChangeModal open={passwordOpen} onOpenChange={setPasswordOpen} />
     </section>
