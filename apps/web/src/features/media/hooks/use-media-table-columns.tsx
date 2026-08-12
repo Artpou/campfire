@@ -101,11 +101,11 @@ export function useMediaTableColumns() {
         }),
         columnHelper.display({
           id: "actions",
-          meta: { headerClassName: "w-28 md:w-36", cellClassName: "w-28 md:w-36" },
+          meta: { headerClassName: "w-36 md:w-44", cellClassName: "w-36 md:w-44" },
           cell: ({ row }) => (
             <div className="flex items-center justify-end gap-1.5">
               <MediaButtonReview media={row.original} />
-              <MediaButtonPlay media={row.original} iconOnly />
+              <MediaButtonPlay media={row.original} size="sm" />
             </div>
           ),
           enableSorting: false,

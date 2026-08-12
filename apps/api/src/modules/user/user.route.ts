@@ -10,7 +10,6 @@ import {
 import { BadRequestError } from "@/shared/errors/error";
 
 import { requireRole } from "@/modules/auth/role.guard";
-import { MediaService } from "@/modules/media/media.service";
 import { UserService } from "./user.service";
 
 export const userRoutes = UserService.createRouter()
@@ -31,14 +30,16 @@ export const userRoutes = UserService.createRouter()
     const body = await c.req.parseBody();
     const file = body.file;
     if (!(file instanceof File)) throw new BadRequestError("Missing zip file");
-    const mediaService = new MediaService(c.get("user"));
-    return c.json(await mediaService.importLetterboxd(file));
+    return c.json(await c.var.service.importLetterboxd(file));
   })
   .post("/me/letterboxd/sync", async (c) => {
     // Diary RSS can be large; TMDB batching is rate-limited (~10 req/s).
     c.header("X-Accel-Buffering", "no");
-    const mediaService = new MediaService(c.get("user"));
-    return c.json(await mediaService.syncLetterboxd());
+    return c.json(await c.var.service.syncLetterboxd());
+  })
+  .get("/:id/stats", zValidator("param", stringIdParamDto), async (c) => {
+    const { id } = c.req.valid("param");
+    return c.json(await c.var.service.getStats(id));
   })
   .get("/:id", zValidator("param", stringIdParamDto), async (c) => {
     const { id } = c.req.valid("param");

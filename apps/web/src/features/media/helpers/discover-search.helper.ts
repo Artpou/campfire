@@ -5,7 +5,7 @@ import { splitFilterIds } from "@/features/media/helpers/filter-options.helper";
 import type { MovieFiltersValue } from "@/features/movies/components/movie-filters-sheet";
 import type { TvFiltersValue } from "@/features/tv/components/tv-filters-sheet";
 
-const MEDIA_SELECTED = ["home", "cinema", "top-rated", "upcoming"] as const;
+const MEDIA_SELECTED = ["new", "top-rated", "downloaded", "upcoming"] as const;
 type MediaSelected = (typeof MEDIA_SELECTED)[number];
 
 type DiscoverSort = "vote_average.desc" | "popularity.desc";
@@ -85,7 +85,7 @@ export function isMediaSelected(value: string): value is MediaSelected {
   return false;
 }
 
-function getMediaSelected(value: unknown, fallback: MediaSelected = "home"): MediaSelected {
+function getMediaSelected(value: unknown, fallback: MediaSelected = "new"): MediaSelected {
   if (typeof value === "string" && isMediaSelected(value)) return value;
   return fallback;
 }
@@ -127,18 +127,22 @@ function sortByForSelected(selected: MediaSelected): DiscoverSort | undefined {
   return undefined;
 }
 
+/** "downloaded" tab uses local media list, not TMDB discover. */
+export function isDownloadedTab(selected?: MediaSelected): boolean {
+  return selected === "downloaded";
+}
+
 export function buildMovieDiscoverOptions(search: Partial<MovieDiscoverSearch>) {
   const selected = getMediaSelected(search.selected);
   const today = todayIsoDate();
 
   return {
     sort_by: sortByForSelected(selected),
-    with_release_type: selected === "home" ? "4|5" : selected === "cinema" ? "3" : undefined,
-    with_genres: search.with_genres,
-    with_watch_providers: search.with_watch_providers,
+    with_genres: selected !== "downloaded" ? search.with_genres : undefined,
+    with_watch_providers: selected !== "downloaded" ? search.with_watch_providers : undefined,
     "primary_release_date.gte": search.release_date_gte ?? (selected === "upcoming" ? today : undefined),
     "primary_release_date.lte": search.release_date_lte,
-    with_keywords: search.with_keywords,
+    with_keywords: selected !== "downloaded" ? search.with_keywords : undefined,
     "with_runtime.gte": search.with_runtime_gte,
     "with_runtime.lte": search.with_runtime_lte,
     "vote_average.gte": search.vote_average_gte,
@@ -154,11 +158,11 @@ export function buildTvDiscoverOptions(search: Partial<TvDiscoverSearch>): Disco
 
   return {
     sort_by: sortByForSelected(selected),
-    with_genres: search.with_genres,
-    with_watch_providers: search.with_watch_providers,
+    with_genres: selected !== "downloaded" ? search.with_genres : undefined,
+    with_watch_providers: selected !== "downloaded" ? search.with_watch_providers : undefined,
     "first_air_date.gte": search.first_air_date_gte ?? (selected === "upcoming" ? today : undefined),
     "first_air_date.lte": search.first_air_date_lte,
-    with_keywords: search.with_keywords,
+    with_keywords: selected !== "downloaded" ? search.with_keywords : undefined,
     "with_runtime.gte": search.with_runtime_gte,
     "with_runtime.lte": search.with_runtime_lte,
     "vote_average.gte": search.vote_average_gte,

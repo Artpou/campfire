@@ -18,7 +18,6 @@ export function TvRelated({ recommendedTV }: TvRelatedProps) {
         </span>
       }
       data={recommendedTV}
-      hideType
     />
   );
 }

@@ -11,10 +11,11 @@ import { Carousel, CarouselContent, CarouselNext, CarouselPrevious } from "@/sha
 type CarouselWrapperProps = Omit<React.ComponentProps<typeof Carousel>, "title"> & {
   title?: ReactNode;
   seeMoreTo?: string;
+  seeMoreSearch?: Record<string, unknown>;
   children: React.ReactNode;
 };
 
-export function CarouselWrapper({ title, seeMoreTo, children, ...props }: CarouselWrapperProps) {
+export function CarouselWrapper({ title, seeMoreTo, seeMoreSearch, children, ...props }: CarouselWrapperProps) {
   return (
     <Carousel
       {...props}
@@ -26,11 +27,11 @@ export function CarouselWrapper({ title, seeMoreTo, children, ...props }: Carous
       plugins={[WheelGesturesPlugin()]}
     >
       <div className="flex items-end justify-between gap-4 mb-3">
-        <h2 className="text-xl font-bold">{title}</h2>
+        <h2 className="text-lg font-medium">{title}</h2>
         <div className="flex items-center gap-2">
           {seeMoreTo && (
             <Button variant="ghost" size="sm" asChild>
-              <Link to={seeMoreTo}>
+              <Link to={seeMoreTo} search={seeMoreSearch}>
                 <Trans>See more</Trans>
               </Link>
             </Button>

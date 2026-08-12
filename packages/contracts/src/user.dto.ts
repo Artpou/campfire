@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { userRoleEnum } from "./enums";
+import { mediaTypeEnum, userRoleEnum } from "./enums";
 
 export const createUserDto = z.object({
   username: z.string().min(3).max(64),
@@ -18,9 +18,6 @@ export type UpdateUserInput = z.infer<typeof updateUserDto>;
 
 export const updateProfileDto = z.object({
   pseudo: z.string().trim().min(1).max(64).nullable().optional(),
-  showWatchList: z.boolean().optional(),
-  showLikes: z.boolean().optional(),
-  showWatchHistory: z.boolean().optional(),
   letterboxdUsername: z
     .string()
     .trim()
@@ -37,3 +34,24 @@ export const changePasswordDto = z.object({
   newPassword: z.string().min(8).max(128),
 });
 export type ChangePasswordInput = z.infer<typeof changePasswordDto>;
+
+export const userStatsDto = z.object({
+  movies: z.object({
+    allTime: z.number().int(),
+    thisYear: z.number().int(),
+  }),
+  tv: z.object({
+    allTime: z.number().int(),
+    thisYear: z.number().int(),
+  }),
+  topRated: z.array(
+    z.object({
+      id: z.number().int(),
+      type: z.enum(mediaTypeEnum),
+      title: z.string(),
+      poster_path: z.string().nullable(),
+      score: z.number(),
+    }),
+  ),
+});
+export type UserStats = z.infer<typeof userStatsDto>;

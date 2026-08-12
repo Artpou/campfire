@@ -3,7 +3,6 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { ExternalLinkIcon, UserIcon } from "lucide-react";
 
-import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Badge } from "@/shared/ui/badge";
@@ -20,7 +19,6 @@ export const Route = createFileRoute("/_app/person/$id/")({
   loader: ({ context, params }) =>
     context.queryClient.ensureQueryData(personQueries.details(params.id, countryToTmdbLocale(context.language))),
   component: PersonPage,
-  pendingComponent: () => <SeedarrLoaderContainer />,
 });
 
 function PersonPage() {

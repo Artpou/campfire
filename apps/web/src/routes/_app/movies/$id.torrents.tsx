@@ -6,7 +6,6 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
-import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Container } from "@/shared/ui/container";
@@ -24,11 +23,6 @@ export const Route = createFileRoute("/_app/movies/$id/torrents")({
       context.queryClient.ensureQueryData(movieQueries.details(params.id, countryToTmdbLocale(context.language))),
       context.queryClient.ensureQueryData(indexerQueries.list({ withDisabled: false })),
     ]),
-  pendingComponent: () => (
-    <div className="flex items-center justify-center size-full">
-      <SeedarrLoader />
-    </div>
-  ),
 });
 
 function MovieTorrentsPage() {

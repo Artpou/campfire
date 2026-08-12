@@ -1,7 +1,5 @@
 import { LRUCache } from "lru-cache";
 
-import { logger } from "./logger.helper";
-
 export interface CacheOptions<V> {
   max: number;
   ttl: number;
@@ -16,10 +14,6 @@ export function createCache<V extends {}>(opts: CacheOptions<V>): LRUCache<strin
     ttl: opts.ttl,
     dispose: opts.dispose,
   });
-
-  if (opts.name) {
-    logger.debug("CACHE", `created "${opts.name}" (max=${opts.max}, ttl=${opts.ttl}ms)`);
-  }
 
   return cache;
 }

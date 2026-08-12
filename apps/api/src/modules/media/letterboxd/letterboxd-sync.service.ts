@@ -7,9 +7,9 @@ import { parseIsoDate } from "@/shared/helpers/csv.helper";
 import { logger } from "@/shared/helpers/logger.helper";
 
 import { db } from "@/db/db";
-import { applyUserReview, ensureUserLike, upsertMediaRow } from "@/modules/media/letterboxd-apply.helper";
+import { applyUserReview, ensureUserLike, upsertMediaRow } from "@/modules/media/letterboxd/letterboxd-apply.query";
 import { media } from "@/modules/media/media.schema";
-import { getSettingsTmdbApiKey } from "@/modules/settings/tmdb-key.helper";
+import { getSettingsTmdbApiKey } from "@/modules/settings/tmdb-key.query";
 import { fetchTmdbById, sleep, tmdbItemToMediaInsert } from "@/modules/tmdb/tmdb-resolve.helper";
 import { user } from "@/modules/user/user.schema";
 
@@ -125,26 +125,27 @@ export async function syncLetterboxdDiary(userId: string): Promise<LetterboxdSyn
     return { synced: 0, skipped: 0, errors: 0 };
   }
 
-  const existingIds = new Set(
-    (
-      await db
-        .select({ id: media.id })
-        .from(media)
-        .where(
-          inArray(
-            media.id,
-            entries.map((e) => e.tmdbId),
-          ),
-        )
-    ).map((r) => r.id),
-  );
+  const existingRows = await db
+    .select({ id: media.id, duration: media.duration, categories: media.categories })
+    .from(media)
+    .where(
+      inArray(
+        media.id,
+        entries.map((e) => e.tmdbId),
+      ),
+    );
+  const existingMap = new Map(existingRows.map((r) => [r.id, r]));
 
   let synced = 0;
   let skipped = 0;
   let errors = 0;
 
-  const toFetch = entries.filter((e) => !existingIds.has(e.tmdbId));
-  const alreadyInDb = entries.filter((e) => existingIds.has(e.tmdbId));
+  const toFetch = entries.filter((e) => !existingMap.has(e.tmdbId));
+  const alreadyInDb = entries.filter((e) => existingMap.has(e.tmdbId));
+  const needsMetadataRefresh = alreadyInDb.filter((e) => {
+    const row = existingMap.get(e.tmdbId);
+    return row && (!row.duration || !row.categories);
+  });
 
   for (const entry of alreadyInDb) {
     try {
@@ -154,6 +155,18 @@ export async function syncLetterboxdDiary(userId: string): Promise<LetterboxdSyn
       logger.error("LETTERBOXD", `Failed applying existing ${entry.tmdbId}: ${error}`);
       errors++;
     }
+  }
+
+  for (let i = 0; i < needsMetadataRefresh.length; i += BATCH_SIZE) {
+    const batch = needsMetadataRefresh.slice(i, i + BATCH_SIZE);
+    await Promise.allSettled(
+      batch.map(async (entry) => {
+        const item = await fetchTmdbById(entry.tmdbId, entry.type);
+        if (!item?.id) return;
+        await upsertMediaRow(tmdbItemToMediaInsert(item, entry.type));
+      }),
+    );
+    if (i + BATCH_SIZE < needsMetadataRefresh.length) await sleep(BATCH_DELAY_MS);
   }
 
   for (let i = 0; i < toFetch.length; i += BATCH_SIZE) {

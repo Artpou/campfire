@@ -8,7 +8,7 @@ import { CarouselWrapper } from "@/shared/ui/carousel-wrapper";
 
 import { PersonCard } from "@/features/person/components/person-card";
 
-type MediaCastPerson = {
+type Person = {
   id: number;
   name: string;
   profile_path?: string | null;
@@ -16,12 +16,12 @@ type MediaCastPerson = {
   type: "Director" | "Actor";
 };
 
-interface MediaCastCarouselProps {
-  people: MediaCastPerson[];
+interface PersonCarouselProps {
+  people: Person[];
   title?: ReactNode;
 }
 
-export function MediaCastCarousel({ people, title }: MediaCastCarouselProps) {
+export function PersonCarousel({ people, title }: PersonCarouselProps) {
   if (people.length === 0) return null;
 
   return (

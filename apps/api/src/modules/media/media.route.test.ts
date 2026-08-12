@@ -72,37 +72,71 @@ describe("Media Routes", () => {
     });
   });
 
-  describe("GET / - list with filters", () => {
+  describe("GET / - list with filters and sorting", () => {
     beforeEach(() => {
+      // Données insérées volontairement hors ordre alphabétique
       testDbRef.current
         ?.insert(media)
         .values([
-          { id: 1, type: "movie", title: "Movie 1", imdbId: "tt0000001" },
-          { id: 2, type: "tv", title: "TV 1", imdbId: "tt0000002" },
+          { id: 1, type: "movie", title: "Zebra", imdbId: "tt0000001" },
+          { id: 2, type: "tv", title: "Alpha", imdbId: "tt0000002" },
+          { id: 3, type: "movie", title: "Beta", imdbId: "tt0000003" },
         ])
         .run();
     });
 
     it("returns paginated results", async () => {
       const body = await bodyOf(await mediaRoutes.request("/?page=1&limit=10"));
-      expect(body.results).toHaveLength(2);
+      expect(body.results).toHaveLength(3);
       expect(body.page).toBe(1);
     });
 
     it("filters by type", async () => {
       const body = await bodyOf(await mediaRoutes.request("/?type=movie&page=1&limit=10"));
-      expect(body.results).toHaveLength(1);
-      expect(body.results[0].type).toBe("movie");
+      expect(body.results).toHaveLength(2);
+      expect(body.results.every((r: { type: string }) => r.type === "movie")).toBe(true);
     });
 
     it("filters by like", async () => {
-      await mediaRoutes.request(
-        "/1/like",
-        json("POST", { id: 1, type: "movie", title: "Movie 1", imdbId: "tt0000001" }),
-      );
+      await mediaRoutes.request("/1/like", json("POST", { id: 1, type: "movie", title: "Zebra", imdbId: "tt0000001" }));
       const body = await bodyOf(await mediaRoutes.request("/?filter=like&page=1&limit=10"));
       expect(body.results).toHaveLength(1);
       expect(body.results[0].id).toBe(1);
+    });
+
+    it("filter=calendar with activity orderBy succeeds", async () => {
+      await mediaRoutes.request("/1/like", json("POST", { id: 1, type: "movie", title: "Zebra", imdbId: "tt0000001" }));
+      await mediaRoutes.request("/3/like", json("POST", { id: 3, type: "movie", title: "Beta", imdbId: "tt0000003" }));
+
+      const res = await mediaRoutes.request("/?filter=calendar&page=1&limit=100&userId=user-1");
+      expect(res.status).toBe(200);
+      const body = await bodyOf(res);
+      expect(body.results.length).toBeGreaterThanOrEqual(2);
+      expect(body.results.every((r: { id: number }) => [1, 3].includes(r.id))).toBe(true);
+    });
+
+    describe("Sorting", () => {
+      it("sorts by title ascending (ASC)", async () => {
+        const body = await bodyOf(await mediaRoutes.request("/?sortBy=title&sortOrder=asc&page=1&limit=10"));
+        const titles = body.results.map((r: { title: string }) => r.title);
+        expect(titles).toEqual(["Alpha", "Beta", "Zebra"]);
+      });
+
+      it("sorts by title descending (DESC)", async () => {
+        const body = await bodyOf(await mediaRoutes.request("/?sortBy=title&sortOrder=desc&page=1&limit=10"));
+        const titles = body.results.map((r: { title: string }) => r.title);
+        expect(titles).toEqual(["Zebra", "Beta", "Alpha"]);
+      });
+
+      it("maintains correct sort order across paginated pages", async () => {
+        const page1 = await bodyOf(await mediaRoutes.request("/?sortBy=title&sortOrder=asc&page=1&limit=2"));
+        expect(page1.results.map((r: { title: string }) => r.title)).toEqual(["Alpha", "Beta"]);
+        expect(page1.hasMore).toBe(true);
+
+        const page2 = await bodyOf(await mediaRoutes.request("/?sortBy=title&sortOrder=asc&page=2&limit=2"));
+        expect(page2.results.map((r: { title: string }) => r.title)).toEqual(["Zebra"]);
+        expect(page2.hasMore).toBe(false);
+      });
     });
   });
 });

@@ -1,22 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
+import type { ListMediaQuery } from "@seedarr/contracts";
 import type { Media } from "@seedarr/sdk";
 import { useInfiniteQuery, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import type { OnChangeFn, SortingState } from "@tanstack/react-table";
 import { BookmarkIcon, CalendarIcon, ClockIcon, HeartIcon, PencilIcon, SaveIcon } from "lucide-react";
 
 import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
+import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
+import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
 import { Input } from "@/shared/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { useAuth } from "@/features/auth/auth-store";
+import { MediaButtonCategory } from "@/features/media/components/button/media-button-category";
+import { MediaCarouselCategory } from "@/features/media/components/carousel/media-carousel-category";
 import { MediaCalendar } from "@/features/media/components/media-calendar";
 import { MediaGrid } from "@/features/media/components/media-grid";
 import { MediaTable } from "@/features/media/components/media-table";
 import { MediaTabsViewMode } from "@/features/media/components/tabs/media-tabs-view-mode";
+import { listQueryToSorting, sortingToListQuery } from "@/features/media/helpers/media-sort.helper";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 import { RequestCarousel } from "@/features/request/components/request-carousel";
 import { requestQueries } from "@/features/request/hooks/request.queries";
@@ -24,12 +31,12 @@ import { useUserPreferences } from "@/features/settings/stores/user-preference-s
 import { RoleBadge } from "@/features/user/components/role-badge";
 import { UserAvatar } from "@/features/user/components/user-avatar";
 import { UserButtonLetterboxd } from "@/features/user/components/user-button-letterboxd";
+import { UserProfileStats } from "@/features/user/components/user-profile-stats";
 import { userQueries, useUpdateProfile } from "@/features/user/hooks/user.queries";
 
 export const Route = createFileRoute("/_app/user/$id/")({
   loader: ({ context, params }) => context.queryClient.ensureQueryData(userQueries.details(params.id)),
   component: UserProfilePage,
-  pendingComponent: () => <SeedarrLoaderContainer />,
 });
 
 type ProfileTab = "calendar" | "watchlist" | "liked" | "history";
@@ -47,11 +54,15 @@ function MediaCollectionView({
   viewMode,
   isLoading,
   onLoadMore,
+  sorting,
+  onSortingChange,
 }: {
   items: Media[];
   viewMode: "grid" | "list";
   isLoading?: boolean;
   onLoadMore?: () => void;
+  sorting?: SortingState;
+  onSortingChange?: OnChangeFn<SortingState>;
 }) {
   if (!isLoading && items.length === 0) {
     return (
@@ -62,10 +73,18 @@ function MediaCollectionView({
   }
 
   if (viewMode === "grid") {
-    return <MediaGrid items={items} isLoading={isLoading} onLoadMore={onLoadMore} />;
+    return <MediaGrid items={items} isLoading={isLoading} onLoadMore={onLoadMore} showType />;
   }
 
-  return <MediaTable media={items} isLoadingMore={isLoading} onLoadMore={onLoadMore} />;
+  return (
+    <MediaTable
+      media={items}
+      isLoadingMore={isLoading}
+      onLoadMore={onLoadMore}
+      sorting={sorting}
+      onSortingChange={onSortingChange}
+    />
+  );
 }
 
 function UserProfilePage() {
@@ -75,8 +94,12 @@ function UserProfilePage() {
   const isOwnProfile = currentUser?.id === id;
   const updateProfile = useUpdateProfile();
   const viewMode = useUserPreferences((s) => s.viewMode);
+  const showCategories = useUserPreferences((s) => s.showCategories);
   const [tab, setTab] = useState<ProfileTab>("calendar");
   const [search, setSearch] = useState("");
+  const [withGenres, setWithGenres] = useState<string | undefined>();
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const sortQuery = sortingToListQuery(sorting);
 
   const { data: profileUser } = useSuspenseQuery(userQueries.details(id));
 
@@ -93,29 +116,38 @@ function UserProfilePage() {
     enabled: isOwnProfile,
   });
 
-  const canSeeWatchList = isOwnProfile || profileUser.showWatchList !== false;
-  const canSeeLikes = isOwnProfile || profileUser.showLikes !== false;
-  const canSeeHistory = isOwnProfile || profileUser.showWatchHistory === true;
-  const canSeeCalendar = canSeeLikes || canSeeHistory;
+  const pendingRequests = useMemo(
+    () =>
+      (requestsData ?? []).filter((r) => {
+        const status = (r as { status?: string }).status;
+        return !status || status === "pending";
+      }),
+    [requestsData],
+  );
+
+  const listBase: Pick<ListMediaQuery, "userId" | "with_genres" | "sortBy" | "sortOrder"> = {
+    userId: id,
+    with_genres: withGenres,
+    ...sortQuery,
+  };
 
   const calendarQuery = useInfiniteQuery({
-    ...mediaQueries.list({ filter: "calendar", userId: id, limit: 100 }),
-    enabled: canSeeCalendar && tab === "calendar",
+    ...mediaQueries.list({ filter: "calendar", ...listBase, limit: 100 }),
+    enabled: tab === "calendar",
   });
   const watchListQuery = useInfiniteQuery({
-    ...mediaQueries.list({ filter: "watch-list", userId: id, limit: 40 }),
-    enabled: canSeeWatchList && tab === "watchlist",
+    ...mediaQueries.list({ filter: "watch-list", ...listBase, limit: 40 }),
+    enabled: tab === "watchlist",
   });
   const likesQuery = useInfiniteQuery({
-    ...mediaQueries.list({ filter: "like", userId: id, limit: 40 }),
-    enabled: canSeeLikes && tab === "liked",
+    ...mediaQueries.list({ filter: "like", ...listBase, limit: 40 }),
+    enabled: tab === "liked",
   });
   const historyQuery = useInfiniteQuery({
-    ...mediaQueries.list({ filter: "history", userId: id, limit: 40 }),
-    enabled: canSeeHistory && tab === "history",
+    ...mediaQueries.list({ filter: "history", ...listBase, limit: 40 }),
+    enabled: tab === "history",
   });
 
-  // Load every calendar page so months are complete.
   useEffect(() => {
     if (tab !== "calendar") return;
     if (calendarQuery.hasNextPage && !calendarQuery.isFetchingNextPage) {
@@ -146,41 +178,15 @@ function UserProfilePage() {
     updateProfile.mutate({ pseudo: trimmed.length > 0 ? trimmed : null }, { onSuccess: () => setEditingPseudo(false) });
   };
 
-  const availableTabs = useMemo(() => {
-    const tabs: { value: ProfileTab; label: React.ReactNode; icon: typeof CalendarIcon; enabled: boolean }[] = [
-      {
-        value: "calendar",
-        label: <Trans>Calendar</Trans>,
-        icon: CalendarIcon,
-        enabled: canSeeCalendar,
-      },
-      {
-        value: "watchlist",
-        label: <Trans>Watchlist</Trans>,
-        icon: BookmarkIcon,
-        enabled: canSeeWatchList,
-      },
-      {
-        value: "liked",
-        label: <Trans>Liked</Trans>,
-        icon: HeartIcon,
-        enabled: canSeeLikes,
-      },
-      {
-        value: "history",
-        label: <Trans>Watch history</Trans>,
-        icon: ClockIcon,
-        enabled: canSeeHistory,
-      },
-    ];
-    return tabs.filter((item) => item.enabled);
-  }, [canSeeCalendar, canSeeWatchList, canSeeLikes, canSeeHistory]);
-
-  useEffect(() => {
-    if (!availableTabs.some((item) => item.value === tab)) {
-      setTab(availableTabs[0]?.value ?? "calendar");
-    }
-  }, [availableTabs, tab]);
+  const availableTabs = useMemo(
+    () => [
+      { value: "calendar" as const, label: <Trans>Calendar</Trans>, icon: CalendarIcon },
+      { value: "watchlist" as const, label: <Trans>Watchlist</Trans>, icon: BookmarkIcon },
+      { value: "liked" as const, label: <Trans>Liked</Trans>, icon: HeartIcon },
+      { value: "history" as const, label: <Trans>Watch history</Trans>, icon: ClockIcon },
+    ],
+    [],
+  );
 
   const activeQuery =
     tab === "calendar"
@@ -196,13 +202,13 @@ function UserProfilePage() {
 
   return (
     <Container className="space-y-8 pb-20">
-      <div className="flex flex-col lg:flex-row gap-6 items-center lg:items-start relative">
-        <div className="max-w-[250px] flex justify-center lg:justify-start">
-          <UserAvatar user={profileUser} editable={isOwnProfile} />
-        </div>
+      <div className="flex flex-col lg:flex-row gap-6 items-center lg:items-start justify-between w-full">
+        <Card className="flex flex-row items-center gap-6 p-6 lg:min-w-[520px]">
+          <div className="max-w-[250px] flex justify-center lg:justify-start">
+            <UserAvatar user={profileUser} editable={isOwnProfile} />
+          </div>
 
-        <div className="flex flex-col md:flex-row justify-between items-center md:items-start w-full gap-4 text-center md:text-left min-w-0">
-          <div className="flex flex-col gap-2 w-full max-w-md">
+          <div className="flex flex-col gap-1 w-full max-w-md">
             {editingPseudo && isOwnProfile ? (
               <div className="flex items-center gap-2">
                 <Input
@@ -219,7 +225,7 @@ function UserProfilePage() {
               </div>
             ) : (
               <div className="flex items-center gap-2 justify-center md:justify-start">
-                <h1 className="text-2xl font-bold truncate">{displayName}</h1>
+                <h2 className=" font-bold truncate">{displayName}</h2>
                 {isOwnProfile && (
                   <Button
                     variant="outline"
@@ -238,38 +244,68 @@ function UserProfilePage() {
             <div className="flex items-center gap-2 justify-center md:justify-start flex-wrap mt-1">
               <RoleBadge role={profileUser.role} />
               {profileUser.createdAt && (
-                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                <Badge variant="outline">
                   <CalendarIcon className="size-3.5" />
                   {new Date(profileUser.createdAt).toLocaleDateString()}
-                </span>
+                </Badge>
               )}
             </div>
           </div>
+        </Card>
+
+        <div className="flex flex-col gap-3">
+          <UserProfileStats userId={id} enabled />
           {isOwnProfile && <UserButtonLetterboxd user={profileUser} />}
         </div>
       </div>
 
-      {isOwnProfile && requestsData && requestsData.length > 0 && <RequestCarousel requests={requestsData} />}
+      {isOwnProfile && pendingRequests.length > 0 && (
+        <RequestCarousel
+          requests={pendingRequests}
+          seeMoreTo={`/user/${id}/requests`}
+          seeMoreSearch={{ status: "pending" }}
+        />
+      )}
 
       {availableTabs.length > 0 && (
         <div className="space-y-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            <MediaTabsViewMode />
-            <Tabs value={tab} onValueChange={(v) => setTab(v as ProfileTab)}>
-              <TabsList size="lg">
-                {availableTabs.map(({ value, label, icon: Icon }) => (
-                  <TabsTrigger key={value} value={value} size="lg" className="gap-2">
-                    <Icon className="size-4" />
-                    {label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              <MediaTabsViewMode />
+              <Tabs
+                value={tab}
+                onValueChange={(v) => {
+                  setSorting([]);
+                  setTab(v as ProfileTab);
+                }}
+              >
+                <TabsList size="lg">
+                  {availableTabs.map(({ value, label, icon: Icon }) => (
+                    <TabsTrigger key={value} value={value} size="lg" className="gap-2">
+                      <Icon className="size-4" />
+                      {label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            </div>
+            <MediaButtonCategory />
           </div>
+
+          {showCategories && (
+            <MediaCarouselCategory
+              type="movie"
+              valueMode="name"
+              value={withGenres}
+              onValueChange={(value) => {
+                setSorting([]);
+                setWithGenres(value);
+              }}
+            />
+          )}
 
           <Input
             type="text"
-            h="lg"
             search
             className="w-full"
             placeholder={t`Search in my profile...`}
@@ -286,6 +322,8 @@ function UserProfilePage() {
               items={tab === "watchlist" ? watchListItems : tab === "liked" ? likesItems : historyItems}
               viewMode={viewMode}
               isLoading={isFetchingMore}
+              sorting={listQueryToSorting(sortQuery)}
+              onSortingChange={setSorting}
               onLoadMore={() => {
                 if (activeQuery.hasNextPage && !activeQuery.isFetchingNextPage) {
                   void activeQuery.fetchNextPage();

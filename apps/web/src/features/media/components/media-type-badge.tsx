@@ -8,15 +8,18 @@ import { Badge } from "@/shared/ui/badge";
 interface MediaTypeBadgeProps {
   type: Media["type"];
   className?: string;
+  /** Icon only — used on media cards. */
+  iconOnly?: boolean;
 }
 
-export function MediaTypeBadge({ type, className }: MediaTypeBadgeProps) {
+export function MediaTypeBadge({ type, className, iconOnly = false }: MediaTypeBadgeProps) {
   const isTv = type === "tv";
+  const Icon = isTv ? TvIcon : FilmIcon;
 
   return (
-    <Badge variant="glass" className={cn(className)}>
-      {isTv ? <TvIcon /> : <FilmIcon />}
-      <Trans>{isTv ? "TV" : "Movie"}</Trans>
+    <Badge variant="glass" className={cn(iconOnly && "px-1.5", className)}>
+      <Icon />
+      {!iconOnly && <Trans>{isTv ? "TV" : "Movie"}</Trans>}
     </Badge>
   );
 }

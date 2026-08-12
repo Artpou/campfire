@@ -72,6 +72,15 @@ export const mediaQueries = {
       },
     }),
 
+  inProgress: (type: Media["type"]) =>
+    queryOptions({
+      queryKey: [...mediaQueries.key, "in-progress", type],
+      queryFn: async () => {
+        const data = await unwrap(api.media.$get({ query: { filter: "in-progress", type, page: "1", limit: "10" } }));
+        return data.results;
+      },
+    }),
+
   keywords: (query: string) =>
     queryOptions({
       queryKey: [...mediaQueries.key, "keywords", query],

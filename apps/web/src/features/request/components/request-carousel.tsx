@@ -13,9 +13,10 @@ interface RequestCarouselProps {
   requests: MediaRequest[];
   title?: ReactNode;
   seeMoreTo?: string;
+  seeMoreSearch?: Record<string, unknown>;
 }
 
-export function RequestCarousel({ requests, title, seeMoreTo }: RequestCarouselProps) {
+export function RequestCarousel({ requests, title, seeMoreTo, seeMoreSearch }: RequestCarouselProps) {
   if (requests.length === 0) return null;
 
   return (
@@ -29,9 +30,13 @@ export function RequestCarousel({ requests, title, seeMoreTo }: RequestCarouselP
         )
       }
       seeMoreTo={seeMoreTo}
+      seeMoreSearch={seeMoreSearch}
     >
       {requests.map((request) => (
-        <CarouselItem key={request.id} className="basis-1/3 sm:basis-1/4 md:basis-1/5 lg:basis-1/6 xl:basis-1/7">
+        <CarouselItem
+          key={request.id}
+          className="!w-auto basis-[85%] sm:basis-[55%] md:basis-[42%] lg:basis-[34%] xl:basis-[28%]"
+        >
           <RequestCard request={request} />
         </CarouselItem>
       ))}

@@ -1,10 +1,12 @@
 import type { SubtitlesSearchQuery } from "@seedarr/contracts";
 import { sanitizeFileName } from "@seedarr/shared";
 
-import { BadRequestError, NotFoundError, ServiceUnavailableError } from "@/shared/errors/error";
-import { assertWithinDownloads, getDownloadsRoot } from "@/shared/helpers/path.helper";
+import { BadRequestError, ForbiddenError, NotFoundError, ServiceUnavailableError } from "@/shared/errors/error";
+import { assertWithinDownloads, getDownloadsRoot, resolveWithinDownloads } from "@/shared/helpers/path.helper";
 import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
+import { DownloadService } from "@/modules/download/download.service";
+import type { User } from "@/modules/user/user.schema";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import type { SubdlSearchResponse } from "./subtitle.types";
@@ -22,9 +24,13 @@ function getApiKey(): string {
 }
 
 export class SubtitleService extends AuthenticatedService {
-  /**
-   * Fetch subtitles list from SUBDL API.
-   */
+  private readonly downloadService: DownloadService;
+
+  constructor(user: User, downloadService = new DownloadService(user)) {
+    super(user);
+    this.downloadService = downloadService;
+  }
+
   async search(query: SubtitlesSearchQuery): Promise<SubdlSearchResponse> {
     const apiKey = getApiKey();
     const params = new URLSearchParams({
@@ -38,8 +44,22 @@ export class SubtitleService extends AuthenticatedService {
     if (!res.ok) {
       throw new ServiceUnavailableError(`SUBDL (${res.status})`);
     }
-    const data = (await res.json()) as SubdlSearchResponse;
-    return data;
+    return (await res.json()) as SubdlSearchResponse;
+  }
+
+  /** Resolve download ownership, then save subtitle into that folder. */
+  async downloadForDownload(
+    downloadId: string,
+    url: string,
+    language: string,
+    mediaTitle: string,
+  ): Promise<{ relativePath: string }> {
+    const download = await this.downloadService.get(downloadId);
+    if (download.userId !== this.user.id && !["owner", "admin"].includes(this.user.role)) {
+      throw new ForbiddenError();
+    }
+    const downloadFolderPath = resolveWithinDownloads(download.torrent?.name ?? "");
+    return this.download(downloadFolderPath, url, language, mediaTitle);
   }
 
   /**

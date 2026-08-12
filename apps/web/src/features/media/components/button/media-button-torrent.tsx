@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Button, type ButtonProps } from "@/shared/ui/button";
 
 interface MediaButtonTorrentProps extends ButtonProps {
-  media: Media;
+  media: Pick<Media, "id" | "type">;
 }
 
 export function MediaButtonTorrent({ media, className, ...props }: MediaButtonTorrentProps) {

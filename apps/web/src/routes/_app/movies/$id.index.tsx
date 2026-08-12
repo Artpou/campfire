@@ -1,14 +1,13 @@
 import { useMemo } from "react";
 
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
-import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 
 import { downloadQueries } from "@/features/downloads/hooks/download.queries";
-import { MediaDetailLayout } from "@/features/media/components/media-detail-layout";
+import { MediaDetailLayout, type MediaDetailTab } from "@/features/media/components/media-detail-layout";
 import { MediaDownload } from "@/features/media/components/media-download";
 import { MediaServer } from "@/features/media/components/media-server";
 import { MovieCast } from "@/features/movies/components/movie-cast";
@@ -17,15 +16,25 @@ import { MovieInfo } from "@/features/movies/components/movie-info";
 import { MovieRelated } from "@/features/movies/components/movie-related";
 import { movieQueries } from "@/features/movies/hooks/movie.queries";
 
+const VALID_TABS: MediaDetailTab[] = ["info", "downloads", "server"];
+
+function validateSearch(search: Record<string, unknown>): { tab?: MediaDetailTab } {
+  const tab = search.tab;
+  if (typeof tab === "string" && (VALID_TABS as string[]).includes(tab)) return { tab: tab as MediaDetailTab };
+  return {};
+}
+
 export const Route = createFileRoute("/_app/movies/$id/")({
   loader: ({ context, params }) =>
     context.queryClient.ensureQueryData(movieQueries.details(params.id, countryToTmdbLocale(context.language))),
   component: MoviePage,
-  pendingComponent: () => <SeedarrLoaderContainer />,
+  validateSearch,
 });
 
 function MoviePage() {
   const params = Route.useParams();
+  const { tab: urlTab } = Route.useSearch();
+  const navigate = useNavigate();
   const locale = useTmdbLocale();
   const { data } = useSuspenseQuery(movieQueries.details(params.id, locale));
 
@@ -48,6 +57,12 @@ function MoviePage() {
 
   const hasActiveDownload = torrentDownloads.some((d) => d.torrent && !d.torrent.done);
 
+  const effectiveTab = useMemo(() => {
+    if (urlTab === "downloads" && torrentDownloads.length === 0) return "info";
+    if (urlTab === "server" && remoteDownloads.length === 0) return "info";
+    return urlTab;
+  }, [urlTab, torrentDownloads.length, remoteDownloads.length]);
+
   return (
     <MediaDetailLayout
       title={movie.title || movie.original_title || ""}
@@ -65,6 +80,8 @@ function MoviePage() {
       }
       serverCount={remoteDownloads.length}
       defaultTab={hasActiveDownload ? "downloads" : "info"}
+      tab={effectiveTab}
+      onTabChange={(t) => navigate({ to: ".", search: { tab: t === "info" ? undefined : t }, replace: true })}
     >
       <MovieCast movie={movie} />
       <MovieRelated

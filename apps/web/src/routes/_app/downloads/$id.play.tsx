@@ -2,16 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import { hasMinRole } from "@seedarr/contracts";
 import type { Media } from "@seedarr/sdk";
 import { api } from "@seedarr/sdk";
 import { formatError } from "@seedarr/shared";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 import { AppBreadcrumb } from "@/shared/components/app-breadcrumb";
-import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
 import { Container } from "@/shared/ui/container";
 
 import { buildSubtitleTracks } from "@/features/downloads/helpers/subtitle-tracks.helper";
@@ -24,11 +22,6 @@ import { SubtitleSearchDialog } from "@/features/subtitles/components/subtitle-s
 import { subtitleQueries } from "@/features/subtitles/hooks/subtitle.queries";
 
 export const Route = createFileRoute("/_app/downloads/$id/play")({
-  beforeLoad: ({ context }) => {
-    if (!hasMinRole(context.user?.role, "member")) {
-      throw redirect({ to: "/movies" });
-    }
-  },
   loader: async ({ context, params }) => {
     // Start fetching the WASM player chunk while route data loads.
     preloadMoviPlayer();
@@ -43,7 +36,6 @@ export const Route = createFileRoute("/_app/downloads/$id/play")({
       context.queryClient.fetchQuery(mediaQueries.details(download.mediaId)),
     ]);
   },
-  pendingComponent: () => <SeedarrLoaderContainer />,
   component: VideoPlayerPage,
 });
 

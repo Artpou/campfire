@@ -12,8 +12,8 @@ import {
   ensureUserWatchList,
   markMediaWatched,
   upsertMediaRow,
-} from "@/modules/media/letterboxd-apply.helper";
-import { getSettingsTmdbApiKey } from "@/modules/settings/tmdb-key.helper";
+} from "@/modules/media/letterboxd/letterboxd-apply.query";
+import { getSettingsTmdbApiKey } from "@/modules/settings/tmdb-key.query";
 import { searchTmdbByTitle, sleep, tmdbItemToMediaInsert } from "@/modules/tmdb/tmdb-resolve.helper";
 import { user } from "@/modules/user/user.schema";
 

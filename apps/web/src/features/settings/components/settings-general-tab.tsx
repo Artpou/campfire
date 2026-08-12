@@ -2,17 +2,7 @@ import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
-import {
-  EyeIcon,
-  FileIcon,
-  GlobeIcon,
-  KeyIcon,
-  MoonIcon,
-  PaletteIcon,
-  SaveIcon,
-  StarIcon,
-  SunIcon,
-} from "lucide-react";
+import { FileIcon, GlobeIcon, KeyIcon, MoonIcon, PaletteIcon, SaveIcon, StarIcon, SunIcon } from "lucide-react";
 
 import { SelectI18nLang } from "@/shared/components/select/select-i18n-lang";
 import { SelectQuality } from "@/shared/components/select/select-quality";
@@ -22,11 +12,9 @@ import { Checkbox } from "@/shared/ui/checkbox";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 
-import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";
 import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
 import { PasswordChangeModal } from "@/features/user/components/password-change-modal";
-import { useUpdateProfile } from "@/features/user/hooks/user.queries";
 import { settingsQueries, useUpsertSettings } from "../hooks/settings.queries";
 
 export function SettingsGeneralTab() {
@@ -37,8 +25,6 @@ export function SettingsGeneralTab() {
   const setMaxSize = useUserPreferences((s) => s.setMaxSize);
   const { theme, toggleTheme } = useTheme();
   const [passwordOpen, setPasswordOpen] = useState(false);
-  const currentUser = useAuth((s) => s.user);
-  const updateProfile = useUpdateProfile();
 
   return (
     <section className="space-y-6">
@@ -91,39 +77,6 @@ export function SettingsGeneralTab() {
         </Button>
       </div>
 
-      {currentUser && (
-        <div className="flex flex-col gap-4 border rounded-md p-4">
-          <h3 className="flex items-center gap-3">
-            <EyeIcon className="size-4" />
-            <Trans>Profile visibility</Trans>
-          </h3>
-          <PrivacyToggle
-            id="show-watch-list"
-            label={<Trans>Show watch list</Trans>}
-            description={<Trans>Allow others to see your watch list on your profile.</Trans>}
-            checked={currentUser.showWatchList ?? true}
-            disabled={updateProfile.isPending}
-            onCheckedChange={(checked) => updateProfile.mutate({ showWatchList: checked })}
-          />
-          <PrivacyToggle
-            id="show-likes"
-            label={<Trans>Show liked</Trans>}
-            description={<Trans>Allow others to see titles you liked.</Trans>}
-            checked={currentUser.showLikes ?? true}
-            disabled={updateProfile.isPending}
-            onCheckedChange={(checked) => updateProfile.mutate({ showLikes: checked })}
-          />
-          <PrivacyToggle
-            id="show-history"
-            label={<Trans>Show watch history</Trans>}
-            description={<Trans>Allow others to see your watch history.</Trans>}
-            checked={currentUser.showWatchHistory ?? false}
-            disabled={updateProfile.isPending}
-            onCheckedChange={(checked) => updateProfile.mutate({ showWatchHistory: checked })}
-          />
-        </div>
-      )}
-
       <div className="flex flex-col gap-4 border rounded-md p-4">
         <h3 className="flex items-center gap-3">
           <FileIcon className="size-4" />
@@ -174,37 +127,6 @@ export function SettingsGeneralTab() {
 
       <PasswordChangeModal open={passwordOpen} onOpenChange={setPasswordOpen} />
     </section>
-  );
-}
-
-function PrivacyToggle({
-  id,
-  label,
-  description,
-  checked,
-  disabled,
-  onCheckedChange,
-}: {
-  id: string;
-  label: React.ReactNode;
-  description: React.ReactNode;
-  checked: boolean;
-  disabled?: boolean;
-  onCheckedChange: (checked: boolean) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="space-y-1">
-        <Label htmlFor={id}>{label}</Label>
-        <p className="text-sm text-muted-foreground">{description}</p>
-      </div>
-      <Checkbox
-        id={id}
-        checked={checked}
-        disabled={disabled}
-        onCheckedChange={(v: boolean | "indeterminate") => onCheckedChange(v === true)}
-      />
-    </div>
   );
 }
 

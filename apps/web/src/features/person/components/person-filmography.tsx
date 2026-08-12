@@ -70,7 +70,7 @@ export function PersonFilmography({ filmography, departments }: PersonFilmograph
         </Tabs>
       </div>
 
-      <MediaGrid items={items} withLoading={false} />
+      <MediaGrid items={items} withLoading={false} showType />
     </div>
   );
 }

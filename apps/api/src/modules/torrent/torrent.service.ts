@@ -17,9 +17,9 @@ const METADATA_TIMEOUT_MS = 30_000;
 export class TorrentService extends AuthenticatedService {
   private readonly managerService: IndexerManagerService;
 
-  constructor(user: User) {
+  constructor(user: User, managerService = new IndexerManagerService(user)) {
     super(user);
-    this.managerService = new IndexerManagerService(user);
+    this.managerService = managerService;
   }
 
   async list(query: TorrentListQuery): Promise<Torrent[]> {

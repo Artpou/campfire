@@ -1,4 +1,10 @@
-import type { ChangePasswordInput, CreateUserInput, UpdateProfileInput, UpdateUserInput } from "@seedarr/contracts";
+import type {
+  ChangePasswordInput,
+  CreateUserInput,
+  UpdateProfileInput,
+  UpdateUserInput,
+  UserStats,
+} from "@seedarr/contracts";
 import { count, eq } from "drizzle-orm";
 
 import {
@@ -13,7 +19,10 @@ import { IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { hashPassword, verifyPassword } from "@/auth/password.util";
 import { db } from "@/db/db";
+import { importLetterboxdZip } from "@/modules/media/letterboxd/letterboxd-import.service";
+import { syncLetterboxdDiary } from "@/modules/media/letterboxd/letterboxd-sync.service";
 import { type NewUser, type User, user } from "@/modules/user/user.schema";
+import { getUserStats } from "@/modules/user/user-stats.query";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -23,9 +32,6 @@ const userColumns = {
   pseudo: true,
   avatarPath: true,
   role: true,
-  showWatchList: true,
-  showLikes: true,
-  showWatchHistory: true,
   letterboxdUsername: true,
   createdAt: true,
 } as const;
@@ -110,9 +116,6 @@ export class UserService extends IdentifiableService<User> {
         pseudo: user.pseudo,
         avatarPath: user.avatarPath,
         role: user.role,
-        showWatchList: user.showWatchList,
-        showLikes: user.showLikes,
-        showWatchHistory: user.showWatchHistory,
         letterboxdUsername: user.letterboxdUsername,
         createdAt: user.createdAt,
       });
@@ -171,16 +174,10 @@ export class UserService extends IdentifiableService<User> {
   async updateProfile(input: UpdateProfileInput): Promise<User> {
     const data: Partial<{
       pseudo: string | null;
-      showWatchList: boolean;
-      showLikes: boolean;
-      showWatchHistory: boolean;
       letterboxdUsername: string | null;
     }> = {};
 
     if (input.pseudo !== undefined) data.pseudo = input.pseudo;
-    if (input.showWatchList !== undefined) data.showWatchList = input.showWatchList;
-    if (input.showLikes !== undefined) data.showLikes = input.showLikes;
-    if (input.showWatchHistory !== undefined) data.showWatchHistory = input.showWatchHistory;
     if (input.letterboxdUsername !== undefined) {
       data.letterboxdUsername = input.letterboxdUsername ? input.letterboxdUsername.trim().toLowerCase() : null;
     }
@@ -268,5 +265,17 @@ export class UserService extends IdentifiableService<User> {
 
     await db.delete(user).where(eq(user.id, id));
     return { success: true };
+  }
+
+  async getStats(userId: string): Promise<UserStats> {
+    return getUserStats(userId);
+  }
+
+  async importLetterboxd(file: File) {
+    return importLetterboxdZip(this.user.id, file);
+  }
+
+  async syncLetterboxd() {
+    return syncLetterboxdDiary(this.user.id);
   }
 }

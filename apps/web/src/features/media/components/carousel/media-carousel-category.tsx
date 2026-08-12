@@ -15,23 +15,26 @@ import { genreQueries } from "@/features/media/hooks/genre.queries";
 
 interface MediaCarouselCategoryProps {
   type: Media["type"];
+  /** Emit genre TMDB id (discover) or genre name (local media list). */
+  valueMode?: "id" | "name";
+  /** Controlled selected value; falls back to URL `with_genres` when omitted. */
+  value?: string;
   onValueChange?: (value: string | undefined) => void;
 }
 
-export function MediaCarouselCategory({ type, onValueChange }: MediaCarouselCategoryProps) {
+export function MediaCarouselCategory({ type, valueMode = "id", value, onValueChange }: MediaCarouselCategoryProps) {
   const locale = useTmdbLocale();
   const { data: genres = [], isLoading } = useQuery(genreQueries.list(type, locale));
   const search = useSearch({ strict: false });
-  const withGenres = parseString("with_genres" in search ? search.with_genres : undefined);
+  const withGenres = value ?? parseString("with_genres" in search ? search.with_genres : undefined);
 
-  const selectedGenreId = withGenres ? Number.parseInt(withGenres, 10) : undefined;
+  const selectedId = valueMode === "id" && withGenres ? Number.parseInt(withGenres, 10) : undefined;
+  const selectedName = valueMode === "name" ? withGenres : undefined;
 
-  const handleGenreClick = (genreId: number) => {
-    if (selectedGenreId === genreId) {
-      onValueChange?.(undefined);
-    } else {
-      onValueChange?.(genreId.toString());
-    }
+  const handleGenreClick = (genre: { id: number; name: string }) => {
+    const next = valueMode === "name" ? genre.name : genre.id.toString();
+    const isSelected = valueMode === "name" ? selectedName === genre.name : selectedId === genre.id;
+    onValueChange?.(isSelected ? undefined : next);
   };
 
   if (isLoading) {
@@ -50,32 +53,32 @@ export function MediaCarouselCategory({ type, onValueChange }: MediaCarouselCate
 
   return (
     <CarouselWrapper>
-      {genres.map((genre) => (
-        <CarouselItem
-          className={cn(" hover:border-primary", selectedGenreId === genre.id && "border-primary!")}
-          key={genre.id}
-        >
-          <Card className="group h-24 py-0 cursor-pointer overflow-hidden" onClick={() => handleGenreClick(genre.id)}>
-            <CardContent className="relative h-full p-0">
-              <Img
-                src={`/${type}/category/${genre.id}.jpg`}
-                alt={genre.name}
-                className={cn(
-                  `absolute inset-0 h-full w-full object-cover transition-all duration-300`,
-                  selectedGenreId !== undefined && selectedGenreId !== genre.id && "grayscale",
+      {genres.map((genre) => {
+        const isSelected = valueMode === "name" ? selectedName === genre.name : selectedId === genre.id;
+        return (
+          <CarouselItem className={cn(" hover:border-primary", isSelected && "border-primary!")} key={genre.id}>
+            <Card className="group h-24 py-0 cursor-pointer overflow-hidden" onClick={() => handleGenreClick(genre)}>
+              <CardContent className="relative h-full p-0">
+                <Img
+                  src={`/${type}/category/${genre.id}.jpg`}
+                  alt={genre.name}
+                  className={cn(
+                    `absolute inset-0 h-full w-full object-cover transition-all duration-300`,
+                    withGenres && !isSelected && "grayscale",
+                  )}
+                />
+                {!isSelected && (
+                  <div className="absolute inset-0 bg-linear-to-r light:from-background/50 light:via-background/50 light:to-background/50 from-background via-background/50 to-background" />
                 )}
-              />
-              {selectedGenreId !== genre.id && (
-                <div className="absolute inset-0 bg-linear-to-r light:from-background/50 light:via-background/50 light:to-background/50 from-background via-background/50 to-background" />
-              )}
 
-              <div className="relative flex h-full items-center justify-center">
-                <h3 className="text-base font-bold drop-shadow-lg">{genre.name}</h3>
-              </div>
-            </CardContent>
-          </Card>
-        </CarouselItem>
-      ))}
+                <div className="relative flex h-full items-center justify-center">
+                  <h3 className="text-base font-bold drop-shadow-lg">{genre.name}</h3>
+                </div>
+              </CardContent>
+            </Card>
+          </CarouselItem>
+        );
+      })}
     </CarouselWrapper>
   );
 }

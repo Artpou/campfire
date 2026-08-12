@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Trans } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
 import { useNavigate } from "@tanstack/react-router";
-import { type SortingState, useTable } from "@tanstack/react-table";
+import { type OnChangeFn, type SortingState, useTable } from "@tanstack/react-table";
 import { useIntersectionObserver } from "@uidotdev/usehooks";
 
 import { DataTable } from "@/shared/ui/data-table";
@@ -14,13 +14,18 @@ interface MediaTableProps {
   media: Media[];
   onLoadMore?: () => void;
   isLoadingMore?: boolean;
+  sorting?: SortingState;
+  onSortingChange?: OnChangeFn<SortingState>;
 }
 
-export function MediaTable({ media, onLoadMore, isLoadingMore }: MediaTableProps) {
+export function MediaTable({ media, onLoadMore, isLoadingMore, sorting, onSortingChange }: MediaTableProps) {
   const navigate = useNavigate();
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [localSorting, setLocalSorting] = useState<SortingState>([]);
   const columns = useMediaTableColumns();
   const items = useMemo(() => media, [media]);
+  const resolvedSorting = sorting ?? localSorting;
+  const resolvedOnSortingChange = onSortingChange ?? setLocalSorting;
+  const manualSorting = Boolean(onSortingChange);
 
   const [sentinelRef, entry] = useIntersectionObserver({ threshold: 1 });
   const onLoadMoreRef = useRef(onLoadMore);
@@ -37,8 +42,9 @@ export function MediaTable({ media, onLoadMore, isLoadingMore }: MediaTableProps
     data: items,
     columns,
     getRowId: (row) => `${row.type}-${row.id}`,
-    onSortingChange: setSorting,
-    state: { sorting },
+    manualSorting,
+    onSortingChange: resolvedOnSortingChange,
+    state: { sorting: resolvedSorting },
   });
 
   return (

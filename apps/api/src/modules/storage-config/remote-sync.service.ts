@@ -10,7 +10,7 @@ import { db } from "@/db/db";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { download } from "@/modules/download/download.schema";
 import { media } from "@/modules/media/media.schema";
-import { getSettingsTmdbApiKey } from "@/modules/settings/tmdb-key.helper";
+import { getSettingsTmdbApiKey } from "@/modules/settings/tmdb-key.query";
 import type { TMDBItem } from "@/modules/tmdb/tmdb.types";
 import {
   fetchTmdbById,

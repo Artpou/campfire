@@ -1,10 +1,12 @@
+import type { ReactNode } from "react";
+
 import { HoverCard, HoverCardContent, HoverCardPortal, HoverCardTrigger } from "@radix-ui/react-hover-card";
 import type { Media } from "@seedarr/sdk";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { ClockPlusIcon, HeartIcon } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { handleSafeClick } from "@/shared/helpers/button.helper";
 import { Badge } from "@/shared/ui/badge";
 import { Card } from "@/shared/ui/card";
 
@@ -19,15 +21,26 @@ import { MediaCardPreview } from "./media-card-preview";
 type MediaCardProps = {
   media: Media;
   className?: string;
-  hideType?: boolean;
-  hideButton?: boolean;
-  withDownload?: boolean;
-  withPreview?: boolean;
+  children?: ReactNode;
+  showType?: boolean;
+  showSocial?: boolean;
+  showDownload?: boolean;
+  showPlay?: boolean;
+  showPreview?: boolean;
 };
 
-export function MediaCard({ media, className, hideType, hideButton, withDownload, withPreview }: MediaCardProps) {
+export function MediaCard({
+  media,
+  className,
+  children,
+  showType,
+  showSocial,
+  showDownload,
+  showPlay,
+  showPreview,
+}: MediaCardProps) {
   const { data: uiSettings } = useQuery(settingsQueries.ui());
-  const showRatings = uiSettings?.showMediaRatings ?? false;
+  const navigate = useNavigate();
 
   const detailLinkProps =
     media.type === "tv"
@@ -35,51 +48,51 @@ export function MediaCard({ media, className, hideType, hideButton, withDownload
       : ({ to: "/movies/$id", params: { id: media.id.toString() } } as const);
 
   const showDownloadProgress =
-    withDownload &&
+    showDownload &&
     media.download &&
     (!media.download.torrent?.done || media.download.torrent?.transferring) &&
     !(!media.download.torrent && media.download.remoteLocation);
 
   const card = (
-    <Link {...detailLinkProps} className="block">
-      <div className={cn("relative aspect-2/3", className)}>
-        <Card className="overflow-hidden relative pt-0 pb-0 border-2 border-transparent transition-colors hover:border-primary size-full">
-          <MediaImg media={media} type="poster" />
+    <Link {...detailLinkProps} className={className}>
+      <Card className="relative group overflow-hidden pt-0 pb-0 border-2 border-transparent transition-colors hover:border-primary size-full">
+        <MediaImg media={media} type="poster" />
 
-          {media.download && showDownloadProgress && (
-            <div className="absolute top-2 right-2">
-              <DownloadProgress download={media.download} variant="circular" />
-            </div>
-          )}
-
-          <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
-            {!hideType && <MediaTypeBadge type={media.type} />}
-            {showRatings && <MediaRating media={media} />}
+        {media.download && showDownloadProgress && (
+          <div className="absolute top-2 right-2">
+            <DownloadProgress download={media.download} variant="circular" />
           </div>
+        )}
 
-          {media.liked && !showDownloadProgress && (
-            <Badge className="absolute top-2 right-2" variant="glass">
-              <HeartIcon className="fill-primary text-primary shrink-0" />
-            </Badge>
-          )}
+        <div className="absolute top-2 left-2 flex items-center gap-0.5">
+          {showType && <MediaTypeBadge type={media.type} iconOnly />}
+          {showSocial && (uiSettings?.showMediaRatings ?? false) && <MediaRating media={media} onlyOne />}
+        </div>
 
-          {media.inWatchList && !showDownloadProgress && (
-            <Badge className="absolute top-2 right-2" variant="glass">
-              <ClockPlusIcon className="text-primary shrink-0" />
-            </Badge>
-          )}
+        {showSocial && media.liked && !showDownloadProgress && (
+          <Badge className="absolute top-2 right-2" variant="glass">
+            <HeartIcon className="fill-primary text-primary shrink-0" />
+          </Badge>
+        )}
 
-          {!hideButton && (
-            <div className="absolute bottom-2 left-2 right-2 flex gap-1">
-              <MediaButtonPlay media={media} size="sm" className="w-full" />
-            </div>
-          )}
-        </Card>
-      </div>
+        {showSocial && media.inWatchList && !media.liked && !showDownloadProgress && (
+          <Badge className="absolute top-2 right-2" variant="glass">
+            <ClockPlusIcon className="text-primary shrink-0" />
+          </Badge>
+        )}
+
+        {showPlay && (
+          <div className="absolute -bottom-6.5 group-hover:bottom-2 left-2 right-2 flex gap-1 transition-all duration-200 ease-out">
+            <MediaButtonPlay media={media} size="sm" className="w-full" />
+          </div>
+        )}
+
+        {children}
+      </Card>
     </Link>
   );
 
-  if (!withPreview) {
+  if (!showPreview) {
     return <div className="relative group">{card}</div>;
   }
 
@@ -89,7 +102,7 @@ export function MediaCard({ media, className, hideType, hideButton, withDownload
 
       <HoverCardPortal>
         <HoverCardContent
-          className="w-[380px] border-border bg-card p-0 shadow-2xl z-10"
+          className="w-[380px] border-border bg-card p-0 shadow-2xl z-10 cursor-pointer"
           align="center"
           side="top"
           sideOffset={-360}
@@ -98,6 +111,9 @@ export function MediaCard({ media, className, hideType, hideButton, withDownload
             e.stopPropagation();
             window.scrollBy({ top: e.deltaY, behavior: "auto" });
           }}
+          onClick={(e) =>
+            handleSafeClick(e, () => navigate({ to: detailLinkProps.to, params: detailLinkProps.params }))
+          }
         >
           <MediaCardPreview media={media} detailLinkProps={detailLinkProps} />
         </HoverCardContent>

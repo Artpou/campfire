@@ -71,7 +71,6 @@ export function SettingsIndexersTab() {
             placeholder={t(msg`Search an indexer...`)}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            h="lg"
             search
           />
           <Button onClick={() => setAddDialogOpen(true)} className="w-full sm:w-auto shrink-0" icon={PlusIcon}>

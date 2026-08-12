@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
-import { PopcornIcon, RadioIcon, SofaIcon, StarIcon } from "lucide-react";
+import { DownloadIcon, RadioIcon, SparklesIcon, StarIcon } from "lucide-react";
 
 import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
@@ -8,16 +8,16 @@ import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { isMediaSelected } from "@/features/media/helpers/discover-search.helper";
 
 interface MediaSortTabsProps {
-  value?: "home" | "cinema" | "top-rated" | "upcoming";
+  value?: "new" | "top-rated" | "downloaded" | "upcoming";
   type: Media["type"];
-  onChange: (value: "home" | "cinema" | "top-rated" | "upcoming") => void;
+  onChange: (value: "new" | "top-rated" | "downloaded" | "upcoming") => void;
 }
 
-export function MediaSortTabs({ value, type, onChange }: MediaSortTabsProps) {
+export function MediaSortTabs({ value, onChange }: MediaSortTabsProps) {
   const { t } = useLingui();
   const isMobile = useIsMobile();
 
-  const activeValue = value || "home";
+  const activeValue = value || "new";
 
   const handleChange = (value: string) => {
     if (isMediaSelected(value)) onChange(value);
@@ -25,24 +25,20 @@ export function MediaSortTabs({ value, type, onChange }: MediaSortTabsProps) {
 
   const sortOptions = [
     {
-      value: "home" as const,
-      icon: <SofaIcon className="text-foreground" />,
-      label: t`At Home`,
+      value: "new" as const,
+      icon: <SparklesIcon className="text-foreground" />,
+      label: t`New`,
     },
     {
       value: "top-rated" as const,
       icon: <StarIcon className="text-foreground" />,
       label: t`Top Rated`,
     },
-    ...(type === "movie" && !isMobile
-      ? [
-          {
-            value: "cinema" as const,
-            icon: <PopcornIcon className="text-foreground" />,
-            label: t`In Cinema`,
-          },
-        ]
-      : []),
+    {
+      value: "downloaded" as const,
+      icon: <DownloadIcon className="text-foreground" />,
+      label: t`Downloaded`,
+    },
     ...(!isMobile
       ? [
           {

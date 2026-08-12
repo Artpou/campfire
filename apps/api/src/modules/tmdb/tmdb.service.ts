@@ -10,7 +10,7 @@ import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.
 import { mergeMediaEnrichment } from "@/modules/media/media.helper";
 import { MediaService } from "@/modules/media/media.service";
 import type { MediaEnriched } from "@/modules/media/media.types";
-import { getTmdbApiKey } from "@/modules/settings/tmdb-key.helper";
+import { getTmdbApiKey } from "@/modules/settings/tmdb-key.query";
 import { tmdbMovieToMedia, tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
 import type { User } from "@/modules/user/user.schema";
 import type {
@@ -100,11 +100,11 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
   protected readonly type: "movie" | "tv";
   protected readonly mediaService: MediaService;
 
-  constructor(user: User, locale: string, type: "movie" | "tv") {
+  constructor(user: User, locale: string, type: "movie" | "tv", mediaService = new MediaService(user)) {
     super(user);
     this.locale = locale;
     this.type = type;
-    this.mediaService = new MediaService(user);
+    this.mediaService = mediaService;
   }
 
   static createTMDBRouter<E extends Identifiable, S extends TMDBService<E>>(

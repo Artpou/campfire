@@ -123,7 +123,7 @@ function SearchPage() {
             <SeedarrLoader />
           </div>
         ) : filteredResults.length > 0 ? (
-          <MediaGrid items={filteredResults} />
+          <MediaGrid items={filteredResults} showType />
         ) : (
           <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
             <SearchIcon className="size-16 text-muted-foreground/20 mb-4" />

@@ -7,7 +7,7 @@ import { ForbiddenError } from "@/shared/errors/error";
 import { authGuard } from "@/modules/auth/auth.guard";
 import { requireRole } from "@/modules/auth/role.guard";
 import { SettingsService } from "./settings.service";
-import { invalidateTmdbKeyCache } from "./tmdb-key.helper";
+import { invalidateTmdbKeyCache } from "./tmdb-key.query";
 
 const service = new SettingsService();
 

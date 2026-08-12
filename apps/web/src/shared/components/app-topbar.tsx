@@ -11,7 +11,6 @@ import { SelectI18nLang } from "@/shared/components/select/select-i18n-lang";
 import { Button } from "@/shared/ui/button";
 
 import { useAuth } from "@/features/auth/auth-store";
-import { useRole } from "@/features/auth/hooks/use-role";
 
 interface AppTopbarProps {
   isAuthenticated?: boolean;
@@ -30,7 +29,6 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useLingui();
-  const { hasRole } = useRole();
   const currentUser = useAuth((s) => s.user);
 
   useEffect(() => {
@@ -64,8 +62,6 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
 
               <nav className="hidden lg:flex items-center gap-1">
                 {NAV_LINKS.map((item) => {
-                  if (item.url === "/downloads" && !hasRole("member")) return null;
-
                   const isActive = location.pathname.startsWith(item.url);
                   return (
                     <Button

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import { Plural, Trans } from "@lingui/react/macro";
+import { Trans } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
 import { ChevronDownIcon, ChevronRightIcon } from "lucide-react";
 
@@ -64,7 +64,7 @@ export function MediaCalendar({ items, viewMode }: MediaCalendarProps) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {groups.map((group) => {
         const isCollapsed = collapsed[group.key] ?? false;
         return (
@@ -79,11 +79,7 @@ export function MediaCalendar({ items, viewMode }: MediaCalendarProps) {
                 onClick={() => setCollapsed((prev) => ({ ...prev, [group.key]: !isCollapsed }))}
               />
               <h2 className="text-sm font-medium whitespace-nowrap capitalize">
-                {group.label}{" "}
-                <span className="text-muted-foreground font-normal">
-                  (
-                  <Plural value={group.items.length} one="# film/série vue" other="# films/séries vues" />)
-                </span>
+                {group.label} ({group.items.length})
               </h2>
               <Separator className="flex-1" />
             </div>
@@ -92,7 +88,14 @@ export function MediaCalendar({ items, viewMode }: MediaCalendarProps) {
               (viewMode === "grid" ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
                   {group.items.map((media) => (
-                    <MediaCard key={`${media.type}-${media.id}`} media={media} withPreview />
+                    <MediaCard
+                      key={`${media.type}-${media.id}`}
+                      media={media}
+                      showPlay
+                      showPreview
+                      showSocial
+                      showType
+                    />
                   ))}
                 </div>
               ) : (

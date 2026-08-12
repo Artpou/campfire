@@ -13,7 +13,7 @@ const service = new StorageConfigService();
 
 export const storageConfigRoutes = new Hono<{ Variables: HonoAuthenticatedVariables }>()
   .use("*", authGuard)
-  .get("/enabled", requireRole("member"), async (c) => {
+  .get("/enabled", async (c) => {
     const { remoteStorageService } = await import("./remote-storage.service");
     return c.json({ enabled: await remoteStorageService.isEnabled() });
   })

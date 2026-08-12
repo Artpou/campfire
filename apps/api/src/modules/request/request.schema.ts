@@ -19,6 +19,9 @@ export const mediaRequest = sqliteTable(
       .notNull()
       .references(() => media.id, { onDelete: "cascade" }),
     dismissed: integer("dismissed", { mode: "boolean" }).notNull().default(false),
+    status: text("status", { enum: ["pending", "validated", "cancelled"] })
+      .notNull()
+      .default("pending"),
     createdAt: integer("createdAt", { mode: "timestamp" })
       .notNull()
       .$defaultFn(() => new Date()),

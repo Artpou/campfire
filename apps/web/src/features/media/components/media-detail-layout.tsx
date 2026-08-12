@@ -15,7 +15,7 @@ import { MediaSocialActions } from "@/features/media/components/media-social-act
 import { getBackdropUrl, getPosterUrl } from "@/features/media/helpers/media.helper";
 import { useToggleLike, useToggleWatchList } from "@/features/media/hooks/media.queries";
 
-type MediaDetailTab = "info" | "downloads" | "server";
+export type MediaDetailTab = "info" | "downloads" | "server";
 
 type MediaDetailLayoutProps = {
   title: string;
@@ -32,6 +32,8 @@ type MediaDetailLayoutProps = {
   serverTabContent?: ReactNode;
   serverCount?: number;
   defaultTab?: MediaDetailTab;
+  tab?: MediaDetailTab;
+  onTabChange?: (tab: MediaDetailTab) => void;
 };
 
 export function MediaDetailLayout({
@@ -49,6 +51,8 @@ export function MediaDetailLayout({
   serverTabContent,
   serverCount = 0,
   defaultTab = "info",
+  tab,
+  onTabChange,
 }: MediaDetailLayoutProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const toggleLike = useToggleLike();
@@ -104,7 +108,11 @@ export function MediaDetailLayout({
 
       {showTabs ? (
         <Container className="pt-2">
-          <Tabs defaultValue={defaultTab}>
+          <Tabs
+            defaultValue={tab ? undefined : defaultTab}
+            value={tab}
+            onValueChange={onTabChange ? (v) => onTabChange(v as MediaDetailTab) : undefined}
+          >
             <TabsList size="lg">
               <TabsTrigger value="info" size="lg">
                 <TvIcon />
@@ -132,7 +140,7 @@ export function MediaDetailLayout({
 
             <TabsContent value="info">
               <div className="flex flex-col gap-6 pt-4">
-                <div className="w-full flex flex-col gap-8">{children}</div>
+                <div className="w-full flex flex-col gap-6">{children}</div>
               </div>
             </TabsContent>
 
@@ -151,7 +159,7 @@ export function MediaDetailLayout({
         </Container>
       ) : (
         <Container className="flex flex-col gap-6 pt-6">
-          <div className="w-full flex flex-col gap-8">{children}</div>
+          <div className="w-full flex flex-col gap-6">{children}</div>
         </Container>
       )}
     </div>

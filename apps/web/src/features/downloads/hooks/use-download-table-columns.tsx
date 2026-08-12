@@ -11,7 +11,7 @@ import {
   sortFn_text,
   tableFeatures,
 } from "@tanstack/react-table";
-import { HardDriveIcon, PlayIcon, ServerIcon, Trash2Icon } from "lucide-react";
+import { HardDriveIcon, ServerIcon, Trash2Icon } from "lucide-react";
 
 import { Button } from "@/shared/ui/button";
 import { Checkbox } from "@/shared/ui/checkbox";
@@ -21,6 +21,7 @@ import { TooltipWrapper } from "@/shared/ui/tooltip-wrapper";
 import { DownloadMetadata } from "@/features/downloads/components/download-metadata";
 import { DownloadProgress } from "@/features/downloads/components/download-progress";
 import { getDownloadStatus } from "@/features/downloads/helpers/downloads.helper";
+import { MediaButtonPlay } from "@/features/media/components/button/media-button-play";
 import { MediaTypeBadge } from "@/features/media/components/media-type-badge";
 import { getPosterUrl } from "@/features/media/helpers/media.helper";
 
@@ -39,11 +40,10 @@ const columnHelper = createColumnHelper<DownloadTableFeatures, MediaWithDownload
 
 interface UseDownloadTableColumnsOptions {
   canDelete: (download: Download) => boolean;
-  onPlay: (downloadId: string) => void;
   onDelete: (rowId: string) => void;
 }
 
-export function useDownloadTableColumns({ canDelete, onPlay, onDelete }: UseDownloadTableColumnsOptions) {
+export function useDownloadTableColumns({ canDelete, onDelete }: UseDownloadTableColumnsOptions) {
   const { t } = useLingui();
 
   return useMemo(
@@ -141,19 +141,12 @@ export function useDownloadTableColumns({ canDelete, onPlay, onDelete }: UseDown
         }),
         columnHelper.display({
           id: "actions",
-          meta: { headerClassName: "w-24 md:w-28", cellClassName: "w-24 md:w-28" },
+          meta: { headerClassName: "w-36 md:w-48", cellClassName: "w-36 md:w-48" },
           cell: ({ row }) => {
             const dl = row.original.download;
             return (
               <div className="flex items-center justify-end gap-1.5">
-                <Button
-                  size="sm"
-                  icon={PlayIcon}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onPlay(dl.id);
-                  }}
-                />
+                <MediaButtonPlay media={row.original} size="sm" />
                 {canDelete(dl) && (
                   <Button
                     variant="destructive"
@@ -171,6 +164,6 @@ export function useDownloadTableColumns({ canDelete, onPlay, onDelete }: UseDown
           enableSorting: false,
         }),
       ]),
-    [t, canDelete, onPlay, onDelete],
+    [t, canDelete, onDelete],
   );
 }

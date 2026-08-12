@@ -37,10 +37,36 @@ ActivityLog
  ├── title, metadata (JSON)
  └── createdAt
 
+MediaRequest
+ ├── userId FK → User
+ ├── mediaId FK → Media
+ ├── status: pending | validated | cancelled
+ ├── dismissed: boolean (legacy compat)
+ └── createdAt
+
 IndexerManager → multiple configs (Jackett, Prowlarr, Stremio addons/presets)
 ```
 
 **Flow:** Browse TMDB → Search torrents → Start download (upserts Media + creates Download) → WebTorrent streams to disk → Play via `/streaming/:id/direct` (byte-range; movi-player handles MKV/HEVC natively).
+
+### Request Management
+
+Users can request media they want downloaded. Requests flow through statuses:
+- **pending** → initial state, awaiting admin action or download
+- **validated** → automatically set when the associated download completes, or manually by admin
+- **cancelled** → admin rejects the request (can be reopened)
+
+When a download completes (torrent finishes), all pending requests for that media are auto-validated (not deleted).
+
+Routes: `GET /requests` (all, filterable by type + status), `GET /requests/user/:id`, `PATCH /:id/cancel`, `PATCH /:id/validate`, `PATCH /:id/reopen`, `DELETE /:id`.
+
+### Letterboxd Sync
+
+Users can import/sync their Letterboxd watchlist and ratings:
+- Import pulls all rated/watched films from a Letterboxd username
+- Sync refreshes existing data (new ratings, new films)
+- Letterboxd username stored on user profile
+- Media data (duration, categories, ratings) enriched during sync via TMDB
 
 ## Tech Stack
 
@@ -162,7 +188,7 @@ Use @seedarr/contracts to share dto between app and api
 ### Route Conventions
 
 - RESTful: `GET /`, `GET /:id`, `POST /`, `PUT /:id`, `DELETE /:id`
-- Guards: `authGuard` (session), `requireRole(min)`, `requireDownloadOwnership`
+- Guards: `authGuard` (session), `requireRole(min)`, `requireDownloadExists`, `requireMediaExists`
 - Validation: `zValidator("json" | "query" | "param", schema)`
 
 ### Auth
@@ -170,6 +196,9 @@ Use @seedarr/contracts to share dto between app and api
 - First registration creates **owner**; subsequent registrations are forbidden
 - Session cookie (httpOnly, 7 days)
 - Role hierarchy: owner(4) > admin(3) > member(2) > viewer(1)
+- **Viewer** can: browse media, access `/downloads`, play files, create/delete own requests
+- **Member** can: all viewer actions + start downloads, search torrents, manage own downloads
+- **Admin** can: all member actions + manage all requests (cancel/validate), manage users
 - Session rotation after 24h + in-memory session cache (60s TTL)
 
 ## Frontend Patterns

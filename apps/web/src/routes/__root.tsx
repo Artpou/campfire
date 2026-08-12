@@ -4,6 +4,7 @@ import { createRootRouteWithContext, Navigate, Outlet, ScrollRestoration } from 
 import { Toaster } from "sonner";
 
 import { RouteErrorHandler } from "@/shared/components/route-error";
+import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
 import { useThemeStore, useThemeSync } from "@/shared/hooks/use-theme";
 
 import type { SeedarrRouterContext } from "@/router";
@@ -33,6 +34,7 @@ const TanStackDevtools = import.meta.env.DEV
 export const Route = createRootRouteWithContext<SeedarrRouterContext>()({
   errorComponent: RouteErrorHandler,
   notFoundComponent: () => <Navigate to="/404" replace />,
+  pendingComponent: () => <SeedarrLoaderContainer />,
   component: RootComponent,
 });
 

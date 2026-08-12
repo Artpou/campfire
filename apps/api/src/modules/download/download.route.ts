@@ -12,7 +12,7 @@ import { NotFoundError } from "@/shared/errors/error";
 import { downloadStartRateLimiter } from "@/shared/middlewares/rate-limiter.middleware";
 
 import { requireRole } from "@/modules/auth/role.guard";
-import { requireDownloadOwnership } from "./download.guard";
+import { requireDownloadExists, requireDownloadOwner } from "./download.guard";
 import { DownloadService } from "./download.service";
 
 function getDownloadId(c: { req: { valid: (target: "param") => { id: string } } }): string {
@@ -38,15 +38,9 @@ export const downloadRoutes = DownloadService.createRouter()
     const { id } = c.req.valid("param");
     return c.json(await c.var.service.getDownloadableFile(id));
   })
-  .post(
-    "/:id/fileToken",
-    requireRole("member"),
-    zValidator("param", stringIdParamDto),
-    requireDownloadOwnership,
-    async (c) => {
-      return c.json(c.var.service.createFileToken(getDownloadId(c)));
-    },
-  )
+  .post("/:id/fileToken", zValidator("param", stringIdParamDto), requireDownloadExists, async (c) => {
+    return c.json(c.var.service.createFileToken(getDownloadId(c)));
+  })
   .get("/:id", zValidator("param", stringIdParamDto), async (c) => {
     const { id } = c.req.valid("param");
     const download = await c.var.service.get(id);
@@ -60,20 +54,14 @@ export const downloadRoutes = DownloadService.createRouter()
     }
     return c.json(result);
   })
-  .post(
-    "/:id/pause",
-    requireRole("member"),
-    zValidator("param", stringIdParamDto),
-    requireDownloadOwnership,
-    async (c) => {
-      return c.json(await c.var.service.pause(getDownloadId(c)));
-    },
-  )
+  .post("/:id/pause", requireRole("member"), zValidator("param", stringIdParamDto), requireDownloadOwner, async (c) => {
+    return c.json(await c.var.service.pause(getDownloadId(c)));
+  })
   .post(
     "/:id/resume",
     requireRole("member"),
     zValidator("param", stringIdParamDto),
-    requireDownloadOwnership,
+    requireDownloadOwner,
     async (c) => {
       return c.json(await c.var.service.resume(getDownloadId(c)));
     },
@@ -82,7 +70,7 @@ export const downloadRoutes = DownloadService.createRouter()
     "/:id/transfer",
     requireRole("member"),
     zValidator("param", stringIdParamDto),
-    requireDownloadOwnership,
+    requireDownloadOwner,
     async (c) => {
       return c.json(await c.var.service.transfer(getDownloadId(c)));
     },
@@ -91,7 +79,7 @@ export const downloadRoutes = DownloadService.createRouter()
     "/:id/recheck",
     requireRole("member"),
     zValidator("param", stringIdParamDto),
-    requireDownloadOwnership,
+    requireDownloadOwner,
     async (c) => {
       return c.json(await c.var.service.recheck(getDownloadId(c)));
     },
@@ -100,7 +88,7 @@ export const downloadRoutes = DownloadService.createRouter()
     "/:id/reannounce",
     requireRole("member"),
     zValidator("param", stringIdParamDto),
-    requireDownloadOwnership,
+    requireDownloadOwner,
     async (c) => {
       return c.json(await c.var.service.reannounce(getDownloadId(c)));
     },
@@ -110,12 +98,12 @@ export const downloadRoutes = DownloadService.createRouter()
     requireRole("member"),
     zValidator("param", stringIdParamDto),
     zValidator("json", reassignMediaDto),
-    requireDownloadOwnership,
+    requireDownloadOwner,
     async (c) => {
       return c.json(await c.var.service.reassignMedia(getDownloadId(c), c.req.valid("json").mediaId));
     },
   )
-  .post("/batch-delete", requireRole("member"), zValidator("json", batchDeleteDownloadsDto), async (c) => {
+  .post("/batch-delete", requireRole("admin"), zValidator("json", batchDeleteDownloadsDto), async (c) => {
     const { ids, dbOnly } = c.req.valid("json");
     const results = await c.var.service.batchDelete(ids, { dbOnly });
     return c.json(results);
@@ -125,7 +113,7 @@ export const downloadRoutes = DownloadService.createRouter()
     requireRole("member"),
     zValidator("param", stringIdParamDto),
     zValidator("query", deleteDownloadQueryDto),
-    requireDownloadOwnership,
+    requireDownloadOwner,
     async (c) => {
       const query = c.req.valid("query");
       const dbOnly = query.dbOnly === "true";

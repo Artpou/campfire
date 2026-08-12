@@ -1,6 +1,5 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 
-import { Trans, useLingui } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
 import type { InfiniteData, UseInfiniteQueryOptions } from "@tanstack/react-query";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
@@ -8,14 +7,12 @@ import { useDebounce } from "@uidotdev/usehooks";
 
 import { PlaceholderEmpty } from "@/shared/components/seedarr-placeholder";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
-import { Button } from "@/shared/ui/button";
-import { Checkbox } from "@/shared/ui/checkbox";
 import { Container } from "@/shared/ui/container";
 import { Input } from "@/shared/ui/input";
 
-import { useRole } from "@/features/auth/hooks/use-role";
+import { MediaButtonCategory } from "@/features/media/components/button/media-button-category";
 import { MediaCarouselCategory } from "@/features/media/components/carousel/media-carousel-category";
-import { MediaHeroCarousel } from "@/features/media/components/carousel/media-carousel-hero";
+import { MediaCarouselWatching } from "@/features/media/components/carousel/media-carousel-watching";
 import { MediaGrid } from "@/features/media/components/media-grid";
 import { MediaTable } from "@/features/media/components/media-table";
 import { MediaSortTabs } from "@/features/media/components/tabs/media-tabs-sort";
@@ -23,13 +20,14 @@ import { MediaTabsViewMode } from "@/features/media/components/tabs/media-tabs-v
 import {
   filterSearchResultsByDiscoverFilters,
   isDiscoverTextSearch,
+  isDownloadedTab,
 } from "@/features/media/helpers/discover-search.helper";
 import { genreQueries } from "@/features/media/hooks/genre.queries";
 import { RequestCarousel } from "@/features/request/components/request-carousel";
 import { requestQueries } from "@/features/request/hooks/request.queries";
 import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
 
-type MediaSelected = "home" | "cinema" | "top-rated" | "upcoming";
+type MediaSelected = "new" | "top-rated" | "downloaded" | "upcoming";
 
 type DiscoverResult = {
   results: Media[];
@@ -79,12 +77,10 @@ export function MediaDiscover<TSearch extends MediaDiscoverSearch>({
   emptySubtitle,
   searchPlaceholder,
 }: MediaDiscover<TSearch>) {
-  const { t } = useLingui();
   const locale = useTmdbLocale();
-  const { isAdmin } = useRole();
   const viewMode = useUserPreferences((s) => s.viewMode);
   const showCategories = useUserPreferences((s) => s.showCategories);
-  const setShowCategories = useUserPreferences((s) => s.setShowCategories);
+  const isDownloaded = isDownloadedTab(search.selected);
 
   const [query, setQuery] = useState(search.q ?? "");
   const debouncedQuery = useDebounce(query, 300);
@@ -102,7 +98,6 @@ export function MediaDiscover<TSearch extends MediaDiscoverSearch>({
 
   const { data: pendingRequests } = useQuery({
     ...requestQueries.byType(type),
-    enabled: isAdmin,
   });
 
   const { data: genres = [] } = useQuery({
@@ -142,75 +137,58 @@ export function MediaDiscover<TSearch extends MediaDiscoverSearch>({
   };
 
   return (
-    <>
-      <MediaHeroCarousel type={type} />
-      <Container>
-        {isAdmin && pendingRequests && pendingRequests.length > 0 && (
-          <RequestCarousel
-            requests={pendingRequests}
-            seeMoreTo={type === "movie" ? "/movies/requests" : "/tv/requests"}
+    <Container className="space-y-6">
+      <MediaCarouselWatching type={type} />
+      {pendingRequests && pendingRequests.length > 0 && (
+        <RequestCarousel requests={pendingRequests} seeMoreTo="/requests" seeMoreSearch={{ type, status: "pending" }} />
+      )}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <MediaTabsViewMode />
+
+            <MediaSortTabs
+              value={search.selected}
+              onChange={(value) => onSearchChange({ selected: value } as Partial<TSearch>)}
+              type={type}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            {!isDownloaded && <MediaButtonCategory />}
+            {filtersSheet}
+          </div>
+        </div>
+
+        {showCategories && !isDownloaded && (
+          <MediaCarouselCategory
+            type={type}
+            onValueChange={(value) => onSearchChange({ with_genres: value } as Partial<TSearch>)}
           />
         )}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <MediaTabsViewMode />
 
-              <MediaSortTabs
-                value={search.selected}
-                onChange={(value) => onSearchChange({ selected: value } as Partial<TSearch>)}
-                type={type}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="h-10 gap-2 px-3"
-                onClick={() => setShowCategories(!showCategories)}
-                aria-pressed={showCategories}
-                aria-label={t`Category`}
-              >
-                <Checkbox checked={showCategories} className="pointer-events-none" tabIndex={-1} />
-                <Trans>Category</Trans>
-              </Button>
-              {filtersSheet}
-            </div>
-          </div>
+        <Input
+          type="search"
+          search
+          className="w-full"
+          placeholder={searchPlaceholder}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
 
-          {showCategories && (
-            <MediaCarouselCategory
-              type={type}
-              onValueChange={(value) => onSearchChange({ with_genres: value } as Partial<TSearch>)}
-            />
-          )}
-
-          <Input
-            type="search"
-            h="lg"
-            search
-            className="w-full"
-            placeholder={searchPlaceholder}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-
-          {isPending ? (
-            viewMode === "grid" ? (
-              <MediaGrid items={[]} isLoading />
-            ) : (
-              <MediaTable media={[]} isLoadingMore />
-            )
-          ) : results.length === 0 ? (
-            <PlaceholderEmpty title={emptyTitle} subtitle={emptySubtitle} />
-          ) : viewMode === "grid" ? (
-            <MediaGrid items={results} isLoading={isFetchingNextPage} onLoadMore={handleLoadMore} hideType />
+        {isPending ? (
+          viewMode === "grid" ? (
+            <MediaGrid items={[]} isLoading showType />
           ) : (
-            <MediaTable media={results} isLoadingMore={isFetchingNextPage} onLoadMore={handleLoadMore} />
-          )}
-        </div>
-      </Container>
-    </>
+            <MediaTable media={[]} isLoadingMore />
+          )
+        ) : results.length === 0 ? (
+          <PlaceholderEmpty title={emptyTitle} subtitle={emptySubtitle} />
+        ) : viewMode === "grid" ? (
+          <MediaGrid items={results} isLoading={isFetchingNextPage} onLoadMore={handleLoadMore} />
+        ) : (
+          <MediaTable media={results} isLoadingMore={isFetchingNextPage} onLoadMore={handleLoadMore} />
+        )}
+      </div>
+    </Container>
   );
 }

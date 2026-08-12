@@ -18,6 +18,7 @@ export function PersonKnownFor({ knownFor }: PersonKnownForProps) {
         </span>
       }
       data={knownFor}
+      showType
     />
   );
 }

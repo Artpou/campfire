@@ -9,7 +9,6 @@ import ms from "ms";
 import { cn } from "@/lib/utils";
 import { AppTopbar } from "@/shared/components/app-topbar";
 import { RouteErrorHandler } from "@/shared/components/route-error";
-import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
 
 import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";
@@ -50,7 +49,6 @@ export const Route = createFileRoute("/_app")({
     }
   },
   errorComponent: RouteErrorHandler,
-  pendingComponent: () => <SeedarrLoaderContainer />,
   component: AuthenticatedLayout,
 });
 

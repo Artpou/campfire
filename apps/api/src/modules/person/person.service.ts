@@ -49,10 +49,10 @@ export class PersonService extends AuthenticatedService {
   private readonly locale: string;
   private readonly mediaService: MediaService;
 
-  constructor(user: User, locale: string) {
+  constructor(user: User, locale: string, mediaService = new MediaService(user)) {
     super(user);
     this.locale = locale;
-    this.mediaService = new MediaService(user);
+    this.mediaService = mediaService;
   }
 
   async get(id: string): Promise<Person> {

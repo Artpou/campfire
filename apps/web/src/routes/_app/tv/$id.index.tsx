@@ -1,14 +1,13 @@
 import { useMemo } from "react";
 
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
-import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 
 import { downloadQueries } from "@/features/downloads/hooks/download.queries";
-import { MediaDetailLayout } from "@/features/media/components/media-detail-layout";
+import { MediaDetailLayout, type MediaDetailTab } from "@/features/media/components/media-detail-layout";
 import { MediaDownload } from "@/features/media/components/media-download";
 import { MediaServer } from "@/features/media/components/media-server";
 import { TvCast } from "@/features/tv/components/tv-cast";
@@ -18,19 +17,25 @@ import { TvInfo } from "@/features/tv/components/tv-info";
 import { TvRelated } from "@/features/tv/components/tv-related";
 import { tvQueries } from "@/features/tv/hooks/tv.queries";
 
+const VALID_TABS: MediaDetailTab[] = ["info", "downloads", "server"];
+
+function validateSearch(search: Record<string, unknown>): { tab?: MediaDetailTab } {
+  const tab = search.tab;
+  if (typeof tab === "string" && (VALID_TABS as string[]).includes(tab)) return { tab: tab as MediaDetailTab };
+  return {};
+}
+
 export const Route = createFileRoute("/_app/tv/$id/")({
   loader: ({ context, params }) =>
     context.queryClient.ensureQueryData(tvQueries.details(params.id, countryToTmdbLocale(context.language))),
   component: TVPage,
-  pendingComponent: () => (
-    <div className="flex items-center justify-center size-full">
-      <SeedarrLoader />
-    </div>
-  ),
+  validateSearch,
 });
 
 function TVPage() {
   const params = Route.useParams();
+  const { tab: urlTab } = Route.useSearch();
+  const navigate = useNavigate();
   const locale = useTmdbLocale();
   const { data } = useSuspenseQuery(tvQueries.details(params.id, locale));
 
@@ -53,6 +58,12 @@ function TVPage() {
 
   const hasActiveDownload = torrentDownloads.some((d) => d.torrent && !d.torrent.done);
 
+  const effectiveTab = useMemo(() => {
+    if (urlTab === "downloads" && torrentDownloads.length === 0) return "info";
+    if (urlTab === "server" && remoteDownloads.length === 0) return "info";
+    return urlTab;
+  }, [urlTab, torrentDownloads.length, remoteDownloads.length]);
+
   return (
     <MediaDetailLayout
       title={tv.name || tv.original_name || ""}
@@ -70,6 +81,8 @@ function TVPage() {
       }
       serverCount={remoteDownloads.length}
       defaultTab={hasActiveDownload ? "downloads" : "info"}
+      tab={effectiveTab}
+      onTabChange={(t) => navigate({ to: ".", search: { tab: t === "info" ? undefined : t }, replace: true })}
     >
       <TvEpisodesSection tv={tv} media={media} downloads={mediaDownloads} />
       <TvCast tv={tv} />

@@ -24,7 +24,13 @@ export function MediaTypeTabs({ value }: MediaTypeTabsProps) {
   return (
     <Tabs
       value={value ?? "all"}
-      onValueChange={(v) => navigate({ to: "/downloads", search: { type: getMediaType(v) } })}
+      onValueChange={(v) =>
+        navigate({
+          to: "/downloads",
+          search: (prev) => ({ ...prev, type: getMediaType(v) }),
+          resetScroll: false,
+        })
+      }
     >
       <TabsList size="lg" className="w-full sm:w-fit">
         {TAB_OPTIONS.map(({ value: val, icon: Icon, label }) => (

@@ -1,5 +1,5 @@
 import type { DownloadTorrentInput } from "@seedarr/contracts";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 
 import { BadRequestError, ForbiddenError, NotFoundError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
@@ -36,21 +36,15 @@ const METADATA_TIMEOUT_MAGNET_MS = 10_000;
 const METADATA_TIMEOUT_FILE_MS = 5_000;
 
 export class DownloadService extends IdentifiableService<Download> {
-  private canSeeAllDownloads(): boolean {
-    return this.roleLevel >= ROLE_LEVELS.member;
-  }
-
   async getMany(params?: { ids?: string[] }): Promise<Download[]> {
-    const ownerFilter = this.canSeeAllDownloads() ? undefined : eq(download.userId, this.user.id);
     return db.query.download.findMany({
-      where: and(ownerFilter, params?.ids ? inArray(download.id, params.ids) : undefined),
+      where: params?.ids ? inArray(download.id, params.ids) : undefined,
     });
   }
 
   async getByMediaId(mediaId: number): Promise<Download[]> {
-    const ownerFilter = this.canSeeAllDownloads() ? undefined : eq(download.userId, this.user.id);
     return db.query.download.findMany({
-      where: and(ownerFilter, eq(download.mediaId, mediaId)),
+      where: eq(download.mediaId, mediaId),
       orderBy: desc(download.createdAt),
     });
   }

@@ -6,11 +6,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ActivityIcon, HardDriveIcon, LogOutIcon, RssIcon, ServerIcon, SettingsIcon, UsersIcon } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";
@@ -83,24 +83,22 @@ function SettingsPage() {
             </Select>
           </div>
 
-          <div className="hidden md:flex md:flex-col gap-1 flex-1">
-            {visibleTabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-md text-base font-medium transition-colors text-left w-full",
-                  activeTab === tab.id
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted",
-                )}
-              >
-                <tab.icon className="size-5" />
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          <Tabs className="hidden md:flex md:flex-col flex-1">
+            <TabsList className="flex-col w-full gap-2 bg-background">
+              {visibleTabs.map((tab) => (
+                <TabsTrigger
+                  className="w-full"
+                  key={tab.id}
+                  value={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  size="lg"
+                >
+                  <tab.icon className="size-5" />
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
 
           <div className="hidden md:flex flex-col gap-3 mt-6">
             <Card className="py-4 gap-0">

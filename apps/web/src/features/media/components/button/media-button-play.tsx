@@ -13,7 +13,6 @@ import { preloadMoviPlayer } from "@/features/player/helpers/movi-player.helper"
 interface MediaButtonPlayProps extends ButtonProps {
   media: Media;
   circular?: boolean;
-  /** Icon-only primary play (downloads table style). */
   iconOnly?: boolean;
 }
 

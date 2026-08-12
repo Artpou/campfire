@@ -2,7 +2,7 @@ import { useMemo } from "react";
 
 import type { TMDBMovieDetails } from "@seedarr/sdk";
 
-import { MediaCastCarousel } from "@/features/media/components/carousel/media-carousel-cast";
+import { PersonCarousel } from "@/features/person/components/person-carousel";
 
 interface MovieCastProps {
   movie: TMDBMovieDetails;
@@ -19,5 +19,5 @@ export function MovieCast({ movie }: MovieCastProps) {
     return [...directors, ...actors];
   }, [movie.credits]);
 
-  return <MediaCastCarousel people={castAndCrew} />;
+  return <PersonCarousel people={castAndCrew} />;
 }

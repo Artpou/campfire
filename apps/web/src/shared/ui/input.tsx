@@ -33,7 +33,7 @@ function Input({
   if (search) {
     return (
       <div className="relative w-full">
-        <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 size-5 text-muted-foreground pointer-events-none" />
+        <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
         {input}
       </div>
     );

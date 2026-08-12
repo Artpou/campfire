@@ -1,5 +1,5 @@
 import { formatError, VIDEO_EXTENSIONS } from "@seedarr/shared";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type WebTorrent from "webtorrent";
 
 import { logger } from "@/shared/helpers/logger.helper";
@@ -11,6 +11,7 @@ import { db } from "@/db/db";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import type { TorrentLiveData } from "@/modules/download/download.schema";
 import { download } from "@/modules/download/download.schema";
+import { mediaRequest } from "@/modules/request/request.schema";
 import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
 import { invalidateStreamSource } from "@/modules/streaming/streaming.service";
 import fs from "node:fs/promises";
@@ -99,6 +100,13 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
         title: `Download completed: ${torrent.name}`,
         metadata: { downloadId },
       });
+
+      if (dl?.mediaId) {
+        await db
+          .update(mediaRequest)
+          .set({ status: "validated" })
+          .where(and(eq(mediaRequest.mediaId, dl.mediaId), eq(mediaRequest.status, "pending")));
+      }
 
       if (dl?.torrent && !dl.torrent.durationSeconds && torrent.name) {
         const torrentName = dl.torrent.name;

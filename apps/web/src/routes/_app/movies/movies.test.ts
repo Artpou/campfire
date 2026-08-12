@@ -32,8 +32,8 @@ describe("/movies validateSearch", () => {
     });
   });
 
-  it("falls back to home when selected is invalid", () => {
-    expect(validateMovieDiscoverSearch({ selected: "invalid" }).selected).toBe("home");
+  it("falls back to new when selected is invalid", () => {
+    expect(validateMovieDiscoverSearch({ selected: "invalid" }).selected).toBe("new");
   });
 
   it("maps top-rated tab to vote sort", () => {
@@ -42,9 +42,12 @@ describe("/movies validateSearch", () => {
     });
   });
 
-  it("maps cinema tab to release type 3", () => {
-    expect(buildMovieDiscoverOptions({ selected: "cinema" })).toMatchObject({
-      with_release_type: "3",
+  it("maps downloaded tab to cleared genres and providers", () => {
+    expect(
+      buildMovieDiscoverOptions({ selected: "downloaded", with_genres: "28", with_watch_providers: "8" }),
+    ).toMatchObject({
+      with_genres: undefined,
+      with_watch_providers: undefined,
     });
   });
 
@@ -60,7 +63,8 @@ describe("/movies validateSearch", () => {
   });
 
   it("accepts known tabs only", () => {
-    expect(isMediaSelected("home")).toBe(true);
+    expect(isMediaSelected("new")).toBe(true);
+    expect(isMediaSelected("downloaded")).toBe(true);
     expect(isMediaSelected("unknown")).toBe(false);
   });
 });

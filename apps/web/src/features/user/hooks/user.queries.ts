@@ -19,6 +19,11 @@ export const userQueries = {
       queryKey: [...userQueries.key, id],
       queryFn: () => unwrap(api.users[":id"].$get({ param: { id } })),
     }),
+  stats: (id: string) =>
+    queryOptions({
+      queryKey: [...userQueries.key, id, "stats"],
+      queryFn: () => unwrap(api.users[":id"].stats.$get({ param: { id } })),
+    }),
 };
 
 function invalidateUserQueries(queryClient: ReturnType<typeof useQueryClient>) {

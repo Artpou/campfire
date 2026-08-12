@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Trans } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
 import { useNavigate } from "@tanstack/react-router";
-import { type RowSelectionState, type SortingState, useTable } from "@tanstack/react-table";
+import { type OnChangeFn, type RowSelectionState, type SortingState, useTable } from "@tanstack/react-table";
 import { useIntersectionObserver } from "@uidotdev/usehooks";
 import { Trash2Icon } from "lucide-react";
 
@@ -26,31 +26,29 @@ interface DownloadTableProps {
   media: Media[];
   onLoadMore?: () => void;
   isLoadingMore?: boolean;
+  sorting?: SortingState;
+  onSortingChange?: OnChangeFn<SortingState>;
 }
 
-export function DownloadTable({ media, onLoadMore, isLoadingMore }: DownloadTableProps) {
+export function DownloadTable({ media, onLoadMore, isLoadingMore, sorting, onSortingChange }: DownloadTableProps) {
   const navigate = useNavigate();
   const { isAdmin } = useRole();
   const currentUser = useAuth((s) => s.user);
   const batchDelete = useBatchDeleteDownloads();
 
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [localSorting, setLocalSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dbOnly, setDbOnly] = useState(false);
 
   const items = useMemo(() => media.filter((m): m is MediaWithDownload => Boolean(m.download)), [media]);
+  const resolvedSorting = sorting ?? localSorting;
+  const resolvedOnSortingChange = onSortingChange ?? setLocalSorting;
+  const manualSorting = Boolean(onSortingChange);
 
   const canDelete = useCallback(
     (download: MediaWithDownload["download"]) => isAdmin || download.userId === currentUser?.id,
     [isAdmin, currentUser?.id],
-  );
-
-  const onPlay = useCallback(
-    (downloadId: string) => {
-      navigate({ to: "/downloads/$id/play", params: { id: downloadId } });
-    },
-    [navigate],
   );
 
   const onDelete = useCallback((rowId: string) => {
@@ -58,7 +56,7 @@ export function DownloadTable({ media, onLoadMore, isLoadingMore }: DownloadTabl
     setDeleteDialogOpen(true);
   }, []);
 
-  const columns = useDownloadTableColumns({ canDelete, onPlay, onDelete });
+  const columns = useDownloadTableColumns({ canDelete, onDelete });
 
   const [sentinelRef, entry] = useIntersectionObserver({ threshold: 1 });
   const onLoadMoreRef = useRef(onLoadMore);
@@ -75,9 +73,10 @@ export function DownloadTable({ media, onLoadMore, isLoadingMore }: DownloadTabl
     data: items,
     columns,
     getRowId: (row) => row.download.id,
-    onSortingChange: setSorting,
+    manualSorting,
+    onSortingChange: resolvedOnSortingChange,
     onRowSelectionChange: setRowSelection,
-    state: { sorting, rowSelection },
+    state: { sorting: resolvedSorting, rowSelection },
   });
 
   const selectedIds = table.getFilteredSelectedRowModel().rows.map((r) => r.original.download.id);

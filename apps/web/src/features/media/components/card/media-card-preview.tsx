@@ -41,21 +41,19 @@ export function MediaCardPreview({ media, detailLinkProps }: MediaCardPreviewPro
   const categories = media.categories?.split(", ").filter(Boolean) ?? [];
 
   return (
-    <>
-      <Link {...detailLinkProps} className="block">
-        <div className="relative aspect-16/8 w-full overflow-hidden bg-muted">
-          {trailer?.key ? (
-            <iframe
-              src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1&controls=0&modestbranding=1&rel=0&showinfo=0`}
-              className="absolute inset-0 size-full pointer-events-none"
-              allow="autoplay; encrypted-media"
-              title={trailer.name}
-            />
-          ) : (
-            <MediaImg media={media} type="backdrop" />
-          )}
-        </div>
-      </Link>
+    <div className="block">
+      <div className="relative aspect-16/8 w-full overflow-hidden bg-muted">
+        {trailer?.key ? (
+          <iframe
+            src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0`}
+            className="absolute inset-0 size-full pointer-events-none"
+            allow="autoplay; encrypted-media"
+            title={trailer.name}
+          />
+        ) : (
+          <MediaImg media={media} type="backdrop" />
+        )}
+      </div>
 
       <div className="p-3 space-y-2">
         <div className="flex items-center gap-8">
@@ -85,6 +83,6 @@ export function MediaCardPreview({ media, detailLinkProps }: MediaCardPreviewPro
           <MediaButtonTorrent media={media} className="w-full" />
         )}
       </div>
-    </>
+    </div>
   );
 }

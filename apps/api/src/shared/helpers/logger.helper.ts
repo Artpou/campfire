@@ -135,21 +135,30 @@ export const logRequest = (
   writeToFile(`${formatTimestamp()} ${method} ${route} ${statusCode} ${formatDuration(durationMs)}`);
 };
 
-export const startupLogger = (startTime: number, port: number) => {
+export const startupLogger = ({
+  startTime,
+  port,
+  downloadsPath,
+}: {
+  startTime: number;
+  port: number;
+  downloadsPath: string;
+}) => {
   const publicUrl = process.env.WEB_URL?.replace(/\/$/, "") || `http://localhost:${port}`;
 
-  console.log(`[STARTUP] Server is now listening`);
   console.log(
     `\n  ${colors.bold}${colors.yellow}HONO${colors.reset} ${colors.yellow}v4${colors.reset}  ready in ${Date.now() - startTime} ms\n`,
   );
-  console.log(
-    `  ${colors.bold}${colors.yellow}>${colors.reset}  ${colors.bold}App:${colors.reset}     ${colors.cyan}${publicUrl}/${colors.reset}`,
-  );
   if (process.env.WEB_URL) {
     console.log(
-      `  ${colors.bold}${colors.yellow}>${colors.reset}  ${colors.bold}Listen:${colors.reset}  ${colors.cyan}0.0.0.0:${port}${colors.reset} ${colors.gray}(container)${colors.reset}`,
+      `  ${colors.bold}${colors.yellow}➜${colors.reset}  ${colors.bold}Listen:${colors.reset}  ${colors.cyan}0.0.0.0:${port}${colors.reset} ${colors.gray}(container)${colors.reset}`,
     );
   }
+  console.log(
+    `  ${colors.bold}${colors.yellow}➜${colors.reset}  ${colors.bold}App:${colors.reset}     ${colors.cyan}${publicUrl}/${colors.reset}`,
+  );
+
+  console.log(`\n  ${colors.bold}Downloads:${colors.reset} ${colors.cyan}${downloadsPath}${colors.reset}`);
   console.log(`  ${colors.bold}Log level:${colors.reset} ${getLogLevel()}\n`);
 
   writeToFile(`[STARTUP] Server ready in ${Date.now() - startTime}ms on port ${port} (level: ${getLogLevel()})`);

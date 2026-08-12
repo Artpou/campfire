@@ -36,8 +36,12 @@ export type UpsertReviewInput = z.infer<typeof upsertReviewDto>;
 
 export const listMediaDto = paginationDto.extend({
   type: z.enum(mediaTypeEnum).optional(),
-  filter: z.enum(["like", "watch-list", "downloaded", "history", "reviewed", "calendar"]).optional(),
+  filter: z.enum(["like", "watch-list", "downloaded", "history", "reviewed", "calendar", "in-progress"]).optional(),
   userId: z.string().optional(),
+  /** Pipe-separated genre names matched against media.categories (local library). */
+  with_genres: z.string().optional(),
+  sortBy: z.enum(["title", "date", "score", "progress"]).optional(),
+  sortOrder: z.enum(["asc", "desc"]).optional(),
 });
 export type ListMediaQuery = z.infer<typeof listMediaDto>;
 

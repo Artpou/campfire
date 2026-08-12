@@ -28,15 +28,15 @@ export function RequestGrid({ items, isLoading = false, onLoadMore }: RequestGri
   if (!isLoading && (!items || !items.length)) return null;
 
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(165px,1fr))] gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
       {items.map((item, index) => (
         <div key={item.id} ref={index === items.length - 1 ? lastItemRef : null}>
           <RequestCard request={item} />
         </div>
       ))}
       {isLoading &&
-        Array.from({ length: 20 }, (_, i) => (
-          <Skeleton key={`skeleton-${i.toString()}`} className="aspect-2/3 w-full rounded-md" />
+        Array.from({ length: 6 }, (_, i) => (
+          <Skeleton key={`skeleton-${i.toString()}`} className="h-24 w-full rounded-lg" />
         ))}
     </div>
   );

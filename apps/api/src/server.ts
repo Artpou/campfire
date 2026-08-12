@@ -75,12 +75,10 @@ const start = async () => {
 
   const downloadsPath = process.env.DOWNLOADS_PATH || "./downloads";
   await fsPromises.mkdir(downloadsPath, { recursive: true });
-  logger.info("STARTUP", `Downloads directory: ${downloadsPath}`);
 
   const { getAvatarsRoot } = await import("./shared/helpers/path.helper");
   const avatarsPath = getAvatarsRoot();
   await fsPromises.mkdir(avatarsPath, { recursive: true });
-  logger.info("STARTUP", `Avatars directory: ${avatarsPath}`);
 
   torrentClient
     .initialize()
@@ -106,7 +104,7 @@ const start = async () => {
     hostname: "0.0.0.0",
   });
 
-  startupLogger(startTime, port);
+  startupLogger({ startTime, port, downloadsPath });
 };
 
 start().catch((err) => {
