@@ -95,6 +95,7 @@ Thank you for your interest in contributing! This guide covers how to set up the
 
 packages/
 ├── sdk/                          # @seedarr/sdk — Hono RPC client & types
+├── contracts/                    # @seedarr/contracts — shared Zod DTOs between API and web
 └── shared/                       # @seedarr/shared — cross-app utilities
 ```
 
@@ -104,6 +105,8 @@ packages/
 - **`apps/web/src/features/`** — Feature-based architecture with components, hooks, and helpers co-located
 - **`apps/web/src/shared/`** — Reusable components and utilities used across features
 - **`apps/web/src/routes/`** — TanStack Router file-based routing (`_app.*` authenticated, `_auth.*` public)
+- **`packages/contracts/`** — Request/query Zod DTOs shared by API validation and the web client
+- **`packages/sdk/`** — Typed Hono RPC client (`unwrap`, response types) — import this from the frontend, never `@seedarr/api`
 
 ## Development Commands
 
@@ -139,7 +142,7 @@ pnpm test
 pnpm db:generate    # Generate migrations
 pnpm db:push        # Push schema to database (dev only)
 pnpm db:migrate     # Apply migrations
-pnpm db:studio      # Open Drizzle Studio
+pnpm --filter @seedarr/api db:studio   # Open Drizzle Studio
 ```
 
 **Always run `pnpm check` before submitting a pull request.**
@@ -158,7 +161,7 @@ pnpm db:studio      # Open Drizzle Studio
 
 - 2 space indentation
 - 120 character line width
-- No semicolons
+- Semicolons (Biome default / codebase convention)
 - Double quotes for strings
 
 ### File Naming
@@ -191,4 +194,4 @@ For Docker deployment, refer to [`docker-compose.yml`](docker-compose.yml) and t
 3. Run `pnpm check` to ensure everything passes
 4. Open a pull request with a clear description of what changed and why
 
-For architecture details and API patterns, see [`CLAUDE.md`](CLAUDE.md).
+For architecture details and API patterns, see [`AGENTS.md`](AGENTS.md).

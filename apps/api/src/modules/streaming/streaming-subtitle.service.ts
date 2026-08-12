@@ -1,7 +1,7 @@
 import { isSubtitleFile } from "@seedarr/shared";
 
 import { BadRequestError, NotFoundError } from "@/shared/errors/error";
-import { getDownloadsRoot, resolveWithinDownloads } from "@/shared/helpers/path.helper";
+import { getDownloadFolderName, getDownloadsRoot, resolveWithinDownloads } from "@/shared/helpers/path.helper";
 
 import type { Download } from "@/modules/download/download.schema";
 import fs from "node:fs/promises";
@@ -32,12 +32,15 @@ function toWebVtt(content: string, filePath: string): string {
 
 export class StreamingSubtitleService {
   async listExternalSubtitles(download: Download): Promise<{ paths: string[] }> {
+    const folderName = getDownloadFolderName(download);
+    if (!folderName) return { paths: [] };
+
     const downloadsRoot = getDownloadsRoot();
-    const folderPath = resolveWithinDownloads(download.torrent?.name ?? "");
+    const folderPath = resolveWithinDownloads(folderName);
     const torrentPaths = new Set(
       (download.torrent?.files ?? [])
         .filter((f) => isSubtitleFile(f.path))
-        .map((f) => path.join(download.torrent?.name ?? "", f.path).replace(/\\/g, "/")),
+        .map((f) => path.join(folderName, f.path).replace(/\\/g, "/")),
     );
 
     const collected: string[] = [];
@@ -71,11 +74,11 @@ export class StreamingSubtitleService {
     }
 
     // External subtitle paths are already relative to DOWNLOADS_PATH (e.g. "Folder/file.ES.srt").
-    // Torrent-bundled paths may be either full relative or torrent-root relative — try both.
+    // Torrent-bundled paths may be either full relative or folder-root relative — try both.
     const candidates = [resolveWithinDownloads(filePath)];
-    const torrentName = download.torrent?.name;
-    if (torrentName && !filePath.startsWith(`${torrentName}/`) && filePath !== torrentName) {
-      candidates.push(resolveWithinDownloads(torrentName, filePath));
+    const folderName = getDownloadFolderName(download);
+    if (folderName && !filePath.startsWith(`${folderName}/`) && filePath !== folderName) {
+      candidates.push(resolveWithinDownloads(folderName, filePath));
     }
 
     let fullPath: string | null = null;

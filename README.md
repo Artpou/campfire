@@ -70,7 +70,8 @@ Think of it as **Stremio meets Overseerr**, but fully self-hosted and under your
 
 - **Role-based access control**: Owner, Admin, Member, Viewer
 - First user becomes the owner — no open registration by default
-- Per-user watchlist, likes, watch history, and downloads
+- Per-user watchlist, likes, and watch history
+- **Shared household library** — any authenticated user can browse and stream all downloads; mutations (pause/delete/transfer) require ownership or admin
 - **Guided onboarding** for new users
 
 ### Self-Hosted & Private
@@ -147,7 +148,6 @@ Open **http://localhost:3000** — the API runs on port 3002.
 Seedarr is under active development. Here's what's coming next:
 
 - [ ] **Instance customization** — custom logo, title, branding
-- [ ] **Request system** — non-admin users can request content, admin approves via email notification
 - [ ] **Direct URL streaming** — play from external links
 - [ ] **Chromecast** — cast to your TV
 - [ ] **Debrid support** — Real-Debrid, AllDebrid, Premiumize integration

@@ -12,6 +12,10 @@ export function isRouteNotFound(error: unknown): boolean {
   return getApiError(error)?.status === 404;
 }
 
+export function isRouteForbidden(error: unknown): boolean {
+  return getApiError(error)?.status === 403;
+}
+
 function getApiError(error: unknown): ApiError | undefined {
   let current: unknown = error;
 

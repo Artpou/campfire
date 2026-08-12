@@ -1,3 +1,4 @@
+import { Trans } from "@lingui/react/macro";
 import type { MediaRequest } from "@seedarr/sdk";
 import { BanIcon, Trash2Icon, UndoDotIcon } from "lucide-react";
 
@@ -40,11 +41,13 @@ export function RequestActions({ request }: RequestActionsProps) {
               disabled={cancelRequest.isPending}
             />
           </TooltipTrigger>
-          <TooltipContent>Cancel request</TooltipContent>
+          <TooltipContent>
+            <Trans>Cancel request</Trans>
+          </TooltipContent>
         </Tooltip>
       )}
 
-      {status === "cancelled" && (
+      {status === "cancelled" && isOwner && (
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -59,7 +62,9 @@ export function RequestActions({ request }: RequestActionsProps) {
               disabled={reopenRequest.isPending}
             />
           </TooltipTrigger>
-          <TooltipContent>Reopen request</TooltipContent>
+          <TooltipContent>
+            <Trans>Reopen request</Trans>
+          </TooltipContent>
         </Tooltip>
       )}
 
@@ -78,11 +83,13 @@ export function RequestActions({ request }: RequestActionsProps) {
               disabled={deleteRequest.isPending}
             />
           </TooltipTrigger>
-          <TooltipContent>Delete request</TooltipContent>
+          <TooltipContent>
+            <Trans>Delete request</Trans>
+          </TooltipContent>
         </Tooltip>
       )}
 
-      {(status === "validated" || status === "cancelled") && (
+      {isOwner && (status === "validated" || status === "cancelled") && (
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -97,7 +104,9 @@ export function RequestActions({ request }: RequestActionsProps) {
               disabled={deleteRequest.isPending}
             />
           </TooltipTrigger>
-          <TooltipContent>Delete request</TooltipContent>
+          <TooltipContent>
+            <Trans>Delete request</Trans>
+          </TooltipContent>
         </Tooltip>
       )}
     </div>

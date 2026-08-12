@@ -2,7 +2,12 @@ import type { SubtitlesSearchQuery } from "@seedarr/contracts";
 import { sanitizeFileName } from "@seedarr/shared";
 
 import { BadRequestError, ForbiddenError, NotFoundError, ServiceUnavailableError } from "@/shared/errors/error";
-import { assertWithinDownloads, getDownloadsRoot, resolveWithinDownloads } from "@/shared/helpers/path.helper";
+import {
+  assertWithinDownloads,
+  getDownloadsRoot,
+  requireDownloadFolderName,
+  resolveWithinDownloads,
+} from "@/shared/helpers/path.helper";
 import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
 import { DownloadService } from "@/modules/download/download.service";
@@ -58,7 +63,7 @@ export class SubtitleService extends AuthenticatedService {
     if (download.userId !== this.user.id && !["owner", "admin"].includes(this.user.role)) {
       throw new ForbiddenError();
     }
-    const downloadFolderPath = resolveWithinDownloads(download.torrent?.name ?? "");
+    const downloadFolderPath = resolveWithinDownloads(requireDownloadFolderName(download));
     return this.download(downloadFolderPath, url, language, mediaTitle);
   }
 

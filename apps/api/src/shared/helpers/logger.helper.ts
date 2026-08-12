@@ -126,7 +126,7 @@ export const logRequest = (
   const statusCode = typeof status === "string" ? Number.parseInt(status, 10) : status;
 
   const formatedParams = Object.entries(params || {})
-    .map(([key, value]) => `${key}=${key === "session" ? "[REDACTED]" : value}`)
+    .map(([key, value]) => `${key}=${key === "session" || key === "token" ? "[REDACTED]" : value}`)
     .join("&");
   const route = new URL(url).pathname + (formatedParams ? `?${formatedParams}` : "");
 

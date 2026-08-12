@@ -43,3 +43,12 @@ export async function requireDownloadOwner(
 
   await next();
 }
+
+/** Assert a download id exists (for body params such as watch progress). */
+export async function assertDownloadExists(downloadId: string): Promise<void> {
+  const row = await db.query.download.findFirst({
+    where: eq(download.id, downloadId),
+    columns: { id: true },
+  });
+  if (!row) throw new NotFoundError("Download");
+}

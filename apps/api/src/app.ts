@@ -1,16 +1,17 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { csrf } from "hono/csrf";
 import { secureHeaders } from "hono/secure-headers";
 import { stream } from "hono/streaming";
 
 import { pipeNodeStream } from "@/shared/helpers/stream.helper";
-import { csrfGuard } from "@/shared/middlewares/csrf.middleware";
 import { errorHandler } from "@/shared/middlewares/error.middleware";
 import { requestLogger } from "@/shared/middlewares/logger.middleware";
 import { requestTimeout } from "@/shared/middlewares/timeout.middleware";
 
 import { createReadStream, existsSync } from "node:fs";
 import { activityLogRoutes } from "./modules/activity-log/activity-log.route";
+import { authGuard } from "./modules/auth/auth.guard";
 import { authRoutes } from "./modules/auth/auth.route";
 import { downloadRoutes } from "./modules/download/download.route";
 import { localFileRoutes } from "./modules/download/local/local-file.route";
@@ -34,7 +35,7 @@ if (!process.env.WEB_URL) throw new Error("WEB_URL is not set");
 export const app = new Hono<{ Variables: HonoVariables }>()
   .use("*", requestLogger)
   .use("*", secureHeaders())
-  .use("*", csrfGuard)
+  .use("*", csrf({ origin: process.env.WEB_URL }))
   .onError(errorHandler)
   .use(
     "*",
@@ -64,13 +65,14 @@ export const app = new Hono<{ Variables: HonoVariables }>()
   .route("/storage-config", storageConfigRoutes)
   .route("/settings", settingsRoutes)
   .route("/requests", requestRoutes)
-  .get("/avatars/:userId", async (c) => {
+  .get("/avatars/:userId", authGuard, async (c) => {
     const userId = c.req.param("userId");
+    if (!userId) return c.notFound();
     const avatar = await new UserService().resolveAvatarFile(userId);
     if (!avatar || !existsSync(avatar.absolutePath)) return c.notFound();
 
     c.header("Content-Type", avatar.contentType);
-    c.header("Cache-Control", "public, max-age=86400");
+    c.header("Cache-Control", "private, max-age=86400");
     const fileStream = createReadStream(avatar.absolutePath);
     return stream(c, async (honoStream) => {
       await pipeNodeStream(honoStream, fileStream);

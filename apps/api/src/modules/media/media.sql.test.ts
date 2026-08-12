@@ -32,15 +32,9 @@ function sqlToString(chunk: SQL): string {
 }
 
 describe("media-sort.sql — nested subquery aliases", () => {
-  const opts = {
-    targetUserId: "user-1",
-    canSeeAllDownloads: true,
-    viewerUserId: "user-1",
-  };
-
   it("scalarUserRelation keeps join-table qualification (not media.*)", () => {
     const fragment = scalarUserRelation(userReviews, userReviews.createdAt, media.id, {
-      userId: opts.targetUserId,
+      userId: "user-1",
     });
     const rendered = sqlToString(fragment);
     const reviews = getTableName(userReviews);

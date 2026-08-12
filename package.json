@@ -13,6 +13,7 @@
     "knip": "knip",
     "check": "turbo run lint check-types test //#knip",
     "format": "biome format --write .",
+    "db:studio": "pnpm --filter @seedarr/api db:studio",
     "db:generate": "turbo run db:generate",
     "db:migrate": "pnpm --filter @seedarr/api db:migrate",
     "db:push": "pnpm --filter @seedarr/api db:push",

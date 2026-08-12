@@ -99,13 +99,15 @@ export async function assertPublicHttpUrl(url: string): Promise<void> {
 export async function assertSafeTorrentFetchUrl(url: string): Promise<void> {
   const parsed = parseAndValidateUrl(url, "TORRENT");
 
+  // Self-hosted: LAN / localhost magnet & .torrent URLs are allowed (Jackett on NAS, etc.).
+  // Only cloud metadata endpoints are blocked (hostname + resolved IP / DNS rebinding).
   if (isMetadataEndpoint(parsed.hostname)) {
     logger.warn("TORRENT", `Blocked torrent fetch URL: ${redactUrl(url)}`);
     throw new BadRequestError(`URL cannot point to cloud metadata endpoints: ${parsed.hostname}`);
   }
 
   const ip = await resolveIp(parsed.hostname);
-  if (isMetadataEndpoint(ip)) {
+  if (isMetadataEndpoint(ip) || ip === "169.254.169.254") {
     logger.warn("TORRENT", `Blocked torrent fetch URL: ${redactUrl(url)}`);
     throw new BadRequestError(`URL resolves to cloud metadata endpoint (${parsed.hostname} -> ${ip})`);
   }

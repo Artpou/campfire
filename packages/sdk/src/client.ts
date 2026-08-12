@@ -99,3 +99,12 @@ export async function unwrap<T extends ClientResponse<unknown>>(response: T | Pr
     throw toApiError(error);
   }
 }
+
+/** Multipart / raw fetch that still goes through {@link apiFetch} (credentials + ApiError). */
+export async function unwrapForm<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await apiFetch(`${getBaseUrl()}${path}`, {
+    credentials: "include",
+    ...init,
+  });
+  return (await res.json()) as T;
+}

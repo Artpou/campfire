@@ -8,7 +8,7 @@ import ms from "ms";
 
 import { cn } from "@/lib/utils";
 import { AppTopbar } from "@/shared/components/app-topbar";
-import { RouteErrorHandler } from "@/shared/components/route-error";
+import { ErrorView } from "@/shared/components/error/error-view";
 
 import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";
@@ -48,7 +48,7 @@ export const Route = createFileRoute("/_app")({
       throw redirect({ to: "/login" });
     }
   },
-  errorComponent: RouteErrorHandler,
+  errorComponent: ErrorView,
   component: AuthenticatedLayout,
 });
 
@@ -73,7 +73,7 @@ const MOBILE_NAV_STATIC: MobileNavItem[] = [
 
 function AuthenticatedLayout() {
   const location = useLocation();
-  const user = useAuth.getState().user;
+  const user = useAuth((s) => s.user);
   const { isAdmin, hasRole } = useRole();
 
   const isIndexerMisconfigured = isAdmin && user?.countIndexerManagers === 0;

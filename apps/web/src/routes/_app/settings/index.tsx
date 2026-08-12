@@ -28,21 +28,25 @@ export const Route = createFileRoute("/_app/settings/")({
 });
 
 function SettingsPage() {
-  const { isAdmin } = useRole();
+  const { isAdmin, hasRole } = useRole();
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const logout = useAuth((s) => s.logout);
 
   const tabs = [
-    { id: "general" as const, label: <Trans>General</Trans>, icon: SettingsIcon, adminOnly: false },
-    { id: "indexers" as const, label: <Trans>Indexers</Trans>, icon: RssIcon, adminOnly: true },
-    { id: "storage" as const, label: <Trans>Storage</Trans>, icon: ServerIcon, adminOnly: true },
-    { id: "activity" as const, label: <Trans>Activity</Trans>, icon: ActivityIcon, adminOnly: false },
-    { id: "users" as const, label: <Trans>Users</Trans>, icon: UsersIcon, adminOnly: true },
+    { id: "general" as const, label: <Trans>General</Trans>, icon: SettingsIcon, adminOnly: false, memberOnly: false },
+    { id: "indexers" as const, label: <Trans>Indexers</Trans>, icon: RssIcon, adminOnly: true, memberOnly: false },
+    { id: "storage" as const, label: <Trans>Storage</Trans>, icon: ServerIcon, adminOnly: true, memberOnly: false },
+    { id: "activity" as const, label: <Trans>Activity</Trans>, icon: ActivityIcon, adminOnly: false, memberOnly: true },
+    { id: "users" as const, label: <Trans>Users</Trans>, icon: UsersIcon, adminOnly: true, memberOnly: false },
   ];
 
-  const visibleTabs = tabs.filter((tab) => !tab.adminOnly || isAdmin);
+  const visibleTabs = tabs.filter((tab) => {
+    if (tab.adminOnly && !isAdmin) return false;
+    if (tab.memberOnly && !hasRole("member")) return false;
+    return true;
+  });
   const activeTabMeta = visibleTabs.find((tab) => tab.id === activeTab) ?? visibleTabs[0];
 
   const handleSignOut = async () => {
@@ -119,7 +123,7 @@ function SettingsPage() {
 
         <div className="flex-1 min-w-0">
           {activeTab === "general" && <SettingsGeneralTab />}
-          {activeTab === "activity" && <SettingsActivityTab />}
+          {activeTab === "activity" && hasRole("member") && <SettingsActivityTab />}
           {activeTab === "indexers" && isAdmin && <SettingsIndexersTab />}
           {activeTab === "storage" && isAdmin && <SettingsStorageTab />}
           {activeTab === "users" && isAdmin && <SettingsUsersTab />}

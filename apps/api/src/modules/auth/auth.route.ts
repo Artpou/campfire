@@ -15,7 +15,7 @@ import { UserService } from "../user/user.service";
 import type { AuthUser } from "./auth.types";
 
 export const authRoutes = new Hono()
-  .get("/has-owner", async (c) => {
+  .get("/has-owner", authRateLimiter, async (c) => {
     const userService = new UserService();
     const hasOwner = await userService.hasOwner();
     return c.json({ hasOwner });

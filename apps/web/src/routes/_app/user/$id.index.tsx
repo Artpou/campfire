@@ -8,7 +8,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import type { OnChangeFn, SortingState } from "@tanstack/react-table";
 import { BookmarkIcon, CalendarIcon, ClockIcon, HeartIcon, PencilIcon, SaveIcon } from "lucide-react";
 
-import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
+import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
@@ -314,7 +314,7 @@ function UserProfilePage() {
           />
 
           {isInitialLoading ? (
-            <SeedarrLoaderContainer />
+            <SeedarrLoader />
           ) : tab === "calendar" ? (
             <MediaCalendar items={calendarItems} viewMode={viewMode} />
           ) : (

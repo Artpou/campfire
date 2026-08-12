@@ -1,8 +1,9 @@
-import type { DownloadTorrentInput } from "@seedarr/contracts";
+import type { DownloadTorrentInput, PaginationQuery } from "@seedarr/contracts";
 import { desc, eq, inArray } from "drizzle-orm";
 
 import { BadRequestError, ForbiddenError, NotFoundError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
+import { paginate } from "@/shared/helpers/pagination.helper";
 import { IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { db } from "@/db/db";
@@ -36,9 +37,14 @@ const METADATA_TIMEOUT_MAGNET_MS = 10_000;
 const METADATA_TIMEOUT_FILE_MS = 5_000;
 
 export class DownloadService extends IdentifiableService<Download> {
-  async getMany(params?: { ids?: string[] }): Promise<Download[]> {
+  async getMany(params?: PaginationQuery): Promise<Download[]> {
+    const where = params?.ids ? inArray(download.id, params.ids) : undefined;
+    const paginationOpts = !params?.ids && params?.page && params?.limit ? paginate(params) : {};
+
     return db.query.download.findMany({
-      where: params?.ids ? inArray(download.id, params.ids) : undefined,
+      where,
+      orderBy: desc(download.createdAt),
+      ...paginationOpts,
     });
   }
 
@@ -49,7 +55,7 @@ export class DownloadService extends IdentifiableService<Download> {
     });
   }
 
-  async findMany(params?: { ids?: string[] }): Promise<Download[]> {
+  async findMany(params?: PaginationQuery): Promise<Download[]> {
     return this.getMany(params);
   }
 

@@ -11,7 +11,7 @@ export const requestRoutes = RequestService.createRouter()
   .post("/", zValidator("json", mediaInputSchema), async (c) => {
     return c.json(await c.var.service.create(c.req.valid("json")), 201);
   })
-  .get("/", zValidator("query", listRequestsDto), async (c) => {
+  .get("/", requireRole("admin"), zValidator("query", listRequestsDto), async (c) => {
     return c.json(await c.var.service.list(c.req.valid("query")));
   })
   .get("/mine", async (c) => {

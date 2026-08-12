@@ -51,15 +51,9 @@ export function scalarUserRelation(
   )`;
 }
 
-type OrderOpts = {
-  targetUserId: string;
-  canSeeAllDownloads: boolean;
-  viewerUserId: string;
-};
-
-function downloadCreatedAtSql(opts: OrderOpts): SQL {
+/** Latest download createdAt for this media (any user — shared library). */
+function downloadCreatedAtSql(): SQL {
   return scalarUserRelation(download, download.createdAt, media.id, {
-    userId: opts.canSeeAllDownloads ? undefined : opts.viewerUserId,
     orderBy: desc(sqlColumn(download, download.createdAt)),
   });
 }
@@ -115,10 +109,10 @@ export function inProgressRankSql(userId: string): SQL {
   END`;
 }
 
-export function sortDateSql(opts: OrderOpts): SQL {
+export function sortDateSql(userId: string): SQL {
   return sql`COALESCE(
-    ${downloadCreatedAtSql(opts)},
-    ${activityAtSql(opts.targetUserId)},
-    ${scalarUserRelation(watchProgress, watchProgress.updatedAt, media.id, { userId: opts.targetUserId })}
+    ${downloadCreatedAtSql()},
+    ${activityAtSql(userId)},
+    ${scalarUserRelation(watchProgress, watchProgress.updatedAt, media.id, { userId })}
   )`;
 }

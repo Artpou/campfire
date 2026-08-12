@@ -21,6 +21,8 @@ export const useAuth = create<AuthStore>()(
     }),
     {
       name: "auth-storage",
+      // Only persist onboarding flag — user always comes from /auth/me (httpOnly session).
+      partialize: (state) => ({ ownerOnboardingCompleted: state.ownerOnboardingCompleted }),
     },
   ),
 );

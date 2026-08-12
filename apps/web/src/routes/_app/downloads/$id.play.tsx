@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
-import { api } from "@seedarr/sdk";
+import { api, unwrap } from "@seedarr/sdk";
 import { formatError } from "@seedarr/shared";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
@@ -97,10 +97,12 @@ function VideoPlayerPage() {
       const position = Math.floor(player.currentTime);
       const duration = Math.floor(player.duration || playbackInfo.duration || 0);
 
-      await api.media[":id"].progress.$patch({
-        param: { id: String(mediaId) },
-        json: { position, duration, downloadId: id },
-      });
+      await unwrap(
+        api.media[":id"].progress.$patch({
+          param: { id: String(mediaId) },
+          json: { position, duration, downloadId: id },
+        }),
+      );
 
       queryClient.setQueryData<Media>(mediaQueries.details(mediaId).queryKey, (prev) => {
         if (!prev) return prev;

@@ -4,7 +4,7 @@ import { count, eq, inArray } from "drizzle-orm";
 
 import { BadRequestError, NotFoundError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
-import { assertSafeIndexerUrl, isPrivateHost } from "@/shared/helpers/url.helper";
+import { assertPublicHttpUrl, assertSafeIndexerUrl } from "@/shared/helpers/url.helper";
 import { IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { db } from "@/db/db";
@@ -24,19 +24,27 @@ import type { Indexer, IndexerManagerWithIndexers } from "./indexer-manager.type
 type IndexerManagerDto = IndexerManager | IndexerManagerWithIndexers;
 
 async function fetchManifest(manifestUrl: string): Promise<StremioManifest> {
-  const parsed = new URL(manifestUrl);
-  if (!["http:", "https:"].includes(parsed.protocol)) {
-    throw new BadRequestError("Invalid manifest URL scheme");
-  }
-  if (isPrivateHost(parsed.hostname)) {
-    throw new BadRequestError("Manifest URLs cannot point to private networks");
+  const MAX_REDIRECT_DEPTH = 5;
+  let currentUrl = manifestUrl;
+
+  for (let depth = 0; depth <= MAX_REDIRECT_DEPTH; depth++) {
+    await assertPublicHttpUrl(currentUrl);
+
+    const response = await fetch(currentUrl, { redirect: "manual" });
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get("location");
+      if (!location) throw new BadRequestError("Manifest redirect without Location header");
+      currentUrl = new URL(location, currentUrl).toString();
+      continue;
+    }
+
+    if (!response.ok) {
+      throw new BadRequestError(`Failed to fetch manifest from ${manifestUrl} (${response.status})`);
+    }
+    return (await response.json()) as StremioManifest;
   }
 
-  const response = await fetch(manifestUrl);
-  if (!response.ok) {
-    throw new BadRequestError(`Failed to fetch manifest from ${manifestUrl} (${response.status})`);
-  }
-  return (await response.json()) as StremioManifest;
+  throw new BadRequestError("Too many redirects while fetching manifest");
 }
 
 function resolveManifestUrl(data: Extract<CreateIndexerManagerInput, { type: "STREMIO_ADDON" | "PRESET" }>): string {

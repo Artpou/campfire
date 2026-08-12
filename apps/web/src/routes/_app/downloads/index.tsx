@@ -15,6 +15,7 @@ import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
 import { Input } from "@/shared/ui/input";
 
+import { useRole } from "@/features/auth/hooks/use-role";
 import { DownloadTable } from "@/features/downloads/components/download-table";
 import { ManualSyncWizard } from "@/features/downloads/components/manual-sync-wizard";
 import { downloadQueries } from "@/features/downloads/hooks/download.queries";
@@ -239,17 +240,24 @@ interface SyncError {
 
 function SyncButton() {
   const { t } = useLingui();
+  const { isAdmin } = useRole();
   const [unmatchedFiles, setUnmatchedFiles] = useState<SyncError[]>([]);
   const [wizardOpen, setWizardOpen] = useState(false);
 
-  const { data: storageEnabled } = useQuery(storageConfigQueries.enabled());
-  const { data: tmdbKeyStatus } = useQuery(settingsQueries.tmdbKeyStatus());
+  const { data: storageEnabled } = useQuery({
+    ...storageConfigQueries.enabled(),
+    enabled: isAdmin,
+  });
+  const { data: tmdbKeyStatus } = useQuery({
+    ...settingsQueries.tmdbKeyStatus(),
+    enabled: isAdmin,
+  });
   const syncMutation = useRemoteSync((files) => {
     setUnmatchedFiles(files);
     setWizardOpen(true);
   });
 
-  if (!storageEnabled?.enabled) return null;
+  if (!isAdmin || !storageEnabled?.enabled) return null;
 
   const handleSync = () => {
     if (!tmdbKeyStatus?.configured) {

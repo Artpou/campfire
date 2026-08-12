@@ -1,7 +1,7 @@
 import { Trans } from "@lingui/react/macro";
-import type { RequestStatus } from "@seedarr/contracts";
+import { hasMinRole, type RequestStatus } from "@seedarr/contracts";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 
 import { Container } from "@/shared/ui/container";
 
@@ -24,6 +24,11 @@ function validateSearch(search: Record<string, unknown>): {
 export const Route = createFileRoute("/_app/requests")({
   component: RequestsPage,
   validateSearch,
+  beforeLoad: ({ context }) => {
+    if (!hasMinRole(context.user?.role, "admin")) {
+      throw redirect({ to: "/movies" });
+    }
+  },
 });
 
 function RequestsPage() {

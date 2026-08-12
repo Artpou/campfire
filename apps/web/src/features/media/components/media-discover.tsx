@@ -10,6 +10,7 @@ import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Container } from "@/shared/ui/container";
 import { Input } from "@/shared/ui/input";
 
+import { useRole } from "@/features/auth/hooks/use-role";
 import { MediaButtonCategory } from "@/features/media/components/button/media-button-category";
 import { MediaCarouselCategory } from "@/features/media/components/carousel/media-carousel-category";
 import { MediaCarouselWatching } from "@/features/media/components/carousel/media-carousel-watching";
@@ -78,6 +79,7 @@ export function MediaDiscover<TSearch extends MediaDiscoverSearch>({
   searchPlaceholder,
 }: MediaDiscover<TSearch>) {
   const locale = useTmdbLocale();
+  const { isAdmin } = useRole();
   const viewMode = useUserPreferences((s) => s.viewMode);
   const showCategories = useUserPreferences((s) => s.showCategories);
   const isDownloaded = isDownloadedTab(search.selected);
@@ -98,6 +100,7 @@ export function MediaDiscover<TSearch extends MediaDiscoverSearch>({
 
   const { data: pendingRequests } = useQuery({
     ...requestQueries.byType(type),
+    enabled: isAdmin,
   });
 
   const { data: genres = [] } = useQuery({

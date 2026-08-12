@@ -5,7 +5,7 @@ import type { StreamingApi } from "hono/utils/stream";
 import { BadRequestError, NotFoundError } from "@/shared/errors/error";
 import { createCache } from "@/shared/helpers/cache.helper";
 import { logger } from "@/shared/helpers/logger.helper";
-import { resolveWithinDownloads } from "@/shared/helpers/path.helper";
+import { getDownloadFolderName, resolveWithinDownloads } from "@/shared/helpers/path.helper";
 import { pipeNodeStream } from "@/shared/helpers/stream.helper";
 import {
   convertToFragmentedMp4Stream,
@@ -171,7 +171,10 @@ export class StreamingService {
   }
 
   private async resolveFromDisk(download: Download): Promise<StreamSourceInfo | undefined> {
-    const fullPath = resolveWithinDownloads(download.torrent?.name ?? "");
+    const folderName = getDownloadFolderName(download);
+    if (!folderName) return undefined;
+
+    const fullPath = resolveWithinDownloads(folderName);
     try {
       const stats = await fs.stat(fullPath);
       if (stats.isFile()) {

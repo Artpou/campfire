@@ -57,6 +57,13 @@
       "when": 1786404188637,
       "tag": "0007_complex_la_nuit",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1786555387671,
+      "tag": "0008_aspiring_omega_sentinel",
+      "breakpoints": true
     }
   ]
 }

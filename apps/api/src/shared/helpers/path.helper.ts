@@ -17,6 +17,29 @@ export function assertWithinDownloads(resolvedPath: string): void {
   }
 }
 
+/** Local folder under DOWNLOADS_PATH: torrent name, or remoteLocation basename when torrent was cleared. */
+export function getDownloadFolderName(download: {
+  torrent?: { name?: string | null } | null;
+  remoteLocation?: string | null;
+}): string | undefined {
+  const fromTorrent = download.torrent?.name?.trim();
+  if (fromTorrent) return fromTorrent;
+
+  const remote = download.remoteLocation?.trim().replace(/\/+$/, "");
+  if (!remote) return undefined;
+
+  return remote.split("/").pop()?.trim() || undefined;
+}
+
+export function requireDownloadFolderName(download: {
+  torrent?: { name?: string | null } | null;
+  remoteLocation?: string | null;
+}): string {
+  const name = getDownloadFolderName(download);
+  if (!name) throw new BadRequestError("Download has no folder name");
+  return name;
+}
+
 export function resolveWithinDownloads(...segments: string[]): string {
   const resolved = path.resolve(getDownloadsRoot(), ...segments);
   assertWithinDownloads(resolved);

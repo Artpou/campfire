@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 
 import { NotFoundError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
-import { resolveWithinDownloads } from "@/shared/helpers/path.helper";
+import { getDownloadFolderName, resolveWithinDownloads } from "@/shared/helpers/path.helper";
 import { findLargestVideoInDirectory } from "@/shared/helpers/video-file.helper";
 
 import { db } from "@/db/db";
@@ -22,17 +22,20 @@ export type DownloadableFile = {
 };
 
 /** Resolve a local seekable file on disk (single file or largest video in a folder). */
-async function resolveLocalFile(item: Download): Promise<{ filePath: string; fileName: string; size: number }> {
-  const fullPath = resolveWithinDownloads(item.torrent?.name ?? "");
+async function resolveLocalFile(item: Download): Promise<{ filePath: string; fileName: string; size: number } | null> {
+  const folderName = getDownloadFolderName(item);
+  if (!folderName) return null;
+
+  const fullPath = resolveWithinDownloads(folderName);
   try {
     const stats = await fs.stat(fullPath);
     if (stats.isFile()) return { filePath: fullPath, fileName: path.basename(fullPath), size: stats.size };
 
     const largest = await findLargestVideoInDirectory(fullPath);
-    if (!largest) return { filePath: fullPath, fileName: item.torrent?.name ?? "download", size: 0 };
+    if (!largest) return { filePath: fullPath, fileName: folderName, size: 0 };
     return { filePath: largest.filePath, fileName: largest.fileName, size: largest.size };
   } catch (error) {
-    if (isFsNotFoundError(error)) return { filePath: fullPath, fileName: item.torrent?.name ?? "download", size: 0 };
+    if (isFsNotFoundError(error)) return { filePath: fullPath, fileName: folderName, size: 0 };
     throw error;
   }
 }
@@ -79,7 +82,7 @@ export async function getDownloadableFile(id: string): Promise<DownloadableFile>
   if (remote) return remote;
 
   const local = await resolveLocalFile(item);
-  if (local.size > 0) return { fileName: local.fileName, size: local.size, filePath: local.filePath };
+  if (local && local.size > 0) return { fileName: local.fileName, size: local.size, filePath: local.filePath };
 
   throw new NotFoundError("Downloadable file");
 }

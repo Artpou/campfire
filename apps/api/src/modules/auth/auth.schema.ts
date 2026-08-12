@@ -7,6 +7,7 @@ export const session = sqliteTable(
   "session",
   {
     token: text("token").primaryKey(),
+    previousToken: text("previous_token"),
     userId: text("userId")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),

@@ -22,4 +22,3 @@ pnpm-debug.log*
 # generated code
 apps/web/src/routeTree.gen.ts
 apps/web/src/locales/**/messages.mjs
-apps/api/src/db/drizzle/

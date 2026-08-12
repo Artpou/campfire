@@ -24,23 +24,30 @@ msgstr ""
 msgid " and {0} more"
 msgstr " et {0} de plus"
 
-#. placeholder {0}: filteredTorrents.length
 #: src/features/torrent/components/torrent-table.tsx:185
-msgid "{0, plural, one {Torrent} other {Torrents}}"
-msgstr "{0, plural, one {Torrent} other {Torrents}}"
+#~ msgid "{0, plural, one {Torrent} other {Torrents}}"
+#~ msgstr "{0, plural, one {Torrent} other {Torrents}}"
 
 #. placeholder {0}: formatBytes(videoFile.size)
-#. placeholder {0}: import { useMemo, useState } from "react"; import { plural } from "@lingui/core/macro"; import { Trans, useLingui } from "@lingui/react/macro"; import type { DownloadTorrentInput, IndexerType, Resolution } from "@seedarr/contracts"; import type { Media, Torrent } from "@seedarr/sdk"; import { ApiError } from "@seedarr/sdk"; import { formatError } from "@seedarr/shared"; import { useNavigate } from "@tanstack/react-router"; import { ArrowDownIcon, ArrowUpIcon, DownloadIcon, InfoIcon } from "lucide-react"; import { toast } from "sonner"; import { Flag } from "@/shared/components/flag"; import { SeedarrLoader } from "@/shared/components/seedarr-loader"; import { SelectLang } from "@/shared/components/select/select-lang"; import { QUALITY_LEVELS, SelectQuality } from "@/shared/components/select/select-quality"; import { Badge } from "@/shared/ui/badge"; import { Button } from "@/shared/ui/button"; import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table"; import { useStartDownload } from "@/features/downloads/hooks/download.queries"; import { indexersManagerImages } from "@/features/indexers-manager/helpers/indexers-manager.helper"; import { useUserPreferences } from "@/features/settings/stores/user-preference-store"; import { TorrentInspectModal } from "./torrent-inspect-modal"; import { TorrentUnavailableDialog } from "./torrent-unavailable-dialog"; interface TorrentWithMeta extends Torrent { indexerId?: string; indexerManagerType?: IndexerType; } interface TorrentTableProps { torrents: TorrentWithMeta[]; media: Media; isLoading?: boolean; } export function TorrentTable({ torrents, media, isLoading = false }: TorrentTableProps) { const { t } = useLingui(); const startDownload = useStartDownload(); const navigate = useNavigate(); const preferenceQuality = useUserPreferences((s) => s.quality); const preferenceMaxSize = useUserPreferences((s) => s.maxSize); const [selectedLanguage, setSelectedLanguage] = useState<string>("all"); const [selectedQuality, setSelectedQuality] = useState<Resolution | null>(preferenceQuality); const [modalOpen, setModalOpen] = useState(false); const [selectedTorrent, setSelectedTorrent] = useState<Torrent | null>(null); const [selectedMagnetUri, setSelectedMagnetUri] = useState<string | null>(null); const [unavailableDialogOpen, setUnavailableDialogOpen] = useState(false); const [pendingDownloadInput, setPendingDownloadInput] = useState<DownloadTorrentInput | null>(null); const [unavailableAction, setUnavailableAction] = useState<"retry" | "local" | null>(null); const filteredTorrents = useMemo(() => { const maxSizeBytes = preferenceMaxSize !== null ? preferenceMaxSize * 1024 * 1024 * 1024 : null; return torrents.filter((torrent) => { if (selectedQuality !== null) { if (!torrent.mediaInfos?.resolution) return false; const minQualityIndex = QUALITY_LEVELS.indexOf(selectedQuality); const torrentQualityIndex = QUALITY_LEVELS.indexOf(torrent.mediaInfos.resolution); if (torrentQualityIndex === -1 || torrentQualityIndex < minQualityIndex) { return false; } } if (maxSizeBytes !== null && torrent.size > maxSizeBytes) { return false; } if (selectedLanguage !== "all") { if (torrent.mediaInfos?.languages?.[0] !== selectedLanguage) { return false; } } return true; }); }, [torrents, selectedQuality, selectedLanguage, preferenceMaxSize]); const availableLanguages = useMemo(() => { const langs = new Set<string>(); for (const torrent of torrents) { if (torrent.mediaInfos?.languages?.[0]) langs.add(torrent.mediaInfos.languages[0]); } return Array.from(langs).sort(); }, [torrents]); const getTorrentUri = (torrent: Torrent): string => { if (torrent.downloadUrl) return torrent.downloadUrl; if (torrent.link?.startsWith("http://") || torrent.link?.startsWith("https://")) return torrent.link; if (torrent.magnetUrl?.includes("tr=")) return torrent.magnetUrl; if (torrent.guid?.startsWith("magnet:") && torrent.guid.includes("tr=")) return torrent.guid; if (torrent.magnetUrl) return torrent.magnetUrl; if (torrent.guid?.startsWith("magnet:")) return torrent.guid; return torrent.link ?? torrent.magnetUrl ?? torrent.guid ?? ""; }; const handleOpenInspectModal = (torrent: Torrent) => { const magnetUri = getTorrentUri(torrent); setSelectedTorrent(torrent); setSelectedMagnetUri(magnetUri); setModalOpen(true); }; const executeDownload = async (input: DownloadTorrentInput, toastId?: string | number) => { const id = toastId ?? toast.loading(t`Starting download…`, { description: input.name }); try { await startDownload.mutateAsync(input); toast.success(t`Download started`, { id, description: input.name }); navigate({ to: "/downloads" }); } catch (error) { if (error instanceof ApiError && error.status === 409) { toast.dismiss(id); setPendingDownloadInput(input); setUnavailableDialogOpen(true); return; } const message = formatError(error) || t`Unknown error`; toast.error(t`Download failed`, { id, description: message }); } }; const handleAddDownload = async (torrent: Torrent) => { const magnetUri = getTorrentUri(torrent); await executeDownload({ magnetUri, name: torrent.title, media, origin: torrent.tracker, quality: torrent.mediaInfos?.resolution, language: torrent.mediaInfos?.languages?.[0], }); }; const handleUnavailableRetry = async () => { if (!pendingDownloadInput) return; setUnavailableAction("retry"); await executeDownload(pendingDownloadInput); setUnavailableAction(null); setUnavailableDialogOpen(false); setPendingDownloadInput(null); }; const handleUnavailableLocal = async () => { if (!pendingDownloadInput) return; setUnavailableAction("local"); await executeDownload({ ...pendingDownloadInput, preferLocal: true }); setUnavailableAction(null); setUnavailableDialogOpen(false); setPendingDownloadInput(null); }; const handleUnavailableCancel = () => { setUnavailableDialogOpen(false); setPendingDownloadInput(null); setUnavailableAction(null); }; const showLoader = isLoading && filteredTorrents.length === 0; const showEmpty = !isLoading && filteredTorrents.length === 0; return ( <div className="w-full overflow-hidden"> <div className="flex flex-row gap-4 items-center py-4"> {availableLanguages.length > 0 && ( <SelectLang value={selectedLanguage} onValueChange={setSelectedLanguage} languages={availableLanguages} /> )} <SelectQuality value={selectedQuality} onValueChange={setSelectedQuality} /> {preferenceMaxSize !== null && ( <Badge variant="outline"> <Trans>Max {preferenceMaxSize} GB</Trans> </Badge> )} </div> <Table classNameContainer="rounded-tl-none"> <TableHeader> <TableRow className="hover:bg-transparent"> <TableHead className="w-full"> <Badge variant="secondary" className="mr-2"> {filteredTorrents.length} </Badge> <Trans>{plural(filteredTorrents.length, { one: "Torrent", other: "Torrents" })}</Trans> </TableHead> <TableHead className="hidden sm:table-cell text-center"> <Trans>Size</Trans> </TableHead> <TableHead className="hidden sm:table-cell pr-8 text-right"> <Trans>Health</Trans> </TableHead> </TableRow> </TableHeader> <TableBody> {showLoader && ( <TableRow> <TableCell colSpan={3} className="py-10 text-center"> <SeedarrLoader /> </TableCell> </TableRow> )} {showEmpty && ( <TableRow> <TableCell colSpan={3} className="py-10 text-center"> <div className="p-10 border border-dashed rounded-sm bg-muted border-border"> <p className="font-bold uppercase text-popover-foreground"> <Trans>No torrents found</Trans> </p> <p className="mt-1 text-xs uppercase text-popover-foreground/50"> <Trans>Try adjusting your search query</Trans> </p> </div> </TableCell> </TableRow> )} {filteredTorrents.length > 0 && filteredTorrents.map((torrent) => ( <TableRow key={torrent.guid || torrent.link} className="relative group"> <TableCell className="w-full max-w-0"> <div className="flex flex-col gap-2"> <a href={torrent.detailsUrl} target="_blank" rel="noopener noreferrer" className="block w-full font-medium truncate text-popover-foreground" onClick={(e) => e.stopPropagation()} > {torrent.title} </a> <div className="flex flex-wrap items-center gap-2"> <Flag lang={torrent.mediaInfos?.languages?.[0] || media.original_language || ""} /> {torrent.mediaInfos?.resolution && ( <Badge variant="secondary">{torrent.mediaInfos.resolution}</Badge> )} <Badge variant="outline">{torrent.tracker}</Badge> {torrent.indexerManagerType && ( <img src={indexersManagerImages[torrent.indexerManagerType]} alt={torrent.indexerManagerType} className="size-4" /> )} <span className="text-xs font-medium text-muted-foreground sm:hidden ml-auto"> {(torrent.size / 1e9).toFixed(2)} GB </span> <div className="flex items-center gap-2 sm:hidden"> <span className="text-xs font-bold text-green-500">{torrent.seeders} S</span> {torrent.indexerManagerType !== "stremio" && ( <span className="text-xs font-bold text-destructive">{torrent.peers} P</span> )} </div> </div> <div className="flex items-center gap-2 mt-1 sm:hidden"> <Button variant="secondary" size="sm" className="h-8 py-1 text-xs flex-1" onClick={(e) => { e.stopPropagation(); handleOpenInspectModal(torrent); }} > <InfoIcon className="size-3 mr-1" /> <Trans>Details</Trans> </Button> <Button size="sm" className="h-8 py-1 text-xs flex-1" onClick={(e) => { e.stopPropagation(); handleAddDownload(torrent); }} > <DownloadIcon className="size-3 mr-1" /> <Trans>Download</Trans> </Button> </div> </div> </TableCell> <TableCell className="hidden sm:table-cell"> <span className="font-medium text-muted-foreground">{(torrent.size / 1e9).toFixed(2)} GB</span> </TableCell> <TableCell className="hidden sm:table-cell relative"> <div className="flex items-center justify-end gap-3 pr-4 group-hover:opacity-0 transition-opacity"> <div className="flex items-center gap-1 font-bold text-green-500"> <ArrowUpIcon className="size-3" /> <span className="text-xs">{torrent.seeders}</span> </div> {torrent.indexerManagerType !== "stremio" && ( <div className="flex items-center gap-1 font-bold text-destructive"> <ArrowDownIcon className="size-3" /> <span className="text-xs">{torrent.peers}</span> </div> )} </div> <div className="absolute inset-y-0 right-2 z-10 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"> <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); handleOpenInspectModal(torrent); }} > <InfoIcon className="size-4" /> <Trans>Details</Trans> </Button> <Button size="sm" onClick={(e) => { e.stopPropagation(); handleAddDownload(torrent); }} > <DownloadIcon className="size-4" /> <Trans>Download</Trans> </Button> </div> </TableCell> </TableRow> ))} </TableBody> </Table> <TorrentInspectModal open={modalOpen} onOpenChange={setModalOpen} torrent={selectedTorrent} magnetUri={selectedMagnetUri} /> <TorrentUnavailableDialog open={unavailableDialogOpen} onRetry={handleUnavailableRetry} onCancel={handleUnavailableCancel} onStoreLocally={handleUnavailableLocal} isRetrying={unavailableAction === "retry"} isStoringLocally={unavailableAction === "local"} /> </div> ); } 
-#. placeholder {0}: media.type === "tv" ? "TV" : "Movie"
+#. placeholder {0}: import { useMemo } from "react"; import { plural } from "@lingui/core/macro"; import { Trans } from "@lingui/react/macro"; import type { IndexerType } from "@seedarr/contracts"; import type { Media, Torrent } from "@seedarr/sdk"; import { getVideoContainer } from "@seedarr/shared"; import { createColumnHelper, createSortedRowModel, rowSortingFeature, sortFn_alphanumeric, sortFn_text, tableFeatures, } from "@tanstack/react-table"; import { ArrowDownIcon, ArrowUpIcon, DownloadIcon, InfoIcon } from "lucide-react"; import { Flag } from "@/shared/components/flag"; import { Badge } from "@/shared/ui/badge"; import { Button } from "@/shared/ui/button"; import { DataTableColumnHeader } from "@/shared/ui/data-table-column-header"; import { indexersManagerImages } from "@/features/indexers-manager/helpers/indexers-manager.helper"; export interface TorrentWithMeta extends Torrent { indexerId?: string; indexerManagerType?: IndexerType; } export const torrentTableFeatures = tableFeatures({ rowSortingFeature, sortedRowModel: createSortedRowModel(), sortFns: { alphanumeric: sortFn_alphanumeric, text: sortFn_text }, }); type TorrentTableFeatures = typeof torrentTableFeatures; const columnHelper = createColumnHelper<TorrentTableFeatures, TorrentWithMeta>(); interface UseTorrentColumnsOptions { media: Media; count: number; onInspect: (torrent: TorrentWithMeta) => void; onDownload: (torrent: TorrentWithMeta) => void; } export function useTorrentColumns({ media, count, onInspect, onDownload }: UseTorrentColumnsOptions) { return useMemo( () => columnHelper.columns([ columnHelper.accessor("title", { id: "title", meta: { headerClassName: "w-full", cellClassName: "w-full max-w-0" }, header: () => ( <span className="flex items-center gap-2"> <Badge variant="secondary">{count}</Badge> <Trans>{plural(count, { one: "Torrent", other: "Torrents" })}</Trans> </span> ), cell: ({ row }) => { const torrent = row.original; const container = getVideoContainer(torrent.title); return ( <div className="flex flex-col gap-2 max-w-full"> <a href={torrent.detailsUrl} target="_blank" rel="noopener noreferrer" className="block w-full font-medium truncate text-popover-foreground" onClick={(e) => e.stopPropagation()} > {torrent.title} </a> <div className="flex flex-wrap items-center gap-2"> <Flag lang={torrent.mediaInfos?.languages?.[0] || media.original_language || ""} /> {torrent.mediaInfos?.resolution && <Badge variant="secondary">{torrent.mediaInfos.resolution}</Badge>} {container && <Badge variant="secondary">{container}</Badge>} <Badge variant="outline">{torrent.tracker}</Badge> {torrent.indexerManagerType && ( <img src={indexersManagerImages[torrent.indexerManagerType]} alt={torrent.indexerManagerType} className="size-4" /> )} </div> </div> ); }, sortFn: "text", }), columnHelper.accessor("size", { id: "size", meta: { headerClassName: "hidden sm:table-cell text-center", cellClassName: "hidden sm:table-cell" }, header: ({ column }) => <DataTableColumnHeader column={column} title={<Trans>Size</Trans>} />, cell: ({ row }) => ( <span className="font-medium text-muted-foreground">{(row.original.size / 1e9).toFixed(2)} GB</span> ), }), columnHelper.accessor("seeders", { id: "health", meta: { headerClassName: "hidden md:table-cell text-right", cellClassName: "hidden md:table-cell", }, header: ({ column }) => ( <DataTableColumnHeader column={column} title={<Trans>Health</Trans>} className="justify-end" /> ), cell: ({ row }) => { const torrent = row.original; return ( <div className="flex items-center justify-end gap-3"> <div className="flex items-center gap-1 font-bold text-green-500"> <ArrowUpIcon className="size-3" /> <span className="text-xs">{torrent.seeders}</span> </div> {torrent.indexerManagerType !== "stremio" && ( <div className="flex items-center gap-1 font-bold text-destructive"> <ArrowDownIcon className="size-3" /> <span className="text-xs">{torrent.peers}</span> </div> )} </div> ); }, }), columnHelper.display({ id: "actions", meta: { headerClassName: "w-auto text-right", cellClassName: "text-right" }, cell: ({ row }) => { const torrent = row.original; return ( <div className="flex items-center justify-end gap-1.5"> <Button variant="secondary" size="icon-sm" icon={InfoIcon} onClick={(e) => { e.stopPropagation(); onInspect(torrent); }} /> <Button size="sm" icon={DownloadIcon} onClick={(e) => { e.stopPropagation(); onDownload(torrent); }} > <Trans>Download</Trans> </Button> </div> ); }, enableSorting: false, }), ]), [media.original_language, count, onInspect, onDownload], ); } 
+#. placeholder {0}: isTv ? "TV" : "Movie"
 #: src/features/media/components/button/media-button-download.tsx:37
-#: src/features/media/components/card/media-card.tsx:54
-#: src/features/torrent/components/torrent-table.tsx:185
+#: src/features/media/components/media-type-badge.tsx:22
+#: src/features/torrent/hooks/use-torrent-columns.tsx:57
 msgid "{0}"
 msgstr "{0}"
 
 #: src/routes/_app.settings.tsx:124
 #~ msgid "{0} API Key"
 #~ msgstr "Clé API {0}"
+
+#. placeholder {0}: data.synced
+#. placeholder {1}: data.skipped
+#. placeholder {2}: data.errors
+#: src/features/user/hooks/user.queries.ts:95
+#: src/features/user/hooks/user.queries.ts:125
+msgid "{0} imported · {1} skipped · {2} errors"
+msgstr "{0} importés · {1} ignorés · {2} erreurs"
 
 #. placeholder {0}: result.skipped
 #: src/features/settings/hooks/remote-sync.queries.ts:25
@@ -60,15 +67,23 @@ msgstr "{0} pairs connectés"
 
 #. placeholder {0}: tv.number_of_seasons
 #. placeholder {1}: tv.number_of_episodes
-#: src/features/tv/components/tv-info.tsx:52
+#: src/features/tv/components/tv-info.tsx:59
 msgid "{0} seasons · {1} episodes"
 msgstr "{0} saisons · {1} épisodes"
+
+#: src/features/torrent/hooks/use-torrent-columns.tsx:57
+msgid "{count, plural, one {Torrent} other {Torrents}}"
+msgstr "{count, plural, one {Torrent} other {Torrents}}"
 
 #: src/features/media/components/media-list-dropdown.tsx:47
 #~ msgid "{label}"
 #~ msgstr "{label}"
 
-#: src/features/downloads/components/download-files-list.tsx:104
+#: src/features/media/components/media-star-rating.tsx:62
+msgid "{starIndex} stars"
+msgstr "{starIndex} étoiles"
+
+#: src/features/downloads/components/download-files-list.tsx:87
 msgid "{subtitleCount} subtitles"
 msgstr "{subtitleCount} sous-titres"
 
@@ -84,20 +99,24 @@ msgstr "{subtitleCount} sous-titres"
 #~ msgid "{value} peers"
 #~ msgstr "{value} pairs"
 
-#: src/features/settings/components/settings-storage-tab.tsx:230
-#: src/features/settings/components/settings-storage-tab.tsx:291
+#: src/features/settings/components/settings-storage-tab.tsx:229
+#: src/features/settings/components/settings-storage-tab.tsx:290
 msgid "••••••• (unchanged)"
 msgstr "••••••• (inchangé)"
 
-#: src/features/settings/components/settings-storage-tab.tsx:205
+#: src/features/settings/components/settings-storage-tab.tsx:204
 msgid "192.168.1.254 or hostname"
 msgstr "192.168.1.254 ou nom d'hôte"
+
+#: src/shared/components/route-error.tsx:22
+msgid "Access denied"
+msgstr "Accès refusé"
 
 #: src/routes/_app/settings/index.tsx:184
 #~ msgid "Account"
 #~ msgstr "Compte"
 
-#: src/features/person/components/person-filmography.tsx:56
+#: src/features/person/components/person-filmography.tsx:58
 msgid "Acting"
 msgstr "Interprétation"
 
@@ -106,8 +125,8 @@ msgid "Action"
 msgstr "Action"
 
 #: src/features/user/components/users-table.tsx:93
-msgid "Actions"
-msgstr "Actions"
+#~ msgid "Actions"
+#~ msgstr "Actions"
 
 #: src/features/settings/components/settings-activity-tab.tsx:43
 #: src/routes/_app/settings/index.tsx:41
@@ -122,7 +141,7 @@ msgstr "Acteur"
 msgid "Add"
 msgstr "Ajouter"
 
-#: src/features/settings/components/settings-indexers-tab.tsx:79
+#: src/features/settings/components/settings-indexers-tab.tsx:77
 msgid "Add indexer"
 msgstr "Ajouter un indexeur"
 
@@ -138,11 +157,11 @@ msgstr "Ajouter un indexeur"
 #~ msgid "Add to watch list"
 #~ msgstr "Ajouter à la watch-list"
 
-#: src/features/media/hooks/media.queries.ts:136
+#: src/features/media/hooks/media.queries.ts:145
 msgid "Added to watch list"
 msgstr "Ajouté à la watchlist"
 
-#: src/features/media/hooks/media.queries.ts:112
+#: src/features/media/hooks/media.queries.ts:121
 msgid "Added to your likes"
 msgstr "Ajouté à vos favoris"
 
@@ -167,17 +186,23 @@ msgstr "Administrateur"
 #~ msgid "Airing Today"
 #~ msgstr "En cours de diffusion"
 
-#: src/features/person/components/person-filmography.tsx:52
-#: src/routes/_app/search.tsx:99
+#: src/features/person/components/person-filmography.tsx:54
+#: src/routes/_app/search.tsx:91
 msgid "All"
 msgstr "Tout"
 
 #. js-lingui-explicit-id
+#: src/features/request/components/request-tabs.tsx:9
+msgid "request-status.all"
+msgstr "Tous"
+
+#. js-lingui-explicit-id
 #: src/features/media/components/tabs/media-tabs-type.tsx:16
+#: src/features/request/components/request-tabs.tsx:24
 msgid "media-type.all"
 msgstr "Tout"
 
-#: src/routes/_app/tv/$id.torrents.tsx:153
+#: src/routes/_app/tv/$id.torrents.tsx:147
 msgid "All episodes (full season)"
 msgstr "Tous les épisodes (saison complète)"
 
@@ -188,6 +213,11 @@ msgstr "Toutes les langues"
 #: src/shared/components/select/select-quality.tsx:27
 msgid "All qualities"
 msgstr "Toutes les qualités"
+
+#: src/features/user/components/user-profile-stats.tsx:39
+#: src/features/user/components/user-profile-stats.tsx:43
+msgid "all time"
+msgstr "tout le temps"
 
 #: src/features/subtitles/components/subtitle-search-dialog.tsx:111
 msgid "Already added"
@@ -206,7 +236,7 @@ msgstr "Une erreur s'est produite"
 #~ msgid "An unexpected error occurred. Please try again later."
 #~ msgstr "Une erreur inattendue s'est produite. Veuillez réessayer plus tard."
 
-#: src/shared/components/route-error.tsx:31
+#: src/shared/components/route-error.tsx:66
 msgid "An unexpected error occurred. Please try again."
 msgstr "Une erreur inattendue s'est produite. Veuillez réessayer."
 
@@ -220,9 +250,13 @@ msgstr "Une erreur inattendue s'est produite. Veuillez réessayer."
 msgid "API Key"
 msgstr "Clé API"
 
-#: src/features/settings/components/settings-general-tab.tsx:93
+#: src/features/settings/components/settings-general-tab.tsx:180
 msgid "API Keys"
 msgstr "Clés API"
+
+#: src/features/settings/components/settings-general-tab.tsx:38
+msgid "Appearance"
+msgstr "Apparence"
 
 #: src/features/media/components/media-filters-sheet.tsx:299
 #~ msgid "Apply"
@@ -232,25 +266,35 @@ msgstr "Clés API"
 #~ msgid "Arabic"
 #~ msgstr "Arabe"
 
-#: src/features/media/components/media-poster.tsx:97
+#. placeholder {0}: selectedIds.length
+#: src/features/downloads/components/download-table.tsx:129
+msgid "Are you sure you want to delete these {0} downloads? This action cannot be undone."
+msgstr "Voulez-vous vraiment supprimer ces {0} téléchargements ? Cette action est irréversible."
+
+#: src/features/downloads/components/download-delete-button.tsx:48
+#: src/features/downloads/components/download-table.tsx:133
 #: src/features/tv/components/tv-episode-delete-dialog.tsx:55
 msgid "Are you sure you want to delete this download? This action cannot be undone."
 msgstr "Êtes-vous sûr de vouloir supprimer ce téléchargement ? Cette action est irréversible."
 
+#: src/features/media/components/media-review-modal.tsx:145
+msgid "Are you sure you want to delete this review? This action cannot be undone."
+msgstr "Voulez-vous vraiment supprimer cet avis ? Cette action est irréversible."
+
 #. placeholder {0}: userToDelete?.username
-#: src/features/user/components/users-table.tsx:147
+#: src/features/user/components/users-table.tsx:87
 msgid "Are you sure you want to delete user \"{0}\"? This action cannot be undone."
 msgstr "Êtes-vous sûr de vouloir supprimer l'utilisateur \"{0}\" ? Cette action est irréversible."
 
-#: src/features/indexers-manager/components/indexers-manager-card.tsx:136
+#: src/features/indexers-manager/components/indexers-manager-card.tsx:131
 msgid "Are you sure you want to uninstall this source? This action cannot be undone."
 msgstr "Êtes-vous sûr de vouloir désinstaller cette source ? Cette action est irréversible."
 
 #: src/features/media/components/tabs/media-tabs-sort.tsx:30
-msgid "At Home"
-msgstr "À la maison"
+#~ msgid "At Home"
+#~ msgstr "À la maison"
 
-#: src/features/settings/components/settings-storage-tab.tsx:352
+#: src/features/settings/components/settings-storage-tab.tsx:354
 msgid "Auto-transfer downloaded files"
 msgstr "Transférer automatiquement les fichiers téléchargés"
 
@@ -267,11 +311,11 @@ msgid "Available subtitles"
 msgstr "Sous-titres disponibles"
 
 #: src/routes/_app/onboarding.tsx:197
-#: src/routes/_app/settings/indexer.tsx:72
+#: src/routes/_app/settings/indexer.tsx:67
 msgid "Back"
 msgstr "Retour"
 
-#: src/routes/_app/settings/indexer.tsx:59
+#: src/routes/_app/settings/indexer.tsx:57
 msgid "Back to settings"
 msgstr "Retour aux paramètres"
 
@@ -288,41 +332,69 @@ msgid "Buy / Rent"
 msgstr "Acheter / Louer"
 
 #: src/features/request/components/request-card.tsx:51
-msgid "by"
-msgstr "par"
+#~ msgid "by"
+#~ msgstr "par"
+
+#: src/routes/_app/user/$id.index.tsx:183
+msgid "Calendar"
+msgstr "Calendrier"
 
 #: src/features/downloads/components/manual-sync-wizard.tsx:84
 #: src/features/indexers-manager/components/indexers-manager-add-dialog.tsx:160
 #: src/features/indexers-manager/components/indexers-manager-edit-dialog.tsx:99
+#: src/features/media/components/media-review-modal.tsx:124
 #: src/features/media/components/media-search-modal.tsx:96
-#: src/features/media/components/media-server.tsx:133
-#: src/features/torrent/components/torrent-unavailable-dialog.tsx:63
+#: src/features/media/components/media-server.tsx:131
+#: src/features/torrent/components/torrent-unavailable-dialog.tsx:73
 #: src/features/tv/components/tv-episode-delete-dialog.tsx:77
 #: src/features/user/components/password-change-modal.tsx:120
+#: src/features/user/components/user-button-letterboxd.tsx:131
 #: src/features/user/components/user-form-modal.tsx:218
-#: src/shared/components/dialog/dialog-delete.tsx:33
+#: src/shared/components/dialog/dialog-delete.tsx:35
 msgid "Cancel"
 msgstr "Annuler"
 
-#: src/features/media/components/carousel/media-carousel-hero.tsx:231
-msgid "Carousel navigation"
-msgstr "Navigation du carrousel"
+#: src/features/request/components/request-actions.tsx:45
+msgid "Cancel request"
+msgstr "Annuler la demande"
 
-#: src/features/media/components/carousel/media-carousel-cast.tsx:33
+#: src/features/request/components/request-status-badge.tsx:27
+msgid "Cancelled"
+msgstr "Annulé"
+
+#. js-lingui-explicit-id
+#: src/features/request/components/request-tabs.tsx:19
+msgid "request-status.cancelled"
+msgstr "Annulé"
+
+#: src/features/media/components/carousel/media-carousel-hero.tsx:231
+#~ msgid "Carousel navigation"
+#~ msgstr "Navigation du carrousel"
+
+#: src/features/person/components/person-carousel.tsx:33
 msgid "Cast & Crew"
 msgstr "Têtes d'affiche"
 
+#: src/features/settings/components/settings-general-tab.tsx:142
+msgid "Catalog"
+msgstr "Catalogue"
+
+#: src/features/media/components/button/media-button-category.tsx:21
+#: src/features/media/components/button/media-button-category.tsx:24
+msgid "Category"
+msgstr "Catégorie"
+
 #: src/features/media/components/media-search-modal.tsx:70
-#: src/features/media/components/media-server.tsx:93
+#: src/features/media/components/media-server.tsx:92
 msgid "Change media"
 msgstr "Changer le média"
 
+#: src/features/settings/components/settings-general-tab.tsx:76
 #: src/features/user/components/password-change-modal.tsx:68
-#: src/routes/_app/user/$id.index.tsx:217
 msgid "Change Password"
 msgstr "Changer le mot de passe"
 
-#: src/features/user/components/user-avatar.tsx:76
+#: src/features/user/components/user-avatar.tsx:88
 msgid "Change profile picture"
 msgstr "Changer la photo de profil"
 
@@ -334,6 +406,10 @@ msgstr "Changer la photo de profil"
 msgid "Choose a pre-configured provider:"
 msgstr "Choisissez un fournisseur préconfiguré :"
 
+#: src/shared/ui/file-dropzone.tsx:109
+msgid "Click or drag a file here"
+msgstr "Cliquez ou glissez un fichier ici"
+
 #: src/features/downloads/components/downloads-stats-panel.tsx:49
 #~ msgid "Collecting data..."
 #~ msgstr "Collecte des données..."
@@ -341,6 +417,11 @@ msgstr "Choisissez un fournisseur préconfiguré :"
 #: src/features/movies/components/movie-related.tsx:26
 msgid "Collection"
 msgstr "Collection"
+
+#: src/features/media/components/media-review-modal.tsx:95
+#: src/features/media/components/media-social-actions.tsx:78
+msgid "Comment"
+msgstr "Commentaire"
 
 #: src/features/media/components/media-download-tab.tsx:94
 #~ msgid "Completed"
@@ -350,11 +431,11 @@ msgstr "Collection"
 #~ msgid "Configure"
 #~ msgstr "Configurer"
 
-#: src/features/settings/components/settings-storage-tab.tsx:175
+#: src/features/settings/components/settings-storage-tab.tsx:174
 msgid "Configure a remote server to transfer downloaded files, either manually or automatically after completion."
 msgstr "Configurez un serveur distant pour transférer les fichiers téléchargés, manuellement ou automatiquement après le téléchargement."
 
-#: src/features/torrent/components/torrent-indexers-table.tsx:148
+#: src/features/torrent/components/torrent-indexers-table.tsx:147
 msgid "Configure indexers"
 msgstr "Configurer les indexeurs"
 
@@ -392,7 +473,7 @@ msgstr "Confirmer le mot de passe"
 #~ msgid "Connected Peers"
 #~ msgstr "Pairs connectés"
 
-#: src/features/settings/components/settings-storage-tab.tsx:184
+#: src/features/settings/components/settings-storage-tab.tsx:183
 msgid "Connection"
 msgstr "Connexion"
 
@@ -400,9 +481,21 @@ msgstr "Connexion"
 msgid "Could not add subtitle"
 msgstr "Impossible d'ajouter le sous-titre"
 
+#: src/features/request/hooks/request.queries.ts:71
+msgid "Could not cancel request"
+msgstr "Impossible d'annuler la demande"
+
 #: src/features/downloads/hooks/download.queries.ts:131
 msgid "Could not delete download"
 msgstr "Impossible de supprimer le téléchargement"
+
+#: src/features/downloads/hooks/download.queries.ts:142
+msgid "Could not delete downloads"
+msgstr "Impossible de supprimer les téléchargements"
+
+#: src/features/request/hooks/request.queries.ts:99
+msgid "Could not delete request"
+msgstr "Impossible de supprimer la demande"
 
 #. placeholder {0}: result.errors.length
 #: src/features/settings/hooks/remote-sync.queries.ts:35
@@ -410,38 +503,50 @@ msgid "Could not detect {0} items"
 msgstr "Impossible de détecter {0} éléments"
 
 #: src/features/request/hooks/request.queries.ts:65
-msgid "Could not dismiss request"
-msgstr "Impossible de rejeter la demande"
+#~ msgid "Could not dismiss request"
+#~ msgstr "Impossible de rejeter la demande"
 
-#: src/features/downloads/hooks/download.queries.ts:180
+#: src/features/downloads/hooks/download.queries.ts:191
 msgid "Could not download file"
 msgstr "Impossible de télécharger le fichier"
 
-#: src/routes/_app/downloads/$id.play.tsx:170
+#: src/routes/_app/downloads/$id.play.tsx:166
 msgid "Could not load the video stream. Check that the file is still available."
 msgstr "Impossible de charger le flux vidéo. Vérifiez que le fichier est toujours disponible."
 
-#: src/features/downloads/hooks/download.queries.ts:143
+#: src/features/downloads/hooks/download.queries.ts:154
 msgid "Could not pause download"
 msgstr "Impossible de mettre en pause le téléchargement"
 
-#: src/features/downloads/hooks/download.queries.ts:164
+#: src/features/downloads/hooks/download.queries.ts:175
 msgid "Could not reannounce"
 msgstr "Impossible de réannoncer"
 
-#: src/features/downloads/hooks/download.queries.ts:137
+#: src/features/downloads/hooks/download.queries.ts:148
 msgid "Could not reassign media"
 msgstr "Impossible de réassigner le média"
 
-#: src/features/downloads/hooks/download.queries.ts:157
+#: src/features/downloads/hooks/download.queries.ts:168
 msgid "Could not recheck download"
 msgstr "Impossible de revérifier le téléchargement"
 
-#: src/features/downloads/hooks/download.queries.ts:150
+#: src/features/media/hooks/media.queries.ts:202
+msgid "Could not remove rating"
+msgstr "Impossible de supprimer la note"
+
+#: src/features/request/hooks/request.queries.ts:85
+msgid "Could not reopen request"
+msgstr "Impossible de rouvrir la demande"
+
+#: src/features/downloads/hooks/download.queries.ts:161
 msgid "Could not resume download"
 msgstr "Impossible de reprendre le téléchargement"
 
-#: src/features/request/hooks/request.queries.ts:51
+#: src/features/media/hooks/media.queries.ts:188
+msgid "Could not save review"
+msgstr "Impossible d'enregistrer l'avis"
+
+#: src/features/request/hooks/request.queries.ts:57
 msgid "Could not submit request"
 msgstr "Impossible d'envoyer la demande"
 
@@ -453,7 +558,7 @@ msgstr "Impossible d'envoyer la demande"
 msgid "Could not uninstall source"
 msgstr "Impossible de désinstaller la source"
 
-#: src/features/media/hooks/media.queries.ts:117
+#: src/features/media/hooks/media.queries.ts:126
 msgid "Could not update likes"
 msgstr "Impossible de mettre à jour les favoris"
 
@@ -461,15 +566,15 @@ msgstr "Impossible de mettre à jour les favoris"
 msgid "Could not update password"
 msgstr "Impossible de mettre à jour le mot de passe"
 
-#: src/features/user/hooks/user.queries.ts:41
+#: src/features/user/hooks/user.queries.ts:47
 msgid "Could not update profile"
 msgstr "Impossible de mettre à jour le profil"
 
-#: src/features/user/hooks/user.queries.ts:85
+#: src/features/user/hooks/user.queries.ts:78
 msgid "Could not update profile picture"
 msgstr "Impossible de mettre à jour la photo de profil"
 
-#: src/features/media/hooks/media.queries.ts:141
+#: src/features/media/hooks/media.queries.ts:150
 msgid "Could not update watch list"
 msgstr "Impossible de mettre à jour la watchlist"
 
@@ -485,12 +590,12 @@ msgstr "Créer un nouveau compte utilisateur avec un rôle spécifié"
 msgid "Create Owner Account"
 msgstr "Créer un compte propriétaire"
 
-#: src/features/settings/components/settings-users-tab.tsx:52
+#: src/features/settings/components/settings-users-tab.tsx:51
 #: src/features/user/components/user-form-modal.tsx:105
 msgid "Create User"
 msgstr "Créer un utilisateur"
 
-#: src/features/user/components/users-table.tsx:90
+#: src/features/user/hooks/use-users-columns.tsx:65
 msgid "Created At"
 msgstr "Créé le"
 
@@ -514,10 +619,12 @@ msgstr "Mot de passe actuel"
 msgid "Custom Stremio Addon"
 msgstr "Extension Stremio personnalisée"
 
-#: src/routes/_app/user/$id.index.tsx:207
+#: src/features/settings/components/settings-general-tab.tsx:65
 msgid "Dark mode"
 msgstr "Mode sombre"
 
+#: src/features/downloads/hooks/use-download-table-columns.tsx:132
+#: src/features/media/hooks/use-media-table-columns.tsx:92
 #: src/features/settings/components/settings-activity-tab.tsx:61
 msgid "Date"
 msgstr "Date"
@@ -526,25 +633,34 @@ msgstr "Date"
 #~ msgid "DB only"
 #~ msgstr ""
 
-#: src/features/settings/components/settings-general-tab.tsx:37
+#: src/features/settings/components/settings-general-tab.tsx:88
 msgid "Default quality"
 msgstr "Qualité par défaut"
 
-#: src/features/media/components/media-download.tsx:117
-#: src/features/media/components/media-server.tsx:101
-#: src/features/media/components/media-server.tsx:147
+#: src/features/downloads/components/download-delete-button.tsx:40
+#: src/features/downloads/components/download-table.tsx:106
+#: src/features/media/components/media-download.tsx:115
+#: src/features/media/components/media-review-modal.tsx:117
+#: src/features/media/components/media-server.tsx:100
+#: src/features/media/components/media-server.tsx:145
 #: src/features/tv/components/tv-episode-delete-dialog.tsx:84
-#: src/features/user/components/users-table.tsx:128
-#: src/shared/components/dialog/dialog-delete.tsx:40
+#: src/features/user/hooks/use-users-columns.tsx:82
+#: src/shared/components/dialog/dialog-delete.tsx:42
 msgid "Delete"
 msgstr "Supprimer"
+
+#. placeholder {0}: selectedIds.length
+#: src/features/downloads/components/download-table.tsx:125
+msgid "Delete {0} downloads"
+msgstr "Supprimer {0} téléchargements"
 
 #: src/features/tv/components/tv-episode-delete-dialog.tsx:43
 msgid "Delete download"
 msgstr "Supprimer le téléchargement"
 
-#: src/features/media/components/media-download.tsx:162
-#: src/features/media/components/media-poster.tsx:96
+#: src/features/downloads/components/download-delete-button.tsx:47
+#: src/features/downloads/components/download-table.tsx:125
+#: src/features/media/components/media-download.tsx:159
 msgid "Delete Download"
 msgstr "Supprimer le téléchargement"
 
@@ -552,7 +668,7 @@ msgstr "Supprimer le téléchargement"
 #~ msgid "Delete download?"
 #~ msgstr ""
 
-#: src/features/settings/components/settings-storage-tab.tsx:379
+#: src/features/settings/components/settings-storage-tab.tsx:381
 msgid "Delete local files after auto-transfer"
 msgstr "Supprimer les fichiers locaux après le transfert automatique"
 
@@ -560,11 +676,20 @@ msgstr "Supprimer les fichiers locaux après le transfert automatique"
 msgid "Delete multiple episodes"
 msgstr "Supprimer plusieurs épisodes"
 
-#: src/features/media/components/media-server.tsx:122
+#: src/features/media/components/media-server.tsx:120
 msgid "Delete Remote Files"
 msgstr "Supprimer les fichiers distants"
 
-#: src/features/user/components/users-table.tsx:145
+#: src/features/request/components/request-actions.tsx:87
+#: src/features/request/components/request-actions.tsx:108
+msgid "Delete request"
+msgstr "Supprimer la demande"
+
+#: src/features/media/components/media-review-modal.tsx:144
+msgid "Delete review?"
+msgstr "Supprimer l'avis ?"
+
+#: src/features/user/components/users-table.tsx:85
 msgid "Delete User"
 msgstr "Supprimer l'utilisateur"
 
@@ -572,10 +697,7 @@ msgstr "Supprimer l'utilisateur"
 #~ msgid "details"
 #~ msgstr "détails"
 
-#: src/features/media/components/carousel/media-carousel-hero.tsx:135
 #: src/features/settings/components/settings-activity-tab.tsx:86
-#: src/features/torrent/components/torrent-table.tsx:268
-#: src/features/torrent/components/torrent-table.tsx:313
 msgid "Details"
 msgstr "Détails"
 
@@ -583,8 +705,8 @@ msgstr "Détails"
 msgid "Director"
 msgstr "Réalisateur"
 
-#: src/features/settings/components/settings-storage-tab.tsx:369
-#: src/features/settings/components/settings-storage-tab.tsx:397
+#: src/features/settings/components/settings-storage-tab.tsx:371
+#: src/features/settings/components/settings-storage-tab.tsx:399
 msgid "Disable"
 msgstr "Désactiver"
 
@@ -592,10 +714,13 @@ msgstr "Désactiver"
 msgid "Disabled"
 msgstr "Désactivé"
 
-#: src/routes/_app/user/$id.index.tsx:166
-#: src/routes/_app/user/$id.index.tsx:173
+#: src/routes/_app/user/$id.index.tsx:217
 msgid "Display name"
 msgstr "Nom d'affichage"
+
+#: src/features/settings/components/settings-general-tab.tsx:150
+msgid "Display TMDB scores on movie and TV cards in the catalog."
+msgstr "Afficher les notes TMDB sur les cartes films et séries du catalogue."
 
 #: src/routes/_auth.login.tsx:105
 #~ msgid "Don't have an account?"
@@ -603,8 +728,7 @@ msgstr "Nom d'affichage"
 
 #: src/features/downloads/components/network/download-network-card.tsx:45
 #: src/features/media/components/button/media-button-download.tsx:33
-#: src/features/torrent/components/torrent-table.tsx:279
-#: src/features/torrent/components/torrent-table.tsx:323
+#: src/features/torrent/hooks/use-torrent-columns.tsx:153
 msgid "Download"
 msgstr "Télécharger"
 
@@ -612,15 +736,15 @@ msgstr "Télécharger"
 msgid "Download deleted"
 msgstr "Téléchargement supprimé"
 
-#: src/features/torrent/components/torrent-table.tsx:122
+#: src/features/torrent/components/torrent-table.tsx:118
 msgid "Download failed"
 msgstr "Échec du téléchargement"
 
-#: src/features/downloads/hooks/download.queries.ts:142
+#: src/features/downloads/hooks/download.queries.ts:153
 msgid "Download paused"
 msgstr "Téléchargement en pause"
 
-#: src/features/downloads/hooks/download.queries.ts:149
+#: src/features/downloads/hooks/download.queries.ts:160
 msgid "Download resumed"
 msgstr "Téléchargement repris"
 
@@ -628,7 +752,7 @@ msgstr "Téléchargement repris"
 #~ msgid "Download Speed"
 #~ msgstr "Vitesse de téléchargement"
 
-#: src/features/torrent/components/torrent-table.tsx:112
+#: src/features/torrent/components/torrent-table.tsx:108
 msgid "Download started"
 msgstr "Téléchargement démarré"
 
@@ -640,24 +764,29 @@ msgstr "Téléchargement démarré"
 msgid "Download subtitles"
 msgstr "Télécharger les sous-titres"
 
-#: src/features/media/components/media-card.tsx:99
-#~ msgid "Downloaded"
-#~ msgstr "Téléchargé"
+#: src/features/media/components/tabs/media-tabs-sort.tsx:40
+msgid "Downloaded"
+msgstr "Téléchargé"
 
-#: src/features/media/components/media-detail-layout.tsx:118
-#: src/routes/_app/downloads/$id.play.tsx:186
+#: src/features/media/components/media-detail-layout.tsx:124
+#: src/routes/_app/downloads/$id.play.tsx:182
 msgid "Downloads"
 msgstr "Téléchargements"
 
-#: src/features/settings/components/settings-storage-tab.tsx:322
+#: src/features/downloads/hooks/download.queries.ts:141
+msgid "Downloads deleted"
+msgstr "Téléchargements supprimés"
+
+#: src/features/settings/components/settings-storage-tab.tsx:321
 msgid "e.g. Movies (optional)"
 msgstr "ex. Films (optionnel)"
 
-#: src/features/settings/components/settings-storage-tab.tsx:329
+#: src/features/settings/components/settings-storage-tab.tsx:328
 msgid "e.g. TV Shows (optional)"
 msgstr "ex. Séries (optionnel)"
 
-#: src/features/user/components/users-table.tsx:117
+#: src/features/media/components/media-user-review.tsx:30
+#: src/features/user/hooks/use-users-columns.tsx:77
 msgid "Edit"
 msgstr "Modifier"
 
@@ -665,18 +794,22 @@ msgstr "Modifier"
 msgid "Edit {displayName}"
 msgstr "Modifier {displayName}"
 
+#: src/routes/_app/user/$id.index.tsx:234
+msgid "Edit display name"
+msgstr "Modifier le nom d'affichage"
+
 #: src/features/user/components/user-form-modal.tsx:105
 msgid "Edit User"
 msgstr "Modifier l'utilisateur"
 
-#: src/features/settings/components/settings-storage-tab.tsx:369
-#: src/features/settings/components/settings-storage-tab.tsx:397
+#: src/features/settings/components/settings-storage-tab.tsx:371
+#: src/features/settings/components/settings-storage-tab.tsx:399
 msgid "Enable"
 msgstr "Activer"
 
-#: src/features/movies/components/movie-info.tsx:49
-#: src/features/tv/components/tv-episodes-section.tsx:191
-#: src/features/tv/components/tv-info.tsx:73
+#: src/features/movies/components/movie-info.tsx:57
+#: src/features/tv/components/tv-episodes-section.tsx:193
+#: src/features/tv/components/tv-info.tsx:80
 msgid "Ends at"
 msgstr "Se termine à"
 
@@ -698,7 +831,7 @@ msgstr "Saisissez votre mot de passe actuel et choisissez-en un nouveau."
 #~ msgid "Enter your TMDB API key to enable personalized search and detailed movie information."
 #~ msgstr "Entrez votre clé API TMDB pour activer la recherche personnalisée et les informations détaillées sur les films."
 
-#: src/routes/_app/tv/$id.torrents.tsx:145
+#: src/routes/_app/tv/$id.torrents.tsx:139
 msgid "Episode"
 msgstr "Épisode"
 
@@ -714,7 +847,11 @@ msgstr "Erreur"
 #~ msgid "Export logs"
 #~ msgstr "Exporter les journaux"
 
-#: src/features/media/components/media-download.tsx:79
+#: src/features/user/components/user-button-letterboxd.tsx:87
+msgid "Export your data"
+msgstr "Exportez vos données"
+
+#: src/features/media/components/media-download.tsx:77
 msgid "Failed"
 msgstr "Échoué"
 
@@ -734,7 +871,7 @@ msgstr "Échec de la récupération des métadonnées du torrent"
 msgid "Failed to load subtitles"
 msgstr "Échec du chargement des sous-titres"
 
-#: src/features/settings/hooks/settings.queries.ts:32
+#: src/features/settings/hooks/settings.queries.ts:38
 msgid "Failed to save settings"
 msgstr "Échec de l'enregistrement des paramètres"
 
@@ -746,16 +883,20 @@ msgstr "Échec de l'enregistrement de la configuration de stockage"
 msgid "File"
 msgstr "Fichier"
 
-#: src/features/downloads/components/download-files-list.tsx:93
+#: src/shared/ui/file-dropzone.tsx:58
+msgid "File is too large"
+msgstr "Le fichier est trop volumineux"
+
+#: src/features/downloads/components/download-files-list.tsx:77
 msgid "Files"
 msgstr "Fichiers"
 
-#: src/features/person/components/person-filmography.tsx:47
+#: src/features/person/components/person-filmography.tsx:49
 msgid "Filmography"
 msgstr "Filmographie"
 
-#: src/features/media/components/media-filters-sheet.tsx:208
-#: src/features/media/components/media-filters-sheet.tsx:218
+#: src/features/media/components/media-filters-sheet.tsx:211
+#: src/features/media/components/media-filters-sheet.tsx:222
 msgid "Filters"
 msgstr "Filtres"
 
@@ -763,11 +904,11 @@ msgstr "Filtres"
 msgid "First air date"
 msgstr "Première date de diffusion"
 
-#: src/features/media/components/media-download.tsx:104
+#: src/features/media/components/media-download.tsx:102
 msgid "Force reannounce"
 msgstr "Forcer la réannonce"
 
-#: src/features/media/components/media-download.tsx:91
+#: src/features/media/components/media-download.tsx:89
 msgid "Force recheck"
 msgstr "Forcer la revérification"
 
@@ -779,16 +920,20 @@ msgstr "Trouvé"
 #~ msgid "French"
 #~ msgstr "Français"
 
-#: src/features/media/components/media-filters-sheet.tsx:227
+#: src/features/media/components/media-filters-sheet.tsx:231
 msgid "From"
 msgstr "De"
 
-#: src/features/settings/components/settings-general-tab.tsx:26
+#: src/features/user/components/user-button-letterboxd.tsx:91
+msgid "From Letterboxd settings, request a data export and download the zip when ready."
+msgstr "Depuis les paramètres Letterboxd, demandez un export de vos données et téléchargez le zip une fois prêt."
+
+#: src/features/settings/components/settings-general-tab.tsx:32
 #: src/routes/_app/settings/index.tsx:38
 msgid "General"
 msgstr "Général"
 
-#: src/features/media/components/media-filters-sheet.tsx:242
+#: src/features/media/components/media-filters-sheet.tsx:246
 msgid "Genres"
 msgstr "Genres"
 
@@ -796,7 +941,8 @@ msgstr "Genres"
 #~ msgid "German"
 #~ msgstr "Allemand"
 
-#: src/shared/components/route-error.tsx:50
+#: src/shared/components/route-error.tsx:31
+#: src/shared/components/route-error.tsx:84
 msgid "Go back"
 msgstr "Retour"
 
@@ -804,19 +950,19 @@ msgstr "Retour"
 msgid "Go Back"
 msgstr "Retour"
 
-#: src/features/torrent/components/torrent-table.tsx:191
+#: src/features/torrent/hooks/use-torrent-columns.tsx:109
 msgid "Health"
 msgstr "Santé"
 
 #: src/features/media/components/carousel/media-carousel-hero.tsx:210
-msgid "Hero carousel"
-msgstr "Carrousel principal"
+#~ msgid "Hero carousel"
+#~ msgstr "Carrousel principal"
 
 #: src/features/torrent/components/torrent-indexers-table.tsx:114
 msgid "Hide indexer"
 msgstr "Masquer l'indexeur"
 
-#: src/features/settings/components/settings-general-tab.tsx:52
+#: src/features/settings/components/settings-general-tab.tsx:103
 msgid "Hide torrents larger than this size. Leave empty for no limit."
 msgstr "Masquer les torrents plus volumineux que cette taille. Laissez vide pour aucune limite."
 
@@ -837,8 +983,8 @@ msgstr "Masquer les torrents plus volumineux que cette taille. Laissez vide pour
 #~ msgid "Home"
 #~ msgstr "Accueil"
 
-#: src/features/settings/components/settings-storage-tab.tsx:203
-#: src/features/settings/components/settings-storage-tab.tsx:258
+#: src/features/settings/components/settings-storage-tab.tsx:202
+#: src/features/settings/components/settings-storage-tab.tsx:257
 msgid "Host"
 msgstr "Hôte"
 
@@ -846,20 +992,29 @@ msgstr "Hôte"
 msgid "Idle"
 msgstr "Inactif"
 
-#: src/features/user/components/user-avatar.tsx:40
+#: src/features/user/components/user-avatar.tsx:52
 msgid "Image too large. Maximum size is 2MB"
 msgstr "Image trop volumineuse. Taille maximale : 2 Mo"
 
-#: src/features/media/components/media-external-links.tsx:24
-#: src/routes/_app/person/$id.index.tsx:71
+#: src/features/media/components/media-external-links.tsx:32
+#: src/routes/_app/person/$id.index.tsx:52
 msgid "IMDb"
 msgstr "IMDb"
 
-#: src/features/media/components/tabs/media-tabs-sort.tsx:42
-msgid "In Cinema"
-msgstr "Au cinéma"
+#: src/features/user/components/user-button-letterboxd.tsx:52
+#: src/features/user/components/user-button-letterboxd.tsx:134
+msgid "Import"
+msgstr "Importer"
 
-#: src/routes/_app/settings/indexer.tsx:102
+#: src/features/user/components/user-button-letterboxd.tsx:79
+msgid "Import Letterboxd"
+msgstr "Importer Letterboxd"
+
+#: src/features/media/components/tabs/media-tabs-sort.tsx:42
+#~ msgid "In Cinema"
+#~ msgstr "Au cinéma"
+
+#: src/routes/_app/settings/indexer.tsx:94
 msgid "Indexer dashboard"
 msgstr "Tableau de bord de l'indexeur"
 
@@ -876,11 +1031,21 @@ msgstr "Gestionnaires d'indexeurs"
 msgid "Indexers"
 msgstr "Indexeurs"
 
-#: src/features/media/components/media-detail-layout.tsx:113
+#: src/features/downloads/hooks/use-download-table-columns.tsx:86
+#: src/features/media/components/media-detail-layout.tsx:119
+#: src/features/media/hooks/use-media-table-columns.tsx:59
 msgid "Info"
 msgstr "Infos"
 
-#: src/features/user/components/user-avatar.tsx:36
+#: src/features/settings/components/settings-general-tab.tsx:46
+msgid "Interface language for Seedarr."
+msgstr "Langue de l'interface Seedarr."
+
+#: src/shared/ui/file-dropzone.tsx:53
+msgid "Invalid file type"
+msgstr "Type de fichier invalide"
+
+#: src/features/user/components/user-avatar.tsx:48
 msgid "Invalid image type. Allowed: JPEG, PNG, WebP, GIF"
 msgstr "Type d'image invalide. Autorisés : JPEG, PNG, WebP, GIF"
 
@@ -904,11 +1069,11 @@ msgstr "Type d'image invalide. Autorisés : JPEG, PNG, WebP, GIF"
 #~ msgid "Keyword"
 #~ msgstr "Mot-clé"
 
-#: src/features/media/components/media-filters-sheet.tsx:313
+#: src/features/media/components/media-filters-sheet.tsx:317
 msgid "Keywords"
 msgstr "Mots-clés"
 
-#: src/features/person/components/person-known-for.tsx:11
+#: src/features/person/components/person-known-for.tsx:17
 msgid "Known for"
 msgstr "Célèbre pour"
 
@@ -916,15 +1081,15 @@ msgstr "Célèbre pour"
 #~ msgid "Korean"
 #~ msgstr "Coréen"
 
+#: src/features/settings/components/settings-general-tab.tsx:43
 #: src/features/subtitles/components/subtitle-search-dialog.tsx:98
-#: src/routes/_app/user/$id.index.tsx:195
 msgid "Language"
 msgstr "Langue"
 
 #. placeholder {0}: lastEpisode.season_number
 #. placeholder {1}: lastEpisode.episode_number
 #. placeholder {2}: new Date(lastEpisode.air_date).toLocaleDateString(undefined, { day: "2-digit", month: "long", year: "numeric", })
-#: src/features/tv/components/tv-info.tsx:86
+#: src/features/tv/components/tv-info.tsx:93
 msgid "Last episode: S{0}E{1} - {2}"
 msgstr "Dernier épisode : S{0}E{1} - {2}"
 
@@ -932,9 +1097,29 @@ msgstr "Dernier épisode : S{0}E{1} - {2}"
 msgid "leave empty to keep current"
 msgstr "laisser vide pour conserver l'actuel"
 
+#: src/features/media/components/media-external-links.tsx:20
+msgid "Letterboxd"
+msgstr "Letterboxd"
+
+#: src/features/user/hooks/user.queries.ts:129
+msgid "Letterboxd import failed"
+msgstr "Échec de l'import Letterboxd"
+
+#: src/features/user/hooks/user.queries.ts:124
+msgid "Letterboxd imported"
+msgstr "Letterboxd importé"
+
+#: src/features/user/hooks/user.queries.ts:99
+msgid "Letterboxd sync failed"
+msgstr "Échec de la sync Letterboxd"
+
+#: src/features/user/hooks/user.queries.ts:94
+msgid "Letterboxd synchronized"
+msgstr "Letterboxd synchronisé"
+
 #. js-lingui-explicit-id
-#: src/routes/_app.tsx:69
-#: src/shared/components/app-topbar.tsx:23
+#: src/routes/_app.tsx:67
+#: src/shared/components/app-topbar.tsx:22
 msgid "nav.library"
 msgstr "Bibliothèque"
 
@@ -943,15 +1128,15 @@ msgstr "Bibliothèque"
 #~ msgid "Library"
 #~ msgstr "Bibliothèque"
 
-#: src/routes/_app/user/$id.index.tsx:207
+#: src/features/settings/components/settings-general-tab.tsx:65
 msgid "Light mode"
 msgstr "Mode clair"
 
-#: src/features/media/components/media-social-actions.tsx:26
+#: src/features/media/components/media-social-actions.tsx:42
 msgid "Like"
 msgstr "J'aime"
 
-#: src/routes/_app/user/$id.index.tsx:114
+#: src/routes/_app/user/$id.index.tsx:185
 #: src/routes/_app/user/$id.likes.tsx:31
 msgid "Liked"
 msgstr "Aimés"
@@ -970,23 +1155,24 @@ msgstr "Chargement"
 #~ msgid "Loading indexers..."
 #~ msgstr "Chargement des indexeurs..."
 
-#: src/features/player/components/player.tsx:208
+#: src/features/player/components/player.tsx:223
 msgid "Loading player…"
 msgstr "Chargement du lecteur…"
 
-#: src/features/media/components/media-server.tsx:110
-#: src/features/tv/components/tv-episode-download-panel.tsx:72
-#: src/features/tv/components/tv-episode-download-panel.tsx:85
+#: src/features/media/components/media-server.tsx:108
+#: src/features/tv/components/tv-episode-download-panel.tsx:66
+#: src/features/tv/components/tv-episode-download-panel.tsx:79
 msgid "Loading remote files…"
 msgstr "Chargement des fichiers distants…"
 
 #: src/features/torrent/components/torrent-inspect-modal.tsx:48
-#: src/features/user/components/users-table.tsx:72
+#: src/features/user/components/users-table.tsx:67
 #: src/routes/_auth/login.tsx:95
 msgid "Loading..."
 msgstr "Chargement..."
 
-#: src/features/tv/components/tv-episode-download-panel.tsx:55
+#: src/features/downloads/hooks/use-download-table-columns.tsx:109
+#: src/features/tv/components/tv-episode-download-panel.tsx:49
 msgid "Local"
 msgstr "Local"
 
@@ -1025,19 +1211,19 @@ msgstr "Synchro manuelle"
 msgid "Manual sync failed"
 msgstr "Échec de la synchro manuelle"
 
-#: src/features/torrent/components/torrent-table.tsx:173
+#: src/features/torrent/components/torrent-table.tsx:190
 msgid "Max {preferenceMaxSize} GB"
 msgstr "Max {preferenceMaxSize} Go"
 
-#: src/features/settings/components/settings-general-tab.tsx:49
+#: src/features/settings/components/settings-general-tab.tsx:100
 msgid "Max torrent size"
 msgstr "Taille max. du torrent"
 
-#: src/routes/_app/downloads/index.tsx:98
+#: src/routes/_app/downloads/index.tsx:114
 msgid "Media"
 msgstr "Médias"
 
-#: src/features/downloads/hooks/download.queries.ts:136
+#: src/features/downloads/hooks/download.queries.ts:147
 msgid "Media reassigned"
 msgstr "Média réassigné"
 
@@ -1050,8 +1236,8 @@ msgid "Member"
 msgstr "Membre"
 
 #: src/routes/_app/user/$id.index.tsx:83
-msgid "Member since"
-msgstr "Membre depuis"
+#~ msgid "Member since"
+#~ msgstr "Membre depuis"
 
 #: src/features/settings/components/settings-activity-tab.tsx:135
 msgid "Metadata"
@@ -1072,11 +1258,11 @@ msgstr "8 caractères minimum"
 #~ msgid "Minimum Quality"
 #~ msgstr "Qualité minimale"
 
-#: src/features/settings/components/settings-general-tab.tsx:40
+#: src/features/settings/components/settings-general-tab.tsx:91
 msgid "Minimum quality filter applied when searching torrents."
 msgstr "Filtre de qualité minimum appliqué lors de la recherche de torrents."
 
-#: src/features/media/components/media-filters-sheet.tsx:258
+#: src/features/media/components/media-filters-sheet.tsx:262
 msgid "Minimum rating"
 msgstr "Note minimale"
 
@@ -1096,27 +1282,30 @@ msgstr "Note minimale"
 #~ msgid "Movie not found"
 #~ msgstr "Film introuvable"
 
-#: src/features/settings/components/settings-storage-tab.tsx:320
+#: src/features/settings/components/settings-storage-tab.tsx:319
 msgid "Movie path"
 msgstr "Chemin des films"
 
 #: src/routes/_app/movies/requests.tsx:28
-msgid "Movie Requests"
-msgstr "Demandes de films"
+#~ msgid "Movie Requests"
+#~ msgstr "Demandes de films"
 
 #. js-lingui-explicit-id
-#: src/routes/_app.tsx:66
-#: src/shared/components/app-topbar.tsx:21
+#: src/routes/_app.tsx:64
+#: src/shared/components/app-topbar.tsx:20
 msgid "nav.movies"
 msgstr "Films"
 
-#: src/routes/_app/movies/$id.torrents.tsx:56
-#: src/routes/_app/search.tsx:103
+#: src/features/user/components/user-profile-stats.tsx:37
+#: src/features/user/components/user-profile-stats.tsx:39
+#: src/routes/_app/movies/$id.torrents.tsx:50
+#: src/routes/_app/search.tsx:95
 msgid "Movies"
 msgstr "Films"
 
 #. js-lingui-explicit-id
 #: src/features/media/components/tabs/media-tabs-type.tsx:17
+#: src/features/request/components/request-tabs.tsx:25
 msgid "media-type.movies"
 msgstr "Films"
 
@@ -1124,17 +1313,25 @@ msgstr "Films"
 #~ msgid "My Library"
 #~ msgstr "Ma bibliothèque"
 
+#: src/routes/_app/user/$id.requests.tsx:65
+msgid "My Requests"
+msgstr "Mes demandes"
+
 #: src/features/torrent/components/torrent-indexers-table.tsx:89
 msgid "Name"
 msgstr "Nom"
 
-#: src/features/settings/components/settings-storage-tab.tsx:260
+#: src/features/settings/components/settings-storage-tab.tsx:259
 msgid "nas.local or 192.168.1.254"
 msgstr "nas.local ou 192.168.1.254"
 
 #: src/features/tv/components/tv-details.tsx:37
 msgid "Networks"
 msgstr "Chaînes"
+
+#: src/features/media/components/tabs/media-tabs-sort.tsx:30
+msgid "New"
+msgstr "Nouveau"
 
 #: src/features/user/components/password-change-modal.tsx:91
 msgid "New password"
@@ -1143,7 +1340,7 @@ msgstr "Nouveau mot de passe"
 #. placeholder {0}: nextEpisode.season_number
 #. placeholder {1}: nextEpisode.episode_number
 #. placeholder {2}: new Date(nextEpisode.air_date).toLocaleDateString()
-#: src/features/tv/components/tv-info.tsx:78
+#: src/features/tv/components/tv-info.tsx:85
 msgid "Next episode: S{0}E{1} - {2}"
 msgstr "Prochain épisode : S{0}E{1} - {2}"
 
@@ -1151,15 +1348,19 @@ msgstr "Prochain épisode : S{0}E{1} - {2}"
 msgid "No activity yet."
 msgstr "Aucune activité pour le moment."
 
-#: src/routes/_app/downloads/index.tsx:134
+#: src/features/downloads/components/download-table.tsx:113
+msgid "No downloads"
+msgstr "Aucun téléchargement"
+
+#: src/routes/_app/downloads/index.tsx:193
 msgid "No downloads yet"
 msgstr "Aucun téléchargement pour le moment"
 
-#: src/features/tv/components/tv-episodes-section.tsx:89
+#: src/features/tv/components/tv-episodes-section.tsx:90
 msgid "No episodes available"
 msgstr "Aucun épisode disponible"
 
-#: src/features/media/components/media-filters-sheet.tsx:251
+#: src/features/media/components/media-filters-sheet.tsx:255
 msgid "No genres found."
 msgstr "Aucun genre trouvé."
 
@@ -1189,7 +1390,7 @@ msgstr "Aucun élément trouvé."
 msgid "No items yet."
 msgstr "Aucun élément pour le moment."
 
-#: src/features/media/components/media-filters-sheet.tsx:333
+#: src/features/media/components/media-filters-sheet.tsx:337
 msgid "No keyword found."
 msgstr "Aucun mot-clé trouvé."
 
@@ -1205,7 +1406,7 @@ msgstr "Aucun lien magnet trouvé"
 msgid "No media found on remote server"
 msgstr "Aucun média trouvé sur le serveur distant"
 
-#: src/routes/_app/movies/index.tsx:47
+#: src/routes/_app/movies/index.tsx:57
 msgid "No movies found"
 msgstr "Aucun film trouvé"
 
@@ -1215,34 +1416,46 @@ msgstr "Aucun pair détecté"
 
 #: src/routes/_app/movies/requests.tsx:34
 #: src/routes/_app/tv/requests.tsx:34
-msgid "No pending requests."
-msgstr "Aucune demande en attente."
+#~ msgid "No pending requests."
+#~ msgstr "Aucune demande en attente."
 
-#: src/features/media/components/media-server.tsx:35
+#: src/features/media/components/media-server.tsx:34
 msgid "No remote files"
 msgstr "Aucun fichier distant"
+
+#: src/routes/_app/requests.tsx:60
+msgid "No requests found."
+msgstr "Aucune demande trouvée."
+
+#: src/routes/_app/user/$id.requests.tsx:82
+msgid "No requests."
+msgstr "Aucune demande."
 
 #: src/features/media/components/media-search-modal.tsx:148
 msgid "No results found"
 msgstr "Aucun résultat trouvé"
 
-#: src/routes/_app/search.tsx:128
+#: src/routes/_app/search.tsx:131
 msgid "No results found for \"{q}\""
 msgstr "Aucun résultat trouvé pour \"{q}\""
 
+#: src/routes/_app/downloads/index.tsx:193
+msgid "No results found for \"{query}\""
+msgstr "Aucun résultat pour \"{query}\""
+
 #: src/routes/_app/downloads/index.tsx:134
-msgid "No results found for \"{search}\""
-msgstr "Aucun résultat trouvé pour \"{search}\""
+#~ msgid "No results found for \"{search}\""
+#~ msgstr "Aucun résultat trouvé pour \"{search}\""
 
 #: src/routes/_app/onboarding.tsx:108
 msgid "No setup required. Browse torrents from public trackers instantly."
 msgstr "Aucune configuration requise. Parcourez les torrents des trackers publics instantanément."
 
-#: src/features/settings/components/settings-indexers-tab.tsx:91
+#: src/features/settings/components/settings-indexers-tab.tsx:89
 msgid "No source found."
 msgstr "Aucune source trouvée."
 
-#: src/features/media/components/media-filters-sheet.tsx:306
+#: src/features/media/components/media-filters-sheet.tsx:310
 msgid "No streaming services found."
 msgstr "Aucun service de streaming trouvé."
 
@@ -1250,7 +1463,7 @@ msgstr "Aucun service de streaming trouvé."
 msgid "No subtitles found for this language."
 msgstr "Aucun sous-titre trouvé pour cette langue."
 
-#: src/features/torrent/components/torrent-table.tsx:208
+#: src/features/torrent/components/torrent-table.tsx:204
 msgid "No torrents found"
 msgstr "Aucun torrent trouvé"
 
@@ -1258,17 +1471,26 @@ msgstr "Aucun torrent trouvé"
 msgid "No trackers found in this torrent — peer discovery relies on DHT only."
 msgstr "Aucun tracker trouvé dans ce torrent — la découverte de pairs repose uniquement sur le DHT."
 
-#: src/routes/_app/tv/index.tsx:47
+#: src/routes/_app/tv/index.tsx:57
 msgid "No TV shows found"
 msgstr "Aucune série trouvée"
 
-#: src/features/user/components/users-table.tsx:101
+#: src/features/user/components/users-table.tsx:74
 msgid "No users found"
 msgstr "Aucun utilisateur trouvé"
 
 #: src/routes/_app.lists.history.tsx:48
 #~ msgid "No viewing history yet."
 #~ msgstr "Aucun historique de visionnage pour le moment."
+
+#: src/features/media/components/media-calendar.tsx:61
+msgid "No watched media yet"
+msgstr "Aucun média regardé pour l'instant"
+
+#: src/features/media/components/media-table.tsx:54
+#: src/routes/_app/user/$id.index.tsx:70
+msgid "Nothing here yet"
+msgstr "Rien ici pour l'instant"
 
 #: src/features/settings/hooks/remote-sync.queries.ts:24
 msgid "Nothing new to sync"
@@ -1282,7 +1504,11 @@ msgstr "Rien de nouveau à synchroniser"
 #~ msgid "On The Air"
 #~ msgstr "En cours de diffusion"
 
-#: src/features/settings/components/settings-storage-tab.tsx:382
+#: src/features/user/components/user-button-letterboxd.tsx:118
+msgid "Only .zip files, max 50MB"
+msgstr "Fichiers .zip uniquement, max 50 Mo"
+
+#: src/features/settings/components/settings-storage-tab.tsx:384
 msgid "Only applies to automatic transfers. Local files are deleted once the auto-transfer succeeds. Manual transfers always keep a local copy. Streaming is unavailable while an auto-transfer download is in progress."
 msgstr "S'applique uniquement aux transferts automatiques. Les fichiers locaux sont supprimés une fois le transfert réussi. Les transferts manuels conservent toujours une copie locale. Le streaming est indisponible pendant un transfert automatique."
 
@@ -1291,18 +1517,18 @@ msgstr "S'applique uniquement aux transferts automatiques. Les fichiers locaux s
 #~ msgid "Open download"
 #~ msgstr ""
 
-#: src/routes/_app/settings/indexer.tsx:79
+#: src/routes/_app/settings/indexer.tsx:72
 msgid "Open in new tab"
 msgstr "Ouvrir dans un nouvel onglet"
 
-#: src/routes/_app/settings/indexer.tsx:94
+#: src/routes/_app/settings/indexer.tsx:86
 msgid "Open indexer dashboard"
 msgstr "Ouvrir le tableau de bord de l'indexeur"
 
-#: src/features/settings/components/settings-storage-tab.tsx:220
-#: src/features/settings/components/settings-storage-tab.tsx:230
-#: src/features/settings/components/settings-storage-tab.tsx:281
-#: src/features/settings/components/settings-storage-tab.tsx:291
+#: src/features/settings/components/settings-storage-tab.tsx:219
+#: src/features/settings/components/settings-storage-tab.tsx:229
+#: src/features/settings/components/settings-storage-tab.tsx:280
+#: src/features/settings/components/settings-storage-tab.tsx:290
 msgid "Optional"
 msgstr "Optionnel"
 
@@ -1318,10 +1544,10 @@ msgstr "Optionnel"
 msgid "Owner"
 msgstr "Propriétaire"
 
-#: src/features/settings/components/settings-storage-tab.tsx:224
-#: src/features/settings/components/settings-storage-tab.tsx:285
+#: src/features/settings/components/settings-general-tab.tsx:73
+#: src/features/settings/components/settings-storage-tab.tsx:223
+#: src/features/settings/components/settings-storage-tab.tsx:284
 #: src/features/user/components/user-form-modal.tsx:132
-#: src/routes/_app/user/$id.index.tsx:214
 #: src/routes/_auth/login.tsx:82
 #: src/routes/_auth/signup.tsx:87
 msgid "Password"
@@ -1348,12 +1574,14 @@ msgstr "Mot de passe mis à jour"
 msgid "Passwords do not match"
 msgstr "Les mots de passe ne correspondent pas"
 
-#: src/features/downloads/components/download-progress.tsx:88
-#: src/features/downloads/components/download-progress.tsx:187
+#: src/features/downloads/components/download-progress.tsx:82
+#: src/features/downloads/components/download-progress.tsx:181
+#: src/features/downloads/components/download-progress.tsx:218
 msgid "Pause"
 msgstr "Mettre en pause"
 
-#: src/features/downloads/components/download-progress.tsx:166
+#: src/features/downloads/components/download-progress.tsx:161
+#: src/features/downloads/components/download-progress.tsx:193
 msgid "Paused"
 msgstr "En pause"
 
@@ -1361,13 +1589,23 @@ msgstr "En pause"
 msgid "Peers"
 msgstr "Pairs"
 
-#: src/features/request/components/request-carousel.tsx:27
+#: src/features/request/components/request-status-badge.tsx:15
+msgid "Pending"
+msgstr "En attente"
+
+#. js-lingui-explicit-id
+#: src/features/request/components/request-tabs.tsx:10
+msgid "request-status.pending"
+msgstr "En attente"
+
+#: src/features/request/components/request-carousel.tsx:28
 msgid "Pending Requests"
 msgstr "Demandes en attente"
 
-#: src/features/media/components/button/media-button-play.tsx:43
-#: src/features/media/components/button/media-button-play.tsx:81
-#: src/routes/_app/downloads/$id.play.tsx:188
+#: src/features/media/components/button/media-button-play.tsx:50
+#: src/features/media/components/button/media-button-play.tsx:69
+#: src/features/media/components/button/media-button-play.tsx:104
+#: src/routes/_app/downloads/$id.play.tsx:184
 msgid "Play"
 msgstr "Lire"
 
@@ -1375,7 +1613,7 @@ msgstr "Lire"
 #~ msgid "Play unavailable"
 #~ msgstr "Lecture indisponible"
 
-#: src/routes/_app/downloads/$id.play.tsx:169
+#: src/routes/_app/downloads/$id.play.tsx:165
 msgid "Playback failed"
 msgstr "Échec de la lecture"
 
@@ -1393,16 +1631,16 @@ msgstr "Veuillez confirmer votre mot de passe"
 #~ msgid "Popular"
 #~ msgstr "Populaire"
 
-#: src/routes/_app/search.tsx:115
+#: src/routes/_app/search.tsx:118
 msgid "Popular Movies"
 msgstr "Films populaires"
 
-#: src/routes/_app/search.tsx:116
+#: src/routes/_app/search.tsx:119
 msgid "Popular TV Shows"
 msgstr "Séries populaires"
 
-#: src/features/settings/components/settings-storage-tab.tsx:209
-#: src/features/settings/components/settings-storage-tab.tsx:264
+#: src/features/settings/components/settings-storage-tab.tsx:208
+#: src/features/settings/components/settings-storage-tab.tsx:263
 msgid "Port"
 msgstr "Port"
 
@@ -1411,8 +1649,8 @@ msgstr "Port"
 #~ msgstr "Portugais"
 
 #: src/routes/_app/user/$id.index.tsx:160
-msgid "Preferences"
-msgstr "Préférences"
+#~ msgid "Preferences"
+#~ msgstr "Préférences"
 
 #: src/features/indexers-manager/components/indexers-manager-add-dialog.tsx:94
 msgid "Presets"
@@ -1428,16 +1666,16 @@ msgid "Production"
 msgstr "Production"
 
 #. js-lingui-explicit-id
-#: src/routes/_app.tsx:86
-#: src/shared/components/app-topbar.tsx:26
+#: src/routes/_app.tsx:84
+#: src/shared/components/app-topbar.tsx:25
 msgid "nav.profile"
 msgstr "Profil"
 
-#: src/features/user/hooks/user.queries.ts:82
+#: src/features/user/hooks/user.queries.ts:75
 msgid "Profile picture updated"
 msgstr "Photo de profil mise à jour"
 
-#: src/features/user/hooks/user.queries.ts:38
+#: src/features/user/hooks/user.queries.ts:44
 msgid "Profile updated"
 msgstr "Profil mis à jour"
 
@@ -1453,6 +1691,14 @@ msgstr "Profil mis à jour"
 msgid "Proxy server for torrent trackers"
 msgstr "Serveur proxy pour les trackers torrent"
 
+#: src/features/media/components/media-star-rating.tsx:41
+msgid "Rating"
+msgstr "Note"
+
+#: src/features/media/hooks/media.queries.ts:199
+msgid "Rating removed"
+msgstr "Note supprimée"
+
 #: src/features/downloads/components/network/download-network-card.tsx:48
 msgid "Ratio"
 msgstr "Ratio"
@@ -1465,11 +1711,11 @@ msgstr "Lire la suite"
 #~ msgid "Real-time network activity and library overview"
 #~ msgstr "Activité réseau en temps réel et aperçu de la bibliothèque"
 
-#: src/features/media/components/media-download.tsx:108
+#: src/features/media/components/media-download.tsx:106
 msgid "Reannounce"
 msgstr "Réannoncer"
 
-#: src/features/downloads/hooks/download.queries.ts:163
+#: src/features/downloads/hooks/download.queries.ts:174
 msgid "Reannounce sent"
 msgstr "Réannonce envoyée"
 
@@ -1481,11 +1727,11 @@ msgstr "Activité récente sur cette instance."
 #~ msgid "Recently Viewed"
 #~ msgstr "Vus récemment"
 
-#: src/features/media/components/media-download.tsx:95
+#: src/features/media/components/media-download.tsx:93
 msgid "Recheck"
 msgstr "Revérifier"
 
-#: src/features/downloads/hooks/download.queries.ts:156
+#: src/features/downloads/hooks/download.queries.ts:167
 msgid "Recheck started"
 msgstr "Revérification lancée"
 
@@ -1524,14 +1770,18 @@ msgstr "Date de sortie"
 msgid "Reload Page"
 msgstr "Recharger la page"
 
-#: src/features/media/helpers/media.helper.ts:65
-#: src/features/media/helpers/media.helper.ts:65
+#: src/features/media/helpers/media.helper.ts:76
+#: src/features/media/helpers/media.helper.ts:76
 msgid "remaining"
 msgstr "restant"
 
-#: src/features/tv/components/tv-episode-download-panel.tsx:59
+#: src/features/tv/components/tv-episode-download-panel.tsx:53
 msgid "Remote"
 msgstr "Distant"
+
+#: src/features/downloads/hooks/use-download-table-columns.tsx:116
+msgid "Remote server"
+msgstr "Serveur distant"
 
 #: src/features/settings/hooks/storage-config.queries.ts:55
 msgid "Remote server is connected and available"
@@ -1546,7 +1796,7 @@ msgstr "Le serveur distant est injoignable"
 msgid "Remote server unavailable"
 msgstr "Serveur distant indisponible"
 
-#: src/features/settings/components/settings-storage-tab.tsx:172
+#: src/features/settings/components/settings-storage-tab.tsx:171
 msgid "Remote Storage"
 msgstr "Stockage distant"
 
@@ -1554,46 +1804,84 @@ msgstr "Stockage distant"
 #~ msgid "Remove"
 #~ msgstr "Retirer"
 
+#: src/shared/ui/file-dropzone.tsx:134
+msgid "Remove file"
+msgstr "Retirer le fichier"
+
+#: src/features/downloads/components/download-delete-button.tsx:57
+#: src/features/downloads/components/download-table.tsx:144
+msgid "Remove from library only (keep files on disk)"
+msgstr "Retirer de la bibliothèque uniquement (garder les fichiers)"
+
 #: src/features/media/components/media-card.tsx:83
 #~ msgid "Remove from watch list"
 #~ msgstr "Retirer de la watch-list"
 
-#: src/features/media/hooks/media.queries.ts:136
+#: src/features/media/components/media-social-actions.tsx:64
+msgid "Remove rating"
+msgstr "Supprimer la note"
+
+#: src/features/media/hooks/media.queries.ts:145
 msgid "Removed from watch list"
 msgstr "Retiré de la watchlist"
 
-#: src/features/media/hooks/media.queries.ts:112
+#: src/features/media/hooks/media.queries.ts:121
 msgid "Removed from your likes"
 msgstr "Retiré de vos favoris"
 
-#: src/features/media/components/button/media-button-request.tsx:21
+#: src/features/request/components/request-actions.tsx:66
+msgid "Reopen request"
+msgstr "Rouvrir la demande"
+
+#: src/features/media/components/button/media-button-request.tsx:26
 msgid "Request"
 msgstr "Demander"
 
-#: src/features/request/hooks/request.queries.ts:62
-msgid "Request dismissed"
-msgstr "Demande rejetée"
+#: src/features/request/hooks/request.queries.ts:68
+msgid "Request cancelled"
+msgstr "Demande annulée"
 
-#: src/features/request/hooks/request.queries.ts:48
+#: src/features/request/hooks/request.queries.ts:96
+msgid "Request deleted"
+msgstr "Demande supprimée"
+
+#: src/features/request/hooks/request.queries.ts:62
+#~ msgid "Request dismissed"
+#~ msgstr "Demande rejetée"
+
+#: src/features/request/hooks/request.queries.ts:82
+msgid "Request reopened"
+msgstr "Demande rouverte"
+
+#: src/features/request/hooks/request.queries.ts:54
 msgid "Request submitted"
 msgstr "Demande envoyée"
 
-#: src/features/settings/components/settings-general-tab.tsx:101
+#: src/routes/_app/user/$id.requests.tsx:65
+msgid "Requests by {displayName}"
+msgstr "Demandes de {displayName}"
+
+#: src/features/settings/components/settings-general-tab.tsx:188
 msgid "Required for remote media synchronization. Get one at themoviedb.org."
 msgstr "Requis pour la synchronisation des médias. Obtenez-en une sur themoviedb.org."
 
-#: src/features/media/components/media-filters-sheet.tsx:343
+#: src/features/media/components/media-filters-sheet.tsx:346
 msgid "Reset"
 msgstr "Réinitialiser"
 
-#: src/features/downloads/components/download-progress.tsx:88
-#: src/features/downloads/components/download-progress.tsx:187
-#: src/features/media/components/button/media-button-play.tsx:79
+#: src/features/downloads/components/download-progress.tsx:82
+#: src/features/downloads/components/download-progress.tsx:181
+#: src/features/downloads/components/download-progress.tsx:218
+#: src/features/media/components/button/media-button-play.tsx:102
 msgid "Resume"
 msgstr "Reprendre"
 
-#: src/features/torrent/components/torrent-unavailable-dialog.tsx:55
-#: src/shared/components/route-error.tsx:54
+#: src/features/media/components/carousel/media-carousel-watching.tsx:33
+msgid "Resume watching"
+msgstr "Reprendre la lecture"
+
+#: src/features/torrent/components/torrent-unavailable-dialog.tsx:60
+#: src/shared/components/route-error.tsx:87
 msgid "Retry"
 msgstr "Réessayer"
 
@@ -1601,8 +1889,17 @@ msgstr "Réessayer"
 msgid "Revenue"
 msgstr "Revenus"
 
+#: src/features/media/components/button/media-button-review.tsx:27
+#: src/features/media/components/media-review-modal.tsx:76
+msgid "Review"
+msgstr "Avis"
+
+#: src/features/media/hooks/media.queries.ts:185
+msgid "Review saved"
+msgstr "Avis enregistré"
+
 #: src/features/user/components/user-form-modal.tsx:186
-#: src/features/user/components/users-table.tsx:87
+#: src/features/user/hooks/use-users-columns.tsx:59
 msgid "Role"
 msgstr "Rôle"
 
@@ -1617,18 +1914,18 @@ msgstr "Durée (minutes)"
 #: src/features/downloads/components/manual-sync-wizard.tsx:90
 #: src/features/indexers-manager/components/indexers-manager-add-dialog.tsx:163
 #: src/features/indexers-manager/components/indexers-manager-edit-dialog.tsx:103
+#: src/features/media/components/media-review-modal.tsx:132
 #: src/features/media/components/media-search-modal.tsx:99
-#: src/features/settings/components/settings-general-tab.tsx:125
-#: src/routes/_app/user/$id.index.tsx:183
+#: src/features/settings/components/settings-general-tab.tsx:207
+#: src/routes/_app/user/$id.index.tsx:223
 msgid "Save"
 msgstr "Enregistrer"
 
-#: src/features/settings/components/settings-storage-tab.tsx:341
+#: src/features/settings/components/settings-storage-tab.tsx:343
 msgid "Save configuration"
 msgstr "Enregistrer la configuration"
 
-#: src/shared/components/app-topbar.tsx:106
-#: src/shared/components/app-topbar.tsx:114
+#: src/shared/components/app-topbar.tsx:101
 msgid "Search"
 msgstr "Rechercher"
 
@@ -1641,11 +1938,19 @@ msgstr "Rechercher"
 #~ msgid "Search a movie or a TV show"
 #~ msgstr "Rechercher un film ou une série"
 
+#: src/routes/_app/search.tsx:81
+msgid "Search a movie..."
+msgstr "Rechercher un film…"
+
+#: src/routes/_app/search.tsx:81
+msgid "Search a TV show..."
+msgstr "Rechercher une série…"
+
 #: src/features/settings/components/settings-indexers-tab.tsx:71
 msgid "Search an indexer..."
 msgstr "Rechercher un indexeur..."
 
-#: src/features/media/components/media-filters-sheet.tsx:328
+#: src/features/media/components/media-filters-sheet.tsx:332
 msgid "Search and add keywords..."
 msgstr "Rechercher et ajouter des mots-clés..."
 
@@ -1653,7 +1958,11 @@ msgstr "Rechercher et ajouter des mots-clés..."
 #~ msgid "Search for Movies and TV Shows"
 #~ msgstr "Rechercher des films et séries"
 
-#: src/routes/_app/downloads/index.tsx:83
+#: src/routes/_app/user/$id.index.tsx:311
+msgid "Search in my profile..."
+msgstr "Rechercher dans mon profil…"
+
+#: src/routes/_app/downloads/index.tsx:169
 msgid "Search in your library..."
 msgstr "Rechercher dans votre bibliothèque..."
 
@@ -1661,9 +1970,13 @@ msgstr "Rechercher dans votre bibliothèque..."
 #~ msgid "Search movies"
 #~ msgstr "Rechercher des films"
 
-#: src/routes/_app/search.tsx:88
+#: src/routes/_app/search.tsx:81
 msgid "Search movies and TV shows..."
 msgstr "Rechercher un film ou une série..."
+
+#: src/routes/_app/movies/index.tsx:59
+msgid "Search movies..."
+msgstr "Rechercher des films…"
 
 #: src/routes/_app.search.tsx:57
 #~ msgid "Search Results for \"{q}\""
@@ -1677,9 +1990,13 @@ msgstr "Rechercher un film ou une série..."
 #~ msgid "Search torrents for \"{0}\""
 #~ msgstr "Rechercher des torrents pour \"{0}\""
 
+#: src/routes/_app/tv/index.tsx:59
+msgid "Search TV shows..."
+msgstr "Rechercher des séries…"
+
 #: src/shared/components/app-topbar.tsx:117
-msgid "Search..."
-msgstr "Rechercher..."
+#~ msgid "Search..."
+#~ msgstr "Rechercher..."
 
 #. placeholder {0}: mediaType === "tv" ? " TV shows" : mediaType === "movie" ? " movies" : ""
 #: src/features/media/components/media-search-modal.tsx:77
@@ -1691,13 +2008,13 @@ msgstr "Rechercher{0}..."
 #~ msgid "Searching..."
 #~ msgstr "Recherche en cours..."
 
-#: src/routes/_app/tv/$id.torrents.tsx:123
+#: src/routes/_app/tv/$id.torrents.tsx:117
 msgid "Season"
 msgstr "Saison"
 
 #. placeholder {0}: season.season_number
-#: src/features/tv/components/tv-episodes-section.tsx:76
-#: src/routes/_app/tv/$id.torrents.tsx:136
+#: src/features/tv/components/tv-episodes-section.tsx:77
+#: src/routes/_app/tv/$id.torrents.tsx:130
 msgid "Season {0}"
 msgstr "Saison {0}"
 
@@ -1709,7 +2026,7 @@ msgstr "Saison {0}"
 #~ msgid "See all ({0})"
 #~ msgstr "Tout voir ({0})"
 
-#: src/shared/ui/carousel-wrapper.tsx:34
+#: src/shared/ui/carousel-wrapper.tsx:35
 msgid "See more"
 msgstr "Voir plus"
 
@@ -1729,15 +2046,23 @@ msgstr "Seedarr a besoin d'un indexeur de torrents pour rechercher des films et 
 msgid "Select"
 msgstr "Sélectionner"
 
+#: src/features/downloads/hooks/use-download-table-columns.tsx:59
+msgid "Select all"
+msgstr "Tout sélectionner"
+
 #: src/shared/ui/date-picker.tsx:49
 msgid "Select date"
 msgstr "Sélectionner une date"
 
-#: src/features/media/components/media-filters-sheet.tsx:250
+#: src/features/media/components/media-filters-sheet.tsx:254
 msgid "Select genres..."
 msgstr "Sélectionner des genres..."
 
-#: src/features/media/components/media-filters-sheet.tsx:305
+#: src/features/downloads/hooks/use-download-table-columns.tsx:66
+msgid "Select row"
+msgstr "Sélectionner la ligne"
+
+#: src/features/media/components/media-filters-sheet.tsx:309
 msgid "Select streaming services..."
 msgstr "Sélectionner des services de streaming..."
 
@@ -1745,23 +2070,27 @@ msgstr "Sélectionner des services de streaming..."
 msgid "Select..."
 msgstr "Sélectionner..."
 
+#: src/features/downloads/components/download-table.tsx:103
+msgid "selected"
+msgstr "sélectionné(s)"
+
 #: src/features/indexers-manager/components/indexers-manager-add-dialog.tsx:91
 msgid "Self-Hosted"
 msgstr "Auto-hébergé"
 
-#: src/features/media/components/media-detail-layout.tsx:127
+#: src/features/media/components/media-detail-layout.tsx:133
 msgid "Server"
 msgstr "Serveur"
 
-#: src/shared/components/app-topbar.tsx:120
+#: src/shared/components/app-topbar.tsx:105
 msgid "Settings"
 msgstr "Paramètres"
 
-#: src/features/settings/hooks/settings.queries.ts:29
+#: src/features/settings/hooks/settings.queries.ts:35
 msgid "Settings saved"
 msgstr "Paramètres enregistrés"
 
-#: src/features/media/components/media-filters-sheet.tsx:346
+#: src/features/media/components/media-filters-sheet.tsx:349
 msgid "Show"
 msgstr "Afficher"
 
@@ -1773,15 +2102,19 @@ msgstr "Afficher l'indexeur"
 msgid "Show less"
 msgstr "Réduire"
 
+#: src/features/settings/components/settings-general-tab.tsx:147
+msgid "Show ratings on posters"
+msgstr "Afficher les notes sur les affiches"
+
 #: src/routes/_app/user/$id.index.tsx:187
-msgid "Shown on your profile. Your username stays the same for login."
-msgstr "Affiché sur votre profil. Votre nom d'utilisateur reste le même pour la connexion."
+#~ msgid "Shown on your profile. Your username stays the same for login."
+#~ msgstr "Affiché sur votre profil. Votre nom d'utilisateur reste le même pour la connexion."
 
 #: src/routes/_auth.signup.tsx:138
 #~ msgid "Sign in"
 #~ msgstr "Se connecter"
 
-#: src/routes/_app/settings/index.tsx:118
+#: src/routes/_app/settings/index.tsx:119
 #: src/routes/_app/settings/index.tsx:144
 msgid "Sign out"
 msgstr "Se déconnecter"
@@ -1802,7 +2135,7 @@ msgstr "Inscription"
 #~ msgid "Similar Movies"
 #~ msgstr "Films similaires"
 
-#: src/features/torrent/components/torrent-table.tsx:188
+#: src/features/torrent/hooks/use-torrent-columns.tsx:97
 msgid "Size"
 msgstr "Taille"
 
@@ -1816,7 +2149,7 @@ msgid "Skip for now"
 msgstr "Passer pour l'instant"
 
 #: src/shared/components/error-boundary.tsx:30
-#: src/shared/components/route-error.tsx:28
+#: src/shared/components/route-error.tsx:63
 #: src/shared/helpers/error.helper.ts:7
 msgid "Something went wrong"
 msgstr "Une erreur s'est produite"
@@ -1829,7 +2162,7 @@ msgstr "Source désinstallée"
 #~ msgid "Spanish"
 #~ msgstr "Espagnol"
 
-#: src/features/torrent/components/torrent-table.tsx:108
+#: src/features/torrent/components/torrent-table.tsx:104
 msgid "Starting download…"
 msgstr "Démarrage du téléchargement…"
 
@@ -1847,7 +2180,7 @@ msgstr "Stockage"
 msgid "Storage configuration saved"
 msgstr "Configuration de stockage enregistrée"
 
-#: src/features/torrent/components/torrent-unavailable-dialog.tsx:59
+#: src/features/torrent/components/torrent-unavailable-dialog.tsx:70
 msgid "Store locally"
 msgstr "Stocker en local"
 
@@ -1855,12 +2188,12 @@ msgstr "Stocker en local"
 #~ msgid "Streamable"
 #~ msgstr "Streamable"
 
-#: src/features/media/components/button/media-button-play.tsx:83
+#: src/features/media/components/button/media-button-play.tsx:106
 #: src/features/media/components/media-watch-providers.tsx:59
 msgid "Streaming"
 msgstr "Streaming"
 
-#: src/features/media/components/media-filters-sheet.tsx:294
+#: src/features/media/components/media-filters-sheet.tsx:298
 msgid "Streaming services"
 msgstr "Services de streaming"
 
@@ -1876,6 +2209,14 @@ msgstr "Sous-titre ajouté"
 msgid "Success"
 msgstr "Succès"
 
+#: src/features/settings/components/settings-general-tab.tsx:60
+msgid "Switch between light and dark mode."
+msgstr "Basculer entre le mode clair et sombre."
+
+#: src/features/user/components/user-button-letterboxd.tsx:62
+msgid "Sync"
+msgstr "Sync"
+
 #: src/features/settings/hooks/remote-sync.queries.ts:20
 msgid "Synchronization complete"
 msgstr "Synchronisation terminée"
@@ -1884,7 +2225,7 @@ msgstr "Synchronisation terminée"
 msgid "Synchronization failed"
 msgstr "Échec de la synchronisation"
 
-#: src/routes/_app/downloads/index.tsx:180
+#: src/routes/_app/downloads/index.tsx:273
 msgid "Synchronize"
 msgstr "Synchroniser"
 
@@ -1892,7 +2233,7 @@ msgstr "Synchroniser"
 #~ msgid "Technical Logs"
 #~ msgstr "Journaux techniques"
 
-#: src/features/settings/components/settings-storage-tab.tsx:336
+#: src/features/settings/components/settings-storage-tab.tsx:339
 msgid "Test connection"
 msgstr "Tester la connexion"
 
@@ -1913,7 +2254,7 @@ msgstr "Le serveur de stockage distant est injoignable. Choisissez comment pours
 msgid "The video file is no longer accessible."
 msgstr "Le fichier vidéo n'est plus accessible."
 
-#: src/routes/_app/user/$id.index.tsx:203
+#: src/features/settings/components/settings-general-tab.tsx:57
 msgid "Theme"
 msgstr "Thème"
 
@@ -1925,7 +2266,7 @@ msgstr "Thème"
 msgid "This download contains a full season pack. Deleting it will remove all of the following episodes:"
 msgstr "Ce téléchargement contient un pack de saison complet. Le supprimer retirera tous les épisodes suivants :"
 
-#: src/routes/_app/settings/indexer.tsx:88
+#: src/routes/_app/settings/indexer.tsx:81
 msgid "This indexer cannot be embedded in an iframe (security restrictions). Open it in a new tab instead."
 msgstr "Cet indexeur ne peut pas être intégré dans une iframe (restrictions de sécurité). Ouvrez-le plutôt dans un nouvel onglet."
 
@@ -1937,16 +2278,21 @@ msgstr "Ce torrent semble accessible depuis Seedarr."
 #~ msgid "This will remove the downloaded files for this movie."
 #~ msgstr ""
 
-#: src/features/media/components/media-download.tsx:164
+#: src/features/media/components/media-download.tsx:161
 msgid "This will stop the torrent and delete local files. If a remote copy exists, it will not be affected."
 msgstr "Cela arrêtera le torrent et supprimera les fichiers locaux. Si une copie distante existe, elle ne sera pas affectée."
+
+#: src/features/user/components/user-profile-stats.tsx:37
+#: src/features/user/components/user-profile-stats.tsx:41
+msgid "this year"
+msgstr "cette année"
 
 #: src/features/settings/components/settings-activity-tab.tsx:58
 msgid "Title"
 msgstr "Titre"
 
-#: src/features/media/components/media-external-links.tsx:33
-#: src/routes/_app/person/$id.index.tsx:83
+#: src/features/media/components/media-external-links.tsx:39
+#: src/routes/_app/person/$id.index.tsx:64
 msgid "TMDB"
 msgstr "TMDB"
 
@@ -1954,19 +2300,19 @@ msgstr "TMDB"
 #~ msgid "TMDB API"
 #~ msgstr "API TMDB"
 
-#: src/features/settings/components/settings-general-tab.tsx:98
+#: src/features/settings/components/settings-general-tab.tsx:185
 msgid "TMDB API Key (v3)"
 msgstr "Clé API TMDB (v3)"
 
-#: src/routes/_app/downloads/index.tsx:166
+#: src/routes/_app/downloads/index.tsx:264
 msgid "TMDB API key is required for synchronization. Configure it in Settings > General."
 msgstr "La clé API TMDB est requise pour la synchronisation. Configurez-la dans Paramètres > Général."
 
-#: src/features/media/components/media-filters-sheet.tsx:233
+#: src/features/media/components/media-filters-sheet.tsx:237
 msgid "To"
 msgstr "À"
 
-#: src/features/tv/components/tv-episodes-section.tsx:197
+#: src/features/tv/components/tv-episodes-section.tsx:199
 msgid "Toggle details"
 msgstr "Afficher/masquer les détails"
 
@@ -1982,7 +2328,7 @@ msgstr "Mieux notés"
 #~ msgid "Torrent indexer is not configured. Click here to set up your indexer (Prowlarr or Jackett)."
 #~ msgstr "L'indexeur de torrents n'est pas configuré. Cliquez ici pour configurer votre indexeur (Prowlarr ou Jackett)."
 
-#: src/routes/_app.tsx:107
+#: src/routes/_app.tsx:105
 msgid "Torrent indexer is not configured. Click here to set up your indexer."
 msgstr "L'indexeur de torrents n'est pas configuré. Cliquez ici pour configurer votre indexeur."
 
@@ -1998,17 +2344,15 @@ msgstr "Le torrent n'est pas en pause"
 #~ msgid "Torrent Name"
 #~ msgstr "Nom du torrent"
 
-#: src/features/media/components/button/media-button-torrent.tsx:18
-#: src/features/media/components/button/media-button-torrent.tsx:23
-#: src/features/media/components/carousel/media-carousel-hero.tsx:126
-#: src/features/settings/components/settings-general-tab.tsx:32
-#: src/features/tv/components/tv-episodes-section.tsx:159
-#: src/routes/_app/movies/$id.torrents.tsx:58
-#: src/routes/_app/tv/$id.torrents.tsx:116
+#: src/features/media/components/button/media-button-torrent.tsx:19
+#: src/features/settings/components/settings-general-tab.tsx:83
+#: src/features/tv/components/tv-episodes-section.tsx:161
+#: src/routes/_app/movies/$id.torrents.tsx:52
+#: src/routes/_app/tv/$id.torrents.tsx:110
 msgid "Torrents"
 msgstr "Torrents"
 
-#: src/routes/_app/downloads/index.tsx:105
+#: src/routes/_app/downloads/index.tsx:121
 msgid "Total Size"
 msgstr "Taille totale"
 
@@ -2021,48 +2365,50 @@ msgstr "Taille totale"
 #~ msgid "Transfer to server"
 #~ msgstr "Envoyer sur le serveur"
 
-#: src/features/downloads/components/download-progress.tsx:141
+#: src/features/downloads/components/download-progress.tsx:136
 msgid "Transferring"
 msgstr "Transfert en cours"
 
-#: src/routes/_app/search.tsx:131
+#: src/routes/_app/search.tsx:134
 msgid "Try a different search term"
 msgstr "Essayez un autre mot-clé"
 
-#: src/routes/_app/movies/index.tsx:48
-#: src/routes/_app/tv/index.tsx:48
+#: src/routes/_app/movies/index.tsx:58
+#: src/routes/_app/tv/index.tsx:58
 msgid "Try adjusting your filters or search criteria"
 msgstr "Essayez d'ajuster vos filtres ou vos critères de recherche"
 
-#: src/features/torrent/components/torrent-table.tsx:211
+#: src/features/torrent/components/torrent-table.tsx:207
 msgid "Try adjusting your search query"
 msgstr "Essayez d'ajuster votre recherche"
 
-#: src/features/media/components/media-card.tsx:105
-#~ msgid "TV"
-#~ msgstr "TV"
+#: src/features/user/components/user-profile-stats.tsx:41
+#: src/features/user/components/user-profile-stats.tsx:43
+msgid "TV"
+msgstr "TV"
 
 #: src/routes/_app/tv/requests.tsx:28
-msgid "TV Show Requests"
-msgstr "Demandes de séries"
+#~ msgid "TV Show Requests"
+#~ msgstr "Demandes de séries"
 
 #. js-lingui-explicit-id
-#: src/routes/_app.tsx:67
-#: src/shared/components/app-topbar.tsx:22
+#: src/routes/_app.tsx:65
+#: src/shared/components/app-topbar.tsx:21
 msgid "nav.tv-shows"
 msgstr "Séries"
 
-#: src/routes/_app/search.tsx:107
-#: src/routes/_app/tv/$id.torrents.tsx:114
+#: src/routes/_app/search.tsx:99
+#: src/routes/_app/tv/$id.torrents.tsx:108
 msgid "TV Shows"
 msgstr "Séries"
 
 #. js-lingui-explicit-id
 #: src/features/media/components/tabs/media-tabs-type.tsx:18
+#: src/features/request/components/request-tabs.tsx:26
 msgid "media-type.tv-shows"
 msgstr "Séries"
 
-#: src/features/settings/components/settings-storage-tab.tsx:327
+#: src/features/settings/components/settings-storage-tab.tsx:326
 msgid "TV Shows path"
 msgstr "Chemin des séries"
 
@@ -2071,7 +2417,7 @@ msgstr "Chemin des séries"
 msgid "Type"
 msgstr "Type"
 
-#: src/features/media/components/media-filters-sheet.tsx:331
+#: src/features/media/components/media-filters-sheet.tsx:335
 msgid "Type at least 2 characters."
 msgstr "Saisissez au moins 2 caractères."
 
@@ -2079,15 +2425,15 @@ msgstr "Saisissez au moins 2 caractères."
 msgid "Type to search"
 msgstr "Tapez pour rechercher"
 
-#: src/features/indexers-manager/components/indexers-manager-card.tsx:117
+#: src/features/indexers-manager/components/indexers-manager-card.tsx:112
 msgid "Uninstall"
 msgstr "Désinstaller"
 
-#: src/features/indexers-manager/components/indexers-manager-card.tsx:135
+#: src/features/indexers-manager/components/indexers-manager-card.tsx:130
 msgid "Uninstall source"
 msgstr "Désinstaller la source"
 
-#: src/features/torrent/components/torrent-table.tsx:121
+#: src/features/torrent/components/torrent-table.tsx:117
 msgid "Unknown error"
 msgstr "Erreur inconnue"
 
@@ -2099,7 +2445,7 @@ msgstr "Erreur inconnue"
 #~ msgid "Unlike"
 #~ msgstr "Je n'aime plus"
 
-#: src/features/media/components/media-server.tsx:140
+#: src/features/media/components/media-server.tsx:138
 msgid "Unlink"
 msgstr "Délier"
 
@@ -2107,7 +2453,7 @@ msgstr "Délier"
 #~ msgid "Unsupported codec for the browser (often HEVC/AC3). Try VLC, or use an H.264/AAC file."
 #~ msgstr "Codec non pris en charge par le navigateur (souvent HEVC/AC3). Essayez VLC, ou utilisez un fichier H.264/AAC."
 
-#: src/features/media/components/tabs/media-tabs-sort.tsx:51
+#: src/features/media/components/tabs/media-tabs-sort.tsx:47
 msgid "Upcoming"
 msgstr "À venir"
 
@@ -2131,16 +2477,20 @@ msgstr "Upload"
 #~ msgid "Upload Speed"
 #~ msgstr "Vitesse d'envoi"
 
+#: src/features/user/components/user-button-letterboxd.tsx:108
+msgid "Upload the zip"
+msgstr "Téléverser le zip"
+
 #: src/features/indexers-manager/components/indexers-manager-edit-dialog.tsx:82
 #: src/routes/_app/onboarding.tsx:181
 msgid "URL"
 msgstr "URL"
 
-#: src/features/settings/components/settings-storage-tab.tsx:249
+#: src/features/settings/components/settings-storage-tab.tsx:248
 msgid "Use FTPS (FTP over TLS)"
 msgstr "Utiliser FTPS (FTP sur TLS)"
 
-#: src/features/settings/components/settings-storage-tab.tsx:310
+#: src/features/settings/components/settings-storage-tab.tsx:309
 msgid "Use HTTPS"
 msgstr "Utiliser HTTPS"
 
@@ -2156,10 +2506,10 @@ msgstr "ID utilisateur"
 msgid "User Management"
 msgstr "Gestion des utilisateurs"
 
-#: src/features/settings/components/settings-storage-tab.tsx:218
-#: src/features/settings/components/settings-storage-tab.tsx:279
+#: src/features/settings/components/settings-storage-tab.tsx:217
+#: src/features/settings/components/settings-storage-tab.tsx:278
 #: src/features/user/components/user-form-modal.tsx:118
-#: src/features/user/components/users-table.tsx:84
+#: src/features/user/hooks/use-users-columns.tsx:53
 #: src/routes/_auth/login.tsx:68
 #: src/routes/_auth/signup.tsx:73
 msgid "Username"
@@ -2175,6 +2525,15 @@ msgstr "Le nom d'utilisateur est requis"
 msgid "Users"
 msgstr "Utilisateurs"
 
+#: src/features/request/components/request-status-badge.tsx:21
+msgid "Validated"
+msgstr "Validé"
+
+#. js-lingui-explicit-id
+#: src/features/request/components/request-tabs.tsx:14
+msgid "request-status.validated"
+msgstr "Validé"
+
 #: src/features/downloads/hooks/download.queries.ts:69
 msgid "Video file not available"
 msgstr "Fichier vidéo indisponible"
@@ -2187,17 +2546,19 @@ msgstr "Lecteur"
 #~ msgid "Watch"
 #~ msgstr "Regarder"
 
+#: src/routes/_app/user/$id.index.tsx:186
+msgid "Watch history"
+msgstr "Historique"
+
 #: src/routes/_app/user/$id.history.tsx:31
-#: src/routes/_app/user/$id.index.tsx:127
 msgid "Watch History"
 msgstr "Historique de visionnage"
 
-#: src/routes/_app/user/$id.index.tsx:101
 #: src/routes/_app/user/$id.watch-list.tsx:31
 msgid "Watch List"
 msgstr "Watch-list"
 
-#: src/shared/components/provider-icon.tsx:47
+#: src/shared/components/provider-icon.tsx:46
 msgid "Watch on"
 msgstr "Regarder sur"
 
@@ -2209,17 +2570,30 @@ msgstr "Voir la bande-annonce"
 #~ msgid "WATCH TRAILER"
 #~ msgstr "BANDE-ANNONCE"
 
-#: src/features/media/components/media-social-actions.tsx:35
+#: src/features/media/components/media-review-modal.tsx:89
+msgid "Watched on"
+msgstr "Vu le"
+
+#: src/features/media/components/media-social-actions.tsx:51
+#: src/routes/_app/user/$id.index.tsx:184
 msgid "Watchlist"
 msgstr "Watchlist"
 
-#: src/features/settings/components/settings-storage-tab.tsx:355
+#: src/features/settings/components/settings-storage-tab.tsx:357
 msgid "When enabled, new downloads are automatically transferred to the remote server after completion. You can still transfer files manually at any time."
 msgstr "Lorsque c'est activé, les nouveaux téléchargements sont automatiquement transférés vers le serveur distant une fois terminés. Vous pouvez toujours transférer les fichiers manuellement à tout moment."
 
-#: src/features/media/components/media-server.tsx:125
+#: src/features/media/components/media-review-modal.tsx:101
+msgid "Write a short review…"
+msgstr "Écrire un court avis…"
+
+#: src/features/media/components/media-server.tsx:123
 msgid "You can delete the remote files permanently or just unlink them from Seedarr (keeping files on the server)."
 msgstr "Vous pouvez supprimer définitivement les fichiers distants ou simplement les délier de Seedarr (en gardant les fichiers sur le serveur)."
+
+#: src/shared/components/route-error.tsx:25
+msgid "You do not have permission to view this page."
+msgstr "Vous n'avez pas la permission de voir cette page."
 
 #: src/routes/settings.tsx:117
 #~ msgid "Your API key is stored locally in your browser and is never sent to our servers except as an Authorization header."
@@ -2232,3 +2606,7 @@ msgstr "Vous pouvez supprimer définitivement les fichiers distants ou simplemen
 #: src/routes/settings.tsx:87
 #~ msgid "Your Prowlarr API key is stored locally and used to search torrents."
 #~ msgstr "Votre clé API Prowlarr est stockée localement et utilisée pour rechercher des torrents."
+
+#: src/features/media/components/media-review-modal.tsx:83
+msgid "Your rating"
+msgstr "Votre note"

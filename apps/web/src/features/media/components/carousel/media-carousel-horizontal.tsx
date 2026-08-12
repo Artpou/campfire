@@ -43,7 +43,7 @@ export function MediaCarouselHorizontal({ title, medias, seeMoreTo, seeMoreSearc
         >
           <Link
             to={item.download?.id ? "/downloads/$id/play" : item.type === "tv" ? "/tv/$id" : "/movies/$id"}
-            params={{ id: item.id.toString() }}
+            params={{ id: item.download?.id?.toString() || "" }}
           >
             <MediaCardHorizontal media={item}>
               <div className="flex items-end justify-between gap-1">

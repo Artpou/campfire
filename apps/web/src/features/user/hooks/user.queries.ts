@@ -1,6 +1,6 @@
 import { t } from "@lingui/core/macro";
 import type { ChangePasswordInput, UpdateProfileInput } from "@seedarr/contracts";
-import { api, getBaseUrl, unwrap } from "@seedarr/sdk";
+import { api, unwrap, unwrapForm } from "@seedarr/sdk";
 import { formatError } from "@seedarr/shared";
 import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -61,22 +61,10 @@ export function useUploadAvatar() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch(`${getBaseUrl()}/users/me/avatar`, {
+      return unwrapForm<{ id: string; avatarPath: string | null }>("/users/me/avatar", {
         method: "POST",
         body: formData,
-        credentials: "include",
       });
-      if (!res.ok) {
-        let message = `API Error: ${res.status}`;
-        try {
-          const body = (await res.json()) as { error?: string };
-          if (body?.error) message = body.error;
-        } catch {
-          // ignore
-        }
-        throw new Error(message);
-      }
-      return res.json() as Promise<{ id: string; avatarPath: string | null }>;
     },
     onSuccess: (data) => {
       invalidateUserQueries(queryClient);
@@ -95,24 +83,11 @@ export function useUploadAvatar() {
 export function useSyncLetterboxd() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`${getBaseUrl()}/users/me/letterboxd/sync`, {
+    mutationFn: () =>
+      unwrapForm<{ synced: number; skipped: number; errors: number }>("/users/me/letterboxd/sync", {
         method: "POST",
-        credentials: "include",
         signal: AbortSignal.timeout(10 * 60 * 1000),
-      });
-      if (!res.ok) {
-        let message = `API Error: ${res.status}`;
-        try {
-          const body = (await res.json()) as { error?: string };
-          if (body?.error) message = body.error;
-        } catch {
-          // ignore
-        }
-        throw new Error(message);
-      }
-      return res.json() as Promise<{ synced: number; skipped: number; errors: number }>;
-    },
+      }),
     onSuccess: (data) => {
       invalidateUserQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: ["media"] });
@@ -132,23 +107,11 @@ export function useImportLetterboxd() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch(`${getBaseUrl()}/users/me/letterboxd/import`, {
+      return unwrapForm<{ synced: number; skipped: number; errors: number }>("/users/me/letterboxd/import", {
         method: "POST",
         body: formData,
-        credentials: "include",
         signal: AbortSignal.timeout(10 * 60 * 1000),
       });
-      if (!res.ok) {
-        let message = `API Error: ${res.status}`;
-        try {
-          const body = (await res.json()) as { error?: string };
-          if (body?.error) message = body.error;
-        } catch {
-          // ignore
-        }
-        throw new Error(message);
-      }
-      return res.json() as Promise<{ synced: number; skipped: number; errors: number }>;
     },
     onSuccess: async (data) => {
       invalidateUserQueries(queryClient);

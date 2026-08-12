@@ -7,6 +7,7 @@ import { IdentifiableService } from "@/shared/services/authenticated.service";
 import { order } from "@/shared/sql/base.sql";
 
 import { db } from "@/db/db";
+import { assertDownloadExists } from "@/modules/download/download.guard";
 import { download } from "@/modules/download/download.schema";
 import { assertMediaId, parseWatchedAt } from "@/modules/media/media.guard";
 import {
@@ -57,12 +58,6 @@ export class MediaService extends IdentifiableService<MediaEnriched> {
       }
     }
 
-    const opts = {
-      targetUserId: userId,
-      canSeeAllDownloads: true,
-      viewerUserId: this.user.id,
-    };
-
     switch (filter) {
       case "history":
         conditions.push(existMediaRelation(watchProgress, userId));
@@ -99,21 +94,21 @@ export class MediaService extends IdentifiableService<MediaEnriched> {
         orderBy.push(order(sql`COALESCE(${media.title}, ${media.original_title}, '')`, query.sortOrder));
         break;
       case "date":
-        orderBy.push(order(sortDateSql(opts), query.sortOrder));
+        orderBy.push(order(sortDateSql(userId), query.sortOrder));
         break;
       case "score":
         orderBy.push(order(scalarUserRelation(userReviews, userReviews.score, media.id, { userId }), query.sortOrder));
         break;
       case "progress":
-        orderBy.push(order(progressRatioSql(opts.targetUserId), query.sortOrder));
+        orderBy.push(order(progressRatioSql(userId), query.sortOrder));
         break;
     }
     switch (filter) {
       case "calendar":
-        orderBy.push(desc(activityAtSql(opts.targetUserId)));
+        orderBy.push(desc(activityAtSql(userId)));
         break;
       case "downloaded":
-        orderBy.push(asc(inProgressRankSql(opts.targetUserId)));
+        orderBy.push(asc(inProgressRankSql(userId)));
         break;
     }
 
@@ -260,6 +255,8 @@ export class MediaService extends IdentifiableService<MediaEnriched> {
 
   /** Upserts watch progress and sets completed when ratio >= WATCHED_RATIO. */
   async updateProgress(mediaId: number, input: UpdateProgressQuery): Promise<void> {
+    if (input.downloadId) await assertDownloadExists(input.downloadId);
+
     const update = {
       userId: this.user.id,
       downloadId: input.downloadId ?? null,

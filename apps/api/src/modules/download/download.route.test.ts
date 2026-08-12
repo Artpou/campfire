@@ -148,8 +148,12 @@ describe("Download Routes", () => {
   });
 
   describe("GET / - list downloads", () => {
-    it("returns empty list", async () => {
-      expect(await bodyOf(await downloadRoutes.request("/"))).toEqual([]);
+    it("returns empty paginated list", async () => {
+      expect(await bodyOf(await downloadRoutes.request("/"))).toEqual({
+        results: [],
+        page: 1,
+        hasMore: false,
+      });
     });
 
     it("returns downloads", async () => {
@@ -164,8 +168,10 @@ describe("Download Routes", () => {
         .run();
 
       const body = await bodyOf(await downloadRoutes.request("/"));
-      expect(body).toHaveLength(1);
-      expect(body[0].torrent.name).toBe("Test");
+      expect(body.results).toHaveLength(1);
+      expect(body.results[0].torrent.name).toBe("Test");
+      expect(body.page).toBe(1);
+      expect(body.hasMore).toBe(false);
     });
 
     it("returns downloads from all users for members", async () => {
@@ -195,8 +201,8 @@ describe("Download Routes", () => {
         .run();
 
       const body = await bodyOf(await downloadRoutes.request("/"));
-      expect(body).toHaveLength(2);
-      expect(body.map((d: { id: string }) => d.id).sort()).toEqual(["dl-mine", "dl-theirs"]);
+      expect(body.results).toHaveLength(2);
+      expect(body.results.map((d: { id: string }) => d.id).sort()).toEqual(["dl-mine", "dl-theirs"]);
     });
   });
 

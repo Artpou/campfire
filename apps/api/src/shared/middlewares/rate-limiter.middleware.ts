@@ -2,7 +2,12 @@ import type { Context } from "hono";
 import { rateLimiter } from "hono-rate-limiter";
 import ms from "ms";
 
-const keyGenerator = (c: Context) => c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "global";
+/**
+ * Self-hosted: key by peer IP. Prefer X-Real-IP (set by your reverse proxy).
+ * Avoid raw X-Forwarded-For as the sole key — clients can spoof it unless the proxy overwrites it.
+ */
+const keyGenerator = (c: Context) =>
+  c.req.header("x-real-ip")?.trim() || c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "local";
 
 export const authRateLimiter = rateLimiter({
   windowMs: Math.floor(ms("1m")),

@@ -1,11 +1,12 @@
 import { lazy } from "react";
 
-import { createRootRouteWithContext, Navigate, Outlet, ScrollRestoration } from "@tanstack/react-router";
+import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { Toaster } from "sonner";
 
-import { RouteErrorHandler } from "@/shared/components/route-error";
-import { SeedarrLoaderContainer } from "@/shared/components/seedarr-loader-container";
+import { ErrorView, NotFoundView } from "@/shared/components/error/error-view";
+import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { useThemeStore, useThemeSync } from "@/shared/hooks/use-theme";
+import { Container } from "@/shared/ui/container";
 
 import type { SeedarrRouterContext } from "@/router";
 
@@ -32,9 +33,13 @@ const TanStackDevtools = import.meta.env.DEV
   : () => null;
 
 export const Route = createRootRouteWithContext<SeedarrRouterContext>()({
-  errorComponent: RouteErrorHandler,
-  notFoundComponent: () => <Navigate to="/404" replace />,
-  pendingComponent: () => <SeedarrLoaderContainer />,
+  errorComponent: ErrorView,
+  notFoundComponent: NotFoundView,
+  pendingComponent: () => (
+    <Container full>
+      <SeedarrLoader />
+    </Container>
+  ),
   component: RootComponent,
 });
 
@@ -44,7 +49,6 @@ function RootComponent() {
 
   return (
     <>
-      <ScrollRestoration />
       <Outlet />
       <Toaster richColors position="bottom-right" theme={theme} />
       <TanStackDevtools />

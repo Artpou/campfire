@@ -6,10 +6,13 @@ const TAG_LENGTH = 16;
 
 function requireEncryptionSecret(): string {
   const secret = process.env.STORAGE_ENCRYPTION_KEY;
-  if (!secret) {
-    throw new Error("STORAGE_ENCRYPTION_KEY environment variable is required for storage credential encryption");
+  if (secret) return secret;
+
+  // Predictable default is fine for local/test; never ship production without a real key.
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("STORAGE_ENCRYPTION_KEY environment variable is required in production");
   }
-  return secret;
+  return "dev-only-insecure-storage-encryption-key";
 }
 
 function deriveKey(): Buffer {

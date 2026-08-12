@@ -1,4 +1,4 @@
-import { and, eq, lt, ne } from "drizzle-orm";
+import { and, eq, lt, ne, or } from "drizzle-orm";
 import ms from "ms";
 
 import { logger } from "@/shared/helpers/logger.helper";
@@ -8,62 +8,93 @@ import { db } from "@/db/db";
 import { session } from "@/modules/auth/auth.schema";
 import type { User } from "@/modules/user/user.schema";
 import { user } from "@/modules/user/user.schema";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 
 const SESSION_CACHE_TTL_MS = ms("60s");
 const SLIDING_EXTENSION_THRESHOLD_MS = ms("1d");
+const GRACE_PERIOD_MS = ms("30s");
 
 type CachedSession = {
   user: User;
-  expiresAt: number;
+  /** Wall-clock expiry of the DB session row. */
+  sessionExpiresAt: number;
+  /** Session createdAt — used to know when rotation is due without a DB hit. */
+  createdAt: number;
+  /** When this cache entry itself expires. */
+  cachedUntil: number;
 };
 
 const sessionCache = new Map<string, CachedSession>();
 
-function invalidateSessionCache(token: string): void {
-  sessionCache.delete(token);
-}
-
-function cacheSession(token: string, resolved: User): void {
-  sessionCache.set(token, {
-    user: resolved,
-    expiresAt: Date.now() + SESSION_CACHE_TTL_MS,
-  });
-}
-
-function getCachedSession(token: string): User | null {
-  const cached = sessionCache.get(token);
-  if (!cached) return null;
-  if (cached.expiresAt < Date.now()) {
-    sessionCache.delete(token);
-    return null;
-  }
-  return cached.user;
+function hashToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
 }
 
 function generateSessionToken(): string {
   return randomBytes(32).toString("hex");
 }
 
+function invalidateSessionCache(rawToken: string): void {
+  sessionCache.delete(hashToken(rawToken));
+}
+
+/** Drop all cached sessions for a user (role change, delete, password change). */
+export function invalidateSessionsForUser(userId: string): void {
+  for (const [tokenHash, cached] of sessionCache) {
+    if (cached.user.id === userId) sessionCache.delete(tokenHash);
+  }
+}
+
+function cacheSession(rawToken: string, resolved: User, sessionExpiresAt: Date, createdAt: Date): void {
+  sessionCache.set(hashToken(rawToken), {
+    user: resolved,
+    sessionExpiresAt: sessionExpiresAt.getTime(),
+    createdAt: createdAt.getTime(),
+    cachedUntil: Date.now() + SESSION_CACHE_TTL_MS,
+  });
+}
+
+function getCachedSession(rawToken: string): CachedSession | null {
+  const cached = sessionCache.get(hashToken(rawToken));
+  if (!cached) return null;
+  const now = Date.now();
+  if (cached.cachedUntil < now || cached.sessionExpiresAt < now) {
+    sessionCache.delete(hashToken(rawToken));
+    return null;
+  }
+  return cached;
+}
+
+/** Cache hits still fall through to DB when rotation or sliding extension is due. */
+function needsDbRefresh(cached: CachedSession): boolean {
+  const now = Date.now();
+  return (
+    now - cached.createdAt >= SESSION_ROTATION_AGE_MS || cached.sessionExpiresAt - now <= SLIDING_EXTENSION_THRESHOLD_MS
+  );
+}
+
 export async function createSession(userId: string): Promise<string> {
   const token = generateSessionToken();
+  const tokenHash = hashToken(token);
   const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
 
   await db.insert(session).values({
-    token,
+    token: tokenHash,
     userId,
     expiresAt,
+    createdAt: new Date(),
   });
 
   return token;
 }
 
-export async function deleteOtherSessions(userId: string, keepToken: string): Promise<void> {
-  await db.delete(session).where(and(eq(session.userId, userId), ne(session.token, keepToken)));
-  for (const [token] of sessionCache) {
-    const cached = sessionCache.get(token);
-    if (cached?.user.id === userId && token !== keepToken) {
-      sessionCache.delete(token);
+export async function deleteOtherSessions(userId: string, keepRawToken: string): Promise<void> {
+  const keepHash = hashToken(keepRawToken);
+  await db.delete(session).where(and(eq(session.userId, userId), ne(session.token, keepHash)));
+
+  for (const [tokenHash, cached] of sessionCache) {
+    if (cached.user.id === userId && tokenHash !== keepHash) {
+      sessionCache.delete(tokenHash);
     }
   }
 }
@@ -73,7 +104,9 @@ export type ResolvedSession = {
   rotatedToken?: string;
 };
 
-async function fetchSessionWithUser(token: string): Promise<{
+async function fetchSessionWithUser(tokenHash: string): Promise<{
+  token: string;
+  previousToken: string | null;
   userId: string;
   expiresAt: Date;
   createdAt: Date;
@@ -81,6 +114,8 @@ async function fetchSessionWithUser(token: string): Promise<{
 } | null> {
   const [row] = await db
     .select({
+      token: session.token,
+      previousToken: session.previousToken,
       userId: session.userId,
       expiresAt: session.expiresAt,
       createdAt: session.createdAt,
@@ -96,76 +131,95 @@ async function fetchSessionWithUser(token: string): Promise<{
     })
     .from(session)
     .innerJoin(user, eq(session.userId, user.id))
-    .where(eq(session.token, token))
+    .where(or(eq(session.token, tokenHash), eq(session.previousToken, tokenHash)))
     .limit(1);
 
   if (!row) return null;
   return row;
 }
 
-async function extendSessionExpiry(token: string, expiresAt: Date): Promise<void> {
-  const newExpiry = new Date(Date.now() + SESSION_DURATION_MS);
-  if (expiresAt.getTime() - Date.now() > SLIDING_EXTENSION_THRESHOLD_MS) return;
-
-  await db.update(session).set({ expiresAt: newExpiry }).where(eq(session.token, token));
-}
-
-/**
- * Rotate session token if older than SESSION_ROTATION_AGE_MS.
- * Returns the new token when rotation occurred.
- */
-async function rotateSessionIfStale(token: string, userId: string, createdAt: Date): Promise<string | undefined> {
-  if (Date.now() - createdAt.getTime() < SESSION_ROTATION_AGE_MS) return undefined;
-
-  const newToken = generateSessionToken();
-  const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
-
-  await db.delete(session).where(eq(session.token, token));
-  await db.insert(session).values({
-    token: newToken,
-    userId,
-    expiresAt,
-    createdAt: new Date(),
-  });
-
-  invalidateSessionCache(token);
-  return newToken;
-}
-
 /**
  * Validate session and resolve user in a single DB query (cached 60s).
  * Extends expiry on activity and rotates token after 24h.
  */
-export async function resolveAuthenticatedSession(token: string): Promise<ResolvedSession | null> {
-  const cachedUser = getCachedSession(token);
-  if (cachedUser) {
-    return { user: cachedUser };
+export async function resolveAuthenticatedSession(rawToken: string): Promise<ResolvedSession | null> {
+  const tokenHash = hashToken(rawToken);
+
+  const cached = getCachedSession(rawToken);
+  if (cached && !needsDbRefresh(cached)) {
+    return { user: cached.user };
   }
 
-  const row = await fetchSessionWithUser(token);
+  const row = await fetchSessionWithUser(tokenHash);
   if (!row) return null;
 
   if (row.expiresAt < new Date()) {
-    await db.delete(session).where(eq(session.token, token));
-    invalidateSessionCache(token);
+    await db.delete(session).where(or(eq(session.token, tokenHash), eq(session.previousToken, tokenHash)));
+    invalidateSessionCache(rawToken);
     return null;
   }
 
-  await extendSessionExpiry(token, row.expiresAt);
-  const rotatedToken = await rotateSessionIfStale(token, row.userId, row.createdAt);
-  const activeToken = rotatedToken ?? token;
+  const now = Date.now();
 
-  cacheSession(activeToken, row.user);
+  // Previous token reuse during grace period (30s max)
+  if (row.previousToken === tokenHash) {
+    const graceElapsed = now - row.createdAt.getTime();
 
-  return {
-    user: row.user,
-    rotatedToken,
-  };
+    if (graceElapsed < GRACE_PERIOD_MS) {
+      return { user: row.user };
+    }
+
+    logger.warn(
+      "SESSION",
+      `Stale previousToken reuse attempt for user ${row.userId} (${Math.round(graceElapsed / 1000)}s after rotation)`,
+    );
+    return null;
+  }
+
+  const isStale = now - row.createdAt.getTime() >= SESSION_ROTATION_AGE_MS;
+
+  // Token rotation
+  if (isStale) {
+    const newToken = generateSessionToken();
+    const newTokenHash = hashToken(newToken);
+    const newExpiresAt = new Date(now + SESSION_DURATION_MS);
+
+    const updated = await db
+      .update(session)
+      .set({
+        token: newTokenHash,
+        previousToken: tokenHash,
+        expiresAt: newExpiresAt,
+        createdAt: new Date(),
+      })
+      .where(eq(session.token, tokenHash))
+      .returning({ token: session.token });
+
+    if (updated.length > 0) {
+      cacheSession(newToken, row.user, newExpiresAt, new Date());
+      invalidateSessionCache(rawToken);
+      return { user: row.user, rotatedToken: newToken };
+    }
+
+    // If the request loses the race, the session remains valid for this request
+    return { user: row.user };
+  }
+
+  // Sliding extension if near expiration
+  let expiresAt = row.expiresAt;
+  if (row.expiresAt.getTime() - now <= SLIDING_EXTENSION_THRESHOLD_MS) {
+    expiresAt = new Date(now + SESSION_DURATION_MS);
+    await db.update(session).set({ expiresAt }).where(eq(session.token, tokenHash));
+  }
+
+  cacheSession(rawToken, row.user, expiresAt, row.createdAt);
+  return { user: row.user };
 }
 
-export async function deleteSession(token: string): Promise<void> {
-  invalidateSessionCache(token);
-  await db.delete(session).where(eq(session.token, token));
+export async function deleteSession(rawToken: string): Promise<void> {
+  const tokenHash = hashToken(rawToken);
+  invalidateSessionCache(rawToken);
+  await db.delete(session).where(or(eq(session.token, tokenHash), eq(session.previousToken, tokenHash)));
 }
 
 async function cleanupExpiredSessions(): Promise<void> {

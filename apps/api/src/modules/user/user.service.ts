@@ -18,6 +18,7 @@ import { getAvatarsRoot, resolveWithinAvatars } from "@/shared/helpers/path.help
 import { IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { hashPassword, verifyPassword } from "@/auth/password.util";
+import { invalidateSessionsForUser } from "@/auth/session.util";
 import { db } from "@/db/db";
 import { importLetterboxdZip } from "@/modules/media/letterboxd/letterboxd-import.service";
 import { syncLetterboxdDiary } from "@/modules/media/letterboxd/letterboxd-sync.service";
@@ -168,6 +169,7 @@ export class UserService extends IdentifiableService<User> {
     if (input.role) data.role = input.role;
 
     await db.update(user).set(data).where(eq(user.id, id));
+    if (input.role || input.password) invalidateSessionsForUser(id);
     return this.get(id);
   }
 
@@ -200,6 +202,7 @@ export class UserService extends IdentifiableService<User> {
       .update(user)
       .set({ password: hashPassword(input.newPassword) })
       .where(eq(user.id, this.user.id));
+    invalidateSessionsForUser(this.user.id);
     return { success: true };
   }
 
@@ -264,6 +267,7 @@ export class UserService extends IdentifiableService<User> {
     }
 
     await db.delete(user).where(eq(user.id, id));
+    invalidateSessionsForUser(id);
     return { success: true };
   }
 

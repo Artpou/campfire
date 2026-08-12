@@ -58,7 +58,7 @@ Users can request media they want downloaded. Requests flow through statuses:
 
 When a download completes (torrent finishes), all pending requests for that media are auto-validated (not deleted).
 
-Routes: `GET /requests` (all, filterable by type + status), `GET /requests/user/:id`, `PATCH /:id/cancel`, `PATCH /:id/validate`, `PATCH /:id/reopen`, `DELETE /:id`.
+Routes: `GET /requests` (admin — all, filterable by type + status), `GET /requests/mine`, `GET /requests/user/:id`, `PATCH /:id/cancel`, `PATCH /:id/validate`, `PATCH /:id/reopen`, `DELETE /:id`.
 
 ### Letterboxd Sync
 
@@ -133,7 +133,7 @@ apps/
 │       │       └── [module].route.test.ts
 │       ├── helpers/        # Shared utilities
 │       ├── errors/         # HTTPException subclasses in single file (401/403/404/400/409/503)
-│       ├── middlewares/    # Logger, rate limiter, CSRF, error handler
+│       ├── middlewares/    # Logger, rate limiter, timeout, error handler (CSRF via hono/csrf in app.ts)
 │       ├── auth/           # Password (scrypt) + session utils
 │       └── db/             # Drizzle config, schema aggregation, migrations
 └── web/                    # React frontend
@@ -188,7 +188,7 @@ Use @seedarr/contracts to share dto between app and api
 ### Route Conventions
 
 - RESTful: `GET /`, `GET /:id`, `POST /`, `PUT /:id`, `DELETE /:id`
-- Guards: `authGuard` (session), `requireRole(min)`, `requireDownloadExists`, `requireMediaExists`
+- Guards: `authGuard` (session), `requireRole(min)`, `requireDownloadExists`, `requireDownloadOwner`, `requireRequestOwner`, `requireMediaExists`
 - Validation: `zValidator("json" | "query" | "param", schema)`
 
 ### Auth
@@ -197,9 +197,18 @@ Use @seedarr/contracts to share dto between app and api
 - Session cookie (httpOnly, 7 days)
 - Role hierarchy: owner(4) > admin(3) > member(2) > viewer(1)
 - **Viewer** can: browse media, access `/downloads`, play files, create/delete own requests
-- **Member** can: all viewer actions + start downloads, search torrents, manage own downloads
-- **Admin** can: all member actions + manage all requests (cancel/validate), manage users
-- Session rotation after 24h + in-memory session cache (60s TTL)
+- **Member** can: all viewer actions + start downloads, search torrents, manage **own** downloads (pause/resume/delete/transfer)
+- **Admin** can: all member actions + manage all requests (cancel/validate), manage users, mutate any download
+- Session rotation after 24h + in-memory session cache (60s TTL; respects DB session expiry; cleared on role/password/delete)
+
+### Shared library (household model)
+
+Seedarr is designed for a **trusted household / self-hosted instance**:
+
+- Any authenticated user can **list and stream** all downloads (read access is shared).
+- File download tokens (`POST /downloads/:id/fileToken`) are available to any authenticated user for any existing download — intentional for shared playback.
+- Profile media lists via `GET /media?userId=` (likes, watchlist, history, calendar) are visible to other authenticated users (no per-profile privacy flags).
+- **Mutations** that change torrent state or delete files require **download ownership** (or admin).
 
 ## Frontend Patterns
 
@@ -217,8 +226,14 @@ Use @seedarr/contracts to share dto between app and api
 
 ### Type Imports
 
-- **Always** import from `@seedarr/sdk` and `@seedarr/contracts`
+- **API response types** (entities returned by endpoints): import from `@seedarr/sdk`
+- **Request/query DTOs** (Zod inputs, enums): import from `@seedarr/contracts`
 - **Never** recreate API types or import from `@seedarr/api` directly
+
+### Database migrations
+
+- Generated SQL lives in `apps/api/src/db/drizzle/` (tracked in git; may be ignored by Cursor indexing via `.cursorignore`)
+- Use `pnpm db:generate` + `pnpm db:migrate` for schema changes; `pnpm db:push` is **dev only**
 
 ### Icons
 

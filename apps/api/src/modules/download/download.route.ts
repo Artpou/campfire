@@ -4,6 +4,7 @@ import {
   deleteDownloadQueryDto,
   downloadMediaIdParamDto,
   downloadTorrentDto,
+  paginationDto,
   reassignMediaDto,
   stringIdParamDto,
 } from "@seedarr/contracts";
@@ -20,8 +21,8 @@ function getDownloadId(c: { req: { valid: (target: "param") => { id: string } } 
 }
 
 export const downloadRoutes = DownloadService.createRouter()
-  .get("/", async (c) => {
-    return c.json(await c.var.service.getMany());
+  .get("/", zValidator("query", paginationDto), async (c) => {
+    return c.json(await c.var.service.list(c.req.valid("query")));
   })
   .get("/stats", async (c) => {
     return c.json(await c.var.service.getStats());
