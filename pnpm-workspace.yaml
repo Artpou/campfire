@@ -21,6 +21,8 @@ catalog:
   tailwind-merge: "^3.4.0"
   tmdb-ts: "^2.0.3"
   drizzle-orm: "^0.44.7"
+  vitest: "^4.1.10"
+  "@vitest/coverage-v8": "^4.1.10"
   "@types/ms": "^2.1.0"
   "@types/node": "^24.10.0"
   "@types/react": "^19.2.3"

@@ -4,12 +4,11 @@ import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeftIcon, ExternalLinkIcon } from "lucide-react";
 
+import { redirectIfNotRole } from "@/shared/helpers/role.helper";
 import { Button } from "@/shared/ui/button";
-
-import { useAuth } from "@/features/auth/auth-store";
 
 export interface IndexerSearch {
   managerId?: string;
@@ -17,12 +16,7 @@ export interface IndexerSearch {
 
 export const Route = createFileRoute("/_app/settings/indexer")({
   component: IndexerDashboardPage,
-  beforeLoad: () => {
-    const user = useAuth.getState().user;
-    if (user?.role !== "owner" && user?.role !== "admin") {
-      throw redirect({ to: "/settings" });
-    }
-  },
+  beforeLoad: ({ context }) => redirectIfNotRole(context, "admin", { to: "/settings" }),
   validateSearch: (search: Record<string, unknown>): IndexerSearch => ({
     managerId: typeof search.managerId === "string" ? search.managerId : undefined,
   }),

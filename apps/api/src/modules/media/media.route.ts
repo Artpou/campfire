@@ -21,10 +21,10 @@ export const mediaRoutes = MediaService.createRouter()
   .post("/", zValidator("json", mediaInputSchema), async (c) => {
     return c.json(await c.var.service.upsert(c.req.valid("json")));
   })
-  .post("/:id/like", zValidator("json", mediaInputSchema), async (c) => {
+  .post("/like", zValidator("json", mediaInputSchema), async (c) => {
     return c.json(await c.var.service.toggleLike(c.req.valid("json")));
   })
-  .post("/:id/watchlist", zValidator("json", mediaInputSchema), async (c) => {
+  .post("/watchlist", zValidator("json", mediaInputSchema), async (c) => {
     return c.json(await c.var.service.toggleWatchList(c.req.valid("json")));
   })
   .put("/:id/review", zValidator("param", mediaIdParamDto), zValidator("json", upsertReviewDto), async (c) => {

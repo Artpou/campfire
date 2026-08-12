@@ -10,6 +10,7 @@
     "check-types": "turbo run check-types",
     "build:types": "turbo run build:types",
     "test": "turbo run test",
+    "test:coverage": "turbo run test:coverage",
     "knip": "knip",
     "check": "turbo run lint check-types test //#knip",
     "format": "biome format --write .",
@@ -22,7 +23,6 @@
   "devDependencies": {
     "@biomejs/biome": "2.3.5",
     "@types/node": "catalog:",
-    "@vitest/coverage-v8": "^4.1.9",
     "husky": "^9.1.7",
     "knip": "^6.16.1",
     "lint-staged": "^16.2.6",

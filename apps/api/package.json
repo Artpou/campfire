@@ -18,13 +18,14 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write --unsafe .",
     "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "format": "biome format --write .",
     "db:generate": "dotenvx run -f ../../.env -- drizzle-kit generate",
     "db:migrate": "dotenvx run -f ../../.env -- drizzle-kit migrate",
     "db:migrate:prod": "node docker-migrate.mjs",
     "db:push": "dotenvx run -f ../../.env -- drizzle-kit push",
-    "db:studio": "dotenvx run -f ../../.env -- drizzle-kit studio",
-    "test:watch": "vitest"
+    "db:studio": "dotenvx run -f ../../.env -- drizzle-kit studio"
   },
   "dependencies": {
     "@ctrl/video-filename-parser": "^5.11.0",
@@ -54,11 +55,12 @@
     "@types/ms": "catalog:",
     "@types/node": "catalog:",
     "@types/webtorrent": "^0.110.1",
+    "@vitest/coverage-v8": "catalog:",
     "better-sqlite3": "^12.10.0",
     "drizzle-kit": "^0.31.8",
     "tsup": "^8.5.0",
     "tsx": "^4.21.0",
     "typescript": "catalog:",
-    "vitest": "^4.1.8"
+    "vitest": "catalog:"
   }
 }

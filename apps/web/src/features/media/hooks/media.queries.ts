@@ -63,20 +63,33 @@ export const mediaQueries = {
           : await unwrap(api.tv.trending.$get({ query: { locale } })),
     }),
 
-  library: (type: Media["type"]) =>
+  library: (type: Media["type"], pagination: { page: number; limit: number } = { page: 1, limit: 10 }) =>
     queryOptions({
       queryKey: [...mediaQueries.key, "library", type],
       queryFn: async () => {
-        const page = await unwrap(api.media.$get({ query: { filter: "downloaded", type, page: "1", limit: "10" } }));
+        const page = await unwrap(
+          api.media.$get({
+            query: { filter: "downloaded", type, page: pagination.page.toString(), limit: pagination.limit.toString() },
+          }),
+        );
         return page.results;
       },
     }),
 
-  inProgress: (type: Media["type"]) =>
+  inProgress: (type: Media["type"], pagination: { page: number; limit: number } = { page: 1, limit: 10 }) =>
     queryOptions({
       queryKey: [...mediaQueries.key, "in-progress", type],
       queryFn: async () => {
-        const data = await unwrap(api.media.$get({ query: { filter: "in-progress", type, page: "1", limit: "10" } }));
+        const data = await unwrap(
+          api.media.$get({
+            query: {
+              filter: "in-progress",
+              type,
+              page: pagination.page.toString(),
+              limit: pagination.limit.toString(),
+            },
+          }),
+        );
         return data.results;
       },
     }),
@@ -109,8 +122,7 @@ export function refetchLibraryInterval({ state }: { state: QueryState<Media[]> }
 export function useToggleLike() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (media: MediaInput) =>
-      unwrap(api.media[":id"].like.$post({ param: { id: media.id.toString() }, json: media })),
+    mutationFn: (media: MediaInput) => unwrap(api.media.like.$post({ json: media })),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
       if (data.type === "movie") {
@@ -133,8 +145,7 @@ export function useToggleLike() {
 export function useToggleWatchList() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (media: MediaInput) =>
-      unwrap(api.media[":id"].watchlist.$post({ param: { id: media.id.toString() }, json: media })),
+    mutationFn: (media: MediaInput) => unwrap(api.media.watchlist.$post({ json: media })),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
       if (data.type === "movie") {

@@ -4,6 +4,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
+import { redirectIfNotRole } from "@/shared/helpers/role.helper";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Container } from "@/shared/ui/container";
 
@@ -16,6 +17,9 @@ import { useTorrents } from "@/features/torrent/hooks/torrent.queries";
 
 export const Route = createFileRoute("/_app/movies/$id/torrents")({
   component: MovieTorrentsPage,
+  beforeLoad: ({ context, params }) => {
+    redirectIfNotRole(context, "admin", { to: "/movies/$id", params: { id: params.id } });
+  },
   loader: ({ context, params }) =>
     Promise.all([
       context.queryClient.ensureQueryData(movieQueries.details(params.id, countryToTmdbLocale(context.language))),

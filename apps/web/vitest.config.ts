@@ -1,8 +1,8 @@
-import path from "node:path"
+import path from "node:path";
 
-import viteReact from "@vitejs/plugin-react-swc"
-import { defineConfig } from "vitest/config"
-import viteTsConfigPaths from "vite-tsconfig-paths"
+import viteReact from "@vitejs/plugin-react-swc";
+import { defineConfig } from "vitest/config";
+import viteTsConfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
   plugins: [
@@ -17,10 +17,17 @@ export default defineConfig({
     globals: true,
     environment: "happy-dom",
     include: ["src/**/*.test.ts"],
+    setupFiles: ["src/tests/setup.ts"],
     coverage: {
       provider: "v8",
-      reporter: ["text", "lcov"],
-      include: ["src/**/*.ts", "src/**/*.tsx"],
+      reporter: ["text", "text-summary", "lcov", "html", "json-summary"],
+      reportsDirectory: "./coverage",
+      include: [
+        "src/**/helpers/**/*.ts",
+        "src/**/stores/**/*.ts",
+        "src/routes/helpers/**/*.ts",
+        "src/lib/**/*.ts",
+      ],
       exclude: ["src/**/*.test.ts", "src/**/test*", "src/**/*.d.ts"],
     },
   },
@@ -29,4 +36,4 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-})
+});

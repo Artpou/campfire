@@ -1,9 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { TorrentLiveData } from "@/modules/download/download.schema";
 import { download } from "@/modules/download/download.schema";
 import { createAuthGuardMock, seedTestUser } from "@/tests/route-test.helper";
-import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
+import { bodyOf, createTestDb, json, sampleTorrent, type TestDb } from "@/tests/test.helper";
 
 process.env.STORAGE_ENCRYPTION_KEY = "test-storage-encryption-key";
 
@@ -12,35 +11,6 @@ const { fakeUser, testDbRef } = vi.hoisted(() => {
   const testDbRef = { current: null as TestDb | null };
   return { fakeUser, testDbRef };
 });
-
-const sampleTorrent = (overrides: Partial<TorrentLiveData> = {}): TorrentLiveData =>
-  ({
-    infoHash: "abc",
-    magnetURI: "magnet:?xt=urn:btih:abc",
-    announce: [],
-    "announce-list": [],
-    timeRemaining: 0,
-    received: 0,
-    downloaded: 0,
-    uploaded: 0,
-    downloadSpeed: 0,
-    uploadSpeed: 0,
-    progress: 0.5,
-    ratio: 0,
-    length: 1000,
-    pieceLength: 524288,
-    lastPieceLength: 0,
-    numPeers: 0,
-    path: "./downloads",
-    ready: true,
-    paused: false,
-    done: false,
-    name: "Test",
-    created: new Date(),
-    maxWebConns: 4,
-    files: [],
-    ...overrides,
-  }) as TorrentLiveData;
 
 vi.mock("@/db/db", () => ({
   get db() {

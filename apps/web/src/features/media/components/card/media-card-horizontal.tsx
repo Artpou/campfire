@@ -40,9 +40,9 @@ export function MediaCardHorizontal({
     if (linkProp) return linkProp;
     return {
       to: media.download?.id ? "/downloads/$id/play" : media.type === "tv" ? "/tv/$id" : "/movies/$id",
-      params: { id: media.download?.id?.toString() || "" },
+      params: { id: String(media.download?.id ?? media.id) },
     };
-  }, [linkProp, media.download?.id, media.type]);
+  }, [linkProp, media.download?.id, media.id, media.type]);
 
   return (
     <Card

@@ -223,7 +223,7 @@ export function Player({
           </p>
         </div>
       )}
-      <div ref={hostRef} />
+      <div ref={hostRef} className={className} />
     </>
   );
 }

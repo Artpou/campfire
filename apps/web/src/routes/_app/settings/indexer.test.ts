@@ -19,16 +19,38 @@ describe("settings/indexer beforeLoad", () => {
   });
 
   it("allows owner", () => {
-    authState.user = { id: "o1", role: "owner" };
-    expect(() => beforeLoad?.({} as never)).not.toThrow();
+    expect(() =>
+      beforeLoad?.({
+        context: { user: { id: "o1", role: "owner" } },
+      } as never),
+    ).not.toThrow();
+  });
+
+  it("allows admin", () => {
+    expect(() =>
+      beforeLoad?.({
+        context: { user: { id: "a1", role: "admin" } },
+      } as never),
+    ).not.toThrow();
   });
 
   it("redirects member to settings", () => {
-    authState.user = { id: "m1", role: "member" };
-    expect(() => beforeLoad?.({} as never)).toThrow(
+    expect(() =>
+      beforeLoad?.({
+        context: { user: { id: "m1", role: "member" } },
+      } as never),
+    ).toThrow(
       expect.objectContaining({
         options: expect.objectContaining({ to: "/settings" }),
       }),
     );
+  });
+
+  it("parses managerId search param", () => {
+    const validateSearch = Route.options.validateSearch as (search: Record<string, unknown>) => {
+      managerId?: string;
+    };
+    expect(validateSearch({ managerId: "abc" })).toEqual({ managerId: "abc" });
+    expect(validateSearch({ managerId: 1 })).toEqual({ managerId: undefined });
   });
 });

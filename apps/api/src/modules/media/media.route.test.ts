@@ -58,16 +58,16 @@ describe("Media Routes", () => {
       expect(res.status).toBe(404);
     });
 
-    it("POST /:id/like - toggles like on then off", async () => {
-      let body = await bodyOf(await mediaRoutes.request("/500/like", json("POST", SAMPLE_MEDIA)));
+    it("POST /like - toggles like on then off", async () => {
+      let body = await bodyOf(await mediaRoutes.request("/like", json("POST", SAMPLE_MEDIA)));
       expect(body.liked).toBe(true);
 
-      body = await bodyOf(await mediaRoutes.request("/500/like", json("POST", SAMPLE_MEDIA)));
+      body = await bodyOf(await mediaRoutes.request("/like", json("POST", SAMPLE_MEDIA)));
       expect(body.liked).toBe(false);
     });
 
-    it("POST /:id/watchlist - adds to watchlist", async () => {
-      const body = await bodyOf(await mediaRoutes.request("/500/watchlist", json("POST", SAMPLE_MEDIA)));
+    it("POST /watchlist - adds to watchlist", async () => {
+      const body = await bodyOf(await mediaRoutes.request("/watchlist", json("POST", SAMPLE_MEDIA)));
       expect(body.inWatchList).toBe(true);
     });
   });
@@ -98,15 +98,15 @@ describe("Media Routes", () => {
     });
 
     it("filters by like", async () => {
-      await mediaRoutes.request("/1/like", json("POST", { id: 1, type: "movie", title: "Zebra", imdbId: "tt0000001" }));
+      await mediaRoutes.request("/like", json("POST", { id: 1, type: "movie", title: "Zebra", imdbId: "tt0000001" }));
       const body = await bodyOf(await mediaRoutes.request("/?filter=like&page=1&limit=10"));
       expect(body.results).toHaveLength(1);
       expect(body.results[0].id).toBe(1);
     });
 
     it("filter=calendar with activity orderBy succeeds", async () => {
-      await mediaRoutes.request("/1/like", json("POST", { id: 1, type: "movie", title: "Zebra", imdbId: "tt0000001" }));
-      await mediaRoutes.request("/3/like", json("POST", { id: 3, type: "movie", title: "Beta", imdbId: "tt0000003" }));
+      await mediaRoutes.request("/like", json("POST", { id: 1, type: "movie", title: "Zebra", imdbId: "tt0000001" }));
+      await mediaRoutes.request("/like", json("POST", { id: 3, type: "movie", title: "Beta", imdbId: "tt0000003" }));
 
       const res = await mediaRoutes.request("/?filter=calendar&page=1&limit=100&userId=user-1");
       expect(res.status).toBe(200);

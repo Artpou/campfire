@@ -1,10 +1,13 @@
+import { useEffect, useRef } from "react";
+
 import { msg } from "@lingui/core/macro";
 import { Trans } from "@lingui/react";
-import { Trans as TransMacro } from "@lingui/react/macro";
+import { Trans as TransMacro, useLingui } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
-import { createFileRoute, isRedirect, Link, Outlet, redirect, useLocation } from "@tanstack/react-router";
+import { createFileRoute, isRedirect, Link, Outlet, redirect, useLocation, useRouter } from "@tanstack/react-router";
 import { AlertTriangleIcon, FilmIcon, LibraryIcon, TvIcon, UserIcon } from "lucide-react";
 import ms from "ms";
+import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { AppTopbar } from "@/shared/components/app-topbar";
@@ -63,18 +66,29 @@ interface MobileNavItem {
 const MOBILE_NAV_STATIC: MobileNavItem[] = [
   { title: msg({ id: "nav.movies", message: "Movies" }), url: "/movies", icon: FilmIcon },
   { title: msg({ id: "nav.tv-shows", message: "TV Shows" }), url: "/tv", icon: TvIcon },
-  {
-    title: msg({ id: "nav.library", message: "Library" }),
-    url: "/downloads",
-    icon: LibraryIcon,
-    minRole: "member",
-  },
+  { title: msg({ id: "nav.library", message: "Library" }), url: "/downloads", icon: LibraryIcon },
 ];
 
 function AuthenticatedLayout() {
-  const location = useLocation();
   const user = useAuth((s) => s.user);
   const { isAdmin, hasRole } = useRole();
+  const { state, href } = useLocation();
+  const { t } = useLingui();
+  const router = useRouter();
+
+  const stateRef = useRef<unknown>(null);
+
+  useEffect(() => {
+    if (state?.unauthorized && stateRef.current !== state) {
+      stateRef.current = state;
+
+      setTimeout(() => {
+        router.history.replace(href, { ...state, unauthorized: undefined });
+        toast.error(t`Forbidden`, { description: t`You are not authorized to access this page.` });
+        // need to wait for the toast to be displayed
+      }, 100);
+    }
+  }, [state, href, router.history, t]);
 
   const isIndexerMisconfigured = isAdmin && user?.countIndexerManagers === 0;
 

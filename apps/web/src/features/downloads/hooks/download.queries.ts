@@ -10,13 +10,14 @@ import { toast } from "sonner";
 import { translateDownloadError } from "@/features/downloads/helpers/download-error.helper";
 import { hasFiles } from "@/features/downloads/helpers/downloads.helper";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
+import { movieQueries } from "@/features/movies/hooks/movie.queries";
 import { tvQueries } from "@/features/tv/hooks/tv.queries";
 
 function invalidateDownloadRelatedQueries(queryClient: ReturnType<typeof useQueryClient>): void {
   queryClient.invalidateQueries({ queryKey: downloadQueries.key });
   queryClient.invalidateQueries({ queryKey: mediaQueries.key });
   // Movie/TV detail pages cache media.download separately — keep Play in sync.
-  queryClient.invalidateQueries({ queryKey: ["movie-full"] });
+  queryClient.invalidateQueries({ queryKey: movieQueries.key });
   queryClient.invalidateQueries({ queryKey: tvQueries.key });
 }
 

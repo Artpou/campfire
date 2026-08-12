@@ -17,10 +17,12 @@ import { downloadQueries } from "@/features/downloads/hooks/download.queries";
 import { MediaCardHorizontal } from "@/features/media/components/card/media-card-horizontal";
 import { hasWatchProgress } from "@/features/media/helpers/media.helper";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
+import { movieQueries } from "@/features/movies/hooks/movie.queries";
 import { Player } from "@/features/player/components/player";
 import { type MoviPlayerHandle, preloadMoviPlayer } from "@/features/player/helpers/movi-player.helper";
 import { SubtitleSearchDialog } from "@/features/subtitles/components/subtitle-search-dialog";
 import { subtitleQueries } from "@/features/subtitles/hooks/subtitle.queries";
+import { tvQueries } from "@/features/tv/hooks/tv.queries";
 
 export const Route = createFileRoute("/_app/downloads/$id/play")({
   loader: async ({ context, params }) => {
@@ -130,8 +132,8 @@ function VideoPlayerPage() {
       clearInterval(patchInterval);
       void saveProgress().finally(() => {
         void queryClient.invalidateQueries({ queryKey: mediaQueries.key });
-        void queryClient.invalidateQueries({ queryKey: ["movie-full"] });
-        void queryClient.invalidateQueries({ queryKey: ["tv"] });
+        void queryClient.invalidateQueries({ queryKey: movieQueries.key });
+        void queryClient.invalidateQueries({ queryKey: tvQueries.key });
       });
     };
   }, [download?.mediaId, id, playbackInfo.duration, queryClient]);

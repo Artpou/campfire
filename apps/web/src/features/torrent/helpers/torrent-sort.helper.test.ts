@@ -23,6 +23,12 @@ describe("getSeasonEpisodeRelevance", () => {
     expect(getSeasonEpisodeRelevance(makeTorrent({ isTv: true, seasons: [2], episodeNumbers: [5] }))).toBe(0);
   });
 
+  it("returns 0 for non-tv / missing media infos", () => {
+    expect(getSeasonEpisodeRelevance(makeTorrent(null as never), 2, 5)).toBe(0);
+    expect(getSeasonEpisodeRelevance(makeTorrent({ isTv: false }), 2, 5)).toBe(0);
+    expect(getSeasonEpisodeRelevance(makeTorrent({ isTv: true, seasons: [] }), 2)).toBe(0);
+  });
+
   it("returns 3 for exact season and episode match", () => {
     expect(getSeasonEpisodeRelevance(makeTorrent({ isTv: true, seasons: [2], episodeNumbers: [5] }), 2, 5)).toBe(3);
   });
@@ -30,6 +36,16 @@ describe("getSeasonEpisodeRelevance", () => {
   it("returns 2 for full season packs when filtering by episode", () => {
     expect(
       getSeasonEpisodeRelevance(makeTorrent({ isTv: true, seasons: [2], episodeNumbers: [], fullSeason: true }), 2, 5),
+    ).toBe(2);
+  });
+
+  it("returns 1 for other episodes in the same season", () => {
+    expect(getSeasonEpisodeRelevance(makeTorrent({ isTv: true, seasons: [2], episodeNumbers: [1] }), 2, 5)).toBe(1);
+  });
+
+  it("returns 2 for season packs without episode filter", () => {
+    expect(
+      getSeasonEpisodeRelevance(makeTorrent({ isTv: true, seasons: [2], episodeNumbers: [], fullSeason: true }), 2),
     ).toBe(2);
   });
 

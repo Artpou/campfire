@@ -26,7 +26,7 @@ export const Route = createFileRoute("/_app/requests")({
   validateSearch,
   beforeLoad: ({ context }) => {
     if (!hasMinRole(context.user?.role, "admin")) {
-      throw redirect({ to: "/movies" });
+      throw redirect({ to: "/movies", state: { unauthorized: true } });
     }
   },
 });

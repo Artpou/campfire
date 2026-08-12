@@ -41,7 +41,12 @@
       "cache": false
     },
     "test": {
-      "dependsOn": ["topo"]
+      "dependsOn": ["topo"],
+      "outputs": ["coverage/**"]
+    },
+    "test:coverage": {
+      "dependsOn": ["topo"],
+      "outputs": ["coverage/**"]
     },
     "//#knip": {
       "cache": false

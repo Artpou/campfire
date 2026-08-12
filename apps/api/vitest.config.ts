@@ -1,5 +1,5 @@
-import path from "node:path"
-import { defineConfig } from "vitest/config"
+import path from "node:path";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
@@ -9,9 +9,16 @@ export default defineConfig({
     setupFiles: ["src/tests/setup.ts"],
     coverage: {
       provider: "v8",
-      reporter: ["text", "lcov"],
-      include: ["src/**/*.ts", "src/**/*.tsx"],
-      exclude: ["src/**/*.test.ts", "src/**/test*", "src/**/*.d.ts"],
+      reporter: ["text", "text-summary", "lcov", "html", "json-summary"],
+      reportsDirectory: "./coverage",
+      include: ["src/**/*.ts"],
+      exclude: [
+        "src/**/*.test.ts",
+        "src/**/test*",
+        "src/**/*.d.ts",
+        "src/server.ts",
+        "src/db/drizzle/**",
+      ],
     },
   },
   resolve: {
@@ -19,4 +26,4 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-})
+});

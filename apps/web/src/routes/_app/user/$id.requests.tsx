@@ -1,11 +1,12 @@
 import { useMemo } from "react";
 
 import { Trans } from "@lingui/react/macro";
-import { hasMinRole, type RequestStatus } from "@seedarr/contracts";
+import type { RequestStatus } from "@seedarr/contracts";
 import type { MediaRequest } from "@seedarr/sdk";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
+import { redirectIfNotRole } from "@/shared/helpers/role.helper";
 import { Container } from "@/shared/ui/container";
 
 import { useAuth } from "@/features/auth/auth-store";
@@ -30,10 +31,7 @@ export const Route = createFileRoute("/_app/user/$id/requests")({
   component: UserRequestsPage,
   beforeLoad: ({ context, params }) => {
     const isOwn = context.user?.id === params.id;
-    const isAdmin = hasMinRole(context.user?.role, "admin");
-    if (!isOwn && !isAdmin) {
-      throw redirect({ to: "/movies" });
-    }
+    if (!isOwn) redirectIfNotRole(context, "admin", { to: "/movies" });
   },
   loader: ({ context, params }) => context.queryClient.ensureQueryData(userQueries.details(params.id)),
   validateSearch,
