@@ -111,7 +111,7 @@ packages/
 ## Development Commands
 
 ```bash
-# Run both API and web (+ Drizzle Studio)
+# Run both API and web 
 pnpm dev
 
 # Run API only

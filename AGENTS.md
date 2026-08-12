@@ -155,7 +155,7 @@ packages/
 ## Dev Workflow
 
 ```bash
-pnpm dev          # Start both API + web (+ Drizzle Studio)
+pnpm dev          # Start both API + web 
 pnpm --filter @seedarr/api dev   # API only (port 3002)
 pnpm --filter @seedarr/web dev            # Web only (port 3000)
 pnpm check        # Full validation: lint + check-types + test + knip
