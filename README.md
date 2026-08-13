@@ -23,22 +23,28 @@ Think of it as **Stremio meets Overseerr**, but fully self-hosted and under your
 
 ## Screenshots
 
-### 🖥️ Dashboard
+### Dashboard
 
 <p align="center">
-  <img src="./.github/screenshots/seedarr-home.png" alt="Catalogue Dashboard" width="850" />
+  <img src="./.github/screenshots/home.png" alt="Catalogue Dashboard" width="850" />
 </p>
 
-### 🎬 Movie Details
+### Discover
 
 <p align="center">
-  <img src="./.github/screenshots/seedarr-detail.png" alt="Movie Details" width="850" />
+  <img src="./.github/screenshots/discover.png" alt="Discover catalog" width="850" />
 </p>
 
-### 📥 Download Manager
+### Player
 
 <p align="center">
-  <img src="./.github/screenshots/seedarr-download.png" alt="Download Manager" width="850" />
+  <img src="./.github/screenshots/player.png" alt="Video player" width="850" />
+</p>
+
+### Torrent search
+
+<p align="center">
+  <img src="./.github/screenshots/torrents.png" alt="Torrent search" width="850" />
 </p>
 
 ## Features
@@ -140,6 +146,8 @@ pnpm dev
 ```
 
 Open **http://localhost:3000** — the API runs on port 3002.
+
+The marketing site and docs live in `apps/website` (`pnpm --filter @seedarr/website dev` → http://localhost:4321).
 
 > **Requirements:** Node.js 22.13+, pnpm 9+. Optional: [FFmpeg](https://ffmpeg.org/) for live remux of progressive MP4 while downloading.
 

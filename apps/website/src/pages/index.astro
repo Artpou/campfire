@@ -1,0 +1,53 @@
+---
+import Community from "../components/landing/Community.astro";
+import Faq from "../components/landing/Faq";
+import Features from "../components/landing/Features";
+import Footer from "../components/landing/Footer.astro";
+import Header from "../components/landing/Header.astro";
+import Hero from "../components/landing/Hero.astro";
+import Integrations from "../components/landing/Integrations.astro";
+import "../styles/global.css";
+---
+
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Seedarr — self-hosted media center. Browse TMDB, search torrents, download, and stream movies & TV shows in your browser."
+    />
+    <meta name="theme-color" content="#1a1c1f" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <title>Seedarr — Your self-hosted media center</title>
+  </head>
+  <body class="min-h-screen overflow-x-hidden">
+    <Header />
+    <main>
+      <Hero />
+      <Features client:load />
+      <Integrations />
+      <Community />
+      <section id="faq" class="relative px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+        <div class="mx-auto max-w-3xl">
+          <div class="mb-8 text-center">
+            <p class="text-primary mb-2 text-sm font-semibold tracking-widest uppercase">FAQ</p>
+            <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Questions, answered</h2>
+            <p class="text-popover-foreground mt-3 text-base sm:text-lg">
+              Straight answers about hosting, streaming, and how Seedarr fits your setup.
+            </p>
+          </div>
+          <Faq client:load />
+        </div>
+      </section>
+    </main>
+    <Footer />
+  </body>
+</html>

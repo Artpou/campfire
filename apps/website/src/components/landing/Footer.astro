@@ -1,0 +1,32 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="border-border/60 border-t px-4 py-10 sm:px-6 lg:px-8">
+  <div class="mx-auto flex max-w-6xl flex-col gap-6">
+    <div class="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+      <a href="/" class="flex items-center gap-2">
+        <img src="/logo.svg" alt="" width="22" height="22" class="size-5" />
+        <span class="font-bold tracking-tight">Seedarr</span>
+      </a>
+      <nav class="text-muted-foreground flex flex-wrap gap-x-6 gap-y-2 text-sm" aria-label="Footer">
+        <a href="#features" class="hover:text-foreground transition-colors">Features</a>
+        <a href="/guides/quick-start/" class="hover:text-foreground transition-colors">Docs</a>
+        <a href="/guides/contributing/" class="hover:text-foreground transition-colors">Contributing</a>
+        <a
+          href="https://github.com/Artpou/seedarr"
+          class="hover:text-foreground transition-colors"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          GitHub
+        </a>
+      </nav>
+    </div>
+
+    <p class="text-muted-foreground max-w-3xl text-xs leading-relaxed">
+      Seedarr is not affiliated with TMDB, Stremio, Prowlarr, or Jackett. This product uses the TMDB API but is not
+      endorsed or certified by TMDB. © {year} Seedarr contributors.
+    </p>
+  </div>
+</footer>

@@ -1,0 +1,215 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant light (&:is(.light *),
+&:not(:is(.dark *)));
+
+@theme inline {
+  --font-sans: "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-blue: var(--blue);
+  --color-purple: var(--purple);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root,
+:root[data-theme="dark"],
+html.dark {
+  color-scheme: dark;
+  --radius: 0.45rem;
+
+  --background: oklch(0.22 0.004 240);
+  --foreground: oklch(1 0 0);
+  --card: oklch(0.26 0.008 225);
+  --card-foreground: oklch(0.96 0.01 140);
+  --popover: oklch(0.26 0.008 225);
+  --popover-foreground: oklch(0.96 0.01 140);
+  --primary: oklch(0.63 0.13 135);
+  --primary-foreground: oklch(0.98 0.005 140);
+  --secondary: oklch(0.18 0.006 220);
+  --secondary-foreground: oklch(0.94 0.01 135);
+  --muted: oklch(0.25 0.006 230);
+  --muted-foreground: oklch(0.75 0.008 230);
+  --accent: oklch(0.32 0.012 225);
+  --accent-foreground: oklch(0.96 0.01 140);
+  --destructive: oklch(0.6 0.18 25);
+  --warning: oklch(76.9% 0.188 70.08);
+  --border: oklch(0.32 0.006 230);
+  --input: oklch(0.26 0.008 225);
+  --ring: oklch(0.63 0.13 135);
+  --blue: oklch(0.65 0.13 210);
+  --purple: oklch(0.6 0.15 275);
+
+  /* Starlight tokens mapped to Seedarr theme */
+  --sl-color-bg: var(--background);
+  --sl-color-bg-nav: oklch(0.2 0.004 240);
+  --sl-color-bg-sidebar: oklch(0.2 0.004 240);
+  --sl-color-bg-inline-code: oklch(0.28 0.008 225);
+  --sl-color-hairline: var(--border);
+  --sl-color-hairline-light: var(--border);
+  --sl-color-text: var(--popover-foreground);
+  --sl-color-text-accent: var(--primary);
+  --sl-color-white: var(--foreground);
+  --sl-color-gray-1: oklch(0.96 0.005 140);
+  --sl-color-gray-2: oklch(0.9 0.006 230);
+  --sl-color-gray-3: oklch(0.82 0.006 230);
+  --sl-color-gray-4: oklch(0.55 0.008 230);
+  --sl-color-gray-5: oklch(0.38 0.008 230);
+  --sl-color-gray-6: oklch(0.28 0.008 230);
+  --sl-color-black: oklch(0.16 0.004 240);
+  --sl-color-accent-low: oklch(0.28 0.05 135);
+  --sl-color-accent: var(--primary);
+  --sl-color-accent-high: oklch(0.78 0.12 135);
+}
+
+:root[data-theme="light"],
+html.light {
+  color-scheme: light;
+  --background: oklch(0.95 0.005 140);
+  --foreground: oklch(0.12 0.02 140);
+  --card: oklch(0.99 0.003 140);
+  --card-foreground: oklch(0.2 0.02 140);
+  --popover: oklch(0.99 0.003 140);
+  --popover-foreground: oklch(0.2 0.02 140);
+  --primary: oklch(0.55 0.13 135);
+  --primary-foreground: oklch(0.98 0.005 140);
+  --secondary: oklch(0.9 0.04 135);
+  --secondary-foreground: oklch(0.2 0.02 140);
+  --muted: oklch(0.93 0.01 135);
+  --muted-foreground: oklch(0.35 0.02 135);
+  --accent: oklch(0.9 0.04 135);
+  --accent-foreground: oklch(0.2 0.02 140);
+  --border: oklch(0.88 0.015 135);
+  --input: oklch(0.99 0.003 140);
+  --ring: oklch(0.55 0.13 135);
+
+  /* Mapping des tokens Starlight pour le Light mode */
+  --sl-color-bg: var(--background);
+  --sl-color-bg-nav: var(--card);
+  --sl-color-bg-sidebar: var(--card);
+  --sl-color-bg-inline-code: oklch(0.92 0.01 135);
+  --sl-color-hairline: var(--border);
+  --sl-color-hairline-light: var(--border);
+  --sl-color-text: var(--foreground);
+  --sl-color-text-accent: var(--primary);
+  --sl-color-white: var(
+    --foreground
+  ); /* En light mode, Starlight utilise --sl-color-white pour le texte à fort contraste */
+  --sl-color-accent: var(--primary);
+  --sl-color-accent-high: oklch(0.4 0.12 135);
+  --sl-color-accent-low: oklch(0.92 0.04 135);
+
+  /* Palette de gris Starlight (du texte sombre vers le fond clair) */
+  --sl-color-gray-1: oklch(0.2 0.02 140); /* Texte principal / titres */
+  --sl-color-gray-2: oklch(0.3 0.02 140); /* Texte secondaire */
+  --sl-color-gray-3: oklch(0.45 0.01 140); /* Éléments secondaires / icônes */
+  --sl-color-gray-4: oklch(0.7 0.01 140); /* Bordures / séparateurs */
+  --sl-color-gray-5: oklch(0.9 0.005 140); /* Fonds d'éléments (ex: code, cartes) */
+  --sl-color-gray-6: oklch(0.96 0.005 140); /* Fond le plus clair */
+  --sl-color-black: oklch(0.99 0.003 140); /* Fond global/blanc en light mode */
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans scroll-smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+/* Starlight content contrast + spacing */
+.sl-markdown-content {
+  --sl-line-height: 1.7;
+}
+
+.sl-markdown-content :is(h1, h2, h3, h4) {
+  color: var(--foreground);
+}
+
+starlight-menu-button button,
+.right-sidebar-panel,
+.sidebar-content,
+.social-icons {
+  color: var(--muted-foreground);
+}
+
+.sidebar-content a[aria-current="page"] {
+  color: var(--foreground);
+  background-color: color-mix(in oklch, var(--primary) 18%, transparent);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float-soft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.7s ease-out both;
+}
+
+.animate-fade-up-delay-1 {
+  animation: fade-up 0.7s ease-out 0.1s both;
+}
+
+.animate-fade-up-delay-2 {
+  animation: fade-up 0.7s ease-out 0.2s both;
+}
+
+.animate-fade-up-delay-3 {
+  animation: fade-up 0.7s ease-out 0.3s both;
+}
+
+.animate-float-soft {
+  animation: float-soft 6s ease-in-out infinite;
+}
+
+.hero-glow {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, oklch(0.63 0.13 135 / 0.2), transparent),
+    radial-gradient(ellipse 45% 35% at 85% 5%, oklch(0.63 0.13 135 / 0.08), transparent);
+}

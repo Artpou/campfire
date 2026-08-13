@@ -1,0 +1,57 @@
+---
+const links = [
+  {
+    title: "GitHub",
+    description: "Star the repo, open issues, and follow releases.",
+    href: "https://github.com/Artpou/seedarr",
+    cta: "View repository",
+    icon: "/assets/github.png",
+  },
+  {
+    title: "Documentation",
+    description: "Quick start, Docker, settings guides, and contributing.",
+    href: "/guides/quick-start/",
+    cta: "Read the docs",
+    icon: null,
+  },
+  {
+    title: "Docker",
+    description: "Multi-arch beta images ready for PC, NAS, and Pi.",
+    href: "/guides/docker/",
+    cta: "Deploy with Docker",
+    icon: "/assets/docker.webp",
+  },
+];
+---
+
+<section id="community" class="relative px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+  <div class="mx-auto max-w-6xl">
+    <div class="mx-auto mb-10 max-w-2xl text-center">
+      <p class="text-primary mb-2 text-sm font-semibold tracking-widest uppercase">Open source</p>
+      <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Built in the open</h2>
+      <p class="text-popover-foreground mt-3 text-base sm:text-lg">
+        Seedarr is free, MIT-licensed, and under active development. Help shape the roadmap.
+      </p>
+    </div>
+
+    <div class="grid gap-4 md:grid-cols-3">
+      {
+        links.map((link) => (
+          <a
+            href={link.href}
+            class="border-border bg-card hover:border-primary/35 group flex flex-col rounded-xl border p-6 transition-colors"
+            target={link.href.startsWith("http") ? "_blank" : undefined}
+            rel={link.href.startsWith("http") ? "noopener noreferrer" : undefined}
+          >
+            {link.icon && (
+              <img src={link.icon} alt="" width="28" height="28" class="mb-4 size-7 object-contain brightness-0 invert" />
+            )}
+            <h3 class="text-lg font-semibold">{link.title}</h3>
+            <p class="text-popover-foreground mt-2 flex-1 text-sm leading-relaxed">{link.description}</p>
+            <span class="text-primary mt-5 text-sm font-semibold group-hover:underline">{link.cta} →</span>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</section>

@@ -1,0 +1,90 @@
+---
+const badges = [
+  { label: "Open source", tone: "bg-primary/15 text-primary border-primary/30" },
+  { label: "Self-hosted", tone: "bg-secondary text-secondary-foreground border-border" },
+  { label: "Docker ready", tone: "bg-secondary text-secondary-foreground border-border" },
+  { label: "Beta", tone: "bg-secondary text-secondary-foreground border-border" },
+];
+---
+
+<section class="hero-glow relative overflow-hidden pt-14">
+  <div
+    class="pointer-events-none absolute inset-0 opacity-[0.3]"
+    style="background-image: radial-gradient(oklch(1 0 0 / 0.05) 1px, transparent 1px); background-size: 28px 28px;"
+  >
+  </div>
+
+  <div class="relative mx-auto max-w-6xl px-4 pt-14 pb-12 sm:px-6 sm:pt-20 sm:pb-16 lg:px-8">
+    <div class="mx-auto max-w-3xl text-center">
+      <div class="animate-fade-up mb-5 flex items-center justify-center gap-3">
+        <img
+          src="/logo.svg"
+          alt=""
+          width="60"
+          height="60"
+          class="size-12 sm:size-14 drop-shadow-[0_0_24px_oklch(0.63_0.13_135_/_0.4)]"
+        />
+        <h1 class="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">Seedarr</h1>
+      </div>
+
+      <p class="animate-fade-up-delay-1 text-popover-foreground mx-auto max-w-2xl text-lg leading-relaxed sm:text-xl">
+        Discover, download, and stream movies &amp; TV shows from one self-hosted app —
+        Stremio meets Overseerr, under your control.
+      </p>
+
+      <div class="animate-fade-up-delay-2 mt-5 flex flex-wrap items-center justify-center gap-2">
+        {
+          badges.map((badge) => (
+            <span
+              class:list={[
+                "inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-semibold",
+                badge.tone,
+              ]}
+            >
+              {badge.label}
+            </span>
+          ))
+        }
+      </div>
+
+      <div class="animate-fade-up-delay-3 mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <a
+          href="/guides/quick-start/"
+          class="bg-primary text-primary-foreground hover:bg-primary/80 inline-flex h-11 w-full items-center justify-center gap-2 rounded-md px-8 text-sm font-semibold transition-all sm:w-auto"
+        >
+          <img src="/assets/docker.webp" alt="" width="16" height="16" class="size-4 opacity-90 brightness-0 invert" />
+          Install with Docker
+        </a>
+        <a
+          href="https://github.com/Artpou/seedarr"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="border-border bg-card/60 hover:bg-accent inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border px-8 text-sm font-semibold transition-all sm:w-auto"
+        >
+          <img src="/assets/github.png" alt="" width="16" height="16" class="size-4 opacity-90 brightness-0 invert" />
+          View on GitHub
+        </a>
+      </div>
+    </div>
+
+    <div class="animate-fade-up-delay-3 animate-float-soft relative mx-auto mt-12 w-full max-w-5xl">
+      <div class="from-primary/35 via-primary/10 absolute -inset-px rounded-xl bg-gradient-to-br to-transparent opacity-80 blur-[1px]"></div>
+      <div class="border-border/80 bg-card relative overflow-hidden rounded-xl border shadow-2xl shadow-black/40">
+        <div class="border-border/60 flex items-center gap-2 border-b px-4 py-2.5">
+          <span class="bg-muted-foreground/40 size-2.5 rounded-full"></span>
+          <span class="bg-muted-foreground/40 size-2.5 rounded-full"></span>
+          <span class="bg-primary/80 size-2.5 rounded-full"></span>
+          <span class="text-muted-foreground ml-3 text-xs">seedarr — home</span>
+        </div>
+        <img
+          src="/assets/home.png"
+          alt="Seedarr catalog dashboard"
+          width="1200"
+          height="675"
+          class="h-auto w-full"
+          loading="eager"
+        />
+      </div>
+    </div>
+  </div>
+</section>

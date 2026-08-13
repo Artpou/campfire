@@ -1,0 +1,74 @@
+---
+const integrations = [
+  {
+    name: "TMDB",
+    description: "Full movie & TV catalog, metadata, and search",
+    href: "https://www.themoviedb.org/",
+  },
+  {
+    name: "Torrentio",
+    description: "Recommended Stremio addon for torrent search",
+    href: "/guides/indexers/",
+  },
+  {
+    name: "Prowlarr",
+    description: "Indexer manager for the *arr ecosystem",
+    href: "https://prowlarr.com/",
+  },
+  {
+    name: "Jackett",
+    description: "Unified torrent indexer proxy",
+    href: "https://github.com/Jackett/Jackett",
+  },
+  {
+    name: "WebTorrent",
+    description: "Built-in client — no qBittorrent required",
+    href: "https://webtorrent.io/",
+  },
+  {
+    name: "Letterboxd",
+    description: "Import watchlists and ratings",
+    href: "/guides/letterboxd/",
+  },
+  {
+    name: "FTP / WebDAV",
+    description: "Offload to NAS, Nextcloud, and more",
+    href: "/guides/remote-storage/",
+  },
+  {
+    name: "Docker",
+    description: "Multi-arch images for PC, NAS, Pi",
+    href: "/guides/docker/",
+  },
+];
+---
+
+<section id="integrations" class="border-border/40 relative border-y bg-card/40 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+  <div class="mx-auto max-w-6xl">
+    <div class="mx-auto mb-10 max-w-2xl text-center">
+      <p class="text-primary mb-2 text-sm font-semibold tracking-widest uppercase">Integrations</p>
+      <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Plays with your stack</h2>
+      <p class="text-muted-foreground mt-3 text-base sm:text-lg">
+        Connect the indexers and storage you already run. Seedarr stays the control plane.
+      </p>
+    </div>
+
+    <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {
+        integrations.map((item) => (
+          <li>
+            <a
+              href={item.href}
+              class="border-border/70 bg-background/50 hover:border-primary/40 hover:bg-accent/40 group flex h-full flex-col rounded-xl border p-5 transition-colors"
+              target={item.href.startsWith("http") ? "_blank" : undefined}
+              rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}
+            >
+              <span class="group-hover:text-primary text-base font-semibold transition-colors">{item.name}</span>
+              <span class="text-muted-foreground mt-2 text-sm leading-relaxed">{item.description}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

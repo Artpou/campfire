@@ -1,0 +1,47 @@
+---
+const links = [
+  { href: "#features", label: "Features" },
+  { href: "#integrations", label: "Integrations" },
+  { href: "/guides/quick-start/", label: "Docs" },
+  { href: "#faq", label: "FAQ" },
+];
+---
+
+<header class="border-border/60 bg-background/70 fixed inset-x-0 top-0 z-50 border-b backdrop-blur-md">
+  <div class="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+    <a href="/" class="flex items-center gap-2">
+      <img src="/logo.svg" alt="" width="24" height="24" class="size-6" />
+      <span class="text-base font-bold tracking-tight">Seedarr</span>
+    </a>
+
+    <nav class="hidden items-center gap-7 md:flex" aria-label="Primary">
+      {
+        links.map((link) => (
+          <a
+            href={link.href}
+            class="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
+          >
+            {link.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <div class="flex items-center gap-2">
+      <a
+        href="https://github.com/Artpou/seedarr"
+        class="text-muted-foreground hover:text-foreground hidden rounded-md px-3 py-2 text-sm font-medium transition-colors sm:inline-flex"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        GitHub
+      </a>
+      <a
+        href="/guides/quick-start/"
+        class="bg-primary text-primary-foreground hover:bg-primary/80 inline-flex h-9 items-center rounded-md px-4 text-sm font-medium transition-colors"
+      >
+        Get started
+      </a>
+    </div>
+  </div>
+</header>

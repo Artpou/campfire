@@ -146,6 +146,7 @@ apps/
         ├── shared/         # UI primitives (shadcn), app-topbar, hooks, helpers
         ├── routes/         # TanStack Router file-based routes
         └── lib/            # Core utilities (cn)
+└── website/                # Astro + Starlight landing & docs (port 4321)
 packages/
 ├── sdk/                    # @seedarr/sdk — Hono RPC client, unwrap, types re-export
 ├── contracts/              # @seedarr/contracts — dtos shared between api and app
@@ -158,6 +159,7 @@ packages/
 pnpm dev          # Start both API + web 
 pnpm --filter @seedarr/api dev   # API only (port 3002)
 pnpm --filter @seedarr/web dev            # Web only (port 3000)
+pnpm --filter @seedarr/website dev        # Landing + docs (port 4321)
 pnpm check        # Full validation: lint + check-types + test + knip
 pnpm lint:fix     # Auto-fix with Biome
 pnpm db:generate  # Generate Drizzle migrations

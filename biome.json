@@ -13,7 +13,8 @@
       "**/*.md",
       "!**/routeTree.gen.ts",
       "!**/drizzle/**/*",
-      "!**/locales/**/messages.mjs"
+      "!**/locales/**/messages.mjs",
+      "!**/*.astro"
     ]
   },
   "formatter": {

@@ -19,6 +19,9 @@
         "src/modules/torrent/torrent.types.ts"
       ]
     },
+    "apps/website": {
+      "entry": ["src/**/*.{ts,tsx,astro,md,mdx}"]
+    },
     "packages/contracts": {},
     "packages/sdk": {},
     "packages/shared": {},

@@ -57,10 +57,12 @@ Thank you for your interest in contributing! This guide covers how to set up the
    The application will be available at:
    - **Web**: http://localhost:3000
    - **API**: http://localhost:3002
+   - **Website** (landing + docs): `pnpm --filter @seedarr/website dev` → http://localhost:4321
 
 ## Tech Stack
 
 - **Frontend**: React 19 + TanStack Router + Vite
+- **Website**: Astro + Starlight + Tailwind (landing & documentation)
 - **Backend**: Hono + Node.js (tsx runtime)
 - **Database**: SQLite with Drizzle ORM
 - **Styling**: Tailwind CSS v4 + Radix UI
@@ -84,14 +86,16 @@ Thank you for your interest in contributing! This guide covers how to set up the
     │       ├── modules/          # Feature modules (routes & services)
     │       └── server.ts         # Hono app entry point
     │
-    └── web/                      # React frontend (port 3000)
-        ├── public/               # Static assets
-        └── src/
-            ├── features/         # Feature-based modules
-            ├── shared/           # Shared components and utilities
-            ├── routes/           # TanStack Router file-based routes
-            ├── lib/              # Core utilities (cn)
-            └── locales/          # i18n translations (en, fr)
+    ├── web/                      # React frontend (port 3000)
+    │   ├── public/               # Static assets
+    │   └── src/
+    │       ├── features/         # Feature-based modules
+    │       ├── shared/           # Shared components and utilities (incl. shadcn UI)
+    │       ├── routes/           # TanStack Router file-based routes
+    │       ├── lib/              # Core utilities (cn)
+    │       └── locales/          # i18n translations (en, fr)
+    │
+    └── website/                  # Landing page + Starlight docs (port 4321)
 
 packages/
 ├── sdk/                          # @seedarr/sdk — Hono RPC client & types
@@ -105,6 +109,7 @@ packages/
 - **`apps/web/src/features/`** — Feature-based architecture with components, hooks, and helpers co-located
 - **`apps/web/src/shared/`** — Reusable components and utilities used across features
 - **`apps/web/src/routes/`** — TanStack Router file-based routing (`_app.*` authenticated, `_auth.*` public)
+- **`apps/website/`** — Public landing page and documentation site
 - **`packages/contracts/`** — Request/query Zod DTOs shared by API validation and the web client
 - **`packages/sdk/`** — Typed Hono RPC client (`unwrap`, response types) — import this from the frontend, never `@seedarr/api`
 
