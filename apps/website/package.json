@@ -9,7 +9,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "check-types": "tsc --noEmit",
+    "check-types": "astro sync && tsc --noEmit",
     "lint": "biome check ."
   },
   "dependencies": {
