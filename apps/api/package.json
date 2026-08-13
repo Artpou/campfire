@@ -13,7 +13,7 @@
     "dev": "tsx watch --include 'src/**' src/server.ts",
     "build": "tsup",
     "build:types": "tsc -p tsconfig.types.json",
-    "start": "node dist-server/server.mjs",
+    "start": "node dist-server/server.js",
     "check-types": "tsc --noEmit",
     "lint": "biome check .",
     "lint:fix": "biome check --write --unsafe .",

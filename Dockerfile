@@ -50,4 +50,4 @@ COPY --from=builder /app/apps/api/docker-migrate.mjs ./docker-migrate.mjs
 
 EXPOSE 3002
 
-CMD ["sh", "-c", "node docker-migrate.mjs && exec node dist-server/server.mjs"]
+CMD ["sh", "-c", "node docker-migrate.mjs && exec node dist-server/server.js"]
