@@ -126,6 +126,7 @@ async function fetchSessionWithUser(tokenHash: string): Promise<{
         avatarPath: user.avatarPath,
         role: user.role,
         letterboxdUsername: user.letterboxdUsername,
+        onboarded: user.onboarded,
         createdAt: user.createdAt,
       },
     })

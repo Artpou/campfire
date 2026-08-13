@@ -64,6 +64,13 @@
       "when": 1786555387671,
       "tag": "0008_aspiring_omega_sentinel",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1786626320465,
+      "tag": "0009_lucky_demogoblin",
+      "breakpoints": true
     }
   ]
 }

@@ -23,19 +23,31 @@ vi.mock("@/features/auth/auth-store", () => ({
         authState.user = null;
       },
     }),
-    setState: (partial: Partial<typeof authState>) => {
-      Object.assign(authState, partial);
-    },
   }),
 }));
 
-const { Route } = await import("@/routes/_app");
+const hasOwner = vi.hoisted(() => vi.fn());
 
+vi.mock("@seedarr/sdk", () => ({
+  api: {
+    auth: {
+      "has-owner": {
+        $get: () => Promise.resolve({}),
+      },
+      me: {
+        $get: () => Promise.resolve({}),
+      },
+    },
+  },
+  unwrap: (promise: Promise<unknown>) => promise.then(() => hasOwner()),
+}));
+
+const { Route } = await import("@/routes/onboarding");
 const beforeLoad = Route.options.beforeLoad;
 
-function createContext(ensureQueryData: QueryClient["ensureQueryData"]) {
+function createContext(ensureQueryData: QueryClient["ensureQueryData"], removeQueries = vi.fn()) {
   return {
-    queryClient: { ensureQueryData } as unknown as QueryClient,
+    queryClient: { ensureQueryData, removeQueries } as unknown as QueryClient,
     language: "en-US",
   };
 }
@@ -55,64 +67,54 @@ const ownerOnboarded = {
   countIndexerManagers: 1,
 };
 
-const memberNotOnboarded = {
-  id: "user-2",
-  username: "member",
-  role: "member" as const,
-  createdAt: "2024-01-01T00:00:00.000Z",
-  countIndexerManagers: 0,
-  onboarded: false,
-};
-
-describe("_app route beforeLoad", () => {
+describe("onboarding route beforeLoad", () => {
   beforeEach(() => {
     authState.user = null;
+    hasOwner.mockReset();
   });
 
-  it("returns user when authenticated and onboarded", async () => {
-    const ensureQueryData = vi.fn().mockResolvedValue(ownerOnboarded);
+  it("allows first-time setup when no owner and unauthenticated", async () => {
+    hasOwner.mockResolvedValue({ hasOwner: false });
+    const ensureQueryData = vi.fn().mockRejectedValue(new Error("Unauthorized"));
 
     const result = await beforeLoad?.({
-      location: { pathname: "/movies" },
       context: createContext(ensureQueryData),
     } as never);
 
-    expect(result).toEqual({ user: ownerOnboarded });
-    expect(authState.user).toEqual(ownerOnboarded);
+    expect(result).toEqual({ user: null, hasOwner: false });
   });
 
-  it("redirects to login when auth fails", async () => {
+  it("redirects unauthenticated users to login when an owner exists", async () => {
+    hasOwner.mockResolvedValue({ hasOwner: true });
     const ensureQueryData = vi.fn().mockRejectedValue(new Error("Unauthorized"));
 
     await expect(
       beforeLoad?.({
-        location: { pathname: "/movies" },
         context: createContext(ensureQueryData),
       } as never),
     ).rejects.toMatchObject({ options: { to: "/login" } });
-
-    expect(authState.user).toBeNull();
   });
 
-  it("redirects users who have not finished onboarding", async () => {
+  it("allows authenticated users who are not onboarded", async () => {
+    hasOwner.mockResolvedValue({ hasOwner: true });
     const ensureQueryData = vi.fn().mockResolvedValue(ownerNotOnboarded);
 
-    await expect(
-      beforeLoad?.({
-        location: { pathname: "/movies" },
-        context: createContext(ensureQueryData),
-      } as never),
-    ).rejects.toMatchObject({ options: { to: "/onboarding" } });
+    const result = await beforeLoad?.({
+      context: createContext(ensureQueryData),
+    } as never);
+
+    expect(result).toEqual({ user: ownerNotOnboarded, hasOwner: true });
+    expect(authState.user).toEqual(ownerNotOnboarded);
   });
 
-  it("redirects members who have not finished onboarding", async () => {
-    const ensureQueryData = vi.fn().mockResolvedValue(memberNotOnboarded);
+  it("redirects onboarded users home", async () => {
+    hasOwner.mockResolvedValue({ hasOwner: true });
+    const ensureQueryData = vi.fn().mockResolvedValue(ownerOnboarded);
 
     await expect(
       beforeLoad?.({
-        location: { pathname: "/movies" },
         context: createContext(ensureQueryData),
       } as never),
-    ).rejects.toMatchObject({ options: { to: "/onboarding" } });
+    ).rejects.toMatchObject({ options: { to: "/" } });
   });
 });

@@ -97,4 +97,11 @@ describe("User Routes", () => {
       expect((await userRoutes.request("/user-owner", { method: "DELETE" })).status).toBe(403);
     });
   });
+
+  describe("POST /me/onboarded", () => {
+    it("marks the current user as onboarded", async () => {
+      const body = await bodyOf(await userRoutes.request("/me/onboarded", { method: "POST" }));
+      expect(body).toMatchObject({ id: "user-admin", onboarded: true });
+    });
+  });
 });

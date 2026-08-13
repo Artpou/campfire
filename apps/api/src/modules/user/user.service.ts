@@ -34,6 +34,7 @@ const userColumns = {
   avatarPath: true,
   role: true,
   letterboxdUsername: true,
+  onboarded: true,
   createdAt: true,
 } as const;
 
@@ -118,6 +119,7 @@ export class UserService extends IdentifiableService<User> {
         avatarPath: user.avatarPath,
         role: user.role,
         letterboxdUsername: user.letterboxdUsername,
+        onboarded: user.onboarded,
         createdAt: user.createdAt,
       });
 
@@ -187,6 +189,12 @@ export class UserService extends IdentifiableService<User> {
     if (Object.keys(data).length > 0) {
       await db.update(user).set(data).where(eq(user.id, this.user.id));
     }
+    return this.get(this.user.id);
+  }
+
+  async completeOnboarding(): Promise<User> {
+    await db.update(user).set({ onboarded: true }).where(eq(user.id, this.user.id));
+    invalidateSessionsForUser(this.user.id);
     return this.get(this.user.id);
   }
 

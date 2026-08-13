@@ -19,6 +19,7 @@ export const user = sqliteTable(
     avatarPath: text("avatar_path"),
     role: text("role", { enum: userRoleEnum }).notNull().default("viewer"),
     letterboxdUsername: text("letterboxd_username"),
+    onboarded: integer("onboarded", { mode: "boolean" }).notNull().default(false),
     createdAt: integer("createdAt", { mode: "timestamp" })
       .notNull()
       .$defaultFn(() => new Date()),

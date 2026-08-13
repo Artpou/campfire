@@ -38,10 +38,10 @@ describe("login route beforeLoad", () => {
     await expect(beforeLoad?.({} as never)).rejects.toMatchObject({ options: { to: "/" } });
   });
 
-  it("redirects to signup when no owner exists", async () => {
+  it("redirects to onboarding when no owner exists", async () => {
     hasOwner.mockResolvedValue({ hasOwner: false });
 
-    await expect(beforeLoad?.({} as never)).rejects.toMatchObject({ options: { to: "/signup" } });
+    await expect(beforeLoad?.({} as never)).rejects.toMatchObject({ options: { to: "/onboarding" } });
   });
 
   it("allows login when owner exists", async () => {

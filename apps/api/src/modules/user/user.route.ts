@@ -16,6 +16,9 @@ export const userRoutes = UserService.createRouter()
   .patch("/me", zValidator("json", updateProfileDto), async (c) => {
     return c.json(await c.var.service.updateProfile(c.req.valid("json")));
   })
+  .post("/me/onboarded", async (c) => {
+    return c.json(await c.var.service.completeOnboarding());
+  })
   .post("/me/password", zValidator("json", changePasswordDto), async (c) => {
     return c.json(await c.var.service.changePassword(c.req.valid("json")));
   })

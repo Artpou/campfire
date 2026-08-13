@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_auth/login")({
 
     const data = await unwrap(api.auth["has-owner"].$get());
     if (!data.hasOwner) {
-      throw redirect({ to: "/signup" });
+      throw redirect({ to: "/onboarding" });
     }
   },
 });

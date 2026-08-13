@@ -4,6 +4,7 @@ import { Trans } from "@lingui/react/macro";
 import type { User } from "@seedarr/sdk";
 import { ExternalLinkIcon, FolderArchiveIcon, RefreshCwIcon } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
@@ -15,9 +16,11 @@ const MAX_ZIP_BYTES = 50 * 1024 * 1024;
 
 interface UserButtonLetterboxdProps {
   user: User;
+  variant?: "default" | "card";
+  className?: string;
 }
 
-export function UserButtonLetterboxd({ user }: UserButtonLetterboxdProps) {
+export function UserButtonLetterboxd({ user, variant = "default", className }: UserButtonLetterboxdProps) {
   const syncLetterboxd = useSyncLetterboxd();
   const importLetterboxd = useImportLetterboxd();
   const connected = Boolean(user.letterboxdUsername);
@@ -34,36 +37,57 @@ export function UserButtonLetterboxd({ user }: UserButtonLetterboxdProps) {
     });
   };
 
+  const actions = (
+    <div className="flex items-center gap-2 shrink-0">
+      <Button
+        size="sm"
+        onClick={() => {
+          setFile(null);
+          setImportOpen(true);
+        }}
+        icon={FolderArchiveIcon}
+      >
+        <Trans>Import</Trans>
+      </Button>
+      {connected && (
+        <Button
+          variant="secondary"
+          size="sm"
+          loading={syncLetterboxd.isPending}
+          onClick={() => syncLetterboxd.mutate()}
+          icon={RefreshCwIcon}
+        >
+          <Trans>Sync</Trans>
+        </Button>
+      )}
+    </div>
+  );
+
   return (
     <>
-      <Card className="flex flex-row items-center gap-3 py-2 px-6">
-        <img src="/profile/letterboxd.png" alt="Letterboxd" className="size-6 rounded-full shrink-0" />
-        <span className="text-sm font-medium truncate">Letterboxd</span>
-
-        <div className="ml-auto flex items-center gap-2 shrink-0">
-          <Button
-            size="sm"
-            onClick={() => {
-              setFile(null);
-              setImportOpen(true);
-            }}
-            icon={FolderArchiveIcon}
-          >
-            <Trans>Import</Trans>
-          </Button>
+      {variant === "card" ? (
+        <div className={cn("border-border space-y-4 rounded-xl border p-4", className)}>
+          <h3 className="flex items-center gap-2 text-sm font-semibold">
+            <img src="/profile/letterboxd.png" alt="" className="size-4 rounded-full" />
+            Letterboxd
+          </h3>
+          <p className="text-muted-foreground text-xs leading-relaxed">
+            <Trans>Import your Letterboxd export to sync ratings and watched films into Seedarr.</Trans>
+          </p>
           {connected && (
-            <Button
-              variant="secondary"
-              size="sm"
-              loading={syncLetterboxd.isPending}
-              onClick={() => syncLetterboxd.mutate()}
-              icon={RefreshCwIcon}
-            >
-              <Trans>Sync</Trans>
-            </Button>
+            <p className="text-muted-foreground text-xs">
+              <Trans>Connected as {user.letterboxdUsername}</Trans>
+            </p>
           )}
+          {actions}
         </div>
-      </Card>
+      ) : (
+        <Card className={cn("flex flex-row items-center gap-3 py-2 px-6", className)}>
+          <img src="/profile/letterboxd.png" alt="Letterboxd" className="size-6 rounded-full shrink-0" />
+          <span className="text-sm font-medium truncate">Letterboxd</span>
+          <div className="ml-auto">{actions}</div>
+        </Card>
+      )}
 
       <Dialog
         open={importOpen}

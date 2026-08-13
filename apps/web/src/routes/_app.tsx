@@ -2,10 +2,10 @@ import { useEffect, useRef } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans } from "@lingui/react";
-import { Trans as TransMacro, useLingui } from "@lingui/react/macro";
+import { useLingui } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
 import { createFileRoute, isRedirect, Link, Outlet, redirect, useLocation, useRouter } from "@tanstack/react-router";
-import { AlertTriangleIcon, FilmIcon, LibraryIcon, TvIcon, UserIcon } from "lucide-react";
+import { FilmIcon, LibraryIcon, TvIcon, UserIcon } from "lucide-react";
 import ms from "ms";
 import { toast } from "sonner";
 
@@ -17,7 +17,7 @@ import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";
 
 export const Route = createFileRoute("/_app")({
-  beforeLoad: async ({ location, context }) => {
+  beforeLoad: async ({ context }) => {
     try {
       const user = await context.queryClient.ensureQueryData({
         queryKey: ["auth", "me"],
@@ -26,11 +26,7 @@ export const Route = createFileRoute("/_app")({
       });
       useAuth.getState().setUser(user);
 
-      const isAdmin = user.role === "admin" || user.role === "owner";
-      const noIndexers = user.countIndexerManagers === 0;
-      const alreadyOnboarded = useAuth.getState().ownerOnboardingCompleted;
-
-      if (isAdmin && noIndexers && !alreadyOnboarded && !location.pathname.startsWith("/onboarding")) {
+      if (!user.onboarded) {
         throw redirect({ to: "/onboarding" });
       }
 
@@ -71,8 +67,8 @@ const MOBILE_NAV_STATIC: MobileNavItem[] = [
 
 function AuthenticatedLayout() {
   const user = useAuth((s) => s.user);
-  const { isAdmin, hasRole } = useRole();
-  const { state, href } = useLocation();
+  const { hasRole } = useRole();
+  const { state, href, pathname } = useLocation();
   const { t } = useLingui();
   const router = useRouter();
 
@@ -85,12 +81,9 @@ function AuthenticatedLayout() {
       setTimeout(() => {
         router.history.replace(href, { ...state, unauthorized: undefined });
         toast.error(t`Forbidden`, { description: t`You are not authorized to access this page.` });
-        // need to wait for the toast to be displayed
       }, 100);
     }
   }, [state, href, router.history, t]);
-
-  const isIndexerMisconfigured = isAdmin && user?.countIndexerManagers === 0;
 
   const mobileNav: MobileNavItem[] = [
     ...MOBILE_NAV_STATIC,
@@ -109,17 +102,6 @@ function AuthenticatedLayout() {
 
   return (
     <div className="flex flex-col min-w-0">
-      {isIndexerMisconfigured && (
-        <Link
-          to="/onboarding"
-          className="bg-warning/10 border-b border-warning/20 px-4 py-2 flex items-center gap-2 text-warning hover:bg-warning/20 transition-colors"
-        >
-          <AlertTriangleIcon className="size-4 shrink-0" />
-          <span className="text-sm">
-            <TransMacro>Torrent indexer is not configured. Click here to set up your indexer.</TransMacro>
-          </span>
-        </Link>
-      )}
       <AppTopbar isAuthenticated={true} />
       <main className="flex-1 pb-16 md:pb-0">
         <Outlet />
@@ -129,7 +111,7 @@ function AuthenticatedLayout() {
         <div className="flex items-center justify-around h-16">
           {visibleNavItems.map((item) => {
             const matchUrl = item.matchPrefix ?? item.url;
-            const isActive = location.pathname.startsWith(matchUrl);
+            const isActive = pathname.startsWith(matchUrl);
             return (
               <Link
                 key={item.url}

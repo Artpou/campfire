@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
@@ -16,7 +17,6 @@ import { Route as AuthSignupRouteImport } from './routes/_auth/signup'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AppSearchRouteImport } from './routes/_app/search'
 import { Route as AppRequestsRouteImport } from './routes/_app/requests'
-import { Route as AppOnboardingRouteImport } from './routes/_app/onboarding'
 import { Route as App404RouteImport } from './routes/_app/404'
 import { Route as AppTvIndexRouteImport } from './routes/_app/tv/index'
 import { Route as AppSettingsIndexRouteImport } from './routes/_app/settings/index'
@@ -36,6 +36,11 @@ import { Route as AppTvIdTorrentsRouteImport } from './routes/_app/tv/$id.torren
 import { Route as AppMoviesIdTorrentsRouteImport } from './routes/_app/movies/$id.torrents'
 import { Route as AppDownloadsIdPlayRouteImport } from './routes/_app/downloads/$id.play'
 
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/_auth',
   getParentRoute: () => rootRouteImport,
@@ -67,11 +72,6 @@ const AppSearchRoute = AppSearchRouteImport.update({
 const AppRequestsRoute = AppRequestsRouteImport.update({
   id: '/requests',
   path: '/requests',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppOnboardingRoute = AppOnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
   getParentRoute: () => AppRoute,
 } as any)
 const App404Route = App404RouteImport.update({
@@ -166,8 +166,8 @@ const AppDownloadsIdPlayRoute = AppDownloadsIdPlayRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/onboarding': typeof OnboardingRoute
   '/404': typeof App404Route
-  '/onboarding': typeof AppOnboardingRoute
   '/requests': typeof AppRequestsRoute
   '/search': typeof AppSearchRoute
   '/login': typeof AuthLoginRoute
@@ -192,8 +192,8 @@ export interface FileRoutesByFullPath {
   '/user/$id': typeof AppUserIdIndexRoute
 }
 export interface FileRoutesByTo {
+  '/onboarding': typeof OnboardingRoute
   '/404': typeof App404Route
-  '/onboarding': typeof AppOnboardingRoute
   '/requests': typeof AppRequestsRoute
   '/search': typeof AppSearchRoute
   '/login': typeof AuthLoginRoute
@@ -221,8 +221,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
   '/_app/404': typeof App404Route
-  '/_app/onboarding': typeof AppOnboardingRoute
   '/_app/requests': typeof AppRequestsRoute
   '/_app/search': typeof AppSearchRoute
   '/_auth/login': typeof AuthLoginRoute
@@ -249,8 +249,8 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/404'
     | '/onboarding'
+    | '/404'
     | '/requests'
     | '/search'
     | '/login'
@@ -275,8 +275,8 @@ export interface FileRouteTypes {
     | '/user/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/404'
     | '/onboarding'
+    | '/404'
     | '/requests'
     | '/search'
     | '/login'
@@ -303,8 +303,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_app'
     | '/_auth'
+    | '/onboarding'
     | '/_app/404'
-    | '/_app/onboarding'
     | '/_app/requests'
     | '/_app/search'
     | '/_auth/login'
@@ -332,10 +332,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
+  OnboardingRoute: typeof OnboardingRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_auth': {
       id: '/_auth'
       path: ''
@@ -383,13 +391,6 @@ declare module '@tanstack/react-router' {
       path: '/requests'
       fullPath: '/requests'
       preLoaderRoute: typeof AppRequestsRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/onboarding': {
-      id: '/_app/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof AppOnboardingRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/404': {
@@ -523,7 +524,6 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   App404Route: typeof App404Route
-  AppOnboardingRoute: typeof AppOnboardingRoute
   AppRequestsRoute: typeof AppRequestsRoute
   AppSearchRoute: typeof AppSearchRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -548,7 +548,6 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   App404Route: App404Route,
-  AppOnboardingRoute: AppOnboardingRoute,
   AppRequestsRoute: AppRequestsRoute,
   AppSearchRoute: AppSearchRoute,
   AppIndexRoute: AppIndexRoute,
@@ -588,6 +587,7 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
+  OnboardingRoute: OnboardingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

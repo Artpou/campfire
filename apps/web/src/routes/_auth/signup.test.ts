@@ -10,43 +10,15 @@ vi.mock("@/features/auth/auth-store", () => ({
   },
 }));
 
-const hasOwner = vi.hoisted(() => vi.fn());
-
-vi.mock("@seedarr/sdk", () => ({
-  api: {
-    auth: {
-      "has-owner": {
-        $get: () => Promise.resolve({}),
-      },
-    },
-  },
-  unwrap: (promise: Promise<unknown>) => promise.then(() => hasOwner()),
-}));
-
 const { Route } = await import("@/routes/_auth/signup");
 const beforeLoad = Route.options.beforeLoad;
 
 describe("signup route beforeLoad", () => {
   beforeEach(() => {
     authState.user = null;
-    hasOwner.mockReset();
   });
 
-  it("redirects authenticated users home", async () => {
-    authState.user = { id: "u1" };
-
-    await expect(beforeLoad?.({} as never)).rejects.toMatchObject({ options: { to: "/" } });
-  });
-
-  it("redirects to login when owner already exists", async () => {
-    hasOwner.mockResolvedValue({ hasOwner: true });
-
-    await expect(beforeLoad?.({} as never)).rejects.toMatchObject({ options: { to: "/login" } });
-  });
-
-  it("allows signup when no owner exists", async () => {
-    hasOwner.mockResolvedValue({ hasOwner: false });
-
-    await expect(beforeLoad?.({} as never)).resolves.toBeUndefined();
+  it("always redirects to onboarding", async () => {
+    await expect(beforeLoad?.({} as never)).rejects.toMatchObject({ options: { to: "/onboarding" } });
   });
 });

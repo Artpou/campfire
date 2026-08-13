@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
@@ -41,7 +42,12 @@ interface StorageFormData {
   password: string;
 }
 
-export function SettingsStorageTab() {
+interface SettingsStorageTabProps {
+  titleAddon?: ReactNode;
+  hideOptions?: boolean;
+}
+
+export function SettingsStorageTab({ titleAddon, hideOptions = false }: SettingsStorageTabProps) {
   const { t } = useLingui();
   const { data: config, isLoading } = useQuery(storageConfigQueries.get());
 
@@ -169,6 +175,7 @@ export function SettingsStorageTab() {
         <h2 className="flex items-center gap-2">
           <ServerIcon className="size-5" />
           <Trans>Remote Storage</Trans>
+          {titleAddon}
         </h2>
         <p className="text-sm text-muted-foreground">
           <Trans>
@@ -345,62 +352,64 @@ export function SettingsStorageTab() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 border rounded-md p-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <RefreshCwIcon className="size-5 shrink-0" />
-            <div className="space-y-1">
-              <Label>
-                <Trans>Auto-transfer downloaded files</Trans>
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                <Trans>
-                  When enabled, new downloads are automatically transferred to the remote server after completion. You
-                  can still transfer files manually at any time.
-                </Trans>
-              </p>
-            </div>
-          </div>
-          <Button
-            variant={enabled ? "secondary" : "default"}
-            size="sm"
-            onClick={handleToggleAutoTransfer}
-            disabled={!hasRequiredFields || upsertMutation.isPending}
-            loading={enabling || (testMutation.isPending && !enabled)}
-          >
-            {enabled ? <Trans>Disable</Trans> : <Trans>Enable</Trans>}
-          </Button>
-        </div>
-
-        {enabled && (
-          <div className="flex items-center justify-between gap-4 border-t pt-4">
+      {!hideOptions && (
+        <div className="flex flex-col gap-4 border rounded-md p-4">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <Trash2Icon className="size-5 shrink-0" />
+              <RefreshCwIcon className="size-5 shrink-0" />
               <div className="space-y-1">
                 <Label>
-                  <Trans>Delete local files after auto-transfer</Trans>
+                  <Trans>Auto-transfer downloaded files</Trans>
                 </Label>
                 <p className="text-sm text-muted-foreground">
                   <Trans>
-                    Only applies to automatic transfers. Local files are deleted once the auto-transfer succeeds. Manual
-                    transfers always keep a local copy. Streaming is unavailable while an auto-transfer download is in
-                    progress.
+                    When enabled, new downloads are automatically transferred to the remote server after completion. You
+                    can still transfer files manually at any time.
                   </Trans>
                 </p>
               </div>
             </div>
             <Button
-              variant={deleteLocalAfterTransfer ? "secondary" : "default"}
+              variant={enabled ? "secondary" : "default"}
               size="sm"
-              onClick={handleToggleDeleteLocal}
-              disabled={!hasRequiredFields}
-              loading={upsertMutation.isPending}
+              onClick={handleToggleAutoTransfer}
+              disabled={!hasRequiredFields || upsertMutation.isPending}
+              loading={enabling || (testMutation.isPending && !enabled)}
             >
-              {deleteLocalAfterTransfer ? <Trans>Disable</Trans> : <Trans>Enable</Trans>}
+              {enabled ? <Trans>Disable</Trans> : <Trans>Enable</Trans>}
             </Button>
           </div>
-        )}
-      </div>
+
+          {enabled && (
+            <div className="flex items-center justify-between gap-4 border-t pt-4">
+              <div className="flex items-center gap-3">
+                <Trash2Icon className="size-5 shrink-0" />
+                <div className="space-y-1">
+                  <Label>
+                    <Trans>Delete local files after auto-transfer</Trans>
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    <Trans>
+                      Only applies to automatic transfers. Local files are deleted once the auto-transfer succeeds.
+                      Manual transfers always keep a local copy. Streaming is unavailable while an auto-transfer
+                      download is in progress.
+                    </Trans>
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant={deleteLocalAfterTransfer ? "secondary" : "default"}
+                size="sm"
+                onClick={handleToggleDeleteLocal}
+                disabled={!hasRequiredFields}
+                loading={upsertMutation.isPending}
+              >
+                {deleteLocalAfterTransfer ? <Trans>Disable</Trans> : <Trans>Enable</Trans>}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
     </section>
   );
 }
