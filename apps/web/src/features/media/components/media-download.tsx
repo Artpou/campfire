@@ -3,7 +3,8 @@ import { useState } from "react";
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { Download } from "@seedarr/sdk";
 import { formatBytes } from "@seedarr/shared";
-import { AlertCircleIcon, MegaphoneIcon, RefreshCwIcon, Trash2Icon } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { AlertCircleIcon, MegaphoneIcon, RefreshCwIcon, ServerIcon, Trash2Icon } from "lucide-react";
 
 import { DialogDelete } from "@/shared/components/dialog/dialog-delete";
 import { Badge } from "@/shared/ui/badge";
@@ -20,7 +21,9 @@ import {
   useDownloadDelete,
   useDownloadReannounce,
   useDownloadRecheck,
+  useDownloadTransfer,
 } from "@/features/downloads/hooks/download.queries";
+import { storageConfigQueries } from "@/features/settings/hooks/storage-config.queries";
 
 interface MediaDownloadProps {
   downloads: Download[];
@@ -45,6 +48,8 @@ function DownloadEntry({ download }: { download: Download }) {
   const deleteTorrent = useDownloadDelete();
   const recheckTorrent = useDownloadRecheck();
   const reannounce = useDownloadReannounce();
+  const transfer = useDownloadTransfer();
+  const { data: storageEnabled } = useQuery(storageConfigQueries.enabled());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const status = getDownloadStatus(download);
@@ -58,6 +63,9 @@ function DownloadEntry({ download }: { download: Download }) {
   const hasActiveTorrentSession = isActive || isPaused;
   const totalSize = download.torrent?.length ?? 0;
   const showProgress = isActive || isPaused;
+  const canTransfer =
+    Boolean(download.torrent?.done && !download.remoteLocation && !download.torrent?.transferring) &&
+    storageEnabled?.enabled === true;
 
   const handleDelete = () => {
     deleteTorrent.mutate({ id: download.id, scope: "torrent" }, { onSuccess: () => setShowDeleteConfirm(false) });
@@ -104,6 +112,19 @@ function DownloadEntry({ download }: { download: Download }) {
             >
               <span className="hidden sm:inline">
                 <Trans>Reannounce</Trans>
+              </span>
+            </Button>
+          )}
+          {canTransfer && (
+            <Button
+              variant="secondary"
+              onClick={() => transfer.mutate(download.id)}
+              disabled={transfer.isPending}
+              aria-label={t`Transfer`}
+              icon={ServerIcon}
+            >
+              <span className="hidden sm:inline">
+                <Trans>Transfer</Trans>
               </span>
             </Button>
           )}

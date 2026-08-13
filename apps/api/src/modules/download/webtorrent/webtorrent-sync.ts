@@ -124,8 +124,8 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
         return;
       }
 
-      const enabled = await remoteStorageService.isEnabled();
-      if (enabled && torrent.name) {
+      const autoTransfer = await remoteStorageService.isAutoTransferEnabled();
+      if (autoTransfer && torrent.name) {
         await markTransferStarting(downloadId);
         runRemoteTransfer(downloadId, { isAutoTransfer: true }).catch((err) => {
           logger.error("WEBTORRENT", `Remote transfer failed for "${torrent.name}": ${err}`);

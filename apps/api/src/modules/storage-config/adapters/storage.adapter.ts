@@ -23,6 +23,12 @@ export interface RemoteDirectoryEntry {
   type: "file" | "directory";
 }
 
+export interface StorageDiskSpace {
+  used: number;
+  total: number;
+  protocol: StorageProtocol;
+}
+
 export abstract class StorageAdapter {
   abstract testConnection(opts: StorageConnectionOptions): Promise<{ success: boolean; error?: string }>;
   abstract transferDirectory(
@@ -41,4 +47,9 @@ export abstract class StorageAdapter {
   abstract listDirectories(remotePath: string, opts: StorageConnectionOptions): Promise<RemoteDirectoryEntry[]>;
   abstract moveFile(from: string, to: string, opts: StorageConnectionOptions): Promise<void>;
   abstract ensureDirectory(remotePath: string, opts: StorageConnectionOptions): Promise<void>;
+
+  /** Optional — WebDAV quota, etc. Returns null when the server does not expose free space. */
+  getDiskSpace(_opts: StorageConnectionOptions): Promise<StorageDiskSpace | null> {
+    return Promise.resolve(null);
+  }
 }

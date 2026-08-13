@@ -41,7 +41,7 @@ describe("settings/indexer beforeLoad", () => {
       } as never),
     ).toThrow(
       expect.objectContaining({
-        options: expect.objectContaining({ to: "/settings" }),
+        options: expect.objectContaining({ to: "/settings/general" }),
       }),
     );
   });

@@ -13,12 +13,12 @@ import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";
 import { useDownloadDelete } from "@/features/downloads/hooks/download.queries";
 
-interface DownloadDeleteButtonProps {
+interface DownloadButtonDeleteProps {
   media: Media;
   download: Download | null | undefined;
 }
 
-export function DownloadDeleteButton({ media, download }: DownloadDeleteButtonProps) {
+export function DownloadButtonDelete({ media, download }: DownloadButtonDeleteProps) {
   const { isAdmin } = useRole();
   const currentUser = useAuth((s) => s.user);
   const deleteDownload = useDownloadDelete();

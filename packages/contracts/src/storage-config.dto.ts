@@ -4,6 +4,7 @@ import { storageProtocolEnum } from "./enums";
 
 export const upsertStorageConfigDto = z.object({
   enabled: z.boolean(),
+  autoTransfer: z.boolean().default(false),
   protocol: z.enum(storageProtocolEnum),
   host: z.string().min(1).max(256),
   port: z.number().int().min(1).max(65535),
@@ -13,6 +14,7 @@ export const upsertStorageConfigDto = z.object({
   username: z.string().max(256).optional(),
   password: z.string().max(256).optional(),
   deleteLocalAfterTransfer: z.boolean().default(false),
+  diskQuotaGb: z.number().positive().max(1_000_000).nullable().optional(),
 });
 export type UpsertStorageConfigInput = z.infer<typeof upsertStorageConfigDto>;
 

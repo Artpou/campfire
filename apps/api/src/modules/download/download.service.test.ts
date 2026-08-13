@@ -27,7 +27,18 @@ vi.mock("@/db/db", () => ({
 }));
 
 vi.mock("@/modules/storage-config/remote-storage.service", () => ({
-  remoteStorageService: { isEnabled, isAvailable, listFiles, remove },
+  remoteStorageService: {
+    isEnabled,
+    isAvailable,
+    listFiles,
+    remove,
+    getDiskSpace: vi.fn().mockResolvedValue(null),
+    getProtocol: vi.fn().mockResolvedValue(null),
+  },
+}));
+
+vi.mock("./local/local-disk.helper", () => ({
+  getLocalDiskSpace: vi.fn().mockResolvedValue({ used: 100, total: 1000 }),
 }));
 
 vi.mock("./webtorrent/webtorrent.service", () => ({
@@ -96,8 +107,11 @@ describe("DownloadService", () => {
   }
 
   it("getStats aggregates size and speeds", async () => {
-    seedDownload("dl-1");
+    testDbRef.current?.insert(media).values({ id: 1, type: "movie", title: "A", imdbId: "tt1" }).run();
+    testDbRef.current?.insert(media).values({ id: 2, type: "tv", title: "B", imdbId: "tt2" }).run();
+    seedDownload("dl-1", { mediaId: 1 });
     seedDownload("dl-2", {
+      mediaId: 2,
       torrent: {
         name: "Active",
         done: false,
@@ -113,9 +127,17 @@ describe("DownloadService", () => {
     await expect(service.getStats()).resolves.toEqual({
       count: 2,
       totalSize: 1500,
+      movies: { count: 1, totalSize: 1000 },
+      tv: { count: 1, totalSize: 500 },
       downloadSpeed: 100,
       uploadSpeed: 10,
+      activeDownloads: 1,
+      activeUploads: 1,
       peers: 3,
+      storage: {
+        local: { seedarrUsed: 1500, diskUsed: 100, diskTotal: 1000 },
+        remote: null,
+      },
     });
   });
 

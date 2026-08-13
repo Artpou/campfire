@@ -106,7 +106,10 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
       try {
         await startDownload.mutateAsync(input);
         toast.success(t`Download started`, { id, description: input.name });
-        navigate({ to: "/downloads" });
+        navigate({
+          to: media.type === "tv" ? "/tv/$id" : "/movies/$id",
+          params: { id: String(media.id) },
+        });
       } catch (error) {
         if (error instanceof ApiError && error.status === 409) {
           toast.dismiss(id);
@@ -118,7 +121,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
         toast.error(t`Download failed`, { id, description: message });
       }
     },
-    [startDownload, navigate, t],
+    [startDownload, navigate, t, media.id, media.type],
   );
 
   const handleAddDownload = useCallback(

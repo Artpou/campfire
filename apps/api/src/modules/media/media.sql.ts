@@ -52,10 +52,46 @@ export function scalarUserRelation(
 }
 
 /** Latest download createdAt for this media (any user — shared library). */
-function downloadCreatedAtSql(): SQL {
+export function downloadCreatedAtSql(): SQL {
   return scalarUserRelation(download, download.createdAt, media.id, {
     orderBy: desc(sqlColumn(download, download.createdAt)),
   });
+}
+
+/** Active torrent/transfer for this media (JSON live data on download.torrent). */
+function activeDownloadExistsSql(): SQL {
+  return sql`EXISTS (
+    SELECT 1 FROM ${sql.identifier("download")} d
+    WHERE d.mediaId = ${media.id}
+      AND d.torrent IS NOT NULL
+      AND (
+        json_extract(d.torrent, '$.transferring') = 1
+        OR (
+          COALESCE(json_extract(d.torrent, '$.done'), 0) = 0
+          AND COALESCE(json_extract(d.torrent, '$.paused'), 0) = 0
+        )
+      )
+  )`;
+}
+
+/**
+ * Library default rank: active downloads → watch-in-progress → rest.
+ * Pair with {@link downloadCreatedAtSql} desc when no explicit sortBy.
+ */
+export function libraryRankSql(userId: string): SQL {
+  return sql`CASE
+    WHEN ${activeDownloadExistsSql()} THEN 0
+    WHEN EXISTS (
+      SELECT 1 FROM ${sql.identifier("watchProgress")}
+      WHERE ${sqlColumn(watchProgress, "mediaId")} = ${media.id}
+        AND ${sqlColumn(watchProgress, "userId")} = ${userId}
+        AND ${sqlColumn(watchProgress, "completed")} = 0
+        AND ${sqlColumn(watchProgress, "duration")} > 0
+        AND ${sqlColumn(watchProgress, "position")} > 0
+        AND CAST(${sqlColumn(watchProgress, "position")} AS REAL) / ${sqlColumn(watchProgress, "duration")} < ${WATCHED_RATIO}
+    ) THEN 1
+    ELSE 2
+  END`;
 }
 
 /** review.createdAt → watched progress.updatedAt → like.createdAt */
@@ -87,26 +123,6 @@ export function progressRatioSql(userId: string): SQL {
     media.id,
     { userId: userId },
   )}, 0)`;
-}
-
-export function inProgressRankSql(userId: string): SQL {
-  return sql`CASE
-    WHEN EXISTS (
-      SELECT 1 FROM ${sql.identifier("watchProgress")}
-      WHERE ${sqlColumn(watchProgress, "mediaId")} = ${media.id}
-        AND ${sqlColumn(watchProgress, "userId")} = ${userId}
-        AND ${sqlColumn(watchProgress, "completed")} = 0
-        AND ${sqlColumn(watchProgress, "duration")} > 0
-        AND ${sqlColumn(watchProgress, "position")} > 0
-        AND CAST(${sqlColumn(watchProgress, "position")} AS REAL) / ${sqlColumn(watchProgress, "duration")} < ${WATCHED_RATIO}
-    ) THEN 0
-    WHEN EXISTS (
-      SELECT 1 FROM ${sql.identifier("watchProgress")}
-      WHERE ${sqlColumn(watchProgress, "mediaId")} = ${media.id}
-        AND ${sqlColumn(watchProgress, "userId")} = ${userId}
-    ) THEN 1
-    ELSE 2
-  END`;
 }
 
 export function sortDateSql(userId: string): SQL {

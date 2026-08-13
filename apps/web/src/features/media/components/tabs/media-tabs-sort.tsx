@@ -52,9 +52,9 @@ export function MediaSortTabs({ value, onChange }: MediaSortTabsProps) {
 
   return (
     <Tabs value={activeValue} onValueChange={handleChange}>
-      <TabsList size="lg">
+      <TabsList size="lg" className="w-full sm:w-fit">
         {sortOptions.map(({ value, icon, label }) => (
-          <TabsTrigger key={value} value={value} size="lg">
+          <TabsTrigger key={value} value={value} size="lg" className="flex-1 sm:flex-none">
             {icon}
             {label}
           </TabsTrigger>

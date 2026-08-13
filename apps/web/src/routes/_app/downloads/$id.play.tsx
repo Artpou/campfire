@@ -205,7 +205,16 @@ function VideoPlayerPage() {
           </Card>
         </div>
 
-        <MediaCardHorizontal media={media} withOverview withSocialActions withDownload />
+        <MediaCardHorizontal
+          media={media}
+          withOverview
+          withSocialActions
+          withDownload
+          link={{
+            to: media.type === "tv" ? "/tv/$id" : "/movies/$id",
+            params: { id: String(media.id) },
+          }}
+        />
       </div>
     </Container>
   );

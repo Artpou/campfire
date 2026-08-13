@@ -35,9 +35,11 @@ export function RequestCarousel({ requests, title, seeMoreTo, seeMoreSearch }: R
       {requests.map((request) => (
         <CarouselItem
           key={request.id}
-          className="!w-auto basis-[85%] sm:basis-[55%] md:basis-[42%] lg:basis-[34%] xl:basis-[28%]"
+          className="basis-[85%] sm:basis-[55%] md:basis-[42%] lg:basis-[34%] xl:basis-[28%]"
         >
-          <RequestCard request={request} />
+          <div className="h-full">
+            <RequestCard request={request} />
+          </div>
         </CarouselItem>
       ))}
     </CarouselWrapper>

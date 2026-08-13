@@ -10,13 +10,15 @@ import { seedTestUser } from "@/tests/route-test.helper";
 import { createTestDb, sampleTorrent, type TestDb } from "@/tests/test.helper";
 import { EventEmitter } from "node:events";
 
-const { testDbRef, isEnabled, markTransferStarting, runRemoteTransfer, invalidateStreamSource } = vi.hoisted(() => ({
-  testDbRef: { current: null as TestDb | null },
-  isEnabled: vi.fn(),
-  markTransferStarting: vi.fn(),
-  runRemoteTransfer: vi.fn(),
-  invalidateStreamSource: vi.fn(),
-}));
+const { testDbRef, isEnabled, isAutoTransferEnabled, markTransferStarting, runRemoteTransfer, invalidateStreamSource } =
+  vi.hoisted(() => ({
+    testDbRef: { current: null as TestDb | null },
+    isEnabled: vi.fn(),
+    isAutoTransferEnabled: vi.fn(),
+    markTransferStarting: vi.fn(),
+    runRemoteTransfer: vi.fn(),
+    invalidateStreamSource: vi.fn(),
+  }));
 
 vi.mock("@/db/db", () => ({
   get db() {
@@ -25,7 +27,7 @@ vi.mock("@/db/db", () => ({
 }));
 
 vi.mock("@/modules/storage-config/remote-storage.service", () => ({
-  remoteStorageService: { isEnabled },
+  remoteStorageService: { isEnabled, isAutoTransferEnabled },
 }));
 
 vi.mock("../remote/remote-transfer.helper", () => ({
@@ -104,6 +106,7 @@ describe("webtorrent-sync", () => {
     torrentClient.deleteActiveTorrent("dl-1");
     torrentClient.unmarkDestroying("dl-1");
     isEnabled.mockReset().mockResolvedValue(false);
+    isAutoTransferEnabled.mockReset().mockResolvedValue(false);
     markTransferStarting.mockReset().mockResolvedValue(undefined);
     runRemoteTransfer.mockReset().mockResolvedValue(undefined);
     invalidateStreamSource.mockReset();
@@ -173,7 +176,7 @@ describe("webtorrent-sync", () => {
   });
 
   it("starts auto remote transfer when enabled", async () => {
-    isEnabled.mockResolvedValue(true);
+    isAutoTransferEnabled.mockResolvedValue(true);
     testDbRef.current
       ?.insert(download)
       .values({

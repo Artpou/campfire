@@ -8,6 +8,7 @@ import type {
   RemoteFileEntry,
   StorageAdapter,
   StorageConnectionOptions,
+  StorageDiskSpace,
   StorageProtocol,
 } from "./adapters/storage.adapter";
 import { WebdavAdapter } from "./adapters/webdav.adapter";
@@ -36,9 +37,11 @@ function normalizeBasePath(basePath: string | null | undefined): string {
 interface StorageConfigFull {
   connectionOptions: StorageConnectionOptions | null;
   enabled: boolean;
+  autoTransfer: boolean;
   moviePath: string;
   tvPath: string;
   deleteLocalAfterTransfer: boolean;
+  diskQuotaGb: number | null;
 }
 
 const CONFIG_CACHE_KEY = "config";
@@ -71,9 +74,11 @@ async function loadConfig(): Promise<StorageConfigFull> {
         }
       : null,
     enabled: config?.enabled === true,
+    autoTransfer: config?.autoTransfer === true,
     moviePath: normalizeBasePath(config?.moviePath),
     tvPath: normalizeBasePath(config?.tvPath),
     deleteLocalAfterTransfer: config?.deleteLocalAfterTransfer === true,
+    diskQuotaGb: config?.diskQuotaGb ?? null,
   };
 
   configCache.set(CONFIG_CACHE_KEY, result);
@@ -112,6 +117,22 @@ class RemoteStorageService {
   async isEnabled(): Promise<boolean> {
     const config = await loadConfig();
     return config.enabled;
+  }
+
+  async isAutoTransferEnabled(): Promise<boolean> {
+    const config = await loadConfig();
+    return config.enabled && config.autoTransfer;
+  }
+
+  async getProtocol(): Promise<StorageProtocol | null> {
+    const config = await loadConfig();
+    return config.connectionOptions?.protocol ?? null;
+  }
+
+  async getDiskQuotaBytes(): Promise<number | null> {
+    const config = await loadConfig();
+    if (config.diskQuotaGb == null || config.diskQuotaGb <= 0) return null;
+    return config.diskQuotaGb * 1024 * 1024 * 1024;
   }
 
   async isAvailable(): Promise<boolean> {
@@ -173,6 +194,22 @@ class RemoteStorageService {
   ): Promise<{ stream: NodeJS.ReadableStream; size: number; cleanup?: () => void } | null> {
     assertSafePath(remotePath);
     return this.withAdapter(null, (adapter, opts) => adapter.createReadStream(remotePath, opts, range));
+  }
+
+  async getDiskSpace(): Promise<StorageDiskSpace | null> {
+    const fromAdapter = await this.withAdapter(null, (adapter, opts) => adapter.getDiskSpace(opts));
+    if (fromAdapter) return fromAdapter;
+
+    const config = await loadConfig();
+    if (!config.enabled || !config.connectionOptions) return null;
+    const quotaBytes = await this.getDiskQuotaBytes();
+    if (quotaBytes == null) return null;
+
+    return {
+      used: 0,
+      total: quotaBytes,
+      protocol: config.connectionOptions.protocol,
+    };
   }
 }
 

@@ -1,4 +1,5 @@
 import type { TestStorageConfigInput, UpsertStorageConfigInput } from "@seedarr/contracts";
+import { eq } from "drizzle-orm";
 
 import { NotFoundError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
@@ -11,6 +12,7 @@ import { storageConfig } from "./storage-config.schema";
 export interface StorageConfigResponse {
   id: string;
   enabled: boolean;
+  autoTransfer: boolean;
   protocol: string;
   host: string;
   port: number;
@@ -20,28 +22,48 @@ export interface StorageConfigResponse {
   username: string | null;
   hasPassword: boolean;
   deleteLocalAfterTransfer: boolean;
+  diskQuotaGb: number | null;
 }
 
 const SINGLETON_ID = "default";
+
+function toResponse(config: {
+  id: string;
+  enabled: boolean;
+  autoTransfer: boolean;
+  protocol: string;
+  host: string;
+  port: number;
+  secure: boolean;
+  moviePath: string | null;
+  tvPath: string | null;
+  username: string | null;
+  password: string | null;
+  deleteLocalAfterTransfer: boolean;
+  diskQuotaGb: number | null;
+}): StorageConfigResponse {
+  return {
+    id: config.id,
+    enabled: config.enabled,
+    autoTransfer: config.autoTransfer,
+    protocol: config.protocol ?? "ftp",
+    host: config.host,
+    port: config.port ?? 21,
+    secure: config.secure ?? false,
+    moviePath: config.moviePath,
+    tvPath: config.tvPath,
+    username: config.username,
+    hasPassword: !!config.password,
+    deleteLocalAfterTransfer: config.deleteLocalAfterTransfer,
+    diskQuotaGb: config.diskQuotaGb,
+  };
+}
 
 export class StorageConfigService {
   async get(): Promise<StorageConfigResponse | null> {
     const config = await db.query.storageConfig.findFirst();
     if (!config) return null;
-
-    return {
-      id: config.id,
-      enabled: config.enabled,
-      protocol: config.protocol ?? "ftp",
-      host: config.host,
-      port: config.port ?? 21,
-      secure: config.secure ?? false,
-      moviePath: config.moviePath,
-      tvPath: config.tvPath,
-      username: config.username,
-      hasPassword: !!config.password,
-      deleteLocalAfterTransfer: config.deleteLocalAfterTransfer,
-    };
+    return toResponse(config);
   }
 
   async upsert(input: UpsertStorageConfigInput): Promise<StorageConfigResponse> {
@@ -50,6 +72,7 @@ export class StorageConfigService {
     const values = {
       id: existing?.id ?? SINGLETON_ID,
       enabled: input.enabled,
+      autoTransfer: input.autoTransfer,
       protocol: input.protocol,
       host: input.host,
       port: input.port,
@@ -59,6 +82,7 @@ export class StorageConfigService {
       username: input.username ?? null,
       password: input.password ? encrypt(input.password) : (existing?.password ?? null),
       deleteLocalAfterTransfer: input.deleteLocalAfterTransfer,
+      diskQuotaGb: input.diskQuotaGb === undefined ? (existing?.diskQuotaGb ?? null) : input.diskQuotaGb,
       updatedAt: new Date(),
     };
 
@@ -66,19 +90,22 @@ export class StorageConfigService {
 
     logger.info("STORAGE_CONFIG", `Storage config ${existing ? "updated" : "created"}`);
 
-    return {
-      id: values.id,
-      enabled: values.enabled,
-      protocol: values.protocol,
-      host: values.host,
-      port: values.port,
-      secure: values.secure,
-      moviePath: values.moviePath,
-      tvPath: values.tvPath,
-      username: values.username,
-      hasPassword: !!values.password,
-      deleteLocalAfterTransfer: values.deleteLocalAfterTransfer,
-    };
+    return toResponse(values);
+  }
+
+  async disconnect(): Promise<StorageConfigResponse> {
+    const existing = await db.query.storageConfig.findFirst();
+    if (!existing) throw new NotFoundError("Storage config");
+
+    await db
+      .update(storageConfig)
+      .set({ enabled: false, autoTransfer: false, updatedAt: new Date() })
+      .where(eq(storageConfig.id, existing.id));
+
+    logger.info("STORAGE_CONFIG", "Storage config disconnected");
+    const updated = await db.query.storageConfig.findFirst();
+    if (!updated) throw new NotFoundError("Storage config");
+    return toResponse(updated);
   }
 
   async remove(): Promise<{ success: true }> {

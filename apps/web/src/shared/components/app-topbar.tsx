@@ -57,8 +57,12 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
         {isAuthenticated ? (
           <>
             <div className="flex items-center gap-6 min-w-0">
-              <Link to="/movies" className="flex items-center gap-2 shrink-0">
-                <img src="/logo192.png" alt="Seedarr" className="size-8" />
+              <Link to="/movies" className="group flex items-center gap-2 shrink-0">
+                <img
+                  src="/logo192.png"
+                  alt="Seedarr"
+                  className="size-8 transition-all duration-300 group-hover:drop-shadow-[0_0_16px_oklch(0.63_0.13_135/1)]"
+                />
                 <span className="text-lg font-semibold hidden sm:inline">Seedarr</span>
               </Link>
 

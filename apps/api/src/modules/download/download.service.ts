@@ -17,6 +17,7 @@ import { remoteStorageService } from "@/modules/storage-config/remote-storage.se
 import { invalidateStreamSource } from "@/modules/streaming/streaming.service";
 import { resolveTorrentSource } from "@/modules/torrent/torrent-source.helper";
 import type { Download, DownloadStats } from "./download.schema";
+import { getLocalDiskSpace } from "./local/local-disk.helper";
 import { isTransferInProgress, markTransferStarting, runRemoteTransfer } from "./remote/remote-transfer.helper";
 import { extractTorrentLiveData, waitForTorrentMetadata } from "./webtorrent/webtorrent.helper";
 import {
@@ -66,23 +67,94 @@ export class DownloadService extends IdentifiableService<Download> {
   }
 
   async getStats(): Promise<DownloadStats> {
-    const downloads = await this.getMany();
+    const downloads = await db.query.download.findMany({
+      with: { media: { columns: { type: true } } },
+    });
 
     let totalSize = 0;
     let downloadSpeed = 0;
     let uploadSpeed = 0;
     let peers = 0;
+    let activeDownloads = 0;
+    let activeUploads = 0;
+    const movies = { count: 0, totalSize: 0 };
+    const tv = { count: 0, totalSize: 0 };
+
+    let localSeedarrUsed = 0;
+    let remoteSeedarrUsed = 0;
 
     for (const dl of downloads) {
-      totalSize += dl.size ?? dl.torrent?.length ?? 0;
-      if (dl.torrent && !dl.torrent.done && !dl.torrent.paused) {
-        downloadSpeed += dl.torrent.downloadSpeed ?? 0;
-        uploadSpeed += dl.torrent.uploadSpeed ?? 0;
-        peers += dl.torrent.numPeers ?? 0;
+      const size = dl.size ?? dl.torrent?.length ?? 0;
+      totalSize += size;
+
+      const mediaType = dl.media?.type;
+      if (mediaType === "movie") {
+        movies.count += 1;
+        movies.totalSize += size;
+      } else if (mediaType === "tv") {
+        tv.count += 1;
+        tv.totalSize += size;
+      }
+
+      // Local copy present when torrent metadata remains (cleared after delete-local transfer).
+      if (dl.torrent) localSeedarrUsed += size;
+      if (dl.remoteLocation) remoteSeedarrUsed += size;
+
+      const torrent = dl.torrent;
+      if (!torrent) continue;
+
+      const isActive = torrent.transferring === true || (!torrent.done && !torrent.paused);
+      if (isActive) {
+        activeDownloads += 1;
+        downloadSpeed += torrent.downloadSpeed ?? 0;
+        peers += torrent.numPeers ?? 0;
+      }
+
+      if (!torrent.paused && (torrent.uploadSpeed ?? 0) > 0) {
+        activeUploads += 1;
+        uploadSpeed += torrent.uploadSpeed ?? 0;
       }
     }
 
-    return { count: downloads.length, totalSize, downloadSpeed, uploadSpeed, peers };
+    const [localDisk, remoteEnabled] = await Promise.all([
+      getLocalDiskSpace(torrentClient.downloadPath),
+      remoteStorageService.isEnabled(),
+    ]);
+    const remoteDisk = remoteEnabled ? await remoteStorageService.getDiskSpace() : null;
+    const remoteProtocol = remoteDisk?.protocol ?? (await remoteStorageService.getProtocol());
+
+    const local =
+      localSeedarrUsed > 0
+        ? {
+            seedarrUsed: localSeedarrUsed,
+            diskUsed: localDisk?.used ?? null,
+            diskTotal: localDisk?.total ?? null,
+          }
+        : null;
+
+    const isFtpManualQuota = remoteDisk?.protocol === "ftp" && remoteDisk.used === 0;
+    const remote =
+      remoteSeedarrUsed > 0
+        ? {
+            seedarrUsed: remoteSeedarrUsed,
+            diskUsed: remoteDisk && !isFtpManualQuota ? remoteDisk.used : null,
+            diskTotal: remoteDisk?.total ?? null,
+            protocol: remoteProtocol ?? ("ftp" as const),
+          }
+        : null;
+
+    return {
+      count: downloads.length,
+      totalSize,
+      movies,
+      tv,
+      downloadSpeed,
+      uploadSpeed,
+      activeDownloads,
+      activeUploads,
+      peers,
+      storage: { local, remote },
+    };
   }
 
   async start(input: DownloadTorrentInput): Promise<Download | { status: "REMOTE_UNAVAILABLE" }> {

@@ -97,7 +97,25 @@ export type Download = z.infer<typeof downloadSelectSchema>;
 export interface DownloadStats {
   count: number;
   totalSize: number;
+  movies: { count: number; totalSize: number };
+  tv: { count: number; totalSize: number };
   downloadSpeed: number;
   uploadSpeed: number;
+  activeDownloads: number;
+  activeUploads: number;
   peers: number;
+  storage: {
+    local: StorageSpaceStats | null;
+    remote: (StorageSpaceStats & { protocol: "ftp" | "webdav" }) | null;
+  };
+}
+
+/** Disk visualization: capacity / occupied / Seedarr-owned bytes. */
+export interface StorageSpaceStats {
+  /** Bytes Seedarr downloads occupy on this storage. */
+  seedarrUsed: number;
+  /** Bytes occupied on the volume (null when unknown, e.g. plain FTP). */
+  diskUsed: number | null;
+  /** Total capacity in bytes (null when unknown). */
+  diskTotal: number | null;
 }

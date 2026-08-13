@@ -20,6 +20,7 @@ export function RequestCard({ request }: RequestCardProps) {
   return (
     <MediaCardHorizontal
       media={media}
+      className="h-full"
       link={
         canTorrent && status === "pending"
           ? {

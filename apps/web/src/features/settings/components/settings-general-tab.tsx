@@ -2,12 +2,11 @@ import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
-import { FileIcon, GlobeIcon, KeyIcon, PaletteIcon, SaveIcon, StarIcon } from "lucide-react";
+import { FileIcon, GlobeIcon, KeyIcon, PaletteIcon, SaveIcon } from "lucide-react";
 
 import { SelectI18nLang } from "@/shared/components/select/select-i18n-lang";
 import { SelectQuality } from "@/shared/components/select/select-quality";
 import { Button } from "@/shared/ui/button";
-import { Checkbox } from "@/shared/ui/checkbox";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 
@@ -17,7 +16,7 @@ import { PasswordChangeModal } from "@/features/user/components/password-change-
 import { settingsQueries, useUpsertSettings } from "../hooks/settings.queries";
 
 export function SettingsGeneralTab() {
-  const { isAdmin, isOwner } = useRole();
+  const { isAdmin } = useRole();
   const quality = useUserPreferences((s) => s.quality);
   const maxSize = useUserPreferences((s) => s.maxSize);
   const setQuality = useUserPreferences((s) => s.setQuality);
@@ -62,7 +61,6 @@ export function SettingsGeneralTab() {
       </div>
 
       {isAdmin && <TmdbApiKeySection />}
-      {isOwner && <ShowMediaRatingsSection />}
 
       <div className="flex flex-col gap-4 border rounded-md p-4">
         <h3 className="flex items-center gap-3">
@@ -111,39 +109,6 @@ export function SettingsGeneralTab() {
 
       <PasswordChangeModal open={passwordOpen} onOpenChange={setPasswordOpen} />
     </section>
-  );
-}
-
-function ShowMediaRatingsSection() {
-  const { data: settings } = useQuery(settingsQueries.get());
-  const upsertSettings = useUpsertSettings();
-  const checked = settings?.showMediaRatings ?? false;
-
-  return (
-    <div className="flex flex-col gap-4 border rounded-md p-4">
-      <h3 className="flex items-center gap-3">
-        <StarIcon className="size-4" />
-        <Trans>Catalog</Trans>
-      </h3>
-      <div className="flex items-center justify-between gap-4">
-        <div className="space-y-1">
-          <Label htmlFor="show-media-ratings">
-            <Trans>Show ratings on posters</Trans>
-          </Label>
-          <p className="text-sm text-muted-foreground">
-            <Trans>Display TMDB scores on movie and TV cards in the catalog.</Trans>
-          </p>
-        </div>
-        <Checkbox
-          id="show-media-ratings"
-          checked={checked}
-          disabled={upsertSettings.isPending}
-          onCheckedChange={(v: boolean | "indeterminate") => {
-            upsertSettings.mutate({ showMediaRatings: v === true });
-          }}
-        />
-      </div>
-    </div>
   );
 }
 

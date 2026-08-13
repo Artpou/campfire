@@ -90,6 +90,7 @@ describe("Storage Config Routes", () => {
       expect(body).toMatchObject({
         id: "default",
         enabled: true,
+        autoTransfer: false,
         protocol: "ftp",
         host: "192.168.1.1",
         port: 21,
@@ -98,6 +99,7 @@ describe("Storage Config Routes", () => {
         tvPath: "TV Shows",
         username: "user",
         hasPassword: true,
+        diskQuotaGb: null,
       });
       expect(body.password).toBeUndefined();
     });

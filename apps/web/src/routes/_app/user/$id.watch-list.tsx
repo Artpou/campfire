@@ -1,11 +1,10 @@
 import { Trans } from "@lingui/react/macro";
-import { useInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 import { Container } from "@/shared/ui/container";
 
 import { MediaGrid } from "@/features/media/components/media-grid";
-import { mediaQueries, refetchMediaInterval } from "@/features/media/hooks/media.queries";
+import { useMediaList } from "@/features/media/hooks/use-media";
 
 export const Route = createFileRoute("/_app/user/$id/watch-list")({
   component: UserWatchListPage,
@@ -14,9 +13,9 @@ export const Route = createFileRoute("/_app/user/$id/watch-list")({
 function UserWatchListPage() {
   const { id } = Route.useParams();
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } = useInfiniteQuery({
-    ...mediaQueries.list({ filter: "watch-list", userId: id }),
-    refetchInterval: refetchMediaInterval,
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } = useMediaList({
+    filter: "watch-list",
+    userId: id,
   });
   const results = data?.pages.flatMap((page) => page.results) ?? [];
 

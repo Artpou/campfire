@@ -13,16 +13,19 @@ import {
   ServerIcon,
   Trash2Icon,
   TvIcon,
+  UnplugIcon,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
+import { Switch } from "@/shared/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import {
   storageConfigQueries,
+  useDisconnectStorageConfig,
   useTestStorageConnection,
   useUpsertStorageConfig,
 } from "@/features/settings/hooks/storage-config.queries";
@@ -53,12 +56,14 @@ export function SettingsStorageTab({ titleAddon, hideOptions = false }: Settings
 
   const upsertMutation = useUpsertStorageConfig();
   const testMutation = useTestStorageConnection();
+  const disconnectMutation = useDisconnectStorageConfig();
 
   const [enabled, setEnabled] = useState(false);
+  const [autoTransfer, setAutoTransfer] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [deleteLocalAfterTransfer, setDeleteLocalAfterTransfer] = useState(false);
+  const [diskQuotaGb, setDiskQuotaGb] = useState<number | null>(null);
   const [initialized, setInitialized] = useState(false);
-  const [enabling, setEnabling] = useState(false);
 
   const { register, watch, setValue, reset, handleSubmit } = useForm<StorageFormData>({
     defaultValues: {
@@ -75,12 +80,15 @@ export function SettingsStorageTab({ titleAddon, hideOptions = false }: Settings
 
   const protocol = watch("protocol");
   const host = watch("host");
+  const secure = watch("secure");
 
   useEffect(() => {
     if (!initialized && config && !isLoading) {
       const proto = (config.protocol as Protocol) || "ftp";
       setEnabled(config.enabled);
+      setAutoTransfer(config.autoTransfer ?? false);
       setDeleteLocalAfterTransfer(config.deleteLocalAfterTransfer ?? false);
+      setDiskQuotaGb(config.diskQuotaGb ?? null);
       reset({
         protocol: proto,
         host: config.host,
@@ -99,9 +107,15 @@ export function SettingsStorageTab({ titleAddon, hideOptions = false }: Settings
 
   const buildPayload = (
     data: StorageFormData,
-    overrides: Partial<{ enabled: boolean; deleteLocalAfterTransfer: boolean }> = {},
+    overrides: Partial<{
+      enabled: boolean;
+      autoTransfer: boolean;
+      deleteLocalAfterTransfer: boolean;
+      diskQuotaGb: number | null;
+    }> = {},
   ) => ({
     enabled: overrides.enabled ?? enabled,
+    autoTransfer: overrides.autoTransfer ?? autoTransfer,
     protocol: data.protocol,
     host: data.host,
     port: data.port,
@@ -111,10 +125,13 @@ export function SettingsStorageTab({ titleAddon, hideOptions = false }: Settings
     username: data.username || undefined,
     password: data.password || undefined,
     deleteLocalAfterTransfer: overrides.deleteLocalAfterTransfer ?? deleteLocalAfterTransfer,
+    diskQuotaGb: overrides.diskQuotaGb !== undefined ? overrides.diskQuotaGb : diskQuotaGb,
   });
 
   const handleSave = handleSubmit((data) => {
-    upsertMutation.mutate(buildPayload(data));
+    upsertMutation.mutate(buildPayload(data, { enabled: true }), {
+      onSuccess: () => setEnabled(true),
+    });
   });
 
   const handleTest = handleSubmit((data) => {
@@ -128,39 +145,32 @@ export function SettingsStorageTab({ titleAddon, hideOptions = false }: Settings
     });
   });
 
-  const handleToggleAutoTransfer = handleSubmit(async (data) => {
-    if (enabled) {
-      await upsertMutation.mutateAsync(buildPayload(data, { enabled: false }));
-      setEnabled(false);
-      return;
-    }
+  const handleDisconnect = () => {
+    disconnectMutation.mutate(undefined, {
+      onSuccess: () => {
+        setEnabled(false);
+        setAutoTransfer(false);
+      },
+    });
+  };
 
-    if (!hasRequiredFields) return;
-
-    setEnabling(true);
-    try {
-      const result = await testMutation.mutateAsync({
-        protocol: data.protocol,
-        host: data.host,
-        port: data.port,
-        secure: data.secure,
-        username: data.username || undefined,
-        password: data.password || undefined,
+  const saveAutoTransfer = (checked: boolean) => {
+    handleSubmit((data) => {
+      if (!hasRequiredFields || !enabled) return;
+      upsertMutation.mutate(buildPayload(data, { autoTransfer: checked }), {
+        onSuccess: () => setAutoTransfer(checked),
       });
-      if (!result.success) return;
-      await upsertMutation.mutateAsync(buildPayload(data, { enabled: true }));
-      setEnabled(true);
-    } finally {
-      setEnabling(false);
-    }
-  });
+    })();
+  };
 
-  const handleToggleDeleteLocal = handleSubmit(async (data) => {
-    if (!hasRequiredFields) return;
-    const next = !deleteLocalAfterTransfer;
-    await upsertMutation.mutateAsync(buildPayload(data, { deleteLocalAfterTransfer: next }));
-    setDeleteLocalAfterTransfer(next);
-  });
+  const saveDeleteLocal = (checked: boolean) => {
+    handleSubmit((data) => {
+      if (!hasRequiredFields || !enabled) return;
+      upsertMutation.mutate(buildPayload(data, { deleteLocalAfterTransfer: checked }), {
+        onSuccess: () => setDeleteLocalAfterTransfer(checked),
+      });
+    })();
+  };
 
   const handleProtocolChange = (value: string) => {
     const newProtocol = value as Protocol;
@@ -249,11 +259,30 @@ export function SettingsStorageTab({ titleAddon, hideOptions = false }: Settings
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <input type="checkbox" id="ftp-secure" className="rounded border-border" {...register("secure")} />
-              <Label htmlFor="ftp-secure" className="text-sm cursor-pointer">
-                <Trans>Use FTPS (FTP over TLS)</Trans>
-              </Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-4">
+                <Switch id="ftp-secure" checked={secure} onCheckedChange={(checked) => setValue("secure", checked)} />
+                <Label htmlFor="ftp-secure" className="text-sm cursor-pointer">
+                  <Trans>Use FTPS (FTP over TLS)</Trans>
+                </Label>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="disk-quota-gb">
+                  <Trans>Size available (GB)</Trans>
+                </Label>
+                <Input
+                  id="disk-quota-gb"
+                  type="number"
+                  min={0}
+                  step={1}
+                  placeholder={t`Optional — for storage bar on FTP`}
+                  value={diskQuotaGb ?? ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setDiskQuotaGb(value === "" ? null : Number(value));
+                  }}
+                />
+              </div>
             </div>
           </TabsContent>
 
@@ -310,11 +339,11 @@ export function SettingsStorageTab({ titleAddon, hideOptions = false }: Settings
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <input type="checkbox" id="webdav-secure" className="rounded border-border" {...register("secure")} />
+            <div className="flex items-center justify-between gap-4">
               <Label htmlFor="webdav-secure" className="text-sm cursor-pointer">
                 <Trans>Use HTTPS</Trans>
               </Label>
+              <Switch id="webdav-secure" checked={secure} onCheckedChange={(checked) => setValue("secure", checked)} />
             </div>
           </TabsContent>
         </Tabs>
@@ -337,11 +366,22 @@ export function SettingsStorageTab({ titleAddon, hideOptions = false }: Settings
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2">
+          {enabled && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleDisconnect}
+              disabled={disconnectMutation.isPending}
+              aria-label={t`Disconnect`}
+              icon={UnplugIcon}
+            />
+          )}
+
           <Button
             variant="secondary"
             onClick={handleTest}
             disabled={!hasRequiredFields}
-            loading={testMutation.isPending && !enabling}
+            loading={testMutation.isPending}
           >
             <Trans>Test connection</Trans>
           </Button>
@@ -358,7 +398,7 @@ export function SettingsStorageTab({ titleAddon, hideOptions = false }: Settings
             <div className="flex items-center gap-3">
               <RefreshCwIcon className="size-5 shrink-0" />
               <div className="space-y-1">
-                <Label>
+                <Label htmlFor="auto-transfer">
                   <Trans>Auto-transfer downloaded files</Trans>
                 </Label>
                 <p className="text-sm text-muted-foreground">
@@ -369,23 +409,20 @@ export function SettingsStorageTab({ titleAddon, hideOptions = false }: Settings
                 </p>
               </div>
             </div>
-            <Button
-              variant={enabled ? "secondary" : "default"}
-              size="sm"
-              onClick={handleToggleAutoTransfer}
-              disabled={!hasRequiredFields || upsertMutation.isPending}
-              loading={enabling || (testMutation.isPending && !enabled)}
-            >
-              {enabled ? <Trans>Disable</Trans> : <Trans>Enable</Trans>}
-            </Button>
+            <Switch
+              id="auto-transfer"
+              checked={autoTransfer}
+              disabled={!enabled || !hasRequiredFields || upsertMutation.isPending}
+              onCheckedChange={(checked) => saveAutoTransfer(checked)}
+            />
           </div>
 
-          {enabled && (
+          {autoTransfer && (
             <div className="flex items-center justify-between gap-4 border-t pt-4">
               <div className="flex items-center gap-3">
                 <Trash2Icon className="size-5 shrink-0" />
                 <div className="space-y-1">
-                  <Label>
+                  <Label htmlFor="delete-local-after-transfer">
                     <Trans>Delete local files after auto-transfer</Trans>
                   </Label>
                   <p className="text-sm text-muted-foreground">
@@ -397,15 +434,12 @@ export function SettingsStorageTab({ titleAddon, hideOptions = false }: Settings
                   </p>
                 </div>
               </div>
-              <Button
-                variant={deleteLocalAfterTransfer ? "secondary" : "default"}
-                size="sm"
-                onClick={handleToggleDeleteLocal}
-                disabled={!hasRequiredFields}
-                loading={upsertMutation.isPending}
-              >
-                {deleteLocalAfterTransfer ? <Trans>Disable</Trans> : <Trans>Enable</Trans>}
-              </Button>
+              <Switch
+                id="delete-local-after-transfer"
+                checked={deleteLocalAfterTransfer}
+                disabled={!enabled || !hasRequiredFields || upsertMutation.isPending}
+                onCheckedChange={(checked) => saveDeleteLocal(checked)}
+              />
             </div>
           )}
         </div>

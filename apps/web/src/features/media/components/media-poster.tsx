@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { Img } from "@/shared/ui/image";
 
 import { useRole } from "@/features/auth/hooks/use-role";
-import { DownloadDeleteButton } from "@/features/downloads/components/download-delete-button";
+import { DownloadButtonDelete } from "@/features/downloads/components/button/download-button-delete";
 import { downloadQueries } from "@/features/downloads/hooks/download.queries";
 import { MediaDownloadButton } from "@/features/media/components/button/media-button-download";
 import { MediaButtonPlay } from "@/features/media/components/button/media-button-play";
@@ -75,7 +75,7 @@ export function MediaPoster({ data, download }: MediaPosterProps) {
 
       <div className="flex flex-col w-full gap-2">
         <MediaButtonPlay media={media} disabled={!canPlay} />
-        <DownloadDeleteButton media={media} download={download ?? null} />
+        <DownloadButtonDelete media={media} download={download ?? null} />
       </div>
     </div>
   );

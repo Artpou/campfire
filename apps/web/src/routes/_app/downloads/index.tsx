@@ -2,34 +2,25 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
-import { formatBytes } from "@seedarr/shared";
-import { useQuery, useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { SortingState } from "@tanstack/react-table";
 import { useIntersectionObserver } from "@uidotdev/usehooks";
-import { ArrowDownIcon, ArrowUpIcon, RefreshCwIcon } from "lucide-react";
-import { toast } from "sonner";
 
-import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
 import { Input } from "@/shared/ui/input";
 
-import { useRole } from "@/features/auth/hooks/use-role";
+import { DownloadButtonSynchronize } from "@/features/downloads/components/button/download-button-synchronize";
+import { LibraryStats } from "@/features/downloads/components/download-stats";
 import { DownloadTable } from "@/features/downloads/components/download-table";
-import { ManualSyncWizard } from "@/features/downloads/components/manual-sync-wizard";
-import { downloadQueries } from "@/features/downloads/hooks/download.queries";
 import { MediaButtonCategory } from "@/features/media/components/button/media-button-category";
 import { MediaCard } from "@/features/media/components/card/media-card";
 import { MediaCarouselCategory } from "@/features/media/components/carousel/media-carousel-category";
 import { MediaTypeTabs } from "@/features/media/components/tabs/media-tabs-type";
 import { MediaTabsViewMode } from "@/features/media/components/tabs/media-tabs-view-mode";
-import { hasActiveDownload } from "@/features/media/helpers/media.helper";
 import { listQueryToSorting, sortingToListQuery } from "@/features/media/helpers/media-sort.helper";
-import { ACTIVE_DOWNLOAD_INTERVAL, mediaQueries, refetchMediaInterval } from "@/features/media/hooks/media.queries";
-import { useRemoteSync } from "@/features/settings/hooks/remote-sync.queries";
-import { settingsQueries } from "@/features/settings/hooks/settings.queries";
-import { storageConfigQueries } from "@/features/settings/hooks/storage-config.queries";
+import { mediaQueries } from "@/features/media/hooks/media.queries";
+import { useSuspenseMediaList } from "@/features/media/hooks/use-media";
 import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
 import { validateDownloadsSearch } from "@/routes/helpers/downloads-route.helper";
 
@@ -68,20 +59,12 @@ function DownloadsPage() {
     sortOrder,
   };
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseInfiniteQuery({
-    ...mediaQueries.list(listQuery),
-    refetchInterval: refetchMediaInterval,
-  });
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseMediaList(listQuery);
   const results = data?.pages.flatMap((page) => page.results) ?? [];
 
   const handleLoadMore = () => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   };
-
-  const { data: stats } = useQuery({
-    ...downloadQueries.stats(),
-    refetchInterval: hasActiveDownload(data) ? ACTIVE_DOWNLOAD_INTERVAL : false,
-  });
 
   const filteredResults = useMemo(() => {
     if (!query.trim()) return results;
@@ -105,46 +88,17 @@ function DownloadsPage() {
   return (
     <Container>
       <div className="space-y-4">
-        {stats && (
-          <div className="flex items-center gap-6 flex-wrap">
-            <SyncButton />
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                <Trans>Media</Trans>
-              </span>
-              <span className="text-lg font-bold">{stats.count}</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                <Trans>Total Size</Trans>
-              </span>
-              <span className="text-lg font-bold">{formatBytes(stats.totalSize)}</span>
-            </div>
-
-            {stats.downloadSpeed > 0 && (
-              <div className="flex items-center gap-2">
-                <ArrowDownIcon className="size-4 text-primary" />
-                <span className="text-lg font-bold text-primary">{formatBytes(stats.downloadSpeed)}/s</span>
-              </div>
-            )}
-
-            {stats.uploadSpeed > 0 && (
-              <div className="flex items-center gap-2">
-                <ArrowUpIcon className="size-4 text-blue" />
-                <span className="text-lg font-bold text-blue">{formatBytes(stats.uploadSpeed)}/s</span>
-              </div>
-            )}
-          </div>
-        )}
+        <LibraryStats />
 
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 flex-wrap">
             <MediaTabsViewMode />
             <MediaTypeTabs value={type} />
           </div>
-          <MediaButtonCategory />
+          <div className="flex items-center gap-2">
+            <MediaButtonCategory />
+            <DownloadButtonSynchronize />
+          </div>
         </div>
 
         {showCategories && (
@@ -229,50 +183,5 @@ function DownloadsGrid({
       </div>
       <div ref={sentinelRef} className="h-4" aria-hidden />
     </div>
-  );
-}
-
-interface SyncError {
-  name: string;
-  path: string;
-  type: "movie" | "tv";
-}
-
-function SyncButton() {
-  const { t } = useLingui();
-  const { isAdmin } = useRole();
-  const [unmatchedFiles, setUnmatchedFiles] = useState<SyncError[]>([]);
-  const [wizardOpen, setWizardOpen] = useState(false);
-
-  const { data: storageEnabled } = useQuery({
-    ...storageConfigQueries.enabled(),
-    enabled: isAdmin,
-  });
-  const { data: tmdbKeyStatus } = useQuery({
-    ...settingsQueries.tmdbKeyStatus(),
-    enabled: isAdmin,
-  });
-  const syncMutation = useRemoteSync((files) => {
-    setUnmatchedFiles(files);
-    setWizardOpen(true);
-  });
-
-  if (!isAdmin || !storageEnabled?.enabled) return null;
-
-  const handleSync = () => {
-    if (!tmdbKeyStatus?.configured) {
-      toast.error(t`TMDB API key is required for synchronization. Configure it in Settings > General.`);
-      return;
-    }
-    syncMutation.mutate();
-  };
-
-  return (
-    <>
-      <Button variant="secondary" size="lg" onClick={handleSync} loading={syncMutation.isPending} icon={RefreshCwIcon}>
-        <Trans>Synchronize</Trans>
-      </Button>
-      <ManualSyncWizard files={unmatchedFiles} open={wizardOpen} onOpenChange={setWizardOpen} />
-    </>
   );
 }

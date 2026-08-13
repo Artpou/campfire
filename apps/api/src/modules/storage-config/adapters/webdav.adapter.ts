@@ -10,6 +10,7 @@ import {
   type RemoteFileEntry,
   StorageAdapter,
   type StorageConnectionOptions,
+  type StorageDiskSpace,
 } from "./storage.adapter";
 
 export class WebdavAdapter extends StorageAdapter {
@@ -181,6 +182,24 @@ export class WebdavAdapter extends StorageAdapter {
       await client.createDirectory(fullPath, { recursive: true });
     } catch {
       // directory may already exist
+    }
+  }
+
+  async getDiskSpace(opts: StorageConnectionOptions): Promise<StorageDiskSpace | null> {
+    try {
+      const client = await this.createClient(opts);
+      const raw = await client.getQuota();
+      const quota = raw && typeof raw === "object" && "data" in raw ? raw.data : raw;
+      if (!quota || typeof quota.used !== "number") return null;
+      if (typeof quota.available !== "number") return null;
+      return {
+        used: quota.used,
+        total: quota.used + quota.available,
+        protocol: "webdav",
+      };
+    } catch (error) {
+      logger.warn("WEBDAV", `Disk space unavailable: ${formatError(error)}`);
+      return null;
     }
   }
 

@@ -66,3 +66,21 @@ export function useTestStorageConnection() {
     },
   });
 }
+
+export function useDisconnectStorageConfig() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => unwrap(api["storage-config"].disconnect.$post()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: storageConfigQueries.key });
+      queryClient.invalidateQueries({ queryKey: [...storageConfigQueries.key, "enabled"] });
+      toast.success(t`Remote storage disconnected`);
+    },
+    onError: (error) => {
+      toast.error(t`Failed to disconnect remote storage`, {
+        description: formatError(error),
+      });
+    },
+  });
+}

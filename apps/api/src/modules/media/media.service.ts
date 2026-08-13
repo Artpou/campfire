@@ -20,8 +20,9 @@ import {
 } from "@/modules/media/media.schema";
 import {
   activityAtSql,
+  downloadCreatedAtSql,
   existMediaRelation,
-  inProgressRankSql,
+  libraryRankSql,
   progressRatioSql,
   scalarUserRelation,
   sortDateSql,
@@ -108,7 +109,10 @@ export class MediaService extends IdentifiableService<MediaEnriched> {
         orderBy.push(desc(activityAtSql(userId)));
         break;
       case "downloaded":
-        orderBy.push(asc(inProgressRankSql(userId)));
+        orderBy.push(asc(libraryRankSql(userId)));
+        if (!query.sortBy) {
+          orderBy.push(desc(downloadCreatedAtSql()));
+        }
         break;
     }
 

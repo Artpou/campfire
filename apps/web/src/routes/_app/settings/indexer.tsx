@@ -16,7 +16,7 @@ export interface IndexerSearch {
 
 export const Route = createFileRoute("/_app/settings/indexer")({
   component: IndexerDashboardPage,
-  beforeLoad: ({ context }) => redirectIfNotRole(context, "admin", { to: "/settings" }),
+  beforeLoad: ({ context }) => redirectIfNotRole(context, "admin", { to: "/settings/general" }),
   validateSearch: (search: Record<string, unknown>): IndexerSearch => ({
     managerId: typeof search.managerId === "string" ? search.managerId : undefined,
   }),
@@ -48,7 +48,7 @@ function IndexerDashboardPage() {
       <div className="flex flex-col items-center justify-center h-full gap-4 p-8">
         <p className="text-muted-foreground">{t(msg`No indexer configured.`)}</p>
         <Button asChild icon={ArrowLeftIcon}>
-          <Link to="/settings">{t(msg`Back to settings`)}</Link>
+          <Link to="/settings/indexers">{t(msg`Back to settings`)}</Link>
         </Button>
       </div>
     );
@@ -58,7 +58,7 @@ function IndexerDashboardPage() {
     <div className="flex flex-col h-[90vh]">
       <div className="flex items-center gap-2 p-3 border-b bg-background">
         <Button asChild variant="ghost" size="sm" icon={ArrowLeftIcon}>
-          <Link to="/settings">{t(msg`Back`)}</Link>
+          <Link to="/settings/indexers">{t(msg`Back`)}</Link>
         </Button>
         <div className="flex-1 text-sm text-muted-foreground truncate">{url}</div>
         <Button asChild variant="outline" size="sm" icon={ExternalLinkIcon}>

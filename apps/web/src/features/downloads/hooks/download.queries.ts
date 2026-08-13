@@ -176,6 +176,13 @@ export const useDownloadReannounce = createDownloadActionMutation<string>({
   errorMsg: () => t`Could not reannounce`,
 });
 
+export const useDownloadTransfer = createDownloadActionMutation<string>({
+  mutationFn: (id) => unwrap(api.downloads[":id"].transfer.$post({ param: { id } })),
+  successMsg: () => t`Transfer started`,
+  errorMsg: () => t`Could not start transfer`,
+  translateError: true,
+});
+
 export function useDownloadFile() {
   return useMutation({
     mutationFn: async (id: string) => {

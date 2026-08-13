@@ -32,6 +32,11 @@ export const storageConfigRoutes = new Hono<{ Variables: HonoAuthenticatedVariab
     invalidateStorageConfigCache();
     return c.json(result);
   })
+  .post("/disconnect", async (c) => {
+    const result = await service.disconnect();
+    invalidateStorageConfigCache();
+    return c.json(result);
+  })
   .post("/test", zValidator("json", testStorageConfigDto), timeout(5000), async (c) => {
     const result = await service.test(c.req.valid("json"));
     return c.json(result);

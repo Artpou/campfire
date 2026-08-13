@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 
 import { HoverCard, HoverCardContent, HoverCardPortal, HoverCardTrigger } from "@radix-ui/react-hover-card";
 import type { Media } from "@seedarr/sdk";
-import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ClockPlusIcon, HeartIcon } from "lucide-react";
 
@@ -16,7 +15,6 @@ import { MediaButtonPlay } from "@/features/media/components/button/media-button
 import { MediaImg } from "@/features/media/components/media-image";
 import { MediaRating } from "@/features/media/components/media-rating";
 import { MediaTypeBadge } from "@/features/media/components/media-type-badge";
-import { settingsQueries } from "@/features/settings/hooks/settings.queries";
 import { MediaCardPreview } from "./media-card-preview";
 
 type MediaCardProps = {
@@ -40,7 +38,6 @@ export function MediaCard({
   showPlay,
   showPreview,
 }: MediaCardProps) {
-  const { data: uiSettings } = useQuery(settingsQueries.ui());
   const navigate = useNavigate();
 
   const detailLinkProps =
@@ -72,7 +69,7 @@ export function MediaCard({
 
         <div className="absolute top-2 left-2 flex items-center gap-0.5">
           {showType && <MediaTypeBadge type={media.type} iconOnly />}
-          {showSocial && (uiSettings?.showMediaRatings ?? false) && <MediaRating media={media} onlyOne />}
+          {showSocial && <MediaRating media={media} onlyOne />}
         </div>
 
         {showSocial && media.liked && !showDownloadProgress && (

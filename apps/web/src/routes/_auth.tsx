@@ -1,13 +1,15 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 
+import { OnboardingLayout } from "@/features/onboarding/components/onboarding-layout";
+
 export const Route = createFileRoute("/_auth")({
   component: AuthLayout,
 });
 
 function AuthLayout() {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <OnboardingLayout>
       <Outlet />
-    </div>
+    </OnboardingLayout>
   );
 }

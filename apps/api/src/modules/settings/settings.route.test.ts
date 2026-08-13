@@ -42,7 +42,7 @@ describe("Settings Routes", () => {
     it("returns configured=true when a key is stored", async () => {
       testDbRef.current
         ?.insert(settings)
-        .values({ id: "default", tmdbApiKey: "abcd1234efgh", showMediaRatings: true, updatedAt: new Date() })
+        .values({ id: "default", tmdbApiKey: "abcd1234efgh", updatedAt: new Date() })
         .run();
 
       const body = await bodyOf(await settingsRoutes.request("/tmdb-key-status"));
@@ -50,33 +50,15 @@ describe("Settings Routes", () => {
     });
   });
 
-  describe("GET /ui", () => {
-    it("returns showMediaRatings default when empty", async () => {
-      const body = await bodyOf(await settingsRoutes.request("/ui"));
-      expect(body).toEqual({ showMediaRatings: false });
-    });
-
-    it("returns stored UI flags", async () => {
-      testDbRef.current
-        ?.insert(settings)
-        .values({ id: "default", tmdbApiKey: null, showMediaRatings: true, updatedAt: new Date() })
-        .run();
-
-      const body = await bodyOf(await settingsRoutes.request("/ui"));
-      expect(body).toEqual({ showMediaRatings: true });
-    });
-  });
-
   describe("GET / (admin)", () => {
     it("returns masked settings for admin", async () => {
       testDbRef.current
         ?.insert(settings)
-        .values({ id: "default", tmdbApiKey: "supersecretkey99", showMediaRatings: false, updatedAt: new Date() })
+        .values({ id: "default", tmdbApiKey: "supersecretkey99", updatedAt: new Date() })
         .run();
 
       const body = await bodyOf(await settingsRoutes.request("/"));
       expect(body.tmdbApiKey).toBe("****ey99");
-      expect(body.showMediaRatings).toBe(false);
     });
 
     it("returns 403 for members", async () => {
@@ -89,28 +71,16 @@ describe("Settings Routes", () => {
     it("creates settings with a TMDB key", async () => {
       const body = await bodyOf(await settingsRoutes.request("/", json("PUT", { tmdbApiKey: "new-tmdb-key-1234" })));
       expect(body.tmdbApiKey).toMatch(/^\*\*\*\*/);
-      expect(body.showMediaRatings).toBe(false);
     });
 
     it("updates existing settings", async () => {
       testDbRef.current
         ?.insert(settings)
-        .values({ id: "default", tmdbApiKey: "oldkeyxxxx", showMediaRatings: false, updatedAt: new Date() })
+        .values({ id: "default", tmdbApiKey: "oldkeyxxxx", updatedAt: new Date() })
         .run();
 
       const body = await bodyOf(await settingsRoutes.request("/", json("PUT", { tmdbApiKey: "brandnewkey9999" })));
       expect(body.tmdbApiKey).toBe("****9999");
-    });
-
-    it("forbids admin from changing showMediaRatings", async () => {
-      const res = await settingsRoutes.request("/", json("PUT", { showMediaRatings: true }));
-      expect(res.status).toBe(403);
-    });
-
-    it("allows owner to change showMediaRatings", async () => {
-      fakeUser.role = "owner";
-      const body = await bodyOf(await settingsRoutes.request("/", json("PUT", { showMediaRatings: true })));
-      expect(body.showMediaRatings).toBe(true);
     });
   });
 });

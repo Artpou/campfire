@@ -10,7 +10,10 @@ export const storageConfig = sqliteTable("storageConfig", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
+  /** Connected / saved configuration (set by Save configuration). */
   enabled: integer("enabled", { mode: "boolean" }).notNull().default(false),
+  /** Automatically transfer completed downloads to remote. */
+  autoTransfer: integer("auto_transfer", { mode: "boolean" }).notNull().default(false),
   protocol: text("protocol", { enum: storageProtocolEnum }).notNull().default("ftp"),
   host: text("host").notNull(),
   port: integer("port").notNull().default(21),
@@ -20,6 +23,8 @@ export const storageConfig = sqliteTable("storageConfig", {
   username: text("username"),
   password: text("password"),
   deleteLocalAfterTransfer: integer("delete_local_after_transfer", { mode: "boolean" }).notNull().default(false),
+  /** Optional manual disk capacity (GB) for FTP when the server does not expose quota. */
+  diskQuotaGb: integer("disk_quota_gb"),
   updatedAt: integer("updatedAt", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
