@@ -103,11 +103,11 @@ function AuthenticatedLayout() {
   return (
     <div className="flex flex-col min-w-0">
       <AppTopbar isAuthenticated={true} />
-      <main className="flex-1 pb-16 md:pb-0">
+      <main className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0">
         <Outlet />
       </main>
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border pb-[env(safe-area-inset-bottom,0px)]">
         <div className="flex items-center justify-around h-16">
           {visibleNavItems.map((item) => {
             const matchUrl = item.matchPrefix ?? item.url;

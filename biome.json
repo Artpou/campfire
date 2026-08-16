@@ -14,7 +14,8 @@
       "!**/routeTree.gen.ts",
       "!**/drizzle/**/*",
       "!**/locales/**/messages.mjs",
-      "!**/*.astro"
+      "!**/*.astro",
+      "!apps/web/src/shared/ui/dropdrawer.tsx"
     ]
   },
   "formatter": {

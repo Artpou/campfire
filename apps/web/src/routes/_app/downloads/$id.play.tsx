@@ -191,7 +191,7 @@ function VideoPlayerPage() {
         )}
 
         <div className="flex justify-center">
-          <Card className="w-[70%] pb-0 pt-0 overflow-hidden">
+          <Card className="w-full md:w-[70%] pb-0 pt-0 overflow-hidden">
             <Player
               src={streamUrl}
               tracks={subtitleTracks}

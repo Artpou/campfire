@@ -7,12 +7,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { CalendarIcon, ChevronDownIcon, ChevronUpIcon, ClapperboardIcon, ClockIcon, MagnetIcon } from "lucide-react";
 
+import { ResponsiveTabs } from "@/shared/components/responsive-tabs";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Skeleton } from "@/shared/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { useRole } from "@/features/auth/hooks/use-role";
 import { DownloadButtonDelete } from "@/features/downloads/components/button/download-button-delete";
@@ -70,15 +70,14 @@ export function TvEpisodesSection({ tv, media, downloads }: TvEpisodesSectionPro
 
   return (
     <div className="space-y-4">
-      <Tabs value={selectedSeason} onValueChange={setSelectedSeason}>
-        <TabsList size="lg" className="flex-wrap">
-          {validSeasons.map((season) => (
-            <TabsTrigger key={season.season_number} value={season.season_number.toString()} size="lg">
-              <Trans>Season {season.season_number}</Trans>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      <ResponsiveTabs
+        value={selectedSeason}
+        onValueChange={setSelectedSeason}
+        options={validSeasons.map((season) => ({
+          value: season.season_number.toString(),
+          label: <Trans>Season {season.season_number}</Trans>,
+        }))}
+      />
 
       <div className="space-y-3">
         {isLoading ? (

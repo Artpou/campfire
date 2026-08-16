@@ -25,7 +25,7 @@ export function SettingsGeneralTab() {
 
   return (
     <section className="space-y-6">
-      <h2>
+      <h2 className="hidden md:block">
         <Trans>General</Trans>
       </h2>
 
@@ -34,12 +34,12 @@ export function SettingsGeneralTab() {
           <PaletteIcon className="size-4" />
           <Trans>Appearance</Trans>
         </h3>
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1">
             <Label>
               <Trans>Language</Trans>
             </Label>
-            <p className="text-sm text-muted-foreground">
+            <p className="hidden md:block text-sm text-muted-foreground">
               <Trans>Interface language for Seedarr.</Trans>
             </p>
           </div>
@@ -50,7 +50,7 @@ export function SettingsGeneralTab() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-4 border rounded-md p-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between border rounded-md p-4">
         <h3 className="flex items-center gap-3">
           <KeyIcon className="size-4" />
           <Trans>Password</Trans>
@@ -67,24 +67,24 @@ export function SettingsGeneralTab() {
           <FileIcon className="size-4" />
           <Trans>Torrents</Trans>
         </h3>
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1">
             <Label>
               <Trans>Default quality</Trans>
             </Label>
-            <p className="text-sm text-muted-foreground">
+            <p className="hidden md:block text-sm text-muted-foreground">
               <Trans>Minimum quality filter applied when searching torrents.</Trans>
             </p>
           </div>
-          <SelectQuality value={quality} onValueChange={setQuality} triggerClassName="w-36" />
+          <SelectQuality value={quality} onValueChange={setQuality} triggerClassName="w-full md:w-36" />
         </div>
 
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1">
             <Label htmlFor="max-size">
               <Trans>Max torrent size</Trans>
             </Label>
-            <p className="text-sm text-muted-foreground">
+            <p className="hidden md:block text-sm text-muted-foreground">
               <Trans>Hide torrents larger than this size. Leave empty for no limit.</Trans>
             </p>
           </div>
@@ -94,7 +94,7 @@ export function SettingsGeneralTab() {
               type="number"
               min={0}
               step={0.1}
-              className="w-24"
+              className="w-full md:w-24"
               placeholder="—"
               value={maxSize ?? ""}
               onChange={(e) => {
@@ -102,7 +102,7 @@ export function SettingsGeneralTab() {
                 setMaxSize(value === "" ? null : Number(value));
               }}
             />
-            <span className="text-sm text-muted-foreground">GB</span>
+            <span className="text-sm text-muted-foreground shrink-0">GB</span>
           </div>
         </div>
       </div>
@@ -128,23 +128,23 @@ function TmdbApiKeySection() {
         <KeyIcon className="size-4" />
         <Trans>API Keys</Trans>
       </h3>
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
           <Label htmlFor="tmdb-api-key">
             <Trans>TMDB API Key (v3)</Trans>
           </Label>
-          <p className="text-sm text-muted-foreground">
+          <p className="hidden md:block text-sm text-muted-foreground">
             <Trans>Required for remote media synchronization. Get one at themoviedb.org.</Trans>
           </p>
           {settings?.tmdbApiKey && !touched && (
             <p className="text-xs text-muted-foreground font-mono">{settings.tmdbApiKey}</p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
           <Input
             id="tmdb-api-key"
             type="password"
-            className="w-64"
+            className="w-full md:w-64"
             placeholder={settings?.tmdbApiKey ? "••••••••" : "Enter API key"}
             value={tmdbApiKey}
             onChange={(e) => {

@@ -8,13 +8,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import type { OnChangeFn, SortingState } from "@tanstack/react-table";
 import { BookmarkIcon, CalendarIcon, ClockIcon, HeartIcon, PencilIcon, SaveIcon } from "lucide-react";
 
+import { ResponsiveTabs } from "@/shared/components/responsive-tabs";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
 import { Input } from "@/shared/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { useAuth } from "@/features/auth/auth-store";
 import { MediaButtonCategory } from "@/features/media/components/button/media-button-category";
@@ -27,6 +27,7 @@ import { listQueryToSorting, sortingToListQuery } from "@/features/media/helpers
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 import { RequestCarousel } from "@/features/request/components/request-carousel";
 import { requestQueries } from "@/features/request/hooks/request.queries";
+import { useEffectiveViewMode } from "@/features/settings/hooks/use-effective-view-mode";
 import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
 import { RoleBadge } from "@/features/user/components/role-badge";
 import { UserAvatar } from "@/features/user/components/user-avatar";
@@ -93,7 +94,7 @@ function UserProfilePage() {
   const currentUser = useAuth((s) => s.user);
   const isOwnProfile = currentUser?.id === id;
   const updateProfile = useUpdateProfile();
-  const viewMode = useUserPreferences((s) => s.viewMode);
+  const viewMode = useEffectiveViewMode();
   const showCategories = useUserPreferences((s) => s.showCategories);
   const [tab, setTab] = useState<ProfileTab>("calendar");
   const [search, setSearch] = useState("");
@@ -203,7 +204,7 @@ function UserProfilePage() {
   return (
     <Container className="space-y-8 pb-20">
       <div className="flex flex-col lg:flex-row gap-6 items-center lg:items-start justify-between w-full">
-        <Card className="flex flex-row items-center gap-6 p-6 lg:min-w-[520px]">
+        <Card className="flex flex-row items-center gap-6 p-6 w-full lg:min-w-[520px] lg:w-auto">
           <div className="max-w-[250px] flex justify-center lg:justify-start">
             <UserAvatar user={profileUser} editable={isOwnProfile} />
           </div>
@@ -269,26 +270,21 @@ function UserProfilePage() {
 
       {availableTabs.length > 0 && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-2 flex-wrap">
-              <MediaTabsViewMode />
-              <Tabs
-                value={tab}
-                onValueChange={(v) => {
-                  setSorting([]);
-                  setTab(v as ProfileTab);
-                }}
-              >
-                <TabsList size="lg">
-                  {availableTabs.map(({ value, label, icon: Icon }) => (
-                    <TabsTrigger key={value} value={value} size="lg" className="gap-2">
-                      <Icon className="size-4" />
-                      {label}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-            </div>
+          <div className="flex flex-row items-center gap-2">
+            <MediaTabsViewMode />
+            <ResponsiveTabs
+              className="min-w-0 flex-1"
+              value={tab}
+              onValueChange={(v) => {
+                setSorting([]);
+                setTab(v as ProfileTab);
+              }}
+              options={availableTabs.map(({ value, label, icon }) => ({
+                value,
+                label,
+                icon,
+              }))}
+            />
             <MediaButtonCategory />
           </div>
 

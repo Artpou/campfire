@@ -2,8 +2,7 @@ import { useLingui } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
 import { DownloadIcon, RadioIcon, SparklesIcon, StarIcon } from "lucide-react";
 
-import { useIsMobile } from "@/shared/hooks/use-mobile";
-import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
+import { ResponsiveTabs } from "@/shared/components/responsive-tabs";
 
 import { isMediaSelected } from "@/features/media/helpers/discover-search.helper";
 
@@ -15,51 +14,35 @@ interface MediaSortTabsProps {
 
 export function MediaSortTabs({ value, onChange }: MediaSortTabsProps) {
   const { t } = useLingui();
-  const isMobile = useIsMobile();
 
   const activeValue = value || "new";
 
-  const handleChange = (value: string) => {
-    if (isMediaSelected(value)) onChange(value);
+  const handleChange = (next: string) => {
+    if (isMediaSelected(next)) onChange(next);
   };
 
   const sortOptions = [
     {
-      value: "new" as const,
-      icon: <SparklesIcon className="text-foreground" />,
+      value: "new",
+      icon: SparklesIcon,
       label: t`New`,
     },
     {
-      value: "top-rated" as const,
-      icon: <StarIcon className="text-foreground" />,
+      value: "top-rated",
+      icon: StarIcon,
       label: t`Top Rated`,
     },
     {
-      value: "downloaded" as const,
-      icon: <DownloadIcon className="text-foreground" />,
+      value: "downloaded",
+      icon: DownloadIcon,
       label: t`Downloaded`,
     },
-    ...(!isMobile
-      ? [
-          {
-            value: "upcoming" as const,
-            icon: <RadioIcon className="text-foreground" />,
-            label: t`Upcoming`,
-          },
-        ]
-      : []),
+    {
+      value: "upcoming",
+      icon: RadioIcon,
+      label: t`Upcoming`,
+    },
   ];
 
-  return (
-    <Tabs value={activeValue} onValueChange={handleChange}>
-      <TabsList size="lg" className="w-full sm:w-fit">
-        {sortOptions.map(({ value, icon, label }) => (
-          <TabsTrigger key={value} value={value} size="lg" className="flex-1 sm:flex-none">
-            {icon}
-            {label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
-  );
+  return <ResponsiveTabs value={activeValue} onValueChange={handleChange} options={sortOptions} />;
 }

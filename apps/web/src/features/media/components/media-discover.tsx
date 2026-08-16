@@ -26,6 +26,7 @@ import {
 import { genreQueries } from "@/features/media/hooks/genre.queries";
 import { RequestCarousel } from "@/features/request/components/request-carousel";
 import { requestQueries } from "@/features/request/hooks/request.queries";
+import { useEffectiveViewMode } from "@/features/settings/hooks/use-effective-view-mode";
 import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
 
 type MediaSelected = "new" | "top-rated" | "downloaded" | "upcoming";
@@ -80,7 +81,7 @@ export function MediaDiscover<TSearch extends MediaDiscoverSearch>({
 }: MediaDiscover<TSearch>) {
   const locale = useTmdbLocale();
   const { isAdmin } = useRole();
-  const viewMode = useUserPreferences((s) => s.viewMode);
+  const viewMode = useEffectiveViewMode();
   const showCategories = useUserPreferences((s) => s.showCategories);
   const isDownloaded = isDownloadedTab(search.selected);
 
@@ -146,8 +147,8 @@ export function MediaDiscover<TSearch extends MediaDiscoverSearch>({
         <RequestCarousel requests={pendingRequests} seeMoreTo="/requests" seeMoreSearch={{ type, status: "pending" }} />
       )}
       <div className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 w-full">
             <MediaTabsViewMode />
 
             <MediaSortTabs

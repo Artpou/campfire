@@ -6,6 +6,7 @@ import { PlusIcon } from "lucide-react";
 
 import { ProviderIcon } from "@/shared/components/provider-icon";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
+import { useIsMobile } from "@/shared/hooks/use-mobile";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +25,7 @@ interface MediaWatchProvidersProps {
 
 export function MediaWatchProviders({ watchProviders, mediaName }: MediaWatchProvidersProps) {
   const { i18n } = useLingui();
+  const isMobile = useIsMobile();
   const tmdbLocale = countryToTmdbLocale(i18n.locale);
 
   const uniqueProviders = useMemo(
@@ -31,7 +33,10 @@ export function MediaWatchProviders({ watchProviders, mediaName }: MediaWatchPro
     [watchProviders, tmdbLocale],
   );
 
-  const firstProviders = useMemo(() => getFirstWatchProviders(uniqueProviders), [uniqueProviders]);
+  const firstProviders = useMemo(
+    () => getFirstWatchProviders(uniqueProviders, isMobile ? 1 : 4),
+    [uniqueProviders, isMobile],
+  );
   const totalCount = uniqueProviders.flatrate.length + uniqueProviders.buyRent.length;
 
   if (firstProviders.length === 0) return null;

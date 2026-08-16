@@ -3,7 +3,7 @@ import { Trans } from "@lingui/react";
 import type { RequestStatus } from "@seedarr/contracts";
 import { BanIcon, CheckCircleIcon, ClockIcon, FilmIcon, LayoutGridIcon, TvIcon } from "lucide-react";
 
-import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
+import { ResponsiveTabs } from "@/shared/components/responsive-tabs";
 
 const STATUS_OPTIONS = [
   { value: "all" as const, icon: LayoutGridIcon, label: msg({ id: "request-status.all", message: "All" }) },
@@ -35,35 +35,26 @@ interface RequestTabsProps {
 
 export function RequestTabs({ status, type, onStatusChange, onTypeChange }: RequestTabsProps) {
   return (
-    <div className="flex items-center gap-3 flex-wrap">
-      <Tabs
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+      <ResponsiveTabs
         value={status ?? "all"}
         onValueChange={(v) => onStatusChange(v === "all" ? undefined : (v as RequestStatus))}
-      >
-        <TabsList size="lg" className="w-full sm:w-fit">
-          {STATUS_OPTIONS.map(({ value, icon: Icon, label }) => (
-            <TabsTrigger key={value} value={value} size="lg" className="flex-1 sm:flex-none gap-2">
-              <Icon className="size-4 text-foreground" />
-              <span className="font-medium">
-                <Trans id={label.id} />
-              </span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+        options={STATUS_OPTIONS.map(({ value, icon, label }) => ({
+          value,
+          icon,
+          label: <Trans id={label.id} />,
+        }))}
+      />
 
-      <Tabs value={type ?? "all"} onValueChange={(v) => onTypeChange(v === "all" ? undefined : (v as "movie" | "tv"))}>
-        <TabsList size="lg" className="w-full sm:w-fit">
-          {TYPE_OPTIONS.map(({ value, icon: Icon, label }) => (
-            <TabsTrigger key={value} value={value} size="lg" className="flex-1 sm:flex-none gap-2">
-              <Icon className="size-4 text-foreground" />
-              <span className="font-medium">
-                <Trans id={label.id} />
-              </span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      <ResponsiveTabs
+        value={type ?? "all"}
+        onValueChange={(v) => onTypeChange(v === "all" ? undefined : (v as "movie" | "tv"))}
+        options={TYPE_OPTIONS.map(({ value, icon, label }) => ({
+          value,
+          icon,
+          label: <Trans id={label.id} />,
+        }))}
+      />
     </div>
   );
 }

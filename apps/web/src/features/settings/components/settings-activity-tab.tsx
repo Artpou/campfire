@@ -39,10 +39,10 @@ export function SettingsActivityTab() {
   return (
     <div className="space-y-6">
       <CardHeader>
-        <CardTitle>
+        <CardTitle className="hidden md:block">
           <Trans>Activity</Trans>
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="hidden md:block">
           <Trans>Recent activity on this instance.</Trans>
         </CardDescription>
       </CardHeader>

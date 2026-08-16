@@ -7,15 +7,21 @@ import { ApiError } from "@seedarr/sdk";
 import { formatError, getVideoContainer } from "@seedarr/shared";
 import { useNavigate } from "@tanstack/react-router";
 import { type SortingState, useTable } from "@tanstack/react-table";
+import { ArrowDownIcon, ArrowUpIcon, DownloadIcon, InfoIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { Flag } from "@/shared/components/flag";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { SelectLang } from "@/shared/components/select/select-lang";
 import { QUALITY_LEVELS, SelectQuality } from "@/shared/components/select/select-quality";
+import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { Badge } from "@/shared/ui/badge";
+import { Button } from "@/shared/ui/button";
+import { Card } from "@/shared/ui/card";
 import { DataTable } from "@/shared/ui/data-table";
 
 import { useStartDownload } from "@/features/downloads/hooks/download.queries";
+import { indexersManagerImages } from "@/features/indexers-manager/helpers/indexers-manager.helper";
 import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
 import {
   type TorrentWithMeta,
@@ -41,8 +47,72 @@ function getTorrentUri(torrent: Torrent): string {
   return torrent.link ?? torrent.magnetUrl ?? torrent.guid ?? "";
 }
 
+function TorrentMobileCard({
+  torrent,
+  media,
+  onInspect,
+  onDownload,
+}: {
+  torrent: TorrentWithMeta;
+  media: Media;
+  onInspect: (torrent: TorrentWithMeta) => void;
+  onDownload: (torrent: TorrentWithMeta) => void;
+}) {
+  const container = getVideoContainer(torrent.title);
+
+  return (
+    <Card className="gap-3 p-3 py-3">
+      <a
+        href={torrent.detailsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block w-full font-medium text-popover-foreground break-words"
+      >
+        {torrent.title}
+      </a>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Flag lang={torrent.mediaInfos?.languages?.[0] || media.original_language || ""} />
+        {torrent.mediaInfos?.resolution && <Badge variant="secondary">{torrent.mediaInfos.resolution}</Badge>}
+        {container && <Badge variant="secondary">{container}</Badge>}
+        <Badge variant="outline">{torrent.tracker}</Badge>
+        {torrent.indexerManagerType && (
+          <img
+            src={indexersManagerImages[torrent.indexerManagerType]}
+            alt={torrent.indexerManagerType}
+            className="size-4"
+          />
+        )}
+        <span className="text-xs text-muted-foreground">{(torrent.size / 1e9).toFixed(2)} GB</span>
+        <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-1 font-bold text-green-500">
+            <ArrowUpIcon className="size-3" />
+            <span className="text-xs">{torrent.seeders}</span>
+          </div>
+          {torrent.indexerManagerType !== "stremio" && (
+            <div className="flex items-center gap-1 font-bold text-destructive">
+              <ArrowDownIcon className="size-3" />
+              <span className="text-xs">{torrent.peers}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex w-full gap-2">
+        <Button variant="secondary" size="sm" className="flex-1" icon={InfoIcon} onClick={() => onInspect(torrent)}>
+          <Trans>Info</Trans>
+        </Button>
+        <Button size="sm" className="flex-1" icon={DownloadIcon} onClick={() => onDownload(torrent)}>
+          <Trans>Download</Trans>
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
 export function TorrentTable({ torrents, media, isLoading = false }: TorrentTableProps) {
   const { t } = useLingui();
+  const isMobile = useIsMobile();
   const startDownload = useStartDownload();
   const navigate = useNavigate();
   const preferenceQuality = useUserPreferences((s) => s.quality);
@@ -183,11 +253,16 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
 
   return (
     <div className="w-full overflow-hidden">
-      <div className="flex flex-row gap-4 items-center py-4">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center py-4">
         {availableLanguages.length > 0 && (
-          <SelectLang value={selectedLanguage} onValueChange={setSelectedLanguage} languages={availableLanguages} />
+          <SelectLang
+            value={selectedLanguage}
+            onValueChange={setSelectedLanguage}
+            languages={availableLanguages}
+            triggerClassName="w-full sm:w-auto"
+          />
         )}
-        <SelectQuality value={selectedQuality} onValueChange={setSelectedQuality} />
+        <SelectQuality value={selectedQuality} onValueChange={setSelectedQuality} triggerClassName="w-full sm:w-auto" />
         {preferenceMaxSize !== null && (
           <Badge variant="outline">
             <Trans>Max {preferenceMaxSize} GB</Trans>
@@ -195,24 +270,51 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
         )}
       </div>
 
-      <DataTable
-        table={table}
-        classNameContainer="rounded-tl-none"
-        empty={
-          showLoader ? (
-            <SeedarrLoader />
-          ) : (
-            <div className="p-10 border border-dashed rounded-sm bg-muted border-border inline-block">
-              <p className="font-bold uppercase text-popover-foreground">
-                <Trans>No torrents found</Trans>
-              </p>
-              <p className="mt-1 text-xs uppercase text-popover-foreground/50">
-                <Trans>Try adjusting your search query</Trans>
-              </p>
-            </div>
-          )
-        }
-      />
+      {isMobile ? (
+        showLoader ? (
+          <SeedarrLoader />
+        ) : filteredTorrents.length === 0 ? (
+          <div className="p-10 border border-dashed rounded-sm bg-muted border-border inline-block">
+            <p className="font-bold uppercase text-popover-foreground">
+              <Trans>No torrents found</Trans>
+            </p>
+            <p className="mt-1 text-xs uppercase text-popover-foreground/50">
+              <Trans>Try adjusting your search query</Trans>
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {filteredTorrents.map((torrent) => (
+              <TorrentMobileCard
+                key={torrent.guid || torrent.link || torrent.title}
+                torrent={torrent}
+                media={media}
+                onInspect={handleOpenInspectModal}
+                onDownload={handleAddDownload}
+              />
+            ))}
+          </div>
+        )
+      ) : (
+        <DataTable
+          table={table}
+          classNameContainer="rounded-tl-none"
+          empty={
+            showLoader ? (
+              <SeedarrLoader />
+            ) : (
+              <div className="p-10 border border-dashed rounded-sm bg-muted border-border inline-block">
+                <p className="font-bold uppercase text-popover-foreground">
+                  <Trans>No torrents found</Trans>
+                </p>
+                <p className="mt-1 text-xs uppercase text-popover-foreground/50">
+                  <Trans>Try adjusting your search query</Trans>
+                </p>
+              </div>
+            )
+          }
+        />
+      )}
 
       <TorrentInspectModal
         open={modalOpen}

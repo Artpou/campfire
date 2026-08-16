@@ -1,15 +1,13 @@
 import { Trans } from "@lingui/react/macro";
-import type { Media, TMDBTvDetails } from "@seedarr/sdk";
+import type { TMDBTvDetails } from "@seedarr/sdk";
 
 import { MediaExternalLinks } from "@/features/media/components/media-external-links";
-import { MediaSocialActions } from "@/features/media/components/media-social-actions";
 
 interface TvDetailsProps {
   tv: TMDBTvDetails;
-  media?: Media | null;
 }
 
-export function TvDetails({ tv, media }: TvDetailsProps) {
+export function TvDetails({ tv }: TvDetailsProps) {
   const hasAnyDetails =
     tv.status ||
     (tv.networks && tv.networks.length > 0) ||
@@ -20,8 +18,6 @@ export function TvDetails({ tv, media }: TvDetailsProps) {
 
   return (
     <dl className="dark text-foreground space-y-4">
-      {media && <MediaSocialActions media={media} />}
-
       {!!tv.status && (
         <div>
           <dt className="text-sm text-muted-foreground font-medium mb-1">

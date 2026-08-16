@@ -95,13 +95,17 @@ export function MediaDetailLayout({
                 <div className="mx-4">{detailsSection}</div>
               </SheetContent>
             </Sheet>
-            {media && <MediaSocialActions media={media} className="mt-2 flex flex-col" />}
           </div>
 
           <div className="lg:w-1/4 max-w-[250px] justify-items-center">
             <MediaPoster data={posterData} download={download ?? media?.download} />
           </div>
-          <div className="lg:w-3/4">{infoSection}</div>
+          <div className="lg:w-3/4">
+            <div className="mb-4 block xl:hidden">
+              {media && <MediaSocialActions media={media} className="mt-2 flex flex-row" />}
+            </div>
+            {infoSection}
+          </div>
           <div className="hidden xl:block w-[300px]">{detailsSection}</div>
         </Container>
       </div>

@@ -4,6 +4,7 @@ import type { Media } from "@seedarr/sdk";
 import { Link, type LinkOptions } from "@tanstack/react-router";
 
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { Badge } from "@/shared/ui/badge";
 import { Card } from "@/shared/ui/card";
 import { Img } from "@/shared/ui/image";
@@ -35,6 +36,7 @@ export function MediaCardHorizontal({
 }: MediaCardHorizontalProps) {
   const year = media.release_date ? new Date(media.release_date).getFullYear() : null;
   const backdropUrl = getBackdropUrl(media.backdrop_path ?? null, "w780");
+  const isMobile = useIsMobile();
 
   const link: LinkOptions = useMemo(() => {
     if (linkProp) return linkProp;
@@ -44,11 +46,12 @@ export function MediaCardHorizontal({
     };
   }, [linkProp, media.download?.id, media.id, media.type]);
 
-  return (
+  const card = (
     <Card
       className={cn(
         "relative pt-0 pb-0 mb-0 overflow-hidden rounded-lg border-2 border-transparent bg-card/60 transition-colors hover:border-primary",
         className,
+        withSocialActions && isMobile && "rounded-b-none",
       )}
     >
       <Link {...link} className="absolute inset-0 z-10" />
@@ -79,10 +82,12 @@ export function MediaCardHorizontal({
                 <MediaRating media={media} onlyOne />
               </div>
               {withOverview && (
-                <p className="max-w-[70%] text-sm text-muted-foreground line-clamp-3 leading-snug">{media.overview}</p>
+                <p className="md:max-w-[70%] text-sm text-muted-foreground line-clamp-3 leading-snug">
+                  {media.overview}
+                </p>
               )}
             </div>
-            {withSocialActions && <MediaSocialActions media={media} size="lg" className="items-end" />}
+            {withSocialActions && !isMobile && <MediaSocialActions media={media} size="lg" className="items-end" />}
           </div>
 
           {children && <div className="pointer-events-auto">{children}</div>}
@@ -96,5 +101,18 @@ export function MediaCardHorizontal({
         </div>
       </div>
     </Card>
+  );
+
+  if (!isMobile || !withSocialActions) {
+    return card;
+  }
+
+  return (
+    <div className="flex flex-col">
+      {card}
+      <Card className="p-3 rounded-t-none">
+        <MediaSocialActions media={media} size="lg" className="flex-row justify-center w-full" />
+      </Card>
+    </div>
   );
 }

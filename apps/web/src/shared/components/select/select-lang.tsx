@@ -1,9 +1,8 @@
 import { Trans } from "@lingui/react/macro";
 import { EarthIcon } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { DropSelect } from "@/shared/components/drop-select";
 import { Flag } from "@/shared/components/flag";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 
 function LanguageOption({ lang }: { lang: string }) {
   if (lang === "all") return <Trans>All languages</Trans>;
@@ -31,21 +30,18 @@ interface SelectLangProps {
 }
 
 export function SelectLang({ value, onValueChange, languages, triggerClassName }: SelectLangProps) {
+  const options = [
+    { value: "all", label: <LanguageOption lang="all" /> },
+    ...languages.map((lang) => ({ value: lang, label: <LanguageOption lang={lang} /> })),
+  ];
+
   return (
-    <Select value={value} onValueChange={onValueChange}>
-      <SelectTrigger className={cn(triggerClassName)}>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">
-          <LanguageOption lang="all" />
-        </SelectItem>
-        {languages.map((lang) => (
-          <SelectItem key={lang} value={lang}>
-            <LanguageOption lang={lang} />
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <DropSelect
+      value={value}
+      onValueChange={onValueChange}
+      options={options}
+      triggerClassName={triggerClassName}
+      label={<Trans>Language</Trans>}
+    />
   );
 }

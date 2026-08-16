@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import ReactDOM from "react-dom/client";
 
+import { registerSW } from "virtual:pwa-register";
 import { ErrorBoundary } from "./shared/components/error/error-boundary";
 import "./styles.css";
 
@@ -13,6 +14,8 @@ import { LinguiClientProvider } from "@/shared/components/lingui-client-provider
 import { getI18nMessages, getInitialCountry, getLanguageFromCountry } from "@/shared/helpers/i18n.helper";
 
 import { queryClient, router } from "@/router";
+
+registerSW({ immediate: true });
 
 declare module "@tanstack/react-router" {
   interface Register {

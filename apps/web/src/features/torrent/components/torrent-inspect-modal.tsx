@@ -17,35 +17,18 @@ interface TorrentInspectModalProps {
   magnetUri: string | null;
 }
 
-function detectQuality(name: string): string | null {
-  const qualityMatch = name.match(/\b(4K|2160p|1440p|1080p|720p|480p)\b/i);
-  return qualityMatch ? qualityMatch[1].toUpperCase() : null;
-}
-
-function detectLanguage(name: string): string | null {
-  const nameLower = name.toLowerCase();
-
-  if (nameLower.includes("multi")) return "MULTI";
-  if (nameLower.includes("vostfr")) return "VOSTFR";
-  if (nameLower.includes("french") || nameLower.match(/\bfr\b/)) return "FR";
-  if (nameLower.includes("english") || nameLower.match(/\beng\b/)) return "EN";
-  if (nameLower.includes("spanish") || nameLower.match(/\besp\b/)) return "ES";
-
-  return null;
-}
-
 export function TorrentInspectModal({ open, onOpenChange, torrent, magnetUri }: TorrentInspectModalProps) {
   const { data: inspectData, isLoading, error } = useQuery(torrentQueries.inspect(magnetUri, torrent?.seeders));
 
   const name = inspectData?.name || torrent?.title;
-  const _quality = name ? detectQuality(name) : null;
-  const _language = name ? detectLanguage(name) : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="overflow-y-auto">
+      <DialogContent className="overflow-y-auto max-h-[90dvh]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 flex-wrap">{name || <Trans>Loading...</Trans>}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 flex-wrap break-words">
+            {name || <Trans>Loading...</Trans>}
+          </DialogTitle>
         </DialogHeader>
 
         {isLoading && (
@@ -55,7 +38,7 @@ export function TorrentInspectModal({ open, onOpenChange, torrent, magnetUri }: 
           </div>
         )}
 
-        {error && (
+        {error != null && (
           <div className="py-4 text-center">
             <p className="text-destructive">
               <Trans>Failed to fetch torrent metadata</Trans>

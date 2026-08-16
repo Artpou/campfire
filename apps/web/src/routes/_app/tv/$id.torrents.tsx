@@ -4,11 +4,11 @@ import { Trans } from "@lingui/react/macro";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
+import { DropSelect } from "@/shared/components/drop-select";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Container } from "@/shared/ui/container";
 import { Label } from "@/shared/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 
 import { MediaCardHorizontal } from "@/features/media/components/card/media-card-horizontal";
 import { TorrentIndexersTable } from "@/features/torrent/components/torrent-indexers-table";
@@ -108,46 +108,38 @@ function TVTorrentsPage() {
           <Label>
             <Trans>Season</Trans>
           </Label>
-          <Select
+          <DropSelect
             value={selectedSeason?.toString() ?? ""}
             onValueChange={handleSeasonChange}
-            disabled={validSeasons.length === 0}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {validSeasons.map((season) => (
-                <SelectItem key={season.season_number} value={season.season_number.toString()}>
-                  <Trans>Season {season.season_number}</Trans>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            triggerClassName="w-full"
+            label={<Trans>Season</Trans>}
+            options={validSeasons.map((season) => ({
+              value: season.season_number.toString(),
+              label: <Trans>Season {season.season_number}</Trans>,
+            }))}
+          />
         </div>
 
         <div className="flex flex-col gap-2 w-full sm:w-64">
           <Label>
             <Trans>Episode</Trans>
           </Label>
-          <Select value={search.episode?.toString() ?? ALL_EPISODES} onValueChange={handleEpisodeChange}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_EPISODES}>
-                <Trans>All episodes (full season)</Trans>
-              </SelectItem>
-              {(seasonDetails?.episodes ?? [])
+          <DropSelect
+            value={search.episode?.toString() ?? ALL_EPISODES}
+            onValueChange={handleEpisodeChange}
+            triggerClassName="w-full"
+            label={<Trans>Episode</Trans>}
+            options={[
+              { value: ALL_EPISODES, label: <Trans>All episodes (full season)</Trans> },
+              ...(seasonDetails?.episodes ?? [])
                 .slice()
                 .sort((a, b) => a.episode_number - b.episode_number)
-                .map((ep) => (
-                  <SelectItem key={ep.id} value={ep.episode_number.toString()}>
-                    {`E${ep.episode_number.toString().padStart(2, "0")} - ${ep.name}`}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
+                .map((ep) => ({
+                  value: ep.episode_number.toString(),
+                  label: `E${ep.episode_number.toString().padStart(2, "0")} - ${ep.name}`,
+                })),
+            ]}
+          />
         </div>
       </div>
 

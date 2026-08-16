@@ -1,12 +1,10 @@
 import { Trans } from "@lingui/react/macro";
-import type { Media, TMDBMovieDetails } from "@seedarr/sdk";
+import type { TMDBMovieDetails } from "@seedarr/sdk";
 
 import { MediaExternalLinks } from "@/features/media/components/media-external-links";
-import { MediaSocialActions } from "@/features/media/components/media-social-actions";
 
 interface MovieDetailsProps {
   movie: TMDBMovieDetails;
-  media?: Media | null;
 }
 
 const formatCurrency = (amount?: number) => {
@@ -18,7 +16,7 @@ const formatCurrency = (amount?: number) => {
   }).format(amount);
 };
 
-export function MovieDetails({ movie, media }: MovieDetailsProps) {
+export function MovieDetails({ movie }: MovieDetailsProps) {
   const hasAnyDetails =
     movie.status ||
     (movie.budget && movie.budget > 0) ||
@@ -29,8 +27,6 @@ export function MovieDetails({ movie, media }: MovieDetailsProps) {
 
   return (
     <dl className="dark text-foreground space-y-4">
-      {media && <MediaSocialActions media={media} />}
-
       {!!movie.status && (
         <div>
           <dt className="text-sm text-popover-foreground font-medium mb-1">

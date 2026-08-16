@@ -21,6 +21,7 @@ import { MediaTabsViewMode } from "@/features/media/components/tabs/media-tabs-v
 import { listQueryToSorting, sortingToListQuery } from "@/features/media/helpers/media-sort.helper";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 import { useSuspenseMediaList } from "@/features/media/hooks/use-media";
+import { useEffectiveViewMode } from "@/features/settings/hooks/use-effective-view-mode";
 import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
 import { validateDownloadsSearch } from "@/routes/helpers/downloads-route.helper";
 
@@ -48,7 +49,7 @@ function DownloadsPage() {
   const navigate = useNavigate();
   const { t } = useLingui();
   const [query, setQuery] = useState("");
-  const viewMode = useUserPreferences((s) => s.viewMode);
+  const viewMode = useEffectiveViewMode();
   const showCategories = useUserPreferences((s) => s.showCategories);
 
   const listQuery = {
@@ -90,8 +91,8 @@ function DownloadsPage() {
       <div className="space-y-4">
         <LibraryStats />
 
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 flex-wrap w-full">
             <MediaTabsViewMode />
             <MediaTypeTabs value={type} />
           </div>

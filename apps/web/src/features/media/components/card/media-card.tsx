@@ -85,7 +85,7 @@ export function MediaCard({
         )}
 
         {showPlay && (
-          <div className="absolute -bottom-6.5 group-hover:bottom-2 left-2 right-2 flex gap-1 transition-all duration-200 ease-out">
+          <div className="absolute bottom-2 left-2 right-2 flex gap-1 transition-all duration-200 ease-out md:-bottom-6.5 md:group-hover:bottom-2">
             <MediaButtonPlay media={media} size="sm" className="w-full" />
           </div>
         )}

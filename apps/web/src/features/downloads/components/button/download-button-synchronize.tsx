@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { RefreshCwIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { Button } from "@/shared/ui/button";
 
 import { useRole } from "@/features/auth/hooks/use-role";
@@ -20,6 +21,7 @@ interface SyncError {
 }
 
 export function DownloadButtonSynchronize() {
+  const isMobile = useIsMobile();
   const { t } = useLingui();
   const { isAdmin } = useRole();
   const [unmatchedFiles, setUnmatchedFiles] = useState<SyncError[]>([]);
@@ -51,7 +53,7 @@ export function DownloadButtonSynchronize() {
   return (
     <>
       <Button variant="secondary" size="lg" onClick={handleSync} loading={syncMutation.isPending} icon={RefreshCwIcon}>
-        <Trans>Synchronize</Trans>
+        {!isMobile && <Trans>Synchronize</Trans>}
       </Button>
       <ManualSyncWizard files={unmatchedFiles} open={wizardOpen} onOpenChange={setWizardOpen} />
     </>

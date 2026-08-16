@@ -182,12 +182,12 @@ export function SettingsStorageTab({ titleAddon, hideOptions = false }: Settings
   return (
     <section className="space-y-6">
       <div>
-        <h2 className="flex items-center gap-2">
+        <h2 className="hidden md:flex items-center gap-2">
           <ServerIcon className="size-5" />
           <Trans>Remote Storage</Trans>
           {titleAddon}
         </h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="hidden md:block text-sm text-muted-foreground">
           <Trans>
             Configure a remote server to transfer downloaded files, either manually or automatically after completion.
           </Trans>
@@ -339,7 +339,7 @@ export function SettingsStorageTab({ titleAddon, hideOptions = false }: Settings
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <Label htmlFor="webdav-secure" className="text-sm cursor-pointer">
                 <Trans>Use HTTPS</Trans>
               </Label>
@@ -394,14 +394,14 @@ export function SettingsStorageTab({ titleAddon, hideOptions = false }: Settings
 
       {!hideOptions && (
         <div className="flex flex-col gap-4 border rounded-md p-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <RefreshCwIcon className="size-5 shrink-0" />
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-start md:items-center gap-3">
+              <RefreshCwIcon className="size-5 shrink-0 mt-0.5 md:mt-0" />
               <div className="space-y-1">
                 <Label htmlFor="auto-transfer">
                   <Trans>Auto-transfer downloaded files</Trans>
                 </Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="hidden md:block text-sm text-muted-foreground">
                   <Trans>
                     When enabled, new downloads are automatically transferred to the remote server after completion. You
                     can still transfer files manually at any time.
@@ -418,14 +418,14 @@ export function SettingsStorageTab({ titleAddon, hideOptions = false }: Settings
           </div>
 
           {autoTransfer && (
-            <div className="flex items-center justify-between gap-4 border-t pt-4">
-              <div className="flex items-center gap-3">
-                <Trash2Icon className="size-5 shrink-0" />
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-t pt-4">
+              <div className="flex items-start md:items-center gap-3">
+                <Trash2Icon className="size-5 shrink-0 mt-0.5 md:mt-0" />
                 <div className="space-y-1">
                   <Label htmlFor="delete-local-after-transfer">
                     <Trans>Delete local files after auto-transfer</Trans>
                   </Label>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="hidden md:block text-sm text-muted-foreground">
                     <Trans>
                       Only applies to automatic transfers. Local files are deleted once the auto-transfer succeeds.
                       Manual transfers always keep a local copy. Streaming is unavailable while an auto-transfer

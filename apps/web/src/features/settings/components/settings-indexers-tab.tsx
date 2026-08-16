@@ -54,10 +54,10 @@ export function SettingsIndexersTab() {
   return (
     <section className="space-y-6">
       <div>
-        <h2>
+        <h2 className="hidden md:block">
           <Trans>Indexer Managers</Trans>
         </h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="hidden md:block text-sm text-muted-foreground">
           <Trans>
             Seedarr is a neutral tool. Enabling third-party indexers may give you access to copyrighted content. You are
             responsible for complying with the laws in your country.

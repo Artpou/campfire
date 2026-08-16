@@ -4,10 +4,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { ActivityIcon, HardDriveIcon, LogOutIcon, RssIcon, ServerIcon, SettingsIcon, UsersIcon } from "lucide-react";
 
+import { DropSelect } from "@/shared/components/drop-select";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { useAuth } from "@/features/auth/auth-store";
@@ -42,7 +42,6 @@ function SettingsLayout() {
   });
 
   const activeTab = (location.pathname.split("/").pop() ?? "general") as SettingsTab;
-  const activeTabMeta = visibleTabs.find((tab) => tab.id === activeTab) ?? visibleTabs[0];
 
   const handleSignOut = async () => {
     try {
@@ -60,29 +59,21 @@ function SettingsLayout() {
       <div className="flex flex-col md:flex-row gap-6">
         <nav className="md:w-64 shrink-0 flex flex-col md:sticky md:top-6 md:self-start md:h-[85vh]">
           <div className="md:hidden">
-            <Select
+            <DropSelect
               value={activeTab}
               onValueChange={(value) => navigate({ to: `/settings/${value}` as `/settings/${SettingsTab}` })}
-            >
-              <SelectTrigger className="w-full h-11">
-                <SelectValue>
+              triggerClassName="w-full h-11"
+              label={<Trans>Settings</Trans>}
+              options={visibleTabs.map((tab) => ({
+                value: tab.id,
+                label: (
                   <span className="flex items-center gap-2">
-                    {activeTabMeta && <activeTabMeta.icon className="size-4" />}
-                    {activeTabMeta?.label}
+                    <tab.icon className="size-4" />
+                    {tab.label}
                   </span>
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {visibleTabs.map((tab) => (
-                  <SelectItem key={tab.id} value={tab.id}>
-                    <span className="flex items-center gap-2">
-                      <tab.icon className="size-4" />
-                      {tab.label}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                ),
+              }))}
+            />
           </div>
 
           <Tabs className="hidden md:flex md:flex-col flex-1" value={activeTab}>

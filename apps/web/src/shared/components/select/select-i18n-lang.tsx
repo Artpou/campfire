@@ -1,11 +1,12 @@
 import { useMemo } from "react";
 
 import { useLingui } from "@lingui/react";
+import { Trans } from "@lingui/react/macro";
 
+import { DropSelect } from "@/shared/components/drop-select";
 import { Flag } from "@/shared/components/flag";
 import { setStoredCountry, UI_LOCALES } from "@/shared/helpers/i18n.helper";
 import { Badge } from "@/shared/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 
 import { i18n } from "@/i18n";
 // @ts-expect-error - Compiled message files don't have type definitions
@@ -105,26 +106,25 @@ export function SelectI18nLang() {
   };
 
   return (
-    <Select value={currentCountry} onValueChange={handleChange}>
-      <SelectTrigger className="h-9 w-fit gap-2 px-2 border-none shadow-none">
-        <SelectValue>
-          <Flag lang={currentCountry} />
-        </SelectValue>
-      </SelectTrigger>
-      <SelectContent align="end">
-        {locales.map(({ country, displayName, isUiSupported }) => (
-          <SelectItem key={country} value={country}>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">{displayName}</span>
-              {isUiSupported && (
-                <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
-                  UI
-                </Badge>
-              )}
-            </div>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <DropSelect
+      value={currentCountry}
+      onValueChange={handleChange}
+      triggerClassName="h-9 w-fit gap-2 px-2 border-none shadow-none"
+      label={<Trans>Language</Trans>}
+      options={locales.map(({ country, displayName, isUiSupported }) => ({
+        value: country,
+        label: (
+          <div className="flex items-center gap-2">
+            <Flag lang={country} />
+            <span className="text-sm font-medium">{displayName}</span>
+            {isUiSupported && (
+              <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
+                UI
+              </Badge>
+            )}
+          </div>
+        ),
+      }))}
+    />
   );
 }

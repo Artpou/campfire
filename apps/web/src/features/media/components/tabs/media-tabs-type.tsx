@@ -4,7 +4,7 @@ import type { Media } from "@seedarr/sdk";
 import { useNavigate } from "@tanstack/react-router";
 import { FilmIcon, LayoutGridIcon, TvIcon } from "lucide-react";
 
-import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
+import { ResponsiveTabs } from "@/shared/components/responsive-tabs";
 
 import { getMediaType } from "@/features/media/helpers/media.helper";
 
@@ -22,7 +22,7 @@ export function MediaTypeTabs({ value }: MediaTypeTabsProps) {
   const navigate = useNavigate();
 
   return (
-    <Tabs
+    <ResponsiveTabs
       value={value ?? "all"}
       onValueChange={(v) =>
         navigate({
@@ -31,17 +31,11 @@ export function MediaTypeTabs({ value }: MediaTypeTabsProps) {
           resetScroll: false,
         })
       }
-    >
-      <TabsList size="lg" className="w-full sm:w-fit">
-        {TAB_OPTIONS.map(({ value: val, icon: Icon, label }) => (
-          <TabsTrigger key={val} value={val ?? "all"} size="lg" className="flex-1 sm:flex-none">
-            <Icon className="size-4 text-foreground" />
-            <span className="font-medium">
-              <Trans id={label.id} />
-            </span>
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
+      options={TAB_OPTIONS.map(({ value: val, icon, label }) => ({
+        value: val ?? "all",
+        icon,
+        label: <Trans id={label.id} />,
+      }))}
+    />
   );
 }

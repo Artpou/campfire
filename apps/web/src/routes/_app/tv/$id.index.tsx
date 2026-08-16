@@ -54,7 +54,7 @@ function TVPage() {
   const torrentDownloads = useMemo(() => mediaDownloads.filter((d) => d.torrent), [mediaDownloads]);
   const remoteDownloads = useMemo(() => mediaDownloads.filter((d) => d.remoteLocation), [mediaDownloads]);
 
-  const detailsSection = <TvDetails tv={tv} media={media} />;
+  const detailsSection = <TvDetails tv={tv} />;
 
   const hasActiveDownload = torrentDownloads.some((d) => d.torrent && !d.torrent.done);
 

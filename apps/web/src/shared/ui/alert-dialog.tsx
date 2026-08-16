@@ -1,17 +1,46 @@
 "use client";
 
-import type * as React from "react";
+import * as React from "react";
 
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { buttonVariants } from "@/shared/ui/button";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/shared/ui/drawer";
+
+const AlertDialogResponsiveContext = React.createContext(false);
+
+function useAlertDialogIsMobile(): boolean {
+  return React.useContext(AlertDialogResponsiveContext);
+}
 
 function AlertDialog({ ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Root>) {
-  return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />;
+  const isMobile = useIsMobile();
+
+  return (
+    <AlertDialogResponsiveContext.Provider value={isMobile}>
+      {isMobile ? (
+        <Drawer data-slot="alert-dialog" {...props} />
+      ) : (
+        <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />
+      )}
+    </AlertDialogResponsiveContext.Provider>
+  );
 }
 
 function AlertDialogTrigger({ ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Trigger>) {
+  const isMobile = useAlertDialogIsMobile();
+  if (isMobile) return <DrawerTrigger data-slot="alert-dialog-trigger" {...props} />;
   return <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />;
 }
 
@@ -32,7 +61,27 @@ function AlertDialogOverlay({ className, ...props }: React.ComponentProps<typeof
   );
 }
 
-function AlertDialogContent({ className, ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Content>) {
+function AlertDialogContent({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof AlertDialogPrimitive.Content>) {
+  const isMobile = useAlertDialogIsMobile();
+
+  if (isMobile) {
+    return (
+      <DrawerContent
+        data-slot="alert-dialog-content"
+        className={cn("max-h-[90dvh] gap-0", className)}
+        {...(props as React.ComponentProps<typeof DrawerContent>)}
+      >
+        <div className="overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] pt-1 space-y-4">
+          {children}
+        </div>
+      </DrawerContent>
+    );
+  }
+
   return (
     <AlertDialogPortal>
       <AlertDialogOverlay />
@@ -43,12 +92,18 @@ function AlertDialogContent({ className, ...props }: React.ComponentProps<typeof
           className,
         )}
         {...props}
-      />
+      >
+        {children}
+      </AlertDialogPrimitive.Content>
     </AlertDialogPortal>
   );
 }
 
 function AlertDialogHeader({ className, ...props }: React.ComponentProps<"div">) {
+  const isMobile = useAlertDialogIsMobile();
+  if (isMobile) {
+    return <DrawerHeader className={cn("text-left p-0 pb-2", className)} {...props} />;
+  }
   return (
     <div
       data-slot="alert-dialog-header"
@@ -59,6 +114,10 @@ function AlertDialogHeader({ className, ...props }: React.ComponentProps<"div">)
 }
 
 function AlertDialogFooter({ className, ...props }: React.ComponentProps<"div">) {
+  const isMobile = useAlertDialogIsMobile();
+  if (isMobile) {
+    return <DrawerFooter className={cn("p-0 pt-2 flex-col-reverse gap-2", className)} {...props} />;
+  }
   return (
     <div
       data-slot="alert-dialog-footer"
@@ -69,6 +128,10 @@ function AlertDialogFooter({ className, ...props }: React.ComponentProps<"div">)
 }
 
 function AlertDialogTitle({ className, ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Title>) {
+  const isMobile = useAlertDialogIsMobile();
+  if (isMobile) {
+    return <DrawerTitle className={cn("text-lg font-semibold", className)} {...props} />;
+  }
   return (
     <AlertDialogPrimitive.Title
       data-slot="alert-dialog-title"
@@ -82,6 +145,10 @@ function AlertDialogDescription({
   className,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Description>) {
+  const isMobile = useAlertDialogIsMobile();
+  if (isMobile) {
+    return <DrawerDescription className={cn("text-muted-foreground text-sm", className)} {...props} />;
+  }
   return (
     <AlertDialogPrimitive.Description
       data-slot="alert-dialog-description"
@@ -91,11 +158,30 @@ function AlertDialogDescription({
   );
 }
 
-function AlertDialogAction({ className, ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Action>) {
-  return <AlertDialogPrimitive.Action className={cn(buttonVariants(), className)} {...props} />;
+function AlertDialogAction({ className, onClick, ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Action>) {
+  const isMobile = useAlertDialogIsMobile();
+  if (isMobile) {
+    return (
+      <DrawerClose
+        className={cn(buttonVariants(), className)}
+        onClick={onClick as React.MouseEventHandler<HTMLButtonElement>}
+        {...(props as React.ComponentProps<typeof DrawerClose>)}
+      />
+    );
+  }
+  return <AlertDialogPrimitive.Action className={cn(buttonVariants(), className)} onClick={onClick} {...props} />;
 }
 
 function AlertDialogCancel({ className, ...props }: React.ComponentProps<typeof AlertDialogPrimitive.Cancel>) {
+  const isMobile = useAlertDialogIsMobile();
+  if (isMobile) {
+    return (
+      <DrawerClose
+        className={cn(buttonVariants({ variant: "outline" }), className)}
+        {...(props as React.ComponentProps<typeof DrawerClose>)}
+      />
+    );
+  }
   return <AlertDialogPrimitive.Cancel className={cn(buttonVariants({ variant: "outline" }), className)} {...props} />;
 }
 

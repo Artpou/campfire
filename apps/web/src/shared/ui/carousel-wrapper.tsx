@@ -5,6 +5,7 @@ import { Trans } from "@lingui/react/macro";
 import { Link } from "@tanstack/react-router";
 import WheelGesturesPlugin from "embla-carousel-wheel-gestures";
 
+import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { Button } from "@/shared/ui/button";
 import { Carousel, CarouselContent, CarouselNext, CarouselPrevious } from "@/shared/ui/carousel";
 
@@ -16,6 +17,8 @@ type CarouselWrapperProps = Omit<React.ComponentProps<typeof Carousel>, "title">
 };
 
 export function CarouselWrapper({ title, seeMoreTo, seeMoreSearch, children, ...props }: CarouselWrapperProps) {
+  const isMobile = useIsMobile();
+
   return (
     <Carousel
       {...props}
@@ -30,14 +33,14 @@ export function CarouselWrapper({ title, seeMoreTo, seeMoreSearch, children, ...
         <h2 className="text-lg font-medium">{title}</h2>
         <div className="flex items-center gap-2">
           {seeMoreTo && (
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="outline" size={!isMobile ? "sm" : "default"} asChild>
               <Link to={seeMoreTo} search={seeMoreSearch}>
                 <Trans>See more</Trans>
               </Link>
             </Button>
           )}
-          <CarouselPrevious className="static translate-y-0 h-8 w-8" />
-          <CarouselNext className="static translate-y-0 h-8 w-8" />
+          {!isMobile && <CarouselPrevious className="static translate-y-0 h-8 w-8" />}
+          {!isMobile && <CarouselNext className="static translate-y-0 h-8 w-8" />}
         </div>
       </div>
 

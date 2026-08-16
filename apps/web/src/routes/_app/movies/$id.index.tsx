@@ -53,7 +53,7 @@ function MoviePage() {
   const torrentDownloads = useMemo(() => mediaDownloads.filter((d) => d.torrent), [mediaDownloads]);
   const remoteDownloads = useMemo(() => mediaDownloads.filter((d) => d.remoteLocation), [mediaDownloads]);
 
-  const detailsSection = <MovieDetails movie={movie} media={media} />;
+  const detailsSection = <MovieDetails movie={movie} />;
 
   const hasActiveDownload = torrentDownloads.some((d) => d.torrent && !d.torrent.done);
 

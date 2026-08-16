@@ -1,9 +1,10 @@
+import { lingui } from "@lingui/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import tanstackRouter from "@tanstack/router-plugin/vite";
 import viteReact from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
 import viteTsConfigPaths from "vite-tsconfig-paths";
-import { lingui } from "@lingui/vite-plugin";
 
 const isKnip = process.env.KNIP === "true" || process.env.KNIP === "1";
 
@@ -24,6 +25,26 @@ const config = defineConfig({
       plugins: [["@lingui/swc-plugin", {}]],
     }),
     isKnip ? lingui() : undefined,
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: ["favicon.ico", "logo.svg", "logo.png", "logo192.png", "logo512.png"],
+      manifest: {
+        name: "Seedarr",
+        short_name: "Seedarr",
+        description: "Self-hosted media manager — browse, download, and stream.",
+        theme_color: "#0a0a0a",
+        background_color: "#0a0a0a",
+        display: "standalone",
+        icons: [
+          { src: "/logo192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+          { src: "/logo512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+          { src: "/logo512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+        ],
+      },
+      workbox: {
+        navigateFallbackDenylist: [/^\/api/, /^\/streaming/, /^\/avatars/, /^\/downloads\/file/],
+      },
+    }),
   ],
   // Proxy streaming so movi-player (credentials: same-origin) can send the session cookie in dev.
   server: {
