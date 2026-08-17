@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/shared/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
 
-import { MediaSearchPicker } from "@/features/media/components/media-search-modal";
+import { MediaSearchPicker } from "@/features/media/components/modal/media-search-modal";
 import { useManualSync } from "@/features/settings/hooks/remote-sync.queries";
 
 interface SyncError {

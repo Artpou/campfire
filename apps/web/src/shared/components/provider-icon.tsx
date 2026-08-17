@@ -1,52 +1,40 @@
 import { useMemo } from "react";
 
-import { Trans } from "@lingui/react/macro";
 import type { TMDBWatchProvider } from "@seedarr/sdk";
-import { ExternalLinkIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Button } from "@/shared/ui/button";
 
 import { getBackdropUrl } from "@/features/media/helpers/media.helper";
 
 type ProviderIconProps = {
   provider: TMDBWatchProvider;
   name: string;
-  fullButton?: boolean;
 };
 
-export function ProviderIcon({ provider, name, fullButton = false }: ProviderIconProps) {
-  const redirectUrl = useMemo(() => {
-    const encodedName = encodeURIComponent(name);
-    switch (provider.provider_name.toLowerCase()) {
-      case "netflix":
-        return `https://www.netflix.com/search?q=${encodedName}`;
-      case "disney plus":
-        return `https://www.disneyplus.com/`;
-      case "canal+":
-        return `https://www.canalplus.fr/`;
-      case "hbo max":
-        return `https://www.hbomax.com/`;
-      case "amazon prime video":
-        return `https://www.primevideo.com/search?phrase=${encodedName}`;
-      case "apple tv+":
-        return `https://www.apple.com/apple-tv-plus/`;
-      case "peacock":
-        return `https://www.peacocktv.com/`;
-      case "paramount+":
-        return `https://www.paramountplus.com/`;
-    }
-  }, [provider.provider_name, name]);
-
-  if (fullButton && !redirectUrl) return null;
-
-  if (fullButton) {
-    return (
-      <Button variant="secondary" onClick={() => window.open(redirectUrl, "_blank")} icon={ExternalLinkIcon}>
-        <Trans>Watch on</Trans> {provider.provider_name}
-      </Button>
-    );
+function providerRedirectUrl(providerName: string, mediaName: string): string | undefined {
+  const encodedName = encodeURIComponent(mediaName);
+  switch (providerName.toLowerCase()) {
+    case "netflix":
+      return `https://www.netflix.com/search?q=${encodedName}`;
+    case "disney plus":
+      return `https://www.disneyplus.com/`;
+    case "canal+":
+      return `https://www.canalplus.fr/`;
+    case "hbo max":
+      return `https://www.hbomax.com/`;
+    case "amazon prime video":
+      return `https://www.primevideo.com/search?phrase=${encodedName}`;
+    case "apple tv+":
+      return `https://www.apple.com/apple-tv-plus/`;
+    case "peacock":
+      return `https://www.peacocktv.com/`;
+    case "paramount+":
+      return `https://www.paramountplus.com/`;
   }
+}
+
+export function ProviderIcon({ provider, name }: ProviderIconProps) {
+  const redirectUrl = useMemo(() => providerRedirectUrl(provider.provider_name, name), [provider.provider_name, name]);
 
   return (
     <button

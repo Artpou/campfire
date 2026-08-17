@@ -3,15 +3,15 @@ import type * as React from "react";
 import { SearchIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { Label } from "@/shared/ui/label";
 
-function Input({
-  className,
-  type,
-  label,
-  h,
-  search,
-  ...props
-}: React.ComponentProps<"input"> & { label?: React.ReactNode; h?: "default" | "lg"; search?: boolean }) {
+interface InputProps extends React.ComponentProps<"input"> {
+  label?: React.ReactNode;
+  h?: "default" | "lg";
+  search?: boolean;
+}
+
+function Input({ className, type, label, h, search, ...props }: InputProps) {
   const input = (
     <input
       type={type}
@@ -41,13 +41,8 @@ function Input({
 
   if (label) {
     return (
-      <div className="flex flex-col">
-        <label
-          className="text-sm bg-background font-medium border border-input rounded-t-md w-fit px-2 pb-0.5 border-b-0 mb-0"
-          htmlFor={props.id}
-        >
-          {label}
-        </label>
+      <div className="space-y-1">
+        <Label htmlFor={props.id}>{label}</Label>
         {input}
       </div>
     );

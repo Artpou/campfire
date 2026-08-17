@@ -11,10 +11,10 @@ import { Badge } from "@/shared/ui/badge";
 import { Card } from "@/shared/ui/card";
 
 import { DownloadProgress } from "@/features/downloads/components/download-progress";
+import { MediaBadgeRating } from "@/features/media/components/badge/media-badge-rating";
+import { MediaBadgeType } from "@/features/media/components/badge/media-badge-type";
 import { MediaButtonPlay } from "@/features/media/components/button/media-button-play";
 import { MediaImg } from "@/features/media/components/media-image";
-import { MediaRating } from "@/features/media/components/media-rating";
-import { MediaTypeBadge } from "@/features/media/components/media-type-badge";
 import { MediaCardPreview } from "./media-card-preview";
 
 type MediaCardProps = {
@@ -68,8 +68,8 @@ export function MediaCard({
         )}
 
         <div className="absolute top-2 left-2 flex items-center gap-0.5">
-          {showType && <MediaTypeBadge type={media.type} iconOnly />}
-          {showSocial && <MediaRating media={media} onlyOne />}
+          {showType && <MediaBadgeType type={media.type} iconOnly />}
+          {showSocial && <MediaBadgeRating media={media} onlyOne />}
         </div>
 
         {showSocial && media.liked && !showDownloadProgress && (

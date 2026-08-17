@@ -2,10 +2,11 @@ import { useMemo, useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { TMDBPersonDetails } from "@seedarr/sdk";
-import { CalendarIcon, MapPinIcon } from "lucide-react";
+import { MapPinIcon } from "lucide-react";
 
-import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
+
+import { MediaBadgeLabel } from "@/features/media/components/badge/media-badge-label";
 
 interface PersonInfoProps {
   person: TMDBPersonDetails;
@@ -54,21 +55,22 @@ export function PersonInfo({ person }: PersonInfoProps) {
         <h1 className="md:text-5xl tracking-tight">{person.name}</h1>
 
         <div className="flex items-center gap-2 text-sm font-medium mt-4 flex-wrap">
-          {person.known_for_department && <Badge variant="secondary">{person.known_for_department}</Badge>}
+          <MediaBadgeLabel show={!!person.known_for_department} variant="secondary">
+            {person.known_for_department}
+          </MediaBadgeLabel>
 
-          {birthdayLabel && (
-            <Badge variant="outline">
-              <CalendarIcon className="size-3" />
-              {birthdayLabel}
-            </Badge>
-          )}
+          <MediaBadgeLabel show={!!birthdayLabel} variant="outline">
+            {birthdayLabel}
+          </MediaBadgeLabel>
 
-          {person.place_of_birth && (
-            <Badge variant="outline">
-              <MapPinIcon className="size-3" />
-              {person.place_of_birth}
-            </Badge>
-          )}
+          <MediaBadgeLabel show={!!person.place_of_birth} variant="outline">
+            {person.place_of_birth ? (
+              <>
+                <MapPinIcon />
+                {person.place_of_birth}
+              </>
+            ) : null}
+          </MediaBadgeLabel>
         </div>
       </div>
 

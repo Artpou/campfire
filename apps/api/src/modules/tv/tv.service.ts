@@ -1,3 +1,4 @@
+import { fetchImdbRating } from "@/modules/media/imdb-rating.helper";
 import { mergeMediaEnrichment } from "@/modules/media/media.helper";
 import { tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
 import { TMDBService } from "@/modules/tmdb/tmdb.service";
@@ -22,11 +23,14 @@ export class TVService extends TMDBService<TV> {
 
     const fromTmdb = tmdbTVToMedia(tvData);
     const fromDb = mediaMap.find((m) => m.id.toString() === id);
+    const media = fromDb ? { ...fromDb, imdbId: fromDb.imdbId || fromTmdb.imdbId } : fromTmdb;
+    const imdbRating = await fetchImdbRating(media.imdbId || tvData.external_ids?.imdb_id, "tv");
 
     return {
       id,
       tv: tvData,
-      media: fromDb ? { ...fromDb, imdbId: fromDb.imdbId || fromTmdb.imdbId } : fromTmdb,
+      media,
+      imdbRating,
       collection: null,
       related: {
         collection: [],

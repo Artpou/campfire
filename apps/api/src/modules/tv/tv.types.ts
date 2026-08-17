@@ -5,6 +5,7 @@ export type TV = {
   id: string;
   tv: TMDBTvDetails;
   media: MediaEnriched;
+  imdbRating: number | null;
   collection: Record<string, unknown> | null;
   related: {
     collection: MediaEnriched[];

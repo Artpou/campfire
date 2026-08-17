@@ -6,7 +6,7 @@ import { StarIcon } from "lucide-react";
 
 import { Button, type ButtonProps } from "@/shared/ui/button";
 
-import { MediaReviewModal } from "@/features/media/components/media-review-modal";
+import { MediaReviewModal } from "@/features/media/components/modal/media-review-modal";
 
 interface MediaButtonReviewProps extends Omit<ButtonProps, "onClick"> {
   media: Media;

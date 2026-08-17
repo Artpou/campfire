@@ -2,14 +2,12 @@ import { useMemo, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { Download, Media, TMDBTvDetails } from "@seedarr/sdk";
-import { formatRuntime, getEndsAt } from "@seedarr/shared";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CalendarIcon, ChevronDownIcon, ChevronUpIcon, ClapperboardIcon, ClockIcon, MagnetIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronUpIcon, ClapperboardIcon, MagnetIcon } from "lucide-react";
 
 import { ResponsiveTabs } from "@/shared/components/responsive-tabs";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
-import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Skeleton } from "@/shared/ui/skeleton";
@@ -18,6 +16,8 @@ import { useRole } from "@/features/auth/hooks/use-role";
 import { DownloadButtonDelete } from "@/features/downloads/components/button/download-button-delete";
 import { getDownloadStatus } from "@/features/downloads/helpers/downloads.helper";
 import { useDownloadDelete } from "@/features/downloads/hooks/download.queries";
+import { MediaBadgeDate } from "@/features/media/components/badge/media-badge-date";
+import { MediaBadgeRuntime } from "@/features/media/components/badge/media-badge-runtime";
 import { MediaButtonPlay } from "@/features/media/components/button/media-button-play";
 import { getBackdropUrl } from "@/features/media/helpers/media.helper";
 import { type EpisodeDeleteLabel, TvEpisodeDeleteDialog } from "@/features/tv/components/tv-episode-delete-dialog";
@@ -77,6 +77,7 @@ export function TvEpisodesSection({ tv, media, downloads }: TvEpisodesSectionPro
           value: season.season_number.toString(),
           label: <Trans>Season {season.season_number}</Trans>,
         }))}
+        forceSelect
       />
 
       <div className="space-y-3">
@@ -106,8 +107,6 @@ export function TvEpisodesSection({ tv, media, downloads }: TvEpisodesSectionPro
               media.progress.position > 0 &&
               !isProgressCompleted &&
               media.progress.downloadId === episodeDownloadId;
-
-            const endsAt = getEndsAt(episode.runtime);
 
             const seCode = formatSeasonEpisode(seasonNumber, episode.episode_number);
             const _coveredEpisodes = episodeDownloadId
@@ -170,28 +169,9 @@ export function TvEpisodesSection({ tv, media, downloads }: TvEpisodesSectionPro
                           <span className="text-muted-foreground mr-2">{seCode}</span>
                           {episode.name}
                         </h3>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-popover-foreground flex-wrap">
-                          {episode.air_date && (
-                            <Badge variant="outline">
-                              <CalendarIcon className="size-3" />
-                              {new Date(episode.air_date).toLocaleDateString(undefined, {
-                                day: "2-digit",
-                                month: "long",
-                                year: "numeric",
-                              })}
-                            </Badge>
-                          )}
-                          {episode.runtime && episode.runtime > 0 && (
-                            <Badge variant="outline">
-                              <ClockIcon className="size-3" />
-                              {formatRuntime(episode.runtime)}
-                            </Badge>
-                          )}
-                          {endsAt && (
-                            <Badge variant="secondary">
-                              <Trans>Ends at</Trans> {endsAt}
-                            </Badge>
-                          )}
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <MediaBadgeDate date={episode.air_date} />
+                          <MediaBadgeRuntime minutes={episode.runtime} />
                         </div>
                       </div>
                       {hasDownload && (

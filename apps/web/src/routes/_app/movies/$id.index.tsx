@@ -7,12 +7,8 @@ import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 
 import { downloadQueries } from "@/features/downloads/hooks/download.queries";
-import { MediaDetailLayout, type MediaDetailTab } from "@/features/media/components/media-detail-layout";
-import { MediaDownload } from "@/features/media/components/media-download";
-import { MediaServer } from "@/features/media/components/media-server";
-import { MovieCast } from "@/features/movies/components/movie-cast";
-import { MovieDetails } from "@/features/movies/components/movie-details";
-import { MovieInfo } from "@/features/movies/components/movie-info";
+import { MediaCarouselCast } from "@/features/media/components/carousel/media-carousel-cast";
+import { MediaDetailPage, type MediaDetailTab } from "@/features/media/components/media-detail-page";
 import { MovieRelated } from "@/features/movies/components/movie-related";
 import { movieQueries } from "@/features/movies/hooks/movie.queries";
 
@@ -37,8 +33,7 @@ function MoviePage() {
   const navigate = useNavigate();
   const locale = useTmdbLocale();
   const { data } = useSuspenseQuery(movieQueries.details(params.id, locale));
-
-  const { media, movie } = data;
+  const { media } = data;
 
   const { data: mediaDownloads = [] } = useQuery(downloadQueries.byMedia(media));
 
@@ -52,43 +47,30 @@ function MoviePage() {
 
   const torrentDownloads = useMemo(() => mediaDownloads.filter((d) => d.torrent), [mediaDownloads]);
   const remoteDownloads = useMemo(() => mediaDownloads.filter((d) => d.remoteLocation), [mediaDownloads]);
-
-  const detailsSection = <MovieDetails movie={movie} />;
-
   const hasActiveDownload = torrentDownloads.some((d) => d.torrent && !d.torrent.done);
 
-  const effectiveTab = useMemo(() => {
+  const tab = useMemo((): MediaDetailTab => {
     if (urlTab === "downloads" && torrentDownloads.length === 0) return "info";
     if (urlTab === "server" && remoteDownloads.length === 0) return "info";
-    return urlTab;
-  }, [urlTab, torrentDownloads.length, remoteDownloads.length]);
+    if (urlTab) return urlTab;
+    return hasActiveDownload ? "downloads" : "info";
+  }, [urlTab, torrentDownloads.length, remoteDownloads.length, hasActiveDownload]);
 
   return (
-    <MediaDetailLayout
-      title={movie.title || movie.original_title || ""}
-      backdropPath={movie.backdrop_path}
-      posterPath={movie.poster_path}
-      media={media}
+    <MediaDetailPage
+      data={data}
       download={liveDownload}
-      posterData={data}
-      infoSection={<MovieInfo movie={movie} media={media} />}
-      detailsSection={detailsSection}
-      downloadTabContent={torrentDownloads.length > 0 ? <MediaDownload downloads={torrentDownloads} /> : undefined}
-      downloadCount={torrentDownloads.length}
-      serverTabContent={
-        remoteDownloads.length > 0 ? <MediaServer downloads={remoteDownloads} mediaType="movie" /> : undefined
-      }
-      serverCount={remoteDownloads.length}
-      defaultTab={hasActiveDownload ? "downloads" : "info"}
-      tab={effectiveTab}
-      onTabChange={(t) => navigate({ to: ".", search: { tab: t === "info" ? undefined : t }, replace: true })}
+      torrentDownloads={torrentDownloads}
+      remoteDownloads={remoteDownloads}
+      tab={tab}
+      onTabChange={(t) => navigate({ to: ".", search: { tab: t }, replace: true })}
     >
-      <MovieCast movie={movie} />
+      <MediaCarouselCast data={data} />
       <MovieRelated
         collection={data.collection}
         collectionMedia={data.related.collection}
         recommendedMovies={data.related.recommendations}
       />
-    </MediaDetailLayout>
+    </MediaDetailPage>
   );
 }

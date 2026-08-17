@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Label } from "@/shared/ui/label";
 import { Textarea } from "@/shared/ui/textarea";
 
-import { MediaStarRating } from "@/features/media/components/media-star-rating";
+import { MediaStarRating } from "@/features/media/components/rating/media-star-rating";
 import { useDeleteReview, useUpsertReview } from "@/features/media/hooks/media.queries";
 
 interface MediaReviewModalProps {

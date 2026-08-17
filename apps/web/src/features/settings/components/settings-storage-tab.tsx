@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
 import {
-  EyeIcon,
-  EyeOffIcon,
   FilmIcon,
   GlobeIcon,
   NetworkIcon,
@@ -60,7 +58,7 @@ export function SettingsStorageTab({ titleAddon, hideOptions = false }: Settings
 
   const [enabled, setEnabled] = useState(false);
   const [autoTransfer, setAutoTransfer] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, _setShowPassword] = useState(false);
   const [deleteLocalAfterTransfer, setDeleteLocalAfterTransfer] = useState(false);
   const [diskQuotaGb, setDiskQuotaGb] = useState<number | null>(null);
   const [initialized, setInitialized] = useState(false);
@@ -215,91 +213,17 @@ export function SettingsStorageTab({ titleAddon, hideOptions = false }: Settings
           <TabsContent value="ftp" className="space-y-4 pt-2">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="ftp-host">
-                  <Trans>Host</Trans>
-                </Label>
-                <Input id="ftp-host" placeholder={t`192.168.1.254 or hostname`} {...register("host")} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="ftp-port">
-                  <Trans>Port</Trans>
-                </Label>
-                <Input id="ftp-port" type="number" min={1} max={65535} {...register("port", { valueAsNumber: true })} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="ftp-username">
-                  <Trans>Username</Trans>
-                </Label>
-                <Input id="ftp-username" placeholder={t`Optional`} autoComplete="off" {...register("username")} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="ftp-password">
-                  <Trans>Password</Trans>
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="ftp-password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder={config?.hasPassword ? t`••••••• (unchanged)` : t`Optional`}
-                    autoComplete="off"
-                    className="pr-10"
-                    {...register("password")}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center gap-4">
-                <Switch id="ftp-secure" checked={secure} onCheckedChange={(checked) => setValue("secure", checked)} />
-                <Label htmlFor="ftp-secure" className="text-sm cursor-pointer">
-                  <Trans>Use FTPS (FTP over TLS)</Trans>
-                </Label>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="disk-quota-gb">
-                  <Trans>Size available (GB)</Trans>
-                </Label>
                 <Input
-                  id="disk-quota-gb"
-                  type="number"
-                  min={0}
-                  step={1}
-                  placeholder={t`Optional — for storage bar on FTP`}
-                  value={diskQuotaGb ?? ""}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setDiskQuotaGb(value === "" ? null : Number(value));
-                  }}
+                  label={<Trans>Host</Trans>}
+                  id="ftp-host"
+                  placeholder={t`192.168.1.254 or hostname`}
+                  {...register("host")}
                 />
               </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="webdav" className="space-y-4 pt-2">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="webdav-host">
-                  <Trans>Host</Trans>
-                </Label>
-                <Input id="webdav-host" placeholder={t`nas.local or 192.168.1.254`} {...register("host")} />
-              </div>
               <div className="space-y-2">
-                <Label htmlFor="webdav-port">
-                  <Trans>Port</Trans>
-                </Label>
                 <Input
-                  id="webdav-port"
+                  label={<Trans>Port</Trans>}
+                  id="ftp-port"
                   type="number"
                   min={1}
                   max={65535}
@@ -310,33 +234,89 @@ export function SettingsStorageTab({ titleAddon, hideOptions = false }: Settings
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="webdav-username">
-                  <Trans>Username</Trans>
-                </Label>
-                <Input id="webdav-username" placeholder={t`Optional`} autoComplete="off" {...register("username")} />
+                <Input
+                  label={<Trans>Username</Trans>}
+                  id="ftp-username"
+                  placeholder={t`Optional`}
+                  autoComplete="off"
+                  {...register("username")}
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="webdav-password">
-                  <Trans>Password</Trans>
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="webdav-password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder={config?.hasPassword ? t`••••••• (unchanged)` : t`Optional`}
-                    autoComplete="off"
-                    className="pr-10"
-                    {...register("password")}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
-                  </button>
-                </div>
+                <Input
+                  label={<Trans>Password</Trans>}
+                  id="ftp-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder={config?.hasPassword ? t`••••••• (unchanged)` : t`Optional`}
+                  autoComplete="off"
+                  className="pr-10"
+                  {...register("password")}
+                />
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-4">
+                <Switch id="ftp-secure" checked={secure} onCheckedChange={(checked) => setValue("secure", checked)} />
+                <Label htmlFor="ftp-secure" className="cursor-pointer">
+                  <Trans>Use FTPS (FTP over TLS)</Trans>
+                </Label>
+              </div>
+              <Input
+                label={<Trans>Size available (GB)</Trans>}
+                id="disk-quota-gb"
+                type="number"
+                min={0}
+                step={1}
+                placeholder={t`Optional — for storage bar on FTP`}
+                value={diskQuotaGb ?? ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setDiskQuotaGb(value === "" ? null : Number(value));
+                }}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="webdav" className="space-y-4 pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2 space-y-2">
+                <Input
+                  label={<Trans>Host</Trans>}
+                  id="webdav-host"
+                  placeholder={t`nas.local or 192.168.1.254`}
+                  {...register("host")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Input
+                  label={<Trans>Port</Trans>}
+                  id="webdav-port"
+                  type="number"
+                  min={1}
+                  max={65535}
+                  {...register("port", { valueAsNumber: true })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label={<Trans>Username</Trans>}
+                id="webdav-username"
+                placeholder={t`Optional`}
+                autoComplete="off"
+                {...register("username")}
+              />
+              <Input
+                id="webdav-password"
+                label={<Trans>Password</Trans>}
+                type={showPassword ? "text" : "password"}
+                placeholder={config?.hasPassword ? t`••••••• (unchanged)` : t`Optional`}
+                autoComplete="off"
+                className="pr-10"
+                {...register("password")}
+              />
             </div>
 
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -349,20 +329,28 @@ export function SettingsStorageTab({ titleAddon, hideOptions = false }: Settings
         </Tabs>
 
         <div className="flex flex-col gap-4 border-t pt-4">
-          <div className="space-y-2">
-            <Label htmlFor="movie-path" className="flex items-center gap-2">
-              <FilmIcon className="size-3.5" />
-              <Trans>Movie path</Trans>
-            </Label>
-            <Input id="movie-path" placeholder={t`e.g. Movies (optional)`} {...register("moviePath")} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="tv-path" className="flex items-center gap-2">
-              <TvIcon className="size-3.5" />
-              <Trans>TV Shows path</Trans>
-            </Label>
-            <Input id="tv-path" placeholder={t`e.g. TV Shows (optional)`} {...register("tvPath")} />
-          </div>
+          <Input
+            label={
+              <Trans>
+                <FilmIcon />
+                Movie path
+              </Trans>
+            }
+            id="movie-path"
+            placeholder={t`e.g. Movies (optional)`}
+            {...register("moviePath")}
+          />
+          <Input
+            label={
+              <Trans>
+                <TvIcon />
+                TV Shows path
+              </Trans>
+            }
+            id="tv-path"
+            placeholder={t`e.g. TV Shows (optional)`}
+            {...register("tvPath")}
+          />
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2">

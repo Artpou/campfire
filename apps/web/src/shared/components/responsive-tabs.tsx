@@ -26,18 +26,28 @@ interface ResponsiveTabsProps {
   options: ResponsiveTabOption[];
   className?: string;
   listClassName?: string;
+  /** Force select/drawer UI even on desktop (useful for many options). */
+  forceSelect?: boolean;
 }
 
-export function ResponsiveTabs({ value, onValueChange, options, className, listClassName }: ResponsiveTabsProps) {
+export function ResponsiveTabs({
+  value,
+  onValueChange,
+  options,
+  className,
+  listClassName,
+  forceSelect = false,
+}: ResponsiveTabsProps) {
   const isMobile = useIsMobile();
+  const useSelect = forceSelect || isMobile || options.length > 8;
   const selected = options.find((option) => option.value === value) ?? options[0];
   const SelectedIcon = selected?.icon;
 
-  if (isMobile) {
+  if (useSelect) {
     return (
       <DropDrawer>
         <DropDrawerTrigger asChild>
-          <Button variant="outline" size="lg" className={cn("w-full justify-between gap-2", className)}>
+          <Button variant="outline" size="lg" className={cn("w-full bg-input justify-between gap-2", className)}>
             <span className="flex min-w-0 items-center gap-2">
               {SelectedIcon ? <SelectedIcon className="size-4 shrink-0 text-foreground" /> : null}
               <span className="truncate font-medium">{selected?.label}</span>
@@ -69,12 +79,12 @@ export function ResponsiveTabs({ value, onValueChange, options, className, listC
   }
 
   return (
-    <Tabs value={value} onValueChange={onValueChange} className={className}>
-      <TabsList size="lg" className={cn("w-full sm:w-fit", listClassName)}>
+    <Tabs value={value} onValueChange={onValueChange} className={cn("min-w-0", className)}>
+      <TabsList size="lg" className={cn("overflow-x-auto justify-start flex-nowrap", listClassName)}>
         {options.map((option) => {
           const Icon = option.icon;
           return (
-            <TabsTrigger key={option.value} value={option.value} size="lg" className="flex-1 sm:flex-none gap-2">
+            <TabsTrigger key={option.value} value={option.value} size="lg" className="shrink-0 gap-2">
               {Icon ? <Icon className="size-4 text-foreground" /> : null}
               <span className="font-medium">{option.label}</span>
             </TabsTrigger>

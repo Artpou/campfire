@@ -27,6 +27,7 @@ function getDisplayTitle(data: Movie | TV): string {
   return "";
 }
 
+/** Poster + coherent full-width action stack (trailer / torrents / play / delete). */
 export function MediaPoster({ data, download }: MediaPosterProps) {
   const { role } = useRole();
   const { media } = data;
@@ -42,8 +43,8 @@ export function MediaPoster({ data, download }: MediaPosterProps) {
   const canDownload = canPlay && (!download.torrent || download.torrent.done);
 
   return (
-    <div className="flex flex-col shrink-0 space-y-2 items-center max-w-[230px] w-full">
-      <div className="relative w-[200px] sm:w-full aspect-2/3">
+    <div className="flex flex-col shrink-0 w-full max-w-[250px] mx-auto lg:mx-0 gap-2">
+      <div className="relative w-full aspect-2/3">
         <div
           className={cn(
             "group/poster relative w-full overflow-hidden rounded-md border border-secondary shadow-2xl",
@@ -67,14 +68,15 @@ export function MediaPoster({ data, download }: MediaPosterProps) {
         </div>
       </div>
 
-      {canDownload && <MediaDownloadButton media={media} videoFile={videoFile} className="w-full" />}
-
-      {!download && <MediaButtonTrailer title={displayTitle} data={data} className="w-full" />}
-      {!download && role !== "viewer" && <MediaButtonTorrent media={media} className="w-full" />}
-      {!download && role === "viewer" && <MediaButtonRequest media={media} className="w-full" />}
-
       <div className="flex flex-col w-full gap-2">
-        <MediaButtonPlay media={media} disabled={!canPlay} />
+        <MediaButtonPlay media={media} disabled={!canPlay} className="w-full" />
+        {!download && role !== "viewer" && <MediaButtonTorrent media={media} className="w-full" size="lg" />}
+        {!download && role === "viewer" && <MediaButtonRequest media={media} className="w-full" size="lg" />}
+        {!download && (
+          <MediaButtonTrailer title={displayTitle} data={data} variant="secondary" className="w-full" size="lg" />
+        )}
+
+        {canDownload && <MediaDownloadButton media={media} videoFile={videoFile} className="w-full" />}
         <DownloadButtonDelete media={media} download={download ?? null} />
       </div>
     </div>

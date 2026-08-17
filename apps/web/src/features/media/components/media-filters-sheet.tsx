@@ -6,6 +6,7 @@ import type { Media } from "@seedarr/sdk";
 import { useQuery } from "@tanstack/react-query";
 import { ClockIcon, FilterIcon, HashIcon, MonitorPlayIcon, RotateCcwIcon, StarIcon, TagsIcon } from "lucide-react";
 
+import { FilterCombobox } from "@/shared/components/filter-combobox";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
@@ -23,7 +24,6 @@ import {
 } from "@/shared/ui/sheet";
 import { Slider } from "@/shared/ui/slider";
 
-import { FilterCombobox } from "@/features/media/components/filter-combobox";
 import {
   type FilterOption,
   getRuntimePreset,

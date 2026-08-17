@@ -7,7 +7,7 @@ import { Separator } from "@/shared/ui/separator";
 
 import { isMediaWatched } from "@/features/media/helpers/media.helper";
 
-interface MediaRatingProps {
+interface MediaBadgeRatingProps {
   media: Media;
   className?: string;
   onlyOne?: boolean;
@@ -15,7 +15,7 @@ interface MediaRatingProps {
 
 const parseScore = (score?: number | null) => (score && score > 0 ? score / 2 : null);
 
-export function MediaRating({ media, className, onlyOne = false }: MediaRatingProps) {
+export function MediaBadgeRating({ media, className, onlyOne = false }: MediaBadgeRatingProps) {
   const userScore = parseScore(media.userScore);
   const tmdbScore = parseScore(media.vote_average);
   const isWatched = isMediaWatched(media);

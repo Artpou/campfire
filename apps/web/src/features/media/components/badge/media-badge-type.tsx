@@ -12,7 +12,7 @@ interface MediaTypeBadgeProps {
   iconOnly?: boolean;
 }
 
-export function MediaTypeBadge({ type, className, iconOnly = false }: MediaTypeBadgeProps) {
+export function MediaBadgeType({ type, className, iconOnly = false }: MediaTypeBadgeProps) {
   const isTv = type === "tv";
   const Icon = isTv ? TvIcon : FilmIcon;
 

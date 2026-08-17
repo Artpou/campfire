@@ -20,7 +20,7 @@ import { Button } from "@/shared/ui/button";
 import { DownloadFilesList } from "@/features/downloads/components/download-files-list";
 import { DownloadMetadata } from "@/features/downloads/components/download-metadata";
 import { downloadQueries, useDownloadDelete } from "@/features/downloads/hooks/download.queries";
-import { MediaSearchModal } from "@/features/media/components/media-search-modal";
+import { MediaSearchModal } from "@/features/media/components/modal/media-search-modal";
 
 interface MediaServerProps {
   downloads: Download[];

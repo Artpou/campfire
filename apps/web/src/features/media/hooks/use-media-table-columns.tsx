@@ -15,10 +15,10 @@ import { ClockPlusIcon, HeartIcon } from "lucide-react";
 import { Badge } from "@/shared/ui/badge";
 import { DataTableColumnHeader } from "@/shared/ui/data-table-column-header";
 
+import { MediaBadgeRating } from "@/features/media/components/badge/media-badge-rating";
+import { MediaBadgeType } from "@/features/media/components/badge/media-badge-type";
 import { MediaButtonPlay } from "@/features/media/components/button/media-button-play";
 import { MediaButtonReview } from "@/features/media/components/button/media-button-review";
-import { MediaRating } from "@/features/media/components/media-rating";
-import { MediaTypeBadge } from "@/features/media/components/media-type-badge";
 import { getPosterUrl } from "@/features/media/helpers/media.helper";
 
 export const mediaTableFeatures = tableFeatures({
@@ -67,7 +67,7 @@ export function useMediaTableColumns() {
                   {year != null && <span className="text-xs text-muted-foreground">{year}</span>}
                 </div>
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <MediaTypeBadge type={m.type} />
+                  <MediaBadgeType type={m.type} />
 
                   {m.liked && (
                     <Badge variant="glass">
@@ -79,7 +79,7 @@ export function useMediaTableColumns() {
                       <ClockPlusIcon className="text-primary shrink-0" />
                     </Badge>
                   )}
-                  <MediaRating media={m} />
+                  <MediaBadgeRating media={m} />
                 </div>
               </div>
             );

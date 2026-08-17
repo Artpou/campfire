@@ -21,8 +21,8 @@ import { TooltipWrapper } from "@/shared/ui/tooltip-wrapper";
 import { DownloadMetadata } from "@/features/downloads/components/download-metadata";
 import { DownloadProgress } from "@/features/downloads/components/download-progress";
 import { getDownloadStatus } from "@/features/downloads/helpers/downloads.helper";
+import { MediaBadgeType } from "@/features/media/components/badge/media-badge-type";
 import { MediaButtonPlay } from "@/features/media/components/button/media-button-play";
-import { MediaTypeBadge } from "@/features/media/components/media-type-badge";
 import { getPosterUrl } from "@/features/media/helpers/media.helper";
 
 export type MediaWithDownload = Media & { download: Download };
@@ -103,7 +103,7 @@ export function useDownloadTableColumns({ canDelete, onDelete }: UseDownloadTabl
                   <DownloadProgress download={dl} size="sm" />
                 ) : (
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <MediaTypeBadge type={m.type} />
+                    <MediaBadgeType type={m.type} />
                     <DownloadMetadata download={dl} />
                     {hasLocal && (
                       <TooltipWrapper tooltip={<Trans>Local</Trans>}>

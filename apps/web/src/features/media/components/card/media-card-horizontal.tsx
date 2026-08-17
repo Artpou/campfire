@@ -5,13 +5,13 @@ import { Link, type LinkOptions } from "@tanstack/react-router";
 
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/shared/hooks/use-mobile";
-import { Badge } from "@/shared/ui/badge";
 import { Card } from "@/shared/ui/card";
 import { Img } from "@/shared/ui/image";
 
 import { DownloadMetadata } from "@/features/downloads/components/download-metadata";
 import { DownloadProgress } from "@/features/downloads/components/download-progress";
-import { MediaRating } from "@/features/media/components/media-rating";
+import { MediaBadgeDate } from "@/features/media/components/badge/media-badge-date";
+import { MediaBadgeRating } from "@/features/media/components/badge/media-badge-rating";
 import { MediaSocialActions } from "@/features/media/components/media-social-actions";
 import { getBackdropUrl, getPosterUrl } from "@/features/media/helpers/media.helper";
 
@@ -34,7 +34,6 @@ export function MediaCardHorizontal({
   withDownload,
   link: linkProp,
 }: MediaCardHorizontalProps) {
-  const year = media.release_date ? new Date(media.release_date).getFullYear() : null;
   const backdropUrl = getBackdropUrl(media.backdrop_path ?? null, "w780");
   const isMobile = useIsMobile();
 
@@ -64,22 +63,20 @@ export function MediaCardHorizontal({
         </div>
       )}
 
-      <div className="relative z-10 flex items-stretch gap-3 p-3 md:p-4 pointer-events-none">
-        <div className="shrink-0 w-16 md:w-20 aspect-2/3 rounded-md overflow-hidden border border-border/40 pointer-events-none">
-          <Img
-            src={media.poster_path ? getPosterUrl(media.poster_path ?? null, "w185") : undefined}
-            alt={media.title}
-            className="size-full object-cover"
-          />
-        </div>
+      <div className="relative z-20 flex items-stretch gap-3 p-3 md:p-4 pointer-events-none h-full">
+        <Img
+          src={media.poster_path ? getPosterUrl(media.poster_path ?? null, "w185") : undefined}
+          alt={media.title}
+          className="size-full object-cover h-fit  w-16 md:w-20 aspect-2/3 rounded-md overflow-hidden border border-border/40 pointer-events-none"
+        />
 
         <div className="flex flex-col justify-between min-w-0 flex-1 py-0.5 gap-2">
           <div className="flex justify-between gap-2">
             <div className="space-y-1 flex-1">
               <h3 className="text-sm md:text-base font-semibold line-clamp-2 leading-snug">{media.title}</h3>
               <div className="flex items-center gap-2">
-                {year != null && <Badge variant="outline">{year}</Badge>}
-                <MediaRating media={media} onlyOne />
+                <MediaBadgeDate date={media.release_date} yearOnly />
+                <MediaBadgeRating media={media} onlyOne />
               </div>
               {withOverview && (
                 <p className="md:max-w-[70%] text-sm text-muted-foreground line-clamp-3 leading-snug">
@@ -87,13 +84,15 @@ export function MediaCardHorizontal({
                 </p>
               )}
             </div>
-            {withSocialActions && !isMobile && <MediaSocialActions media={media} size="lg" className="items-end" />}
+            {withSocialActions && !isMobile && (
+              <MediaSocialActions media={media} size="lg" className="pointer-events-auto z-30 shrink-0" />
+            )}
           </div>
 
-          {children && <div className="pointer-events-auto">{children}</div>}
+          {children && <div className="pointer-events-auto z-30">{children}</div>}
 
           {withDownload && media.download && (
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 pointer-events-auto z-30">
               <DownloadProgress className="flex-1" download={media.download} size="sm" />
               <DownloadMetadata download={media.download} />
             </div>

@@ -402,7 +402,7 @@ function DropDrawerItem({
         className={cn(
           "flex cursor-pointer items-center justify-between px-4 py-4",
           // Only apply margin, background and rounded corners if not in a group
-          !isInsideGroup && "bg-accent dark:bg-accent mx-2 my-1.5 rounded-md",
+          !isInsideGroup && "bg-card dark:bg-card mx-2 my-1.5 rounded-md",
           // For items in a group, don't add background but add more padding
           isInsideGroup && "bg-transparent py-4",
           inset && "pl-8",
@@ -548,7 +548,7 @@ function DropDrawerGroup({
         data-drop-drawer-group
         data-slot="drop-drawer-group"
         role="group"
-        className={cn("bg-accent dark:bg-accent mx-2 my-3 overflow-hidden rounded-xl", className)}
+        className={cn("bg-card dark:bg-card mx-2 my-3 overflow-hidden rounded-xl", className)}
         {...props}
       >
         {childrenWithSeparators}
@@ -786,7 +786,7 @@ function DropDrawerSubTrigger({
         className={cn(
           "flex cursor-pointer items-center justify-between px-4 py-4",
           // Only apply margin, background and rounded corners if not in a group
-          !isInsideGroup && "bg-accent dark:bg-accent mx-2 my-1.5 rounded-md",
+          !isInsideGroup && "bg-card dark:bg-card mx-2 my-1.5 rounded-md",
           // For items in a group, don't add background but add more padding
           isInsideGroup && "bg-transparent py-4",
           inset && "pl-8",
@@ -851,5 +851,6 @@ export {
   DropDrawerSub,
   DropDrawerSubContent,
   DropDrawerSubTrigger,
-  DropDrawerTrigger,
+  DropDrawerTrigger
 };
+

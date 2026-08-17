@@ -1,5 +1,6 @@
 import { BadRequestError } from "@/shared/errors/error";
 
+import { fetchImdbRating } from "@/modules/media/imdb-rating.helper";
 import { mergeMediaEnrichment } from "@/modules/media/media.helper";
 import { tmdbMovieToMedia } from "@/modules/tmdb/tmdb.helper";
 import { TMDBService } from "@/modules/tmdb/tmdb.service";
@@ -46,11 +47,14 @@ export class MovieService extends TMDBService<Movie> {
 
     const fromTmdb = tmdbMovieToMedia(movieData);
     const fromDb = mediaMap.find((m) => m.id.toString() === id);
+    const media = fromDb ? { ...fromDb, imdbId: fromDb.imdbId || fromTmdb.imdbId } : fromTmdb;
+    const imdbRating = await fetchImdbRating(media.imdbId || movieData.external_ids?.imdb_id, "movie");
 
     return {
       id,
       movie: movieData,
-      media: fromDb ? { ...fromDb, imdbId: fromDb.imdbId || fromTmdb.imdbId } : fromTmdb,
+      media,
+      imdbRating,
       collection,
       related: {
         collection: mergeMediaEnrichment(

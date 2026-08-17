@@ -17,22 +17,24 @@ const badgeVariants = cva(
         outline: "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
         glass: "border-transparent bg-black/60 text-white [a&]:hover:bg-black/70",
       },
+      size: {
+        default: "text-xs",
+        lg: "text-sm",
+      },
     },
     defaultVariants: {
       variant: "default",
+      size: "default",
     },
   },
 );
 
-function Badge({
-  className,
-  variant,
-  asChild = false,
-  ...props
-}: React.ComponentProps<"span"> & VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
+export type BadgeProps = React.ComponentProps<"span"> & VariantProps<typeof badgeVariants> & { asChild?: boolean };
+
+function Badge({ className, variant, size = "default", asChild = false, ...props }: BadgeProps) {
   const Comp = asChild ? Slot : "span";
 
-  return <Comp data-slot="badge" className={cn(badgeVariants({ variant }), className)} {...props} />;
+  return <Comp data-slot="badge" className={cn(badgeVariants({ variant, size }), className)} {...props} />;
 }
 
 export { Badge, badgeVariants };
