@@ -23,19 +23,23 @@ Think of it as **Stremio meets Overseerr**, but fully self-hosted and under your
 
 ## Preview
 
+Landing page: 
+
+[https://seedarr.netlify.app/](https://seedarr.netlify.app/)
+
 <p align="center">
-  <img src="./.github/screenshots/home.png" alt="Catalogue Dashboard" width="850" />
+  <img src="./.github/screenshots/demo.webp" alt="Catalogue Dashboard" width="850" />
 </p>
 
 ## Getting started
 
-Check out our documentation on how ton install and run Seedarr:
+Check out our documentation on how to install and run Seedarr:
 
 [https://seedarr.netlify.app/guides/quick-start/](https://seedarr.netlify.app/guides/quick-start/)
 
 ## Features
 
-You can retrieve all features and how to configure each one following the documentation : 
+You can retrieve all features and how to configure each one following the documentation: 
 
 [https://seedarr.netlify.app/guides/features/](https://seedarr.netlify.app/guides/features/)
 
@@ -89,7 +93,7 @@ You can retrieve all features and how to configure each one following the docume
 
 Contributions are welcome! Whether it's fixing a bug, adding a feature, or improving translations.
 
-Please read our documentation to learn how to set up the development environment and follow our coding standards :
+Please read our documentation to learn how to set up the development environment and follow our coding standards:
 
 [https://seedarr.netlify.app/guides/contributing/](https://seedarr.netlify.app/guides/contributing/)
 
