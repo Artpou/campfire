@@ -10,6 +10,7 @@ import { BookmarkIcon, CalendarIcon, ClockIcon, HeartIcon, PencilIcon, SaveIcon 
 
 import { ResponsiveTabs } from "@/shared/components/responsive-tabs";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
+import { flattenInfiniteResults, type InfiniteResultsQuery } from "@/shared/hooks/use-infinite-list";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
@@ -52,20 +53,18 @@ function filterMedia(items: Media[], search: string): Media[] {
 
 function MediaCollectionView({
   items,
+  query,
   viewMode,
-  isLoading,
-  onLoadMore,
   sorting,
   onSortingChange,
 }: {
   items: Media[];
+  query: InfiniteResultsQuery<Media>;
   viewMode: "grid" | "list";
-  isLoading?: boolean;
-  onLoadMore?: () => void;
   sorting?: SortingState;
   onSortingChange?: OnChangeFn<SortingState>;
 }) {
-  if (!isLoading && items.length === 0) {
+  if (!query.isPending && items.length === 0) {
     return (
       <p className="text-sm text-muted-foreground py-10 text-center">
         <Trans>Nothing here yet</Trans>
@@ -74,18 +73,10 @@ function MediaCollectionView({
   }
 
   if (viewMode === "grid") {
-    return <MediaGrid items={items} isLoading={isLoading} onLoadMore={onLoadMore} showType />;
+    return <MediaGrid items={items} query={query} showType />;
   }
 
-  return (
-    <MediaTable
-      media={items}
-      isLoadingMore={isLoading}
-      onLoadMore={onLoadMore}
-      sorting={sorting}
-      onSortingChange={onSortingChange}
-    />
-  );
+  return <MediaTable media={items} query={query} sorting={sorting} onSortingChange={onSortingChange} />;
 }
 
 function UserProfilePage() {
@@ -157,20 +148,20 @@ function UserProfilePage() {
   }, [tab, calendarQuery.hasNextPage, calendarQuery.isFetchingNextPage, calendarQuery.fetchNextPage]);
 
   const calendarItems = useMemo(
-    () => filterMedia(calendarQuery.data?.pages?.flatMap((p) => p.results) ?? [], search),
-    [calendarQuery.data, search],
+    () => filterMedia(flattenInfiniteResults(calendarQuery), search),
+    [calendarQuery.data, search, calendarQuery],
   );
   const watchListItems = useMemo(
-    () => filterMedia(watchListQuery.data?.pages?.flatMap((p) => p.results) ?? [], search),
-    [watchListQuery.data, search],
+    () => filterMedia(flattenInfiniteResults(watchListQuery), search),
+    [watchListQuery.data, search, watchListQuery],
   );
   const likesItems = useMemo(
-    () => filterMedia(likesQuery.data?.pages?.flatMap((p) => p.results) ?? [], search),
-    [likesQuery.data, search],
+    () => filterMedia(flattenInfiniteResults(likesQuery), search),
+    [likesQuery.data, search, likesQuery],
   );
   const historyItems = useMemo(
-    () => filterMedia(historyQuery.data?.pages?.flatMap((p) => p.results) ?? [], search),
-    [historyQuery.data, search],
+    () => filterMedia(flattenInfiniteResults(historyQuery), search),
+    [historyQuery.data, search, historyQuery],
   );
   const displayName = profileUser.pseudo || profileUser.username;
 
@@ -197,9 +188,6 @@ function UserProfilePage() {
         : tab === "liked"
           ? likesQuery
           : historyQuery;
-
-  const isInitialLoading = activeQuery.isLoading;
-  const isFetchingMore = activeQuery.isFetchingNextPage;
 
   return (
     <Container className="space-y-8 pb-20">
@@ -309,22 +297,17 @@ function UserProfilePage() {
             onChange={(e) => setSearch(e.target.value)}
           />
 
-          {isInitialLoading ? (
+          {activeQuery.isLoading ? (
             <SeedarrLoader />
           ) : tab === "calendar" ? (
             <MediaCalendar items={calendarItems} viewMode={viewMode} />
           ) : (
             <MediaCollectionView
               items={tab === "watchlist" ? watchListItems : tab === "liked" ? likesItems : historyItems}
+              query={activeQuery}
               viewMode={viewMode}
-              isLoading={isFetchingMore}
               sorting={listQueryToSorting(sortQuery)}
               onSortingChange={setSorting}
-              onLoadMore={() => {
-                if (activeQuery.hasNextPage && !activeQuery.isFetchingNextPage) {
-                  void activeQuery.fetchNextPage();
-                }
-              }}
             />
           )}
         </div>

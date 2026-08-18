@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { SortingState } from "@tanstack/react-table";
-import { useIntersectionObserver } from "@uidotdev/usehooks";
 
 import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
@@ -14,8 +13,8 @@ import { DownloadButtonSynchronize } from "@/features/downloads/components/butto
 import { LibraryStats } from "@/features/downloads/components/download-stats";
 import { DownloadTable } from "@/features/downloads/components/download-table";
 import { MediaButtonCategory } from "@/features/media/components/button/media-button-category";
-import { MediaCard } from "@/features/media/components/card/media-card";
 import { MediaCarouselCategory } from "@/features/media/components/carousel/media-carousel-category";
+import { MediaGrid } from "@/features/media/components/media-grid";
 import { MediaTypeTabs } from "@/features/media/components/tabs/media-tabs-type";
 import { MediaTabsViewMode } from "@/features/media/components/tabs/media-tabs-view-mode";
 import { listQueryToSorting, sortingToListQuery } from "@/features/media/helpers/media-sort.helper";
@@ -60,12 +59,8 @@ function DownloadsPage() {
     sortOrder,
   };
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useSuspenseMediaList(listQuery);
-  const results = data?.pages.flatMap((page) => page.results) ?? [];
-
-  const handleLoadMore = () => {
-    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-  };
+  const mediaQuery = useSuspenseMediaList(listQuery);
+  const results = mediaQuery.data.pages.flatMap((page) => page.results);
 
   const filteredResults = useMemo(() => {
     if (!query.trim()) return results;
@@ -128,12 +123,11 @@ function DownloadsPage() {
 
         {filteredResults.length > 0 ? (
           viewMode === "grid" ? (
-            <DownloadsGrid media={filteredResults} isLoading={isFetchingNextPage} onLoadMore={handleLoadMore} />
+            <MediaGrid items={filteredResults} query={mediaQuery} showType />
           ) : (
             <DownloadTable
               media={filteredResults}
-              isLoadingMore={isFetchingNextPage}
-              onLoadMore={handleLoadMore}
+              query={mediaQuery}
               sorting={sorting}
               onSortingChange={(updater) => {
                 const next = typeof updater === "function" ? updater(sorting) : updater;
@@ -152,37 +146,5 @@ function DownloadsPage() {
         )}
       </div>
     </Container>
-  );
-}
-
-function DownloadsGrid({
-  media,
-  isLoading,
-  onLoadMore,
-}: {
-  media: Media[];
-  isLoading: boolean;
-  onLoadMore: () => void;
-}) {
-  const [sentinelRef, entry] = useIntersectionObserver({ threshold: 1 });
-  const onLoadMoreRef = useRef(onLoadMore);
-  onLoadMoreRef.current = onLoadMore;
-
-  useEffect(() => {
-    if (entry?.isIntersecting && !isLoading && onLoadMoreRef.current) {
-      onLoadMoreRef.current();
-    }
-  }, [entry?.isIntersecting, isLoading]);
-
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-6 gap-4">
-        {media.map((item) => {
-          if (!item.download) return null;
-          return <MediaCard key={item.download.id} media={item} showDownload showPlay showSocial showType />;
-        })}
-      </div>
-      <div ref={sentinelRef} className="h-4" aria-hidden />
-    </div>
   );
 }

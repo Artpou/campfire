@@ -6,6 +6,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useDebounce } from "@uidotdev/usehooks";
 
 import { PlaceholderEmpty } from "@/shared/components/seedarr-placeholder";
+import { flattenInfiniteResults } from "@/shared/hooks/use-infinite-list";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Container } from "@/shared/ui/container";
 import { Input } from "@/shared/ui/input";
@@ -115,10 +116,8 @@ export function MediaDiscover<TSearch extends MediaDiscoverSearch>({
     return map;
   }, [genres]);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } = useInfiniteQuery(
-    queryOptions as DiscoverQueryOptions,
-  );
-  const rawResults = data?.pages.flatMap((page) => page.results) ?? [];
+  const discoverQuery = useInfiniteQuery(queryOptions as DiscoverQueryOptions);
+  const rawResults = flattenInfiniteResults(discoverQuery);
 
   const results = useMemo(() => {
     if (!isSearching) return rawResults;
@@ -135,10 +134,6 @@ export function MediaDiscover<TSearch extends MediaDiscoverSearch>({
       genreNameById,
     );
   }, [genreNameById, isSearching, rawResults, search, type]);
-
-  const handleLoadMore = () => {
-    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-  };
 
   return (
     <Container className="space-y-6">
@@ -179,18 +174,18 @@ export function MediaDiscover<TSearch extends MediaDiscoverSearch>({
           onChange={(e) => setQuery(e.target.value)}
         />
 
-        {isPending ? (
+        {discoverQuery.isPending ? (
           viewMode === "grid" ? (
-            <MediaGrid items={[]} isLoading showType />
+            <MediaGrid query={discoverQuery} showType />
           ) : (
-            <MediaTable media={[]} isLoadingMore />
+            <MediaTable query={discoverQuery} />
           )
         ) : results.length === 0 ? (
           <PlaceholderEmpty title={emptyTitle} subtitle={emptySubtitle} />
         ) : viewMode === "grid" ? (
-          <MediaGrid items={results} isLoading={isFetchingNextPage} onLoadMore={handleLoadMore} />
+          <MediaGrid items={results} query={discoverQuery} />
         ) : (
-          <MediaTable media={results} isLoadingMore={isFetchingNextPage} onLoadMore={handleLoadMore} />
+          <MediaTable media={results} query={discoverQuery} />
         )}
       </div>
     </Container>

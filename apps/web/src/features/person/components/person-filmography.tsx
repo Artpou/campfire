@@ -62,7 +62,7 @@ export function PersonFilmography({ filmography, departments }: PersonFilmograph
         <ResponsiveTabs value={activeTab} onValueChange={setActiveTab} options={options} className="md:w-auto" />
       </div>
 
-      <MediaGrid items={items} withLoading={false} showType />
+      <MediaGrid items={items} showType />
     </div>
   );
 }

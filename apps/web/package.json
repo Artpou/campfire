@@ -43,6 +43,7 @@
     "@tanstack/react-router": "^1.143.6",
     "@tanstack/react-router-devtools": "^1.143.6",
     "@tanstack/react-table": "^9.1.2",
+    "@tanstack/react-virtual": "^3.14.9",
     "@tanstack/router-plugin": "^1.143.6",
     "@uidotdev/usehooks": "^2.4.1",
     "class-variance-authority": "^0.7.1",

@@ -41,8 +41,6 @@ function SettingsLayout() {
       <div className="flex flex-col md:flex-row md:gap-6 md:gap-8">
         {!isModuleDetail && (
           <aside className="md:w-56 shrink-0 md:sticky md:top-6 md:self-start space-y-4">
-            <AppVersionCard />
-
             <div className="md:hidden">
               <DropSelect
                 value={activeTab}
@@ -73,6 +71,8 @@ function SettingsLayout() {
                 ))}
               </TabsList>
             </Tabs>
+
+            <AppVersionCard />
           </aside>
         )}
 

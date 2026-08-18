@@ -1,41 +1,31 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
 import { useNavigate } from "@tanstack/react-router";
 import { type OnChangeFn, type SortingState, useTable } from "@tanstack/react-table";
-import { useIntersectionObserver } from "@uidotdev/usehooks";
 
+import { InfiniteSentinel } from "@/shared/components/infinite-sentinel";
+import { flattenInfiniteResults, type InfiniteResultsQuery } from "@/shared/hooks/use-infinite-list";
 import { DataTable } from "@/shared/ui/data-table";
 
 import { mediaTableFeatures, useMediaTableColumns } from "@/features/media/hooks/use-media-table-columns";
 
 interface MediaTableProps {
-  media: Media[];
-  onLoadMore?: () => void;
-  isLoadingMore?: boolean;
+  media?: Media[];
+  query?: InfiniteResultsQuery<Media>;
   sorting?: SortingState;
   onSortingChange?: OnChangeFn<SortingState>;
 }
 
-export function MediaTable({ media, onLoadMore, isLoadingMore, sorting, onSortingChange }: MediaTableProps) {
+export function MediaTable({ media, query, sorting, onSortingChange }: MediaTableProps) {
   const navigate = useNavigate();
   const [localSorting, setLocalSorting] = useState<SortingState>([]);
   const columns = useMediaTableColumns();
-  const items = useMemo(() => media, [media]);
+  const items = media ?? flattenInfiniteResults(query);
   const resolvedSorting = sorting ?? localSorting;
   const resolvedOnSortingChange = onSortingChange ?? setLocalSorting;
   const manualSorting = Boolean(onSortingChange);
-
-  const [sentinelRef, entry] = useIntersectionObserver({ threshold: 1 });
-  const onLoadMoreRef = useRef(onLoadMore);
-  onLoadMoreRef.current = onLoadMore;
-
-  useEffect(() => {
-    if (entry?.isIntersecting && !isLoadingMore && onLoadMoreRef.current) {
-      onLoadMoreRef.current();
-    }
-  }, [entry?.isIntersecting, isLoadingMore]);
 
   const table = useTable({
     features: mediaTableFeatures,
@@ -60,7 +50,7 @@ export function MediaTable({ media, onLoadMore, isLoadingMore, sorting, onSortin
           });
         }}
       />
-      {onLoadMore && <div ref={sentinelRef} className="h-4" aria-hidden />}
+      <InfiniteSentinel query={query} />
     </div>
   );
 }

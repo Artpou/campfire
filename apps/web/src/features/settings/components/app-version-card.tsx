@@ -1,4 +1,9 @@
-// TODO: fetch the current version
 export function AppVersionCard() {
-  return <div className="fixed bottom-0 left-3 rounded-lg px-4 py-3"></div>;
+  const version = import.meta.env.VITE_APP_VERSION;
+
+  console.log(version);
+
+  if (!version) return null;
+
+  return <p className="text-xs text-muted-foreground px-1">Seedarr v{version}</p>;
 }

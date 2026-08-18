@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
 import { useNavigate } from "@tanstack/react-router";
 import { type OnChangeFn, type RowSelectionState, type SortingState, useTable } from "@tanstack/react-table";
-import { useIntersectionObserver } from "@uidotdev/usehooks";
 import { Trash2Icon } from "lucide-react";
 
 import { DialogDelete } from "@/shared/components/dialog/dialog-delete";
+import { InfiniteSentinel } from "@/shared/components/infinite-sentinel";
+import { flattenInfiniteResults, type InfiniteResultsQuery } from "@/shared/hooks/use-infinite-list";
 import { Button } from "@/shared/ui/button";
 import { Checkbox } from "@/shared/ui/checkbox";
 import { DataTable } from "@/shared/ui/data-table";
@@ -23,14 +24,13 @@ import {
 } from "@/features/downloads/hooks/use-download-table-columns";
 
 interface DownloadTableProps {
-  media: Media[];
-  onLoadMore?: () => void;
-  isLoadingMore?: boolean;
+  media?: Media[];
+  query?: InfiniteResultsQuery<Media>;
   sorting?: SortingState;
   onSortingChange?: OnChangeFn<SortingState>;
 }
 
-export function DownloadTable({ media, onLoadMore, isLoadingMore, sorting, onSortingChange }: DownloadTableProps) {
+export function DownloadTable({ media, query, sorting, onSortingChange }: DownloadTableProps) {
   const navigate = useNavigate();
   const { isAdmin } = useRole();
   const currentUser = useAuth((s) => s.user);
@@ -41,7 +41,10 @@ export function DownloadTable({ media, onLoadMore, isLoadingMore, sorting, onSor
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dbOnly, setDbOnly] = useState(false);
 
-  const items = useMemo(() => media.filter((m): m is MediaWithDownload => Boolean(m.download)), [media]);
+  const items = useMemo(
+    () => (media ?? flattenInfiniteResults(query)).filter((m): m is MediaWithDownload => Boolean(m.download)),
+    [media, query],
+  );
   const resolvedSorting = sorting ?? localSorting;
   const resolvedOnSortingChange = onSortingChange ?? setLocalSorting;
   const manualSorting = Boolean(onSortingChange);
@@ -57,16 +60,6 @@ export function DownloadTable({ media, onLoadMore, isLoadingMore, sorting, onSor
   }, []);
 
   const columns = useDownloadTableColumns({ canDelete, onDelete });
-
-  const [sentinelRef, entry] = useIntersectionObserver({ threshold: 1 });
-  const onLoadMoreRef = useRef(onLoadMore);
-  onLoadMoreRef.current = onLoadMore;
-
-  useEffect(() => {
-    if (entry?.isIntersecting && !isLoadingMore && onLoadMoreRef.current) {
-      onLoadMoreRef.current();
-    }
-  }, [entry?.isIntersecting, isLoadingMore]);
 
   const table = useTable({
     features: downloadTableFeatures,
@@ -114,7 +107,7 @@ export function DownloadTable({ media, onLoadMore, isLoadingMore, sorting, onSor
         onRowClick={(row) => navigate({ to: "/downloads/$id", params: { id: row.original.download.id } })}
       />
 
-      {onLoadMore && <div ref={sentinelRef} className="h-4" aria-hidden />}
+      <InfiniteSentinel query={query} />
 
       <DialogDelete
         open={deleteDialogOpen}

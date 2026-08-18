@@ -6,12 +6,17 @@ import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import viteTsConfigPaths from "vite-tsconfig-paths";
 
+import rootPackageJson from "../../package.json";
+
 const isKnip = process.env.KNIP === "true" || process.env.KNIP === "1";
 
 const apiTarget = process.env.VITE_API_URL || "http://localhost:3002";
 
 const config = defineConfig({
   envDir: "../../",
+  define: {
+    "import.meta.env.VITE_APP_VERSION": JSON.stringify(rootPackageJson.version),
+  },
   plugins: [
     tanstackRouter({
       autoCodeSplitting: true,

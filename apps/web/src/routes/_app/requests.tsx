@@ -3,6 +3,7 @@ import { hasMinRole, type RequestStatus } from "@seedarr/contracts";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 
+import { flattenInfiniteResults } from "@/shared/hooks/use-infinite-list";
 import { Container } from "@/shared/ui/container";
 
 import { RequestGrid } from "@/features/request/components/request-grid";
@@ -35,14 +36,7 @@ function RequestsPage() {
   const { type, status } = Route.useSearch();
   const navigate = useNavigate();
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } = useInfiniteQuery(
-    requestQueries.list({ type, status }),
-  );
-  const results = data?.pages.flatMap((page) => page.results) ?? [];
-
-  const handleLoadMore = () => {
-    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-  };
+  const query = useInfiniteQuery(requestQueries.list({ type, status }));
 
   return (
     <Container>
@@ -54,14 +48,14 @@ function RequestsPage() {
           onTypeChange={(next) => navigate({ to: "/requests", search: { status, type: next } })}
         />
 
-        {!isPending && results.length === 0 ? (
+        {!query.isPending && flattenInfiniteResults(query).length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
             <p className="text-lg">
               <Trans>No requests found.</Trans>
             </p>
           </div>
         ) : (
-          <RequestGrid items={results} isLoading={isPending || isFetchingNextPage} onLoadMore={handleLoadMore} />
+          <RequestGrid query={query} />
         )}
       </div>
     </Container>

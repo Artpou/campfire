@@ -3,7 +3,8 @@
   "compilerOptions": {
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "resolveJsonModule": true
   },
   "include": ["src", "vite.config.ts", "lucide-react.d.ts"],
   "exclude": ["node_modules", "dist", ".turbo", "coverage"]
