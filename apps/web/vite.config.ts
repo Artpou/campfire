@@ -48,6 +48,7 @@ const config = defineConfig({
       },
       workbox: {
         navigateFallbackDenylist: [/^\/api/, /^\/streaming/, /^\/avatars/, /^\/downloads\/file/],
+        globIgnores: ['**/movi-player-*.js'],
       },
     }),
   ],
