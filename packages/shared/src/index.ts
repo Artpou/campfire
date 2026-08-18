@@ -2,6 +2,14 @@ export { todayIsoDate } from "./date";
 export { formatError } from "./error";
 export { formatBytes, formatRuntime, formatTime, getEndsAt } from "./format";
 export {
+  buildMediaFolderName,
+  buildOrganizedRemotePath,
+  buildSeasonFolderName,
+  extractYearFromDate,
+  joinRemotePath,
+  parseSeasonEpisode,
+} from "./media-folder";
+export {
   categoryForModuleType,
   getCatalogEntryForPreset,
   getModuleCatalogEntry,

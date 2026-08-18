@@ -242,6 +242,10 @@ export class ModuleService extends AuthenticatedService {
     const row = await this.getRaw(id);
     const entry = getModuleCatalogEntry(row.type);
     if (entry.locked) throw new BadRequestError("This module cannot be uninstalled");
+    if (row.category === "storage") {
+      const { deleteOrphanRemoteDownloads } = await import("@/modules/download/download-storage.helper");
+      await deleteOrphanRemoteDownloads(row.id);
+    }
     await db.delete(module).where(eq(module.id, id));
     this.invalidateCaches(row.type);
     return { ok: true };

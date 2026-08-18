@@ -26,6 +26,7 @@ type MediaCardProps = {
   showDownload?: boolean;
   showPlay?: boolean;
   showPreview?: boolean;
+  showQuality?: boolean;
 };
 
 export function MediaCard({
@@ -37,6 +38,7 @@ export function MediaCard({
   showDownload,
   showPlay,
   showPreview,
+  showQuality,
 }: MediaCardProps) {
   const navigate = useNavigate();
 
@@ -70,6 +72,7 @@ export function MediaCard({
         <div className="absolute top-2 left-2 flex items-center gap-0.5">
           {showType && <MediaBadgeType type={media.type} iconOnly />}
           {showSocial && <MediaBadgeRating media={media} onlyOne />}
+          {showQuality && media.download?.quality && <Badge variant="glass">{media.download.quality}</Badge>}
         </div>
 
         {showSocial && media.liked && !showDownloadProgress && (

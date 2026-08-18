@@ -38,7 +38,7 @@ function activityDate(media: Media): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export function useMediaTableColumns() {
+export function useMediaTableColumns({ showActions = true }: { showActions?: boolean } = {}) {
   return useMemo(
     () =>
       columnHelper.columns([
@@ -99,18 +99,22 @@ export function useMediaTableColumns() {
             );
           },
         }),
-        columnHelper.display({
-          id: "actions",
-          meta: { headerClassName: "w-36 md:w-44", cellClassName: "w-36 md:w-44" },
-          cell: ({ row }) => (
-            <div className="flex items-center justify-end gap-1.5">
-              <MediaButtonReview media={row.original} />
-              <MediaButtonPlay media={row.original} size="sm" />
-            </div>
-          ),
-          enableSorting: false,
-        }),
+        ...(showActions
+          ? [
+              columnHelper.display({
+                id: "actions",
+                meta: { headerClassName: "w-36 md:w-44", cellClassName: "w-36 md:w-44" },
+                cell: ({ row }) => (
+                  <div className="flex items-center justify-end gap-1.5">
+                    <MediaButtonReview media={row.original} />
+                    <MediaButtonPlay media={row.original} size="sm" />
+                  </div>
+                ),
+                enableSorting: false,
+              }),
+            ]
+          : []),
       ]),
-    [],
+    [showActions],
   );
 }

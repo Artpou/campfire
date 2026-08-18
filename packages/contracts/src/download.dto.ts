@@ -11,6 +11,7 @@ export const downloadTorrentDto = z.object({
   language: z.string().max(64).optional(),
   container: z.string().max(16).optional(),
   preferLocal: z.boolean().optional(),
+  moduleIndexerId: z.string().uuid().optional(),
 });
 export type DownloadTorrentInput = z.infer<typeof downloadTorrentDto>;
 

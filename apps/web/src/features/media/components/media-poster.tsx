@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ClapperboardIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { Badge } from "@/shared/ui/badge";
 import { Img } from "@/shared/ui/image";
 
 import { useRole } from "@/features/auth/hooks/use-role";
@@ -32,15 +33,15 @@ export function MediaPoster({ data, download }: MediaPosterProps) {
   const { role } = useRole();
   const { media } = data;
 
-  const { data: videoFile, isLoading: isVideoFileLoading } = useQuery({
+  const { data: videoFile } = useQuery({
     ...downloadQueries.videoFile(download?.id ?? ""),
     enabled: !!download?.id,
   });
 
   const displayTitle = getDisplayTitle(data);
   const showWatchProgress = hasWatchProgress(media);
-  const canPlay = !isVideoFileLoading && download && !!videoFile;
-  const canDownload = canPlay && (!download.torrent || download.torrent.done);
+  const canPlay = Boolean(download);
+  const canDownload = Boolean(download && (!download.torrent || download.torrent.done) && videoFile);
 
   return (
     <div className="flex flex-col shrink-0 w-full max-w-[250px] mx-auto lg:mx-0 gap-2">
@@ -62,21 +63,28 @@ export function MediaPoster({ data, download }: MediaPosterProps) {
             <MediaButtonPlay
               className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/poster:bg-black/50 transition-colors"
               media={media}
+              downloadId={download?.id}
               circular
             />
+          )}
+
+          {download?.quality && (
+            <Badge variant="glass" className="absolute top-2 left-2">
+              {download.quality}
+            </Badge>
           )}
         </div>
       </div>
 
       <div className="flex flex-col w-full gap-2">
-        <MediaButtonPlay media={media} disabled={!canPlay} className="w-full" />
+        <MediaButtonPlay media={media} downloadId={download?.id} className="w-full" />
         {!download && role !== "viewer" && <MediaButtonTorrent media={media} className="w-full" size="lg" />}
         {!download && role === "viewer" && <MediaButtonRequest media={media} className="w-full" size="lg" />}
         {!download && (
           <MediaButtonTrailer title={displayTitle} data={data} variant="secondary" className="w-full" size="lg" />
         )}
 
-        {canDownload && <MediaDownloadButton media={media} videoFile={videoFile} className="w-full" />}
+        {canDownload && videoFile && <MediaDownloadButton media={media} videoFile={videoFile} className="w-full" />}
         <DownloadButtonDelete media={media} download={download ?? null} />
       </div>
     </div>

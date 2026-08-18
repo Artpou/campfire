@@ -1,16 +1,10 @@
 import type { Download } from "@seedarr/sdk";
+import { parseSeasonEpisode } from "@seedarr/shared";
 
-const SEASON_EPISODE_REGEX = /S(\d{1,2})E(\d{1,2})/i;
-
-function parseSeasonEpisode(text: string): { season: number; episode: number } | null {
-  const match = text.match(SEASON_EPISODE_REGEX);
-  if (!match) return null;
-
-  return {
-    season: Number(match[1]),
-    episode: Number(match[2]),
-  };
-}
+export type RemoteFileLike = {
+  name: string;
+  path?: string;
+};
 
 function episodeKey(season: number, episode: number): string {
   return `${season}-${episode}`;
@@ -21,25 +15,32 @@ export type CoveredEpisode = {
   episode: number;
 };
 
-export function buildEpisodeDownloadMap(downloads: Download[]): Map<string, Download> {
+function addParsed(map: Map<string, Download>, download: Download, text?: string | null): void {
+  if (!text) return;
+  const parsed = parseSeasonEpisode(text);
+  if (!parsed) return;
+  const key = episodeKey(parsed.season, parsed.episode);
+  if (!map.has(key)) map.set(key, download);
+}
+
+export function buildEpisodeDownloadMap(
+  downloads: Download[],
+  remoteFilesByDownloadId: Map<string, RemoteFileLike[]> = new Map(),
+): Map<string, Download> {
   const map = new Map<string, Download>();
 
   for (const download of downloads) {
-    const torrentName = download.torrent?.name;
-    if (torrentName) {
-      const parsed = parseSeasonEpisode(torrentName);
-      if (parsed) {
-        const key = episodeKey(parsed.season, parsed.episode);
-        if (!map.has(key)) map.set(key, download);
-      }
-    }
+    addParsed(map, download, download.torrent?.name);
+    addParsed(map, download, download.remoteLocation);
 
     for (const file of download.torrent?.files ?? []) {
-      const parsed = parseSeasonEpisode(file.name);
-      if (!parsed) continue;
+      addParsed(map, download, file.name);
+      addParsed(map, download, file.path);
+    }
 
-      const key = episodeKey(parsed.season, parsed.episode);
-      if (!map.has(key)) map.set(key, download);
+    for (const file of remoteFilesByDownloadId.get(download.id) ?? []) {
+      addParsed(map, download, file.name);
+      addParsed(map, download, file.path);
     }
   }
 
@@ -61,4 +62,14 @@ export function getEpisodesCoveredByDownload(
   }
 
   return episodes.sort((a, b) => a.season - b.season || a.episode - b.episode);
+}
+
+export function inferEpisodeFromDownload(
+  download: Download,
+  remoteFiles: RemoteFileLike[] = [],
+): CoveredEpisode | null {
+  const map = buildEpisodeDownloadMap([download], new Map([[download.id, remoteFiles]]));
+  const covered = getEpisodesCoveredByDownload(download.id, map);
+  if (covered.length === 1) return covered[0] ?? null;
+  return parseSeasonEpisode(download.torrent?.name ?? "") ?? parseSeasonEpisode(download.remoteLocation ?? "") ?? null;
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/shared/ui/input";
 
 import { useDownloadReassignMedia } from "@/features/downloads/hooks/download.queries";
+import { MediaTable } from "@/features/media/components/media-table";
 import { getPosterUrl } from "@/features/media/helpers/media.helper";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 
@@ -215,10 +216,10 @@ export function MediaSearchPicker({ mediaType, selectedMedia, onSelect, fileName
     select: (data) => (mediaType ? data.filter((item) => item.type === mediaType) : data),
   });
 
-  const hasQuery = useMemo(() => debouncedQuery.trim().length >= 2, [debouncedQuery]);
+  const hasQuery = debouncedQuery.trim().length >= 2;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-h-0 flex-1 flex flex-col">
       {fileName && (
         <div className="bg-muted rounded-lg p-3">
           <p className="text-xs text-muted-foreground mb-1">
@@ -242,13 +243,22 @@ export function MediaSearchPicker({ mediaType, selectedMedia, onSelect, fileName
         />
       </div>
 
-      <MediaSearchResults
-        results={searchResults}
-        isLoading={isLoading}
-        hasQuery={hasQuery}
-        selectedId={selectedMedia?.id}
-        onSelect={onSelect}
-      />
+      {!hasQuery ? (
+        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+          <SearchIcon className="size-10 opacity-20 mb-2" />
+          <p className="text-sm">
+            <Trans>Type to search</Trans>
+          </p>
+        </div>
+      ) : isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <SeedarrLoader />
+        </div>
+      ) : (
+        <div className="overflow-y-auto flex-1 min-h-0 max-h-[40vh]">
+          <MediaTable media={searchResults} selectedId={selectedMedia?.id} showActions={false} onRowClick={onSelect} />
+        </div>
+      )}
     </div>
   );
 }

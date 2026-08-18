@@ -63,7 +63,7 @@ export function ManualSyncWizard({ files, open, onOpenChange }: ManualSyncWizard
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && handleClose()}>
-      <DialogContent className="sm:max-w-lg max-h-[80vh] flex flex-col">
+      <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             <Trans>Manual sync</Trans>

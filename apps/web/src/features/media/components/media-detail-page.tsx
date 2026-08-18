@@ -153,7 +153,7 @@ export function MediaDetailPage({
                 )}
                 {showTabs && tab === "downloads" && showDownloads && (
                   <Card className="p-4">
-                    <MediaDownload downloads={torrentDownloads} />
+                    <MediaDownload downloads={torrentDownloads} mediaType={mediaType} />
                   </Card>
                 )}
                 {showTabs && tab === "server" && showServer && (

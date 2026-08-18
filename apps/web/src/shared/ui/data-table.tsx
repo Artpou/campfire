@@ -14,6 +14,7 @@ interface DataTableProps<TFeatures extends TableFeatures, TData extends RowData>
   className?: string;
   classNameContainer?: string;
   onRowClick?: (row: Row<TFeatures, TData>) => void;
+  getRowClassName?: (row: Row<TFeatures, TData>) => string | undefined;
 }
 
 function getColumnMeta(columnDef: { meta?: unknown }): DataTableColumnMeta | undefined {
@@ -26,6 +27,7 @@ export function DataTable<TFeatures extends TableFeatures, TData extends RowData
   className,
   classNameContainer,
   onRowClick,
+  getRowClassName,
 }: DataTableProps<TFeatures, TData>) {
   const columns = table.getAllColumns();
 
@@ -48,7 +50,7 @@ export function DataTable<TFeatures extends TableFeatures, TData extends RowData
             <TableRow
               key={row.id}
               data-state={"getIsSelected" in row && row.getIsSelected() ? "selected" : undefined}
-              className={cn(onRowClick && "cursor-pointer")}
+              className={cn(onRowClick && "cursor-pointer", getRowClassName?.(row))}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
             >
               {row.getAllCells().map((cell: Cell<TFeatures, TData, unknown>) => (

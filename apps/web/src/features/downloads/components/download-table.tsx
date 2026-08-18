@@ -6,16 +6,14 @@ import { useNavigate } from "@tanstack/react-router";
 import { type OnChangeFn, type RowSelectionState, type SortingState, useTable } from "@tanstack/react-table";
 import { Trash2Icon } from "lucide-react";
 
-import { DialogDelete } from "@/shared/components/dialog/dialog-delete";
 import { InfiniteSentinel } from "@/shared/components/infinite-sentinel";
 import { flattenInfiniteResults, type InfiniteResultsQuery } from "@/shared/hooks/use-infinite-list";
 import { Button } from "@/shared/ui/button";
-import { Checkbox } from "@/shared/ui/checkbox";
 import { DataTable } from "@/shared/ui/data-table";
-import { Label } from "@/shared/ui/label";
 
 import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";
+import { DownloadModalDelete } from "@/features/downloads/components/download-modal-delete";
 import { useBatchDeleteDownloads } from "@/features/downloads/hooks/download.queries";
 import {
   downloadTableFeatures,
@@ -39,7 +37,6 @@ export function DownloadTable({ media, query, sorting, onSortingChange }: Downlo
   const [localSorting, setLocalSorting] = useState<SortingState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [dbOnly, setDbOnly] = useState(false);
 
   const items = useMemo(
     () => (media ?? flattenInfiniteResults(query)).filter((m): m is MediaWithDownload => Boolean(m.download)),
@@ -75,19 +72,6 @@ export function DownloadTable({ media, query, sorting, onSortingChange }: Downlo
   const selectedIds = table.getFilteredSelectedRowModel().rows.map((r) => r.original.download.id);
   const someSelected = selectedIds.length > 0;
 
-  const handleBatchDelete = () => {
-    batchDelete.mutate(
-      { ids: selectedIds, dbOnly },
-      {
-        onSuccess: () => {
-          setRowSelection({});
-          setDeleteDialogOpen(false);
-          setDbOnly(false);
-        },
-      },
-    );
-  };
-
   return (
     <div className="space-y-2">
       {someSelected && (
@@ -109,11 +93,11 @@ export function DownloadTable({ media, query, sorting, onSortingChange }: Downlo
 
       <InfiniteSentinel query={query} />
 
-      <DialogDelete
+      <DownloadModalDelete
         open={deleteDialogOpen}
         setOpen={setDeleteDialogOpen}
-        validate={handleBatchDelete}
-        disabled={batchDelete.isPending}
+        showLibraryOnly
+        pending={batchDelete.isPending}
         title={
           selectedIds.length > 1 ? <Trans>Delete {selectedIds.length} downloads</Trans> : <Trans>Delete Download</Trans>
         }
@@ -126,18 +110,17 @@ export function DownloadTable({ media, query, sorting, onSortingChange }: Downlo
             <Trans>Are you sure you want to delete this download? This action cannot be undone.</Trans>
           )
         }
-        extra={
-          <div className="flex items-center gap-2 py-2">
-            <Checkbox
-              id="db-only-batch"
-              checked={dbOnly}
-              onCheckedChange={(v: boolean | "indeterminate") => setDbOnly(v === true)}
-            />
-            <Label htmlFor="db-only-batch" className="text-sm cursor-pointer">
-              <Trans>Remove from library only (keep files on disk)</Trans>
-            </Label>
-          </div>
-        }
+        onConfirm={(libraryOnly) => {
+          batchDelete.mutate(
+            { ids: selectedIds, dbOnly: libraryOnly },
+            {
+              onSuccess: () => {
+                setRowSelection({});
+                setDeleteDialogOpen(false);
+              },
+            },
+          );
+        }}
       />
     </div>
   );

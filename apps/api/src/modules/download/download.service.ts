@@ -1,5 +1,5 @@
 import type { DownloadTorrentInput, PaginationQuery } from "@seedarr/contracts";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 
 import { BadRequestError, ForbiddenError, NotFoundError } from "@/shared/errors/error";
 import { signToken } from "@/shared/helpers/crypto.helper";
@@ -10,13 +10,13 @@ import { IdentifiableService } from "@/shared/services/authenticated.service";
 import { db } from "@/db/db";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
-import { download } from "@/modules/download/download.schema";
+import { type Download, type DownloadStats, download } from "@/modules/download/download.schema";
 import { type DownloadableFile, getDownloadableFile } from "@/modules/download/local/local-file.helper";
 import { media, watchProgress } from "@/modules/media/media.schema";
 import { remoteStorageService } from "@/modules/storage-config/remote/remote-storage.service";
 import { invalidateStreamSource } from "@/modules/streaming/streaming.service";
 import { resolveTorrentSource } from "@/modules/torrent/torrent-source.helper";
-import type { Download, DownloadStats } from "./download.schema";
+import { visibleDownloadSql } from "./download-storage.helper";
 import { getLocalDiskSpace } from "./local/local-disk.helper";
 import { isTransferInProgress, markTransferStarting, runRemoteTransfer } from "./remote/remote-transfer.helper";
 import { extractTorrentLiveData, waitForTorrentMetadata } from "./webtorrent/webtorrent.helper";
@@ -39,7 +39,7 @@ const METADATA_TIMEOUT_FILE_MS = 5_000;
 
 export class DownloadService extends IdentifiableService<Download> {
   async getMany(params?: PaginationQuery): Promise<Download[]> {
-    const where = params?.ids ? inArray(download.id, params.ids) : undefined;
+    const where = params?.ids ? inArray(download.id, params.ids) : await visibleDownloadSql();
     const paginationOpts = !params?.ids && params?.page && params?.limit ? paginate(params) : {};
 
     return db.query.download.findMany({
@@ -51,7 +51,7 @@ export class DownloadService extends IdentifiableService<Download> {
 
   async getByMediaId(mediaId: number): Promise<Download[]> {
     return db.query.download.findMany({
-      where: eq(download.mediaId, mediaId),
+      where: and(eq(download.mediaId, mediaId), await visibleDownloadSql()),
       orderBy: desc(download.createdAt),
     });
   }
@@ -188,6 +188,7 @@ export class DownloadService extends IdentifiableService<Download> {
           ...downloadInput,
           userId: this.user.id,
           mediaId: newMedia.id,
+          moduleIndexerId: input.moduleIndexerId,
           size: liveData.length || null,
           torrent: liveData,
         })

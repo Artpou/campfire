@@ -71,10 +71,29 @@ describe("buildEpisodeDownloadMap", () => {
     expect(map.get("2-2")?.id).toBe("season-pack");
   });
 
-  it("keeps the first download when multiple match the same episode", () => {
-    const map = buildEpisodeDownloadMap([makeDownload({ id: "first" }), makeDownload({ id: "second" })]);
+  it("maps remote file paths when torrent data is missing", () => {
+    const map = buildEpisodeDownloadMap(
+      [
+        makeDownload({
+          id: "remote-show",
+          torrent: null,
+          remoteLocation: "Freebox/Series/Widow's Bay (2026)",
+        }),
+      ],
+      new Map([
+        [
+          "remote-show",
+          [
+            {
+              name: "Widows Bay S01E08 Your Baggage 1080p.mkv",
+              path: "Freebox/Series/Widow's Bay (2026)/Season 01/Widows Bay S01E08 Your Baggage 1080p.mkv",
+            },
+          ],
+        ],
+      ]),
+    );
 
-    expect(map.get("2-5")?.id).toBe("first");
+    expect(map.get("1-8")?.id).toBe("remote-show");
   });
 });
 

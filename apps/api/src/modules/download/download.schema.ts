@@ -3,6 +3,7 @@ import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { createSelectSchema } from "drizzle-zod";
 import type { z } from "zod";
 
+import { module } from "@/modules/module/module.schema";
 import { user } from "@/modules/user/user.schema";
 
 export type { TorrentStatus } from "@seedarr/contracts";
@@ -81,6 +82,9 @@ export const download = sqliteTable(
     size: integer("size"),
 
     remoteLocation: text("remote_location"),
+
+    moduleIndexerId: text("module_indexer_id").references(() => module.id, { onDelete: "set null" }),
+    moduleStorageId: text("module_storage_id").references(() => module.id, { onDelete: "set null" }),
 
     torrent: text("torrent", { mode: "json" }).$type<TorrentLiveData>(),
 

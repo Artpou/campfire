@@ -25,6 +25,7 @@ import { indexersManagerImages } from "@/features/indexers-manager/helpers/index
 export interface TorrentWithMeta extends Torrent {
   indexerId?: string;
   indexerManagerType?: IndexerType;
+  moduleId?: string;
 }
 
 export const torrentTableFeatures = tableFeatures({

@@ -66,10 +66,7 @@ function activeDownloadExistsSql(): SQL {
       AND d.torrent IS NOT NULL
       AND (
         json_extract(d.torrent, '$.transferring') = 1
-        OR (
-          COALESCE(json_extract(d.torrent, '$.done'), 0) = 0
-          AND COALESCE(json_extract(d.torrent, '$.paused'), 0) = 0
-        )
+        OR COALESCE(json_extract(d.torrent, '$.done'), 0) = 0
       )
   )`;
 }

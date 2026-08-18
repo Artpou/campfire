@@ -1,7 +1,7 @@
 import { filenameParse } from "@ctrl/video-filename-parser";
 import type { ManualSyncInput } from "@seedarr/contracts";
-import { getVideoContainer, isVideoFile } from "@seedarr/shared";
-import { and, eq } from "drizzle-orm";
+import { buildOrganizedRemotePath, extractYearFromDate, getVideoContainer, isVideoFile } from "@seedarr/shared";
+import { and, eq, or } from "drizzle-orm";
 
 import { BadRequestError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
@@ -9,6 +9,7 @@ import { logger } from "@/shared/helpers/logger.helper";
 import { db } from "@/db/db";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { download } from "@/modules/download/download.schema";
+import { getEnabledStorageModuleId } from "@/modules/download/download-storage.helper";
 import { media } from "@/modules/media/media.schema";
 import type { TMDBItem } from "@/modules/tmdb/tmdb.types";
 import { getTmdbApiKey } from "@/modules/tmdb/tmdb-key.query";
@@ -116,16 +117,6 @@ function parseEntry(
   return { title, year, seasons, quality, language, container };
 }
 
-function extractYear(dateStr?: string | null): number | null {
-  if (!dateStr) return null;
-  const year = Number.parseInt(dateStr.substring(0, 4), 10);
-  return Number.isNaN(year) ? null : year;
-}
-
-function buildPlexFolderName(title: string, year: number | null): string {
-  return year ? `${title} (${year})` : title;
-}
-
 function getTmdbTitle(item: TMDBItem, type: "movie" | "tv"): string {
   return type === "movie" ? (item.title ?? item.name ?? "") : (item.name ?? item.title ?? "");
 }
@@ -190,9 +181,12 @@ async function collectEntries(basePath: string, mediaType: "movie" | "tv"): Prom
 
 function buildDownloadLocation(entry: SyncEntry, tmdbItem: TMDBItem, resolvedType: "movie" | "tv"): string {
   const releaseDate = resolvedType === "movie" ? tmdbItem.release_date : tmdbItem.first_air_date;
-  const tmdbTitle = getTmdbTitle(tmdbItem, resolvedType);
-  const year = extractYear(releaseDate);
-  return `${entry.basePath}/${buildPlexFolderName(tmdbTitle, year)}`;
+  return buildOrganizedRemotePath({
+    basePath: entry.basePath,
+    title: getTmdbTitle(tmdbItem, resolvedType),
+    year: extractYearFromDate(releaseDate),
+    type: resolvedType,
+  });
 }
 
 async function organizeFile(
@@ -202,18 +196,13 @@ async function organizeFile(
   seasons: number[],
 ): Promise<void> {
   const releaseDate = resolvedType === "movie" ? tmdbItem.release_date : tmdbItem.first_air_date;
-  const tmdbTitle = getTmdbTitle(tmdbItem, resolvedType);
-  const year = extractYear(releaseDate);
-  const folderName = buildPlexFolderName(tmdbTitle, year);
-
-  let targetDir: string;
-  if (resolvedType === "tv") {
-    const seasonNum = seasons[0] ?? 1;
-    const seasonFolder = `Season ${String(seasonNum).padStart(2, "0")}`;
-    targetDir = `${entry.basePath}/${folderName}/${seasonFolder}`;
-  } else {
-    targetDir = `${entry.basePath}/${folderName}`;
-  }
+  const targetDir = buildOrganizedRemotePath({
+    basePath: entry.basePath,
+    title: getTmdbTitle(tmdbItem, resolvedType),
+    year: extractYearFromDate(releaseDate),
+    type: resolvedType,
+    season: resolvedType === "tv" ? (seasons[0] ?? 1) : null,
+  });
 
   const from = entry.remoteLocation;
   const to = `${targetDir}/${entry.name}`;
@@ -355,7 +344,10 @@ async function processEntry(
       const targetLocation = type === "file" ? buildDownloadLocation(entry, tmdbItem, resolvedType) : remoteLocation;
       for (const dl of existingDls) {
         if (!dl.remoteLocation) {
-          await db.update(download).set({ remoteLocation: targetLocation }).where(eq(download.id, dl.id));
+          await db
+            .update(download)
+            .set({ remoteLocation: targetLocation, moduleStorageId: await getEnabledStorageModuleId() })
+            .where(eq(download.id, dl.id));
         }
       }
       await db.insert(media).values(mediaInsert).onConflictDoUpdate({ target: media.id, set: mediaInsert });
@@ -391,6 +383,7 @@ async function processEntry(
     language,
     container,
     remoteLocation: downloadLocation,
+    moduleStorageId: await getEnabledStorageModuleId(),
     size: remoteSize,
     torrent: null,
   });
@@ -413,21 +406,41 @@ export async function runManualSync(userId: string, input: ManualSyncInput): Pro
   const mediaInsert = tmdbItemToMediaInsert(tmdbItem, input.type);
   await db.insert(media).values(mediaInsert).onConflictDoUpdate({ target: media.id, set: mediaInsert });
 
-  const existing = await db.query.download.findFirst({
-    where: and(eq(download.mediaId, input.mediaId), eq(download.remoteLocation, input.remotePath)),
-  });
+  const paths = await remoteStorageService.getMediaPaths();
+  const basePath = input.type === "tv" ? paths.tvPath : paths.moviePath;
+  const fileName = input.remotePath.split("/").pop() ?? input.remotePath;
+  const { seasons, quality, language, container } = parseEntry(fileName, input.type === "tv");
+  const entry: SyncEntry = {
+    name: fileName,
+    remoteLocation: input.remotePath,
+    mediaType: input.type,
+    type: isVideoFile(fileName) ? "file" : "directory",
+    basePath,
+  };
 
-  if (!existing) {
+  const downloadLocation =
+    entry.type === "file" ? buildDownloadLocation(entry, tmdbItem, input.type) : input.remotePath;
+
+  const existing = await db.query.download.findFirst({
+    where: and(
+      eq(download.mediaId, input.mediaId),
+      or(eq(download.remoteLocation, downloadLocation), eq(download.remoteLocation, input.remotePath)),
+    ),
+  });
+  const alreadyLinked = Boolean(existing);
+
+  if (entry.type === "file") {
+    await organizeFile(entry, tmdbItem, input.type, seasons);
+  }
+
+  if (!alreadyLinked) {
     let remoteSize: number | null = null;
     try {
-      const files = await remoteStorageService.listFiles(input.remotePath);
+      const files = await remoteStorageService.listFiles(downloadLocation);
       remoteSize = files.reduce((sum, f) => sum + f.length, 0) || null;
     } catch {
       /* size remains null */
     }
-
-    const fileName = input.remotePath.split("/").pop() ?? input.remotePath;
-    const { quality, language, container } = parseEntry(fileName, input.type === "tv");
 
     await db.insert(download).values({
       userId,
@@ -436,7 +449,8 @@ export async function runManualSync(userId: string, input: ManualSyncInput): Pro
       quality,
       language,
       container,
-      remoteLocation: input.remotePath,
+      remoteLocation: downloadLocation,
+      moduleStorageId: await getEnabledStorageModuleId(),
       size: remoteSize,
       torrent: null,
     });

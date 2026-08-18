@@ -6,6 +6,7 @@ import { ClockIcon, DownloadIcon, PauseIcon, UploadIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
+import { Label } from "@/shared/ui/label";
 import { Progress } from "@/shared/ui/progress";
 import { ProgressCircular } from "@/shared/ui/progress-circular";
 
@@ -212,9 +213,9 @@ function BarProgress({
             </>
           )}
         </div>
-        <span className="text-xs text-muted-foreground">
+        <Label variant="secondary">
           {formatBytes(downloaded)} / {formatBytes(sizeBytes)}
-        </span>
+        </Label>
       </div>
 
       <div className="flex gap-2 items-center">

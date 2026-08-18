@@ -9,6 +9,7 @@ import { order } from "@/shared/sql/base.sql";
 import { db } from "@/db/db";
 import { assertDownloadExists } from "@/modules/download/download.guard";
 import { download } from "@/modules/download/download.schema";
+import { visibleDownloadSql } from "@/modules/download/download-storage.helper";
 import { assertMediaId, parseWatchedAt } from "@/modules/media/media.guard";
 import {
   type MediaInsert,
@@ -33,7 +34,6 @@ import {
   WATCHED_RATIO,
   watchedProgressSql,
 } from "@/modules/media/watch-progress.helper";
-import { remoteStorageService } from "@/modules/storage-config/remote/remote-storage.service";
 import type { MediaEnriched } from "./media.types";
 
 const TOGGLE_TABLE_MAP = {
@@ -86,12 +86,7 @@ export class MediaService extends IdentifiableService<MediaEnriched> {
         conditions.push(existMediaRelation(userWatchList, userId));
         break;
       case "downloaded": {
-        const storageEnabled = await remoteStorageService.isEnabled();
-        conditions.push(
-          storageEnabled
-            ? existMediaRelation(download)
-            : existMediaRelation(download, undefined, sql`${download.torrent} IS NOT NULL`),
-        );
+        conditions.push(existMediaRelation(download, undefined, await visibleDownloadSql()));
         break;
       }
     }
@@ -128,6 +123,7 @@ export class MediaService extends IdentifiableService<MediaEnriched> {
       orderBy,
       with: {
         downloads: {
+          where: await visibleDownloadSql(),
           orderBy: desc(download.createdAt),
           limit: 1,
         },

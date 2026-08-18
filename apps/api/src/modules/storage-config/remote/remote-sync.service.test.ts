@@ -180,8 +180,8 @@ describe("remote-sync.service", () => {
 
     const row = await testDbRef.current?.query.download.findFirst({ where: eq(download.mediaId, 55) });
     expect(row?.mediaId).toBe(55);
-    expect(row?.remoteLocation).toBe("movies/Manual.mkv");
-    expect(row?.size).toBe(12);
+    expect(row?.remoteLocation).toBe("movies/Manual Film (2020)");
+    expect(moveFile).toHaveBeenCalled();
   });
 
   it("runManualSync is idempotent for same remote path", async () => {

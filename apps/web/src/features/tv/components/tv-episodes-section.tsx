@@ -24,8 +24,9 @@ import { type EpisodeDeleteLabel, TvEpisodeDeleteDialog } from "@/features/tv/co
 import { TvEpisodeDownloadControls } from "@/features/tv/components/tv-episode-download-controls";
 import { TvEpisodeDownloadPanel } from "@/features/tv/components/tv-episode-download-panel";
 import { formatSeasonEpisode } from "@/features/tv/helpers/episode.helper";
-import { buildEpisodeDownloadMap, getEpisodesCoveredByDownload } from "@/features/tv/helpers/episode-downloads.helper";
+import { getEpisodesCoveredByDownload } from "@/features/tv/helpers/episode-downloads.helper";
 import { tvQueries } from "@/features/tv/hooks/tv.queries";
+import { useEpisodeDownloadMap } from "@/features/tv/hooks/use-episode-download-map";
 
 interface TvEpisodesSectionProps {
   tv: TMDBTvDetails;
@@ -54,7 +55,7 @@ export function TvEpisodesSection({ tv, media, downloads }: TvEpisodesSectionPro
     enabled: validSeasons.length > 0,
   });
 
-  const episodeDownloadMap = useMemo(() => buildEpisodeDownloadMap(downloads), [downloads]);
+  const episodeDownloadMap = useEpisodeDownloadMap(downloads);
 
   const episodeNameByKey = useMemo(() => {
     const names = new Map<string, string>();
@@ -77,7 +78,6 @@ export function TvEpisodesSection({ tv, media, downloads }: TvEpisodesSectionPro
           value: season.season_number.toString(),
           label: <Trans>Season {season.season_number}</Trans>,
         }))}
-        forceSelect
       />
 
       <div className="space-y-3">
@@ -126,12 +126,22 @@ export function TvEpisodesSection({ tv, media, downloads }: TvEpisodesSectionPro
                   <div className="flex flex-col items-center gap-2 w-full sm:w-48">
                     {episode.still_path ? (
                       <div className="w-full">
-                        <div className="relative shrink-0 w-full aspect-video rounded-md overflow-hidden bg-muted">
+                        <div className="group/poster relative shrink-0 w-full aspect-video rounded-md overflow-hidden bg-muted">
                           <img
                             src={getBackdropUrl(episode.still_path, "w300")}
                             alt={episode.name}
                             className="size-full object-cover"
                           />
+                          {media && canPlay && episodeDownload && (
+                            <MediaButtonPlay
+                              className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/poster:bg-black/50 transition-colors"
+                              media={media}
+                              downloadId={episodeDownload.id}
+                              season={seasonNumber}
+                              episode={episode.episode_number}
+                              circular
+                            />
+                          )}
                         </div>
                       </div>
                     ) : (
@@ -140,8 +150,14 @@ export function TvEpisodesSection({ tv, media, downloads }: TvEpisodesSectionPro
                       </div>
                     )}
 
-                    {media && hasDownload && canPlay && (isDownloaded || isDownloading) && (
-                      <MediaButtonPlay media={media} />
+                    {media && episodeDownload && (isDownloaded || isDownloading || canPlay) && (
+                      <MediaButtonPlay
+                        media={media}
+                        downloadId={episodeDownload.id}
+                        season={seasonNumber}
+                        episode={episode.episode_number}
+                        className="w-full"
+                      />
                     )}
 
                     {media && episodeDownload && <DownloadButtonDelete media={media} download={episodeDownload} />}

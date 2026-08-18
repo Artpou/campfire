@@ -236,6 +236,7 @@ export function TorrentTable({ torrents, media, isLoading = false, hasIndexers =
         quality: torrent.mediaInfos?.resolution,
         language: torrent.mediaInfos?.languages?.[0],
         container: getVideoContainer(torrent.title) ?? undefined,
+        moduleIndexerId: torrent.moduleId,
       });
     },
     [executeDownload, media],

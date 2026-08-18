@@ -123,7 +123,7 @@ function DownloadsPage() {
 
         {filteredResults.length > 0 ? (
           viewMode === "grid" ? (
-            <MediaGrid items={filteredResults} query={mediaQuery} showType />
+            <MediaGrid items={filteredResults} query={mediaQuery} showType downloadMode />
           ) : (
             <DownloadTable
               media={filteredResults}

@@ -17,7 +17,7 @@ export function DownloadMetadata({ download, className }: DownloadMetadataProps)
     <div className={cn("flex flex-wrap items-center gap-1", className)}>
       {download.language && <Flag lang={download.language} />}
       {download.quality && (
-        <Badge variant="outline" className="text-xs">
+        <Badge variant="glass" className="text-xs">
           {download.quality}
         </Badge>
       )}

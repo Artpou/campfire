@@ -1,24 +1,15 @@
 import { useState } from "react";
 
-import { Trans, useLingui } from "@lingui/react/macro";
+import { Trans } from "@lingui/react/macro";
 import type { Download } from "@seedarr/sdk";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRightLeftIcon, Trash2Icon } from "lucide-react";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/shared/ui/alert-dialog";
 import { Button } from "@/shared/ui/button";
 
 import { DownloadFilesList } from "@/features/downloads/components/download-files-list";
 import { DownloadMetadata } from "@/features/downloads/components/download-metadata";
+import { DownloadModalDelete } from "@/features/downloads/components/download-modal-delete";
 import { downloadQueries, useDownloadDelete } from "@/features/downloads/hooks/download.queries";
 import { MediaSearchModal } from "@/features/media/components/modal/media-search-modal";
 
@@ -46,7 +37,6 @@ export function MediaServer({ downloads, mediaType }: MediaServerProps) {
 }
 
 function ServerEntry({ download, mediaType }: { download: Download; mediaType?: "movie" | "tv" }) {
-  const { t } = useLingui();
   const deleteDownload = useDownloadDelete();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showChangeMedia, setShowChangeMedia] = useState(false);
@@ -55,17 +45,6 @@ function ServerEntry({ download, mediaType }: { download: Download; mediaType?: 
     ...downloadQueries.remoteFiles(download.id),
     enabled: Boolean(download.remoteLocation),
   });
-
-  const handleDelete = () => {
-    deleteDownload.mutate({ id: download.id, scope: "remote" }, { onSuccess: () => setShowDeleteConfirm(false) });
-  };
-
-  const handleUnlink = () => {
-    deleteDownload.mutate(
-      { id: download.id, scope: "remote", unlink: true },
-      { onSuccess: () => setShowDeleteConfirm(false) },
-    );
-  };
 
   return (
     <div className="space-y-4">
@@ -89,7 +68,7 @@ function ServerEntry({ download, mediaType }: { download: Download; mediaType?: 
             size="sm"
             variant="secondary"
             onClick={() => setShowChangeMedia(true)}
-            aria-label={t`Change media`}
+            aria-label="Change media"
             icon={ArrowRightLeftIcon}
           />
           <Button
@@ -97,7 +76,7 @@ function ServerEntry({ download, mediaType }: { download: Download; mediaType?: 
             variant="destructive"
             onClick={() => setShowDeleteConfirm(true)}
             disabled={deleteDownload.isPending}
-            aria-label={t`Delete`}
+            aria-label="Delete"
             icon={Trash2Icon}
           />
         </div>
@@ -113,40 +92,25 @@ function ServerEntry({ download, mediaType }: { download: Download; mediaType?: 
 
       <div className="border-b border-border/50" />
 
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              <Trans>Delete Remote Files</Trans>
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              <Trans>
-                You can delete the remote files permanently or just unlink them from Seedarr (keeping files on the
-                server).
-              </Trans>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>
-              <Trans>Cancel</Trans>
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleUnlink}
-              disabled={deleteDownload.isPending}
-              className="bg-secondary text-secondary-foreground hover:bg-secondary/80"
-            >
-              <Trans>Unlink</Trans>
-            </AlertDialogAction>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={deleteDownload.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/80"
-            >
-              <Trans>Delete</Trans>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DownloadModalDelete
+        open={showDeleteConfirm}
+        setOpen={setShowDeleteConfirm}
+        showLibraryOnly
+        pending={deleteDownload.isPending}
+        title={<Trans>Delete Remote Files</Trans>}
+        description={
+          <Trans>
+            This will delete the remote files. Check the option below to only unlink them from Seedarr and keep the
+            files on the server.
+          </Trans>
+        }
+        onConfirm={(libraryOnly) => {
+          deleteDownload.mutate(
+            { id: download.id, scope: "remote", unlink: libraryOnly },
+            { onSuccess: () => setShowDeleteConfirm(false) },
+          );
+        }}
+      />
 
       <MediaSearchModal
         open={showChangeMedia}

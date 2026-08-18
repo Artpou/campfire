@@ -1,4 +1,4 @@
-import { formatError } from "@seedarr/shared";
+import { buildOrganizedRemotePath, extractYearFromDate, formatError, parseSeasonEpisode } from "@seedarr/shared";
 import { eq } from "drizzle-orm";
 
 import { logger } from "@/shared/helpers/logger.helper";
@@ -7,6 +7,7 @@ import { resolveWithinDownloads } from "@/shared/helpers/path.helper";
 import { db } from "@/db/db";
 import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { download } from "@/modules/download/download.schema";
+import { getEnabledStorageModuleId } from "@/modules/download/download-storage.helper";
 import { media } from "@/modules/media/media.schema";
 import { remoteStorageService } from "@/modules/storage-config/remote/remote-storage.service";
 import { invalidateStreamSource } from "@/modules/streaming/streaming.service";
@@ -20,10 +21,33 @@ export function isTransferInProgress(downloadId: string): boolean {
   return activeTransfers.has(downloadId);
 }
 
-async function resolveMediaType(mediaId: number | null | undefined): Promise<"movie" | "tv" | null> {
+async function resolveMediaRow(mediaId: number | null | undefined) {
   if (!mediaId) return null;
-  const mediaRow = await db.query.media.findFirst({ where: eq(media.id, mediaId) });
-  return mediaRow?.type ?? null;
+  return (await db.query.media.findFirst({ where: eq(media.id, mediaId) })) ?? null;
+}
+
+async function resolveOrganizedTransferPath(dl: {
+  mediaId: number | null;
+  torrent?: { name?: string } | null;
+}): Promise<string> {
+  const mediaRow = await resolveMediaRow(dl.mediaId);
+  const paths = await remoteStorageService.getMediaPaths();
+  const torrentName = dl.torrent?.name ?? "download";
+
+  if (!mediaRow) {
+    const mediaType = null;
+    return remoteStorageService.resolveTransferPath(torrentName, mediaType);
+  }
+
+  const basePath = mediaRow.type === "tv" ? paths.tvPath : paths.moviePath;
+  const parsed = parseSeasonEpisode(torrentName);
+  return buildOrganizedRemotePath({
+    basePath,
+    title: mediaRow.title,
+    year: extractYearFromDate(mediaRow.release_date),
+    type: mediaRow.type,
+    season: mediaRow.type === "tv" ? (parsed?.season ?? null) : null,
+  });
 }
 
 /** Tear down any in-memory WebTorrent session for this download (files may already be gone). */
@@ -77,9 +101,8 @@ export async function runRemoteTransfer(
     const torrentName = dl.torrent.name;
     const localPath = resolveWithinDownloads(torrentName);
     const userId = dl.userId;
-
-    const mediaType = await resolveMediaType(dl.mediaId);
-    const remotePath = await remoteStorageService.resolveTransferPath(torrentName, mediaType);
+    const remotePath = await resolveOrganizedTransferPath(dl);
+    const storageModuleId = await getEnabledStorageModuleId();
 
     if (!dl.torrent.transferring) {
       await markTransferStarting(downloadId);
@@ -131,6 +154,7 @@ export async function runRemoteTransfer(
             transferProgress: 1,
           },
           remoteLocation: remotePath,
+          moduleStorageId: storageModuleId,
           error: null,
         })
         .where(eq(download.id, downloadId));

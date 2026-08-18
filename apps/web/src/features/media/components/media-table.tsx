@@ -16,12 +16,23 @@ interface MediaTableProps {
   query?: InfiniteResultsQuery<Media>;
   sorting?: SortingState;
   onSortingChange?: OnChangeFn<SortingState>;
+  onRowClick?: (media: Media) => void;
+  selectedId?: number;
+  showActions?: boolean;
 }
 
-export function MediaTable({ media, query, sorting, onSortingChange }: MediaTableProps) {
+export function MediaTable({
+  media,
+  query,
+  sorting,
+  onSortingChange,
+  onRowClick,
+  selectedId,
+  showActions = true,
+}: MediaTableProps) {
   const navigate = useNavigate();
   const [localSorting, setLocalSorting] = useState<SortingState>([]);
-  const columns = useMediaTableColumns();
+  const columns = useMediaTableColumns({ showActions });
   const items = media ?? flattenInfiniteResults(query);
   const resolvedSorting = sorting ?? localSorting;
   const resolvedOnSortingChange = onSortingChange ?? setLocalSorting;
@@ -42,11 +53,16 @@ export function MediaTable({ media, query, sorting, onSortingChange }: MediaTabl
       <DataTable
         table={table}
         empty={<Trans>Nothing here yet</Trans>}
+        getRowClassName={(row) => (selectedId === row.original.id ? "bg-primary/10" : undefined)}
         onRowClick={(row) => {
-          const m = row.original;
+          const next = row.original;
+          if (onRowClick) {
+            onRowClick(next);
+            return;
+          }
           navigate({
-            to: m.type === "tv" ? "/tv/$id" : "/movies/$id",
-            params: { id: m.id.toString() },
+            to: next.type === "tv" ? "/tv/$id" : "/movies/$id",
+            params: { id: next.id.toString() },
           });
         }}
       />

@@ -12,12 +12,18 @@ import { preloadMoviPlayer } from "@/features/player/helpers/movi-player.helper"
 
 interface MediaButtonPlayProps extends ButtonProps {
   media: Media;
+  downloadId?: string;
+  season?: number;
+  episode?: number;
   circular?: boolean;
   iconOnly?: boolean;
 }
 
 export const MediaButtonPlay = ({
   media,
+  downloadId,
+  season,
+  episode,
   className,
   circular = false,
   iconOnly = false,
@@ -26,17 +32,23 @@ export const MediaButtonPlay = ({
   const { t } = useLingui();
   const navigate = useNavigate();
 
-  const showWatchProgress = hasWatchProgress(media);
+  const playDownloadId = downloadId ?? media.download?.id;
+  const showWatchProgress = hasWatchProgress(media) && media.progress?.downloadId === playDownloadId;
   const watchProgressPercent = getWatchProgressPercent(media);
   const remainingTime = getRemainingTime(media);
 
   const handlePlay = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (media.download?.id) navigate({ to: "/downloads/$id/play", params: { id: media.download.id } });
+    if (!playDownloadId) return;
+    navigate({
+      to: "/downloads/$id/play",
+      params: { id: playDownloadId },
+      search: season != null && episode != null ? { season, episode } : {},
+    });
   };
 
-  if (!media.download?.id) return null;
+  if (!playDownloadId) return null;
 
   if (circular) {
     return (

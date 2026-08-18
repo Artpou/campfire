@@ -13,10 +13,11 @@ import { mediaQueries } from "@/features/media/hooks/media.queries";
 import { movieQueries } from "@/features/movies/hooks/movie.queries";
 import { tvQueries } from "@/features/tv/hooks/tv.queries";
 
+const REFRESH_INTERVAL = ms("1s");
+
 function invalidateDownloadRelatedQueries(queryClient: ReturnType<typeof useQueryClient>): void {
   queryClient.invalidateQueries({ queryKey: downloadQueries.key });
   queryClient.invalidateQueries({ queryKey: mediaQueries.key });
-  // Movie/TV detail pages cache media.download separately — keep Play in sync.
   queryClient.invalidateQueries({ queryKey: movieQueries.key });
   queryClient.invalidateQueries({ queryKey: tvQueries.key });
 }
@@ -29,7 +30,7 @@ function refetchDownloadsByMediaInterval({ state }: { state: QueryState<Download
     (download) => download.torrent?.transferring || (download.torrent && !download.torrent.done),
   );
 
-  return hasActiveDownload ? 2000 : false;
+  return hasActiveDownload ? REFRESH_INTERVAL : false;
 }
 
 export const downloadQueries = {
@@ -65,10 +66,7 @@ export const downloadQueries = {
   videoFile: (id: string) =>
     queryOptions({
       queryKey: [...downloadQueries.key, id, "video-file"],
-      queryFn: () =>
-        unwrap(api.downloads[":id"]["video-file"].$get({ param: { id } })).catch(() => {
-          toast.error(t`Video file not available`, { description: t`The video file is no longer accessible.` });
-        }),
+      queryFn: () => unwrap(api.downloads[":id"]["video-file"].$get({ param: { id } })),
       staleTime: 5 * 60_000,
       retry: false,
     }),
@@ -110,7 +108,7 @@ function createDownloadActionMutation<TVariables>(options: {
       mutationFn: options.mutationFn,
       onSuccess: () => {
         invalidateDownloadRelatedQueries(queryClient);
-        toast.success(options.successMsg());
+        toast.info(options.successMsg());
       },
       onError: (error) => {
         const description = options.translateError ? translateDownloadError(formatError(error)) : formatError(error);

@@ -2,12 +2,12 @@ import { Trans } from "@lingui/react/macro";
 import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { ActivityIcon, PuzzleIcon, SettingsIcon, UsersIcon } from "lucide-react";
 
+import { AppVersionCard } from "@/shared/components/app-version-card";
 import { DropSelect } from "@/shared/components/drop-select";
 import { Container } from "@/shared/ui/container";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
 import { useRole } from "@/features/auth/hooks/use-role";
-import { AppVersionCard } from "@/features/settings/components/app-version-card";
 
 type SettingsTab = "general" | "activity" | "modules" | "users";
 

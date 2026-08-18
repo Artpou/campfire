@@ -15,13 +15,14 @@ interface MediaGridProps {
   items?: Media[];
   query?: InfiniteResultsQuery<Media>;
   showType?: boolean;
+  downloadMode?: boolean;
 }
 
 function getMediaGridColumns(width: number): number {
   return Math.max(1, Math.floor((width + MEDIA_GRID_GAP) / (MEDIA_GRID_MIN_COL + MEDIA_GRID_GAP)));
 }
 
-export function MediaGrid({ items, query, showType = false }: MediaGridProps) {
+export function MediaGrid({ items, query, showType, downloadMode }: MediaGridProps) {
   const displayItems = items ?? flattenInfiniteResults(query);
   const isPending = Boolean(query?.isPending) && displayItems.length === 0;
 
@@ -113,11 +114,12 @@ export function MediaGrid({ items, query, showType = false }: MediaGridProps) {
                 <div key={`${item.type}-${item.id}`} className="relative">
                   <MediaCard
                     media={item}
-                    showPreview
+                    showPreview={!downloadMode}
                     showPlay
-                    showSocial
+                    showSocial={!downloadMode}
                     showType={showType}
-                    showDownload={Boolean(item.download)}
+                    showQuality={downloadMode}
+                    showDownload
                   />
                 </div>
               ))}

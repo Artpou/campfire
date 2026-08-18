@@ -29,7 +29,7 @@ vi.mock("@/modules/storage-config/remote/remote-storage.service", () => ({
   remoteStorageService: {
     transferDirectory,
     remove,
-    resolveTransferPath,
+    getMediaPaths: vi.fn().mockResolvedValue({ moviePath: "movies", tvPath: "tv" }),
     shouldDeleteLocalAfterTransfer,
   },
 }));

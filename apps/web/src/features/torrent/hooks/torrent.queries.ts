@@ -112,6 +112,7 @@ export function useTorrents(media: Media, managers: IndexerManager[], { season, 
             ...torrent,
             indexerId: source.id,
             indexerManagerType: source.indexerManagerType,
+            moduleId: source.moduleId,
           }));
         })
         .sort((a, b) => {

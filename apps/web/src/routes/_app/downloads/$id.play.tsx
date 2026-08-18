@@ -5,12 +5,14 @@ import { useLingui } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { formatError } from "@seedarr/shared";
-import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 
+import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
+import { Label } from "@/shared/ui/label";
 
 import { buildSubtitleTracks } from "@/features/downloads/helpers/subtitle-tracks.helper";
 import { downloadQueries } from "@/features/downloads/hooks/download.queries";
@@ -22,9 +24,22 @@ import { Player } from "@/features/player/components/player";
 import { type MoviPlayerHandle, preloadMoviPlayer } from "@/features/player/helpers/movi-player.helper";
 import { SubtitleSearchDialog } from "@/features/subtitles/components/subtitle-search-dialog";
 import { subtitleQueries } from "@/features/subtitles/hooks/subtitle.queries";
+import { TvCarousel } from "@/features/tv/components/tv-carousel";
+import { formatSeasonEpisode } from "@/features/tv/helpers/episode.helper";
+import { inferEpisodeFromDownload } from "@/features/tv/helpers/episode-downloads.helper";
 import { tvQueries } from "@/features/tv/hooks/tv.queries";
 
+function validatePlaySearch(search: Record<string, unknown>): { season?: number; episode?: number } {
+  const season = Number(search.season);
+  const episode = Number(search.episode);
+  return {
+    ...(Number.isFinite(season) && season > 0 ? { season } : {}),
+    ...(Number.isFinite(episode) && episode > 0 ? { episode } : {}),
+  };
+}
+
 export const Route = createFileRoute("/_app/downloads/$id/play")({
+  validateSearch: validatePlaySearch,
   loader: async ({ context, params }) => {
     // Start fetching the WASM player chunk while route data loads.
     preloadMoviPlayer();
@@ -44,7 +59,9 @@ export const Route = createFileRoute("/_app/downloads/$id/play")({
 
 function VideoPlayerPage() {
   const { id } = Route.useParams();
+  const { season: searchSeason, episode: searchEpisode } = Route.useSearch();
   const { t } = useLingui();
+  const locale = useTmdbLocale();
   const queryClient = useQueryClient();
 
   const { data: download } = useSuspenseQuery(downloadQueries.details(id));
@@ -52,6 +69,31 @@ function VideoPlayerPage() {
   const { data: media } = useSuspenseQuery(mediaQueries.details(download.mediaId!));
   const { data: playbackInfo } = useSuspenseQuery(downloadQueries.playbackInfo(id));
   const { data: externalSubtitles } = useSuspenseQuery(subtitleQueries.external(id));
+  const { data: mediaDownloads = [] } = useQuery({
+    ...downloadQueries.byMedia(media),
+    enabled: media.type === "tv",
+  });
+  const { data: tvPage } = useQuery({
+    ...tvQueries.details(String(media.id), locale),
+    enabled: media.type === "tv",
+  });
+  const { data: remoteFiles = [] } = useQuery({
+    ...downloadQueries.remoteFiles(id),
+    enabled: media.type === "tv" && Boolean(download.remoteLocation),
+  });
+
+  const inferredEpisode = useMemo(
+    () => (media.type === "tv" ? inferEpisodeFromDownload(download, remoteFiles) : null),
+    [download, media.type, remoteFiles],
+  );
+  const season = searchSeason ?? inferredEpisode?.season;
+  const episode = searchEpisode ?? inferredEpisode?.episode;
+
+  const { data: seasonDetails } = useQuery({
+    ...tvQueries.season(media.id, season ?? 0, locale),
+    enabled: media.type === "tv" && season != null,
+  });
+  const episodeName = seasonDetails?.episodes?.find((item) => item.episode_number === episode)?.name;
 
   const displayName = download.torrent?.name || media.title;
 
@@ -191,19 +233,37 @@ function VideoPlayerPage() {
         )}
 
         <div className="flex justify-center">
-          <Card className="w-full md:w-[70%] pb-0 pt-0 overflow-hidden">
-            <Player
-              src={streamUrl}
-              tracks={subtitleTracks}
-              startAt={resumePosition}
-              onPlayer={handlePlayer}
-              onLoadedMetadata={handleLoadedMetadata}
-              onError={handlePlaybackError}
-              onAddSubtitles={download.mediaId != null ? () => setSubtitleDialogOpen(true) : undefined}
-              enableSubtitleDelay
-            />
-          </Card>
+          <div className="w-full md:w-[70%] space-y-3">
+            {media.type === "tv" && season != null && episode != null && (
+              <Label variant="secondary" size="lg" className="ml-2">
+                {formatSeasonEpisode(season, episode)}
+                {episodeName ? ` · ${episodeName}` : ""}
+              </Label>
+            )}
+            <Card className="pb-0 pt-0 overflow-hidden">
+              <Player
+                src={streamUrl}
+                tracks={subtitleTracks}
+                startAt={resumePosition}
+                onPlayer={handlePlayer}
+                onLoadedMetadata={handleLoadedMetadata}
+                onError={handlePlaybackError}
+                onAddSubtitles={download.mediaId != null ? () => setSubtitleDialogOpen(true) : undefined}
+                enableSubtitleDelay
+              />
+            </Card>
+          </div>
         </div>
+
+        {media.type === "tv" && tvPage?.tv && (
+          <TvCarousel
+            tv={tvPage.tv}
+            media={media}
+            downloads={mediaDownloads}
+            activeSeason={season}
+            activeEpisode={episode}
+          />
+        )}
 
         <MediaCardHorizontal
           media={media}
