@@ -8,10 +8,10 @@ Thank you for your interest in contributing! This guide covers how to set up the
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) v22+
-- [pnpm](https://pnpm.io/) v9.0.0 or higher
+- [pnpm](https://pnpm.io/) v9+ (this repo pins **pnpm 11** via `packageManager`)
 - (Optional) [FFmpeg](https://ffmpeg.org/) for live remux of progressive MP4 while downloading
-- (Optional) A [TMDB API key](https://www.themoviedb.org/settings/api) — via **Settings → Modules** or `TMDB_API_KEY`
-- (Optional) A Prowlarr or Jackett instance for torrent search
+- (Optional) A [TMDB API key](https://www.themoviedb.org/settings/api) — via **Settings → Modules** (see [TMDB](/guides/tmdb/)) or `TMDB_API_KEY`
+- (Optional) A Prowlarr, Jackett, or Torrentio setup for torrent search
 
 ## Development setup
 
@@ -53,7 +53,7 @@ Thank you for your interest in contributing! This guide covers how to set up the
 
    - **Web**: http://localhost:3000
    - **API**: http://localhost:3002
-   - **Website** (docs + landing): `pnpm --filter @seedarr/website dev` → http://localhost:4321
+   - **Website** (docs + landing): http://localhost:4321
 
 ## Commands
 

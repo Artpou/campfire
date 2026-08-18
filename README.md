@@ -21,46 +21,37 @@ Discover, download, and stream movies & TV shows — all from one place.
 
 Think of it as **Stremio meets Overseerr**, but fully self-hosted and under your control.
 
-## Screenshots
-
-### Dashboard
+## Preview
 
 <p align="center">
   <img src="./.github/screenshots/home.png" alt="Catalogue Dashboard" width="850" />
 </p>
 
-### Discover
+## Getting started
 
-<p align="center">
-  <img src="./.github/screenshots/discover.png" alt="Discover catalog" width="850" />
-</p>
+Check out our documentation on how ton install and run Seedarr:
 
-### Player
-
-<p align="center">
-  <img src="./.github/screenshots/player.png" alt="Video player" width="850" />
-</p>
-
-### Torrent search
-
-<p align="center">
-  <img src="./.github/screenshots/torrents.png" alt="Torrent search" width="850" />
-</p>
+[https://seedarr.netlify.app/guides/quick-start/](https://seedarr.netlify.app/guides/quick-start/)
 
 ## Features
+
+You can retrieve all features and how to configure each one following the documentation : 
+
+[https://seedarr.netlify.app/guides/features/](https://seedarr.netlify.app/guides/features/)
 
 ### Browse & Discover
 
 - Full **TMDB catalog** — movies, TV shows, trending, popular, top rated, upcoming
-- Rich metadata: trailers, ratings, cast, genres, backdrops
+- Rich metadata: trailers, IMDb / TMDB / personal ratings, cast, genres
 - Search across the entire TMDB database
 - Personalized **Watchlist** and **Likes** to keep track of what you want to watch
 
 ### Modules & Integrations
 
-- Unified **Settings → Modules** — TMDB, indexers, storage, social, and notifications
+- Unified **Settings → Modules** — TMDB, SUBDL, indexers, storage, social, and notifications
 - Indexers: **Torrentio**, **Jackett**, **Prowlarr**, or a custom Stremio addon — with live health status
-- Optional **remote storage** modules (FTP/FTPS or WebDAV) — transfer completed downloads to a NAS, Nextcloud, or any remote server
+- Optional **remote storage** (FTP/FTPS or WebDAV) — transfer completed downloads to a NAS, Nextcloud, or any remote server
+- **Letterboxd** import / sync (Trakt, SMB, and Discord/Telegram/Email notifications coming soon)
 
 ### Torrent Search & Download
 
@@ -76,6 +67,7 @@ Think of it as **Stremio meets Overseerr**, but fully self-hosted and under your
 - Integrated **movi-player** — plays MKV/HEVC/AV1/HDR natively in the browser (no server transcoding)
 - Automatic **subtitle detection** from downloaded files (SRT/ASS/VTT)
 - **Watch progress tracking** — resume where you left off
+- **Next episodes** — season picker and episode carousel under the series player
 
 ### Multi-User & Roles
 
@@ -93,83 +85,13 @@ Think of it as **Stremio meets Overseerr**, but fully self-hosted and under your
 - Responsive, **mobile-friendly** design
 - Available in **English** and **French**
 
-<!-- TODO: Add more screenshots
-<details>
-<summary><b>More screenshots</b></summary>
-<br>
-<p align="center">
-<img src=".github/screenshots/movie.png" width="80%" alt="Movie details">
-<br><br>
-<img src=".github/screenshots/torrents.png" width="80%" alt="Torrent search">
-<br><br>
-<img src=".github/screenshots/player.png" width="80%" alt="Video player">
-<br><br>
-<img src=".github/screenshots/downloads.png" width="80%" alt="Download manager">
-<br><br>
-<img src=".github/screenshots/mobile.png" width="40%" alt="Mobile view">
-</p>
-</details>
--->
-
-## Quick Start
-
-### Docker (recommended)
-
-> **Beta:** images are published automatically on every push to `main` as a **multi-arch** manifest (`linux/amd64` + `linux/arm64`). Use the `beta` tag for the latest build, or pin a specific version (e.g. `ghcr.io/artpou/seedarr:0.1.0-beta.0`). Docker pulls the matching architecture automatically (PC, NAS, Freebox, Raspberry Pi, etc.).
-
-```bash
-mkdir seedarr && cd seedarr
-curl -fsSL https://raw.githubusercontent.com/Artpou/seedarr/main/docker-compose.yml -o docker-compose.yml
-docker compose pull
-docker compose up -d
-```
-
-Seedarr will be available at **http://localhost:5551**. Create your account, open **Settings → Modules**, install an indexer (Torrentio is recommended), and start browsing.
-
-**Update to the latest beta:**
-
-```bash
-docker compose pull && docker compose up -d
-```
-
-**Build locally from source** (contributors):
-
-```bash
-git clone https://github.com/Artpou/seedarr.git
-cd seedarr
-docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
-```
-
-### Manual Setup
-
-```bash
-git clone https://github.com/Artpou/seedarr.git
-cd seedarr
-pnpm install
-pnpm db:push
-pnpm dev
-```
-
-Open **http://localhost:3000** — the API runs on port 3002.
-
-The marketing site and docs live in `apps/website` (`pnpm --filter @seedarr/website dev` → http://localhost:4321).
-
-> **Requirements:** Node.js 22.13+, pnpm 9+. Optional: [FFmpeg](https://ffmpeg.org/) for live remux of progressive MP4 while downloading.
-
-## Roadmap
-
-Seedarr is under active development. Here's what's coming next:
-
-- [ ] **Instance customization** — custom logo, title, branding
-- [ ] **Direct URL streaming** — play from external links
-- [ ] **Chromecast** — cast to your TV
-- [ ] **Debrid support** — Real-Debrid, AllDebrid, Premiumize integration
-
 ## Contributing
 
 Contributions are welcome! Whether it's fixing a bug, adding a feature, or improving translations.
 
-Please read our [Contributing Guide](CONTRIBUTING.md) to learn how to set up the development environment and follow our coding standards.
+Please read our documentation to learn how to set up the development environment and follow our coding standards :
+
+[https://seedarr.netlify.app/guides/contributing/](https://seedarr.netlify.app/guides/contributing/)
 
 ## Acknowledgments
 

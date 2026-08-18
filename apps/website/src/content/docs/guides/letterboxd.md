@@ -3,7 +3,7 @@ title: Letterboxd
 description: Import and sync Letterboxd watchlists and ratings into Seedarr.
 ---
 
-Connect Letterboxd from **Settings → Modules** (Social) and/or your **user profile**.
+Connect Letterboxd from **Settings → Modules** (Social) and/or your **user profile**. Trakt is coming soon in the same category.
 
 Install the Letterboxd module to enable the integration, then import or sync from your profile.
 

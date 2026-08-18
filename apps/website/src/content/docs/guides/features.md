@@ -6,16 +6,18 @@ description: What Seedarr can do today.
 ## Browse & discover
 
 - Full **TMDB catalog** — movies, TV shows, trending, popular, top rated, upcoming
-- Rich metadata: trailers, ratings, cast, genres, backdrops
+- Rich metadata: trailers, IMDb / TMDB / personal ratings, cast, genres, backdrops
 - Search across the entire TMDB database
 - Personalized **Watchlist** and **Likes**
 
 ## Modules & integrations
 
 - Unified **Settings → Modules** catalog (system, indexers, storage, social, notifications)
-- **TMDB** as a system module (API key + optional `TMDB_API_KEY` env fallback)
+- **[TMDB](/guides/tmdb/)** as a locked system module (API key + optional `TMDB_API_KEY` env fallback)
+- **SUBDL** for subtitles
 - Indexers: **Torrentio**, **Jackett**, **Prowlarr**, custom Stremio addon — with health status
-- Optional **remote storage** modules (FTP/FTPS or WebDAV) to a NAS, Nextcloud, or remote server
+- Optional **remote storage** (FTP/FTPS or WebDAV) to a NAS, Nextcloud, or remote server
+- **Letterboxd** import / sync (Trakt, SMB, and notifications coming soon)
 
 ## Torrent search & download
 
@@ -31,6 +33,7 @@ description: What Seedarr can do today.
 - Integrated **movi-player** — MKV/HEVC/AV1/HDR natively in the browser (no server transcoding)
 - Automatic **subtitle detection** (SRT/ASS/VTT)
 - **Watch progress** — resume where you left off
+- **Next episodes** from the series player carousel
 
 ## Multi-user & roles
 
@@ -50,6 +53,7 @@ description: What Seedarr can do today.
 
 ## Roadmap
 
+- SMB storage, Trakt, and notifications (Discord / Telegram / Email)
 - Instance customization (logo, title, branding)
 - Direct URL streaming
 - Chromecast

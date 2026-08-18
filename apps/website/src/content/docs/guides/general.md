@@ -21,14 +21,6 @@ Change your account password from General. The first registered user is the **ow
 
 These filters speed up picking a release; you can still choose other results in the torrent table.
 
-## TMDB API key
+## TMDB
 
-TMDB is managed as a **system module** under **Settings → Modules** (not in General).
-
-1. Create a free [TMDB](https://www.themoviedb.org/settings/api) account and request an API key.
-2. Open **Settings → Modules** → **The Movie Database** → Configure.
-3. Paste the key and save.
-
-You can also set `TMDB_API_KEY` in `.env` as a fallback for local development. A key saved on the TMDB module takes precedence.
-
-Without a key, browse and search features will not work.
+TMDB is a **system module**, not a General setting. See [TMDB](/guides/tmdb/) to add or update your API key.

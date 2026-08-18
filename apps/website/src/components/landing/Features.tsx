@@ -1,10 +1,24 @@
 import type { LucideIcon } from "lucide-react";
-import { CompassIcon, DownloadIcon, HardDriveIcon, PlayIcon, UserCircleIcon, UsersIcon } from "lucide-react";
+import {
+  CheckIcon,
+  ClockIcon,
+  CompassIcon,
+  DownloadIcon,
+  PlayIcon,
+  PuzzleIcon,
+  UserCircleIcon,
+  UsersIcon,
+} from "lucide-react";
+
+type FeatureItem = {
+  text: string;
+  comingSoon?: boolean;
+};
 
 type Feature = {
   url: string;
   title: string;
-  lead: string;
+  items: FeatureItem[];
   detail: string;
   image: string;
   imageAlt: string;
@@ -13,21 +27,29 @@ type Feature = {
 
 const features: Feature[] = [
   {
-    url: "/movies",
+    url: "/movies/:id",
     title: "The best way to discover media",
-    lead: "Browse the full TMDB catalog — movies, TV shows, trending, popular, and upcoming. Inline recommendations pull you deeper into titles you actually want to watch.",
-    detail:
-      "Media pages keep the essentials front and center: ratings, cast, trailers, genres, and streaming availability — plus watchlists and likes to track what’s next.",
-    image: "/assets/discover.png",
-    imageAlt: "Seedarr discover and catalog view",
+    items: [
+      { text: "Full TMDB catalog — movies, TV, trending, popular, and search" },
+      { text: "IMDb, TMDB, and your own scores on every title" },
+      { text: "Trailers, cast, genres, and where it’s streaming" },
+      { text: "Watchlist, likes, and recommendations without leaving the page" },
+    ],
+    detail: "Title pages keep story and next action together — from trailer to torrents in one view.",
+    image: "/assets/movie.png",
+    imageAlt: "Seedarr movie details with ratings, trailer, and cast",
     icon: CompassIcon,
   },
   {
     url: "/movies/:id/torrents",
     title: "Search torrents without leaving the app",
-    lead: "Query Jackett, Prowlarr, or Stremio addons like Torrentio from one place. Results show quality, language, peers, and seeds so you pick the right release fast.",
-    detail:
-      "The built-in WebTorrent client handles the rest — live progress, pause/resume, and download management with no external client required.",
+    items: [
+      { text: "Query Torrentio, Jackett, Prowlarr, or a custom Stremio addon" },
+      { text: "Quality, language, peers, and seeds on every result" },
+      { text: "Built-in WebTorrent client — no qBittorrent required" },
+      { text: "Live progress, pause, resume, and transfer from the same UI" },
+    ],
+    detail: "Pick a release and Seedarr handles the rest, from magnet to disk.",
     image: "/assets/torrents.png",
     imageAlt: "Torrent search results in Seedarr",
     icon: DownloadIcon,
@@ -35,39 +57,59 @@ const features: Feature[] = [
   {
     url: "/downloads/:id/play",
     title: "Stream the moment it starts downloading",
-    lead: "Progressive playback lets you watch before the torrent finishes. movi-player plays MKV, HEVC, AV1, and HDR natively in the browser — no server transcoding.",
-    detail:
-      "Subtitles are detected automatically from downloaded files, and watch progress means you always resume where you left off.",
-    image: "/assets/player.png",
-    imageAlt: "Seedarr video player",
+    items: [
+      { text: "Watch as soon as the torrent starts — no waiting for 100%" },
+      { text: "Native MKV, HEVC, AV1, and HDR in the browser" },
+      { text: "Subtitles detected from downloaded files" },
+      { text: "Resume exactly where you left off" },
+      { text: "Browse the next episodes from the player carousel" },
+    ],
+    detail: "No server transcoding. Series playback keeps season and episode navigation under the player.",
+    image: "/assets/player-series.png",
+    imageAlt: "Seedarr series player with episode carousel",
     icon: PlayIcon,
   },
   {
-    url: "/settings/remote-storage",
-    title: "Offload to your NAS when you’re done",
-    lead: "Transfer completed downloads over FTP/FTPS or WebDAV to a NAS, Nextcloud, or any remote server. Keep local disk light while your library lives where you want it.",
-    detail:
-      "Configure separate movie and TV paths, test the connection from settings, and optionally delete local files after a successful transfer.",
-    image: "/assets/remote-storage.png",
-    imageAlt: "Remote storage settings",
-    icon: HardDriveIcon,
+    url: "/settings/modules",
+    title: "Plug in the modules you actually use",
+    items: [
+      { text: "One Settings: Modules catalog for the whole stack" },
+      { text: "System modules for TMDB metadata and SUBDL subtitles" },
+      { text: "Indexers: Torrentio, Jackett, Prowlarr, or a custom Stremio addon" },
+      { text: "Offload finished downloads to your NAS over FTP or WebDAV" },
+      { text: "SMB storage", comingSoon: true },
+    ],
+    detail: "Install what you need, toggle the rest. Health status and configuration live on the same list.",
+    image: "/assets/modules.png",
+    imageAlt: "Seedarr modules catalog with indexers, storage, and social integrations",
+    icon: PuzzleIcon,
   },
   {
     url: "/user/:id",
     title: "A profile tailored to your cinema taste",
-    lead: "Your Seedarr profile learns from you. Connect or import your Letterboxd account to instantly sync your watchlists, diary, and ratings.",
-    detail:
-      "Make Seedarr uniquely yours with customized activity feeds, personal watch stats, and seamless synchronization across household profiles.",
+    items: [
+      { text: "Per-user watchlist, likes, history, and ratings" },
+      { text: "Import and sync Letterboxd diary and watchlist" },
+      { text: "Household profiles that don’t mix each other’s taste" },
+      { text: "Letterboxd synchronization for watchlists and ratings" },
+      { text: "Trakt synchronization", comingSoon: true },
+    ],
+    detail: "Connect Letterboxd from Modules and your profile. Trakt will land in the same social category.",
     image: "/assets/profil.png",
-    imageAlt: "Personalized user profile and library settings",
+    imageAlt: "Personalized user profile and library",
     icon: UserCircleIcon,
   },
   {
     url: "/settings/users",
     title: "Built for a household, not a free-for-all",
-    lead: "Owner, admin, member, and viewer roles keep permissions clear. Everyone can browse and stream the shared library; mutations stay with owners or admins.",
-    detail:
-      "Per-user watchlists, likes, history, and media requests — with guided onboarding so new household members get productive quickly.",
+    items: [
+      { text: "Owner, admin, member, and viewer roles" },
+      { text: "Shared library — anyone signed in can browse and stream" },
+      { text: "Downloads stay owned: pause, delete, and transfer need permission" },
+      { text: "Media requests with guided onboarding for new members" },
+      { text: "Notifications (Discord, Telegram, Email)", comingSoon: true },
+    ],
+    detail: "Designed for a trusted household install, not an open internet service.",
     image: "/assets/member.png",
     imageAlt: "Multi-user household roles",
     icon: UsersIcon,
@@ -98,24 +140,38 @@ export default function Features() {
                 }`}
               >
                 <div>
-                  {/* Titre et icône alignés côte à côte */}
-                  <div className="flex items-center gap-3 mb-4 sm:mb-5">
+                  <div className="mb-4 flex items-center gap-3 sm:mb-5">
                     <div className="bg-primary flex size-8 shrink-0 items-center justify-center rounded-lg shadow-md shadow-primary/20 sm:size-11 sm:rounded-xl sm:shadow-lg">
                       <Icon className="text-primary-foreground size-4 sm:size-5" aria-hidden />
                     </div>
                     <h3 className="text-xl font-bold tracking-tight text-foreground sm:text-3xl">{feature.title}</h3>
                   </div>
 
-                  <p className="text-popover-foreground text-base leading-relaxed sm:text-lg">{feature.lead}</p>
+                  <ul className="space-y-2.5">
+                    {feature.items.map((item) => (
+                      <li key={item.text} className="flex items-start gap-2.5">
+                        {item.comingSoon ? (
+                          <ClockIcon className="text-muted-foreground mt-0.5 size-4 shrink-0" aria-hidden />
+                        ) : (
+                          <CheckIcon className="text-primary mt-0.5 size-4 shrink-0" aria-hidden />
+                        )}
+                        <span className="text-popover-foreground text-sm leading-relaxed sm:text-base">
+                          {item.text}
+                          {item.comingSoon ? (
+                            <span className="text-muted-foreground ml-2 text-xs font-medium tracking-wide uppercase">
+                              Coming soon
+                            </span>
+                          ) : null}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
 
-                  {/* Masqué sur mobile, visible sur sm (640px) et plus */}
-                  <hr className="border-border my-6 hidden sm:block" />
-                  <p className="text-muted-foreground text-base leading-relaxed hidden sm:block sm:text-lg">
-                    {feature.detail}
-                  </p>
+                  <div className="h-px w-full bg-border my-5"></div>
+
+                  <p className="text-muted-foreground text-xs leading-relaxed sm:text-sm">{feature.detail}</p>
                 </div>
 
-                {/* Image (se place en haut sur mobile grâce à flex-col-reverse) */}
                 <div className="animate-fade-up-delay-3 animate-float-soft relative mx-auto w-full max-w-5xl lg:mt-12">
                   <div className="from-primary/35 via-primary/10 absolute -inset-px rounded-xl bg-gradient-to-br to-transparent opacity-80 blur-[1px]"></div>
                   <div className="border-border/80 bg-card relative overflow-hidden rounded-xl border shadow-2xl shadow-black/40">

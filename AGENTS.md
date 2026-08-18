@@ -27,6 +27,8 @@ Download
  ├── torrent: JSON blob (TorrentLiveData — progress, speed, files, peers...)
  ├── size (bytes — from torrent.length on start, or remote listing on sync)
  ├── origin, quality, language (from torrent search metadata)
+ ├── moduleIndexerId (indexer module used at start)
+ ├── moduleStorageId (storage module used on transfer / sync)
  ├── remoteLocation (optional — remote storage path)
  └── error: string | null
 
@@ -168,7 +170,7 @@ packages/
 ## Dev Workflow
 
 ```bash
-pnpm dev          # Start both API + web 
+pnpm dev          # Start both API + web + landing/docs
 pnpm --filter @seedarr/api dev   # API only (port 3002)
 pnpm --filter @seedarr/web dev            # Web only (port 3000)
 pnpm --filter @seedarr/website dev        # Landing + docs (port 4321)

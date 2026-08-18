@@ -1,4 +1,6 @@
 ---
+import { BookOpenIcon } from "lucide-react";
+
 const links = [
   {
     title: "GitHub",
@@ -12,7 +14,7 @@ const links = [
     description: "Quick start, Docker, settings guides, and contributing.",
     href: "/guides/quick-start/",
     cta: "Read the docs",
-    icon: null,
+    icon: "docs",
   },
   {
     title: "Docker",
@@ -43,8 +45,16 @@ const links = [
             target={link.href.startsWith("http") ? "_blank" : undefined}
             rel={link.href.startsWith("http") ? "noopener noreferrer" : undefined}
           >
-            {link.icon && (
-              <img src={link.icon} alt="" width="28" height="28" class="mb-4 size-7 object-contain brightness-0 invert" />
+            {link.icon === "docs" ? (
+              <BookOpenIcon className="mb-4 size-7" strokeWidth={1.75} aria-hidden />
+            ) : (
+              <img
+                src={link.icon}
+                alt=""
+                width="28"
+                height="28"
+                class="mb-4 size-7 object-contain brightness-0 invert"
+              />
             )}
             <h3 class="text-lg font-semibold">{link.title}</h3>
             <p class="text-popover-foreground mt-2 flex-1 text-sm leading-relaxed">{link.description}</p>

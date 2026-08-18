@@ -34,6 +34,7 @@ export default defineConfig({
             { label: "Features", slug: "guides/features" },
             { label: "General settings", slug: "guides/general" },
             { label: "Modules", slug: "guides/modules" },
+            { label: "TMDB", slug: "guides/tmdb" },
             { label: "Indexers", slug: "guides/indexers" },
             { label: "Remote storage", slug: "guides/remote-storage" },
             { label: "Users & roles", slug: "guides/users" },

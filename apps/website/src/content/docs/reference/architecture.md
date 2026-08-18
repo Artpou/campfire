@@ -35,6 +35,8 @@ packages/
 
 Browse TMDB → Search torrents → Start download (upserts Media + creates Download) → WebTorrent streams to disk → Play via progressive / direct streaming.
 
+Integrations are **modules** under Settings (TMDB, indexers, storage, social). See [Modules](/guides/modules/) and [TMDB](/guides/tmdb/).
+
 ## Roles
 
 `owner` > `admin` > `member` > `viewer`

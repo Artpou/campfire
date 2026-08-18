@@ -9,6 +9,8 @@ Configure remote offloading under **Settings → Modules** (Storage category).
 
 Keep torrents on the Seedarr machine while they download and stream, then transfer finished titles to a NAS, Nextcloud, or another server so local disk stays free.
 
+Storage is one category in **[Settings → Modules](/guides/modules/)**. SMB is coming soon.
+
 ## Protocols
 
 | Protocol | Typical use | Default port |

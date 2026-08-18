@@ -33,7 +33,7 @@ Tu peux tout à fait modifier les couleurs et les variables CSS si tu le sens, c
 │    1. Discover & Catalog                                 │
 │    2. Integrated Torrent Search & Downloads              │
 │    3. Instant Progressive Streaming                      │
-│    4. Remote Storage Offloading (NAS / FTP / WebDAV)     │
+│    4. Modules catalog (indexers, storage, social)        │
 │    5. Multi-User & Household Management                  │
 │    6. Personalization & Letterboxd Sync                  │
 ├──────────────────────────────────────────────────────────┤

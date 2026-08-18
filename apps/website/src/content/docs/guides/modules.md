@@ -3,7 +3,7 @@ title: Modules
 description: Install and configure indexers, storage, social integrations, and TMDB.
 ---
 
-**Settings → Modules** is the unified place for integrations (formerly separate Indexers and Storage tabs).
+**Settings → Modules** is the unified place for integrations.
 
 ## Catalog
 
@@ -37,8 +37,10 @@ Local / LAN URLs are allowed for Jackett and Prowlarr (typical self-hosted setup
 
 | Category | Examples |
 | --- | --- |
-| **System** | TMDB (always installed, cannot uninstall) |
-| **Indexers** | Torrentio, Jackett, Prowlarr, custom Stremio addon |
-| **Storage** | WebDAV, FTP |
-| **Social** | Letterboxd (Trakt coming soon) |
+| **System** | [TMDB](/guides/tmdb/) (locked), SUBDL subtitles |
+| **Indexers** | [Torrentio, Jackett, Prowlarr, custom Stremio addon](/guides/indexers/) |
+| **Storage** | [WebDAV, FTP](/guides/remote-storage/) (SMB coming soon) |
+| **Social** | [Letterboxd](/guides/letterboxd/) (Trakt coming soon) |
 | **Notifications** | Discord, Telegram, Email (coming soon) |
+
+Disabling a storage module hides its remote-only library entries. Uninstalling it deletes associated downloads that have no torrent left.
