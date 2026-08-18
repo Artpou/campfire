@@ -5,7 +5,7 @@ import type { DownloadTorrentInput, Resolution } from "@seedarr/contracts";
 import type { Media, Torrent } from "@seedarr/sdk";
 import { ApiError } from "@seedarr/sdk";
 import { formatError, getVideoContainer } from "@seedarr/shared";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { type SortingState, useTable } from "@tanstack/react-table";
 import { ArrowDownIcon, ArrowUpIcon, DownloadIcon, InfoIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -35,6 +35,38 @@ interface TorrentTableProps {
   torrents: TorrentWithMeta[];
   media: Media;
   isLoading?: boolean;
+  hasIndexers?: boolean;
+}
+
+function TorrentEmptyState({ hasIndexers }: { hasIndexers: boolean }) {
+  if (!hasIndexers) {
+    return (
+      <div className="p-10 border border-dashed rounded-sm bg-muted border-border inline-block space-y-3">
+        <p className="font-bold uppercase text-popover-foreground">
+          <Trans>No indexers configured</Trans>
+        </p>
+        <p className="text-sm text-muted-foreground max-w-md">
+          <Trans>Install and enable an indexer module to search torrents.</Trans>
+        </p>
+        <Button variant="secondary" size="sm" asChild>
+          <Link to="/settings/modules" search={{ tab: "indexer" }}>
+            <Trans>Configure indexers</Trans>
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-10 border border-dashed rounded-sm bg-muted border-border inline-block">
+      <p className="font-bold uppercase text-popover-foreground">
+        <Trans>No torrents found</Trans>
+      </p>
+      <p className="mt-1 text-xs uppercase text-popover-foreground/50">
+        <Trans>Try adjusting your search query</Trans>
+      </p>
+    </div>
+  );
 }
 
 function getTorrentUri(torrent: Torrent): string {
@@ -110,7 +142,7 @@ function TorrentMobileCard({
   );
 }
 
-export function TorrentTable({ torrents, media, isLoading = false }: TorrentTableProps) {
+export function TorrentTable({ torrents, media, isLoading = false, hasIndexers = true }: TorrentTableProps) {
   const { t } = useLingui();
   const isMobile = useIsMobile();
   const startDownload = useStartDownload();
@@ -175,7 +207,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
 
       try {
         await startDownload.mutateAsync(input);
-        toast.success(t`Download started`, { id, description: input.name });
+        toast.info(t`Download started`, { id, description: input.name });
         navigate({
           to: media.type === "tv" ? "/tv/$id" : "/movies/$id",
           params: { id: String(media.id) },
@@ -274,14 +306,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
         showLoader ? (
           <SeedarrLoader />
         ) : filteredTorrents.length === 0 ? (
-          <div className="p-10 border border-dashed rounded-sm bg-muted border-border inline-block">
-            <p className="font-bold uppercase text-popover-foreground">
-              <Trans>No torrents found</Trans>
-            </p>
-            <p className="mt-1 text-xs uppercase text-popover-foreground/50">
-              <Trans>Try adjusting your search query</Trans>
-            </p>
-          </div>
+          <TorrentEmptyState hasIndexers={hasIndexers} />
         ) : (
           <div className="flex flex-col gap-3">
             {filteredTorrents.map((torrent) => (
@@ -299,20 +324,7 @@ export function TorrentTable({ torrents, media, isLoading = false }: TorrentTabl
         <DataTable
           table={table}
           classNameContainer="rounded-tl-none"
-          empty={
-            showLoader ? (
-              <SeedarrLoader />
-            ) : (
-              <div className="p-10 border border-dashed rounded-sm bg-muted border-border inline-block">
-                <p className="font-bold uppercase text-popover-foreground">
-                  <Trans>No torrents found</Trans>
-                </p>
-                <p className="mt-1 text-xs uppercase text-popover-foreground/50">
-                  <Trans>Try adjusting your search query</Trans>
-                </p>
-              </div>
-            )
-          }
+          empty={showLoader ? <SeedarrLoader /> : <TorrentEmptyState hasIndexers={hasIndexers} />}
         />
       )}
 

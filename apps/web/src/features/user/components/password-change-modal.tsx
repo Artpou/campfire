@@ -43,7 +43,7 @@ export function PasswordChangeModal({ open, onOpenChange }: PasswordChangeModalP
       { oldPassword, newPassword },
       {
         onSuccess: () => {
-          toast.success(t`Password updated`);
+          toast.info(t`Password updated`);
           reset();
           onOpenChange(false);
         },

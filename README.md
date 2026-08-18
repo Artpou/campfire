@@ -56,14 +56,19 @@ Think of it as **Stremio meets Overseerr**, but fully self-hosted and under your
 - Search across the entire TMDB database
 - Personalized **Watchlist** and **Likes** to keep track of what you want to watch
 
+### Modules & Integrations
+
+- Unified **Settings → Modules** — TMDB, indexers, storage, social, and notifications
+- Indexers: **Torrentio**, **Jackett**, **Prowlarr**, or a custom Stremio addon — with live health status
+- Optional **remote storage** modules (FTP/FTPS or WebDAV) — transfer completed downloads to a NAS, Nextcloud, or any remote server
+
 ### Torrent Search & Download
 
-- Search torrents from **Stremio addons** (like Torrentio), **Jackett** or **Prowlarr** with live indexer status
+- Search torrents from your enabled indexer modules
 - Built-in **WebTorrent client** — no external download client needed
 - Real-time download progress, speed, peers, seeds, and ratio
 - Pause, resume, and manage downloads directly from the UI
 - Quality and language info displayed for each result
-- Optional **remote storage** (FTP/FTPS or WebDAV) — transfer completed downloads to a NAS, Nextcloud, or any remote server
 
 ### Stream & Watch
 
@@ -119,7 +124,7 @@ docker compose pull
 docker compose up -d
 ```
 
-Seedarr will be available at **http://localhost:5551**. Create your account, configure your indexer (Jackett or Prowlarr), and start browsing.
+Seedarr will be available at **http://localhost:5551**. Create your account, open **Settings → Modules**, install an indexer (Torrentio is recommended), and start browsing.
 
 **Update to the latest beta:**
 

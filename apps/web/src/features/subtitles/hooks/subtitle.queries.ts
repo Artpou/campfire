@@ -36,7 +36,7 @@ export function useDownloadSubtitle() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [...downloadQueries.key, variables.downloadId] });
       queryClient.invalidateQueries({ queryKey: [...subtitleQueries.key, "external", variables.downloadId] });
-      toast.success(t`Subtitle added`);
+      toast.info(t`Subtitle added`);
     },
     onError: (error) => {
       toast.error(t`Could not add subtitle`, {

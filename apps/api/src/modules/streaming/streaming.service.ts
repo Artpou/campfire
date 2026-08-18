@@ -20,7 +20,7 @@ import type { Download, TorrentLiveData } from "@/modules/download/download.sche
 import { download as downloadTable } from "@/modules/download/download.schema";
 import { findLargestVideoFile } from "@/modules/download/webtorrent/webtorrent.helper";
 import { torrentClient } from "@/modules/download/webtorrent/webtorrent-manager";
-import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
+import { remoteStorageService } from "@/modules/storage-config/remote/remote-storage.service";
 import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import * as path from "node:path";

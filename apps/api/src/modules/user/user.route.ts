@@ -10,6 +10,7 @@ import {
 import { BadRequestError } from "@/shared/errors/error";
 
 import { requireRole } from "@/modules/auth/role.guard";
+import { requireModule } from "@/modules/module/module.guard";
 import { UserService } from "./user.service";
 
 export const userRoutes = UserService.createRouter()
@@ -28,14 +29,14 @@ export const userRoutes = UserService.createRouter()
     if (!(file instanceof File)) throw new BadRequestError("Missing image file");
     return c.json(await c.var.service.uploadAvatar(file));
   })
-  .post("/me/letterboxd/import", async (c) => {
+  .post("/me/letterboxd/import", requireModule("letterboxd"), async (c) => {
     c.header("X-Accel-Buffering", "no");
     const body = await c.req.parseBody();
     const file = body.file;
     if (!(file instanceof File)) throw new BadRequestError("Missing zip file");
     return c.json(await c.var.service.importLetterboxd(file));
   })
-  .post("/me/letterboxd/sync", async (c) => {
+  .post("/me/letterboxd/sync", requireModule("letterboxd"), async (c) => {
     // Diary RSS can be large; TMDB batching is rate-limited (~10 req/s).
     c.header("X-Accel-Buffering", "no");
     return c.json(await c.var.service.syncLetterboxd());

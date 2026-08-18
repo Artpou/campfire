@@ -3,8 +3,7 @@ import type { TorrentListQuery } from "@seedarr/contracts";
 
 import { BadRequestError } from "@/shared/errors/error";
 
-import type { IndexerManager, IndexerType } from "@/modules/indexer-manager/indexer-manager.schema";
-import type { Indexer } from "@/modules/indexer-manager/indexer-manager.types";
+import type { Indexer, IndexerModule } from "@/modules/module/indexer.types";
 import type { Torrent } from "../torrent.types";
 import { buildIndexerSearchPlan, searchWithTitleFallback } from "../torrent-search.helper";
 import { IndexerAdapter } from "./indexer.adapter";
@@ -33,9 +32,9 @@ interface ProwlarTorrent {
 }
 
 export class ProwlarrAdapter extends IndexerAdapter {
-  readonly indexerType: IndexerType = "prowlarr";
+  readonly indexerType: IndexerModule["indexerType"] = "prowlarr";
 
-  constructor(indexerManager: IndexerManager) {
+  constructor(indexerManager: IndexerModule) {
     super(indexerManager, "prowlarr");
   }
 

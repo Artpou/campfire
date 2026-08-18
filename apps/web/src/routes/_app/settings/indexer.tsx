@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import { api, unwrap } from "@seedarr/sdk";
+import type { Module } from "@seedarr/sdk";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeftIcon, ExternalLinkIcon } from "lucide-react";
@@ -10,8 +10,16 @@ import { ArrowLeftIcon, ExternalLinkIcon } from "lucide-react";
 import { redirectIfNotRole } from "@/shared/helpers/role.helper";
 import { Button } from "@/shared/ui/button";
 
+import { moduleQueries } from "@/features/module/hooks/module.queries";
+
 export interface IndexerSearch {
   managerId?: string;
+}
+
+function getIndexerDashboardUrl(mod: Module | undefined): string | undefined {
+  if (!mod || (mod.type !== "jackett" && mod.type !== "prowlarr")) return undefined;
+  const config = mod.config as { url?: string };
+  return config.url?.replace(/\/+$/, "");
 }
 
 export const Route = createFileRoute("/_app/settings/indexer")({
@@ -28,16 +36,12 @@ function IndexerDashboardPage() {
   const [loadFailed, setLoadFailed] = useState(false);
   const { managerId } = Route.useSearch();
 
-  const { data: manager, isLoading } = useQuery({
-    queryKey: ["indexer-manager", managerId],
-    queryFn: async () => {
-      if (!managerId) return null;
-      return unwrap(api["indexer-manager"][":id"].$get({ param: { id: managerId } }));
-    },
-    enabled: !!managerId,
+  const { data: mod, isLoading } = useQuery({
+    ...moduleQueries.get(managerId ?? ""),
+    enabled: Boolean(managerId),
   });
 
-  const url = manager?.indexerUrl;
+  const url = getIndexerDashboardUrl(mod);
 
   if (isLoading) {
     return null;
@@ -48,7 +52,7 @@ function IndexerDashboardPage() {
       <div className="flex flex-col items-center justify-center h-full gap-4 p-8">
         <p className="text-muted-foreground">{t(msg`No indexer configured.`)}</p>
         <Button asChild icon={ArrowLeftIcon}>
-          <Link to="/settings/indexers">{t(msg`Back to settings`)}</Link>
+          <Link to="/settings/modules">{t(msg`Back to settings`)}</Link>
         </Button>
       </div>
     );
@@ -58,7 +62,7 @@ function IndexerDashboardPage() {
     <div className="flex flex-col h-[90vh]">
       <div className="flex items-center gap-2 p-3 border-b bg-background">
         <Button asChild variant="ghost" size="sm" icon={ArrowLeftIcon}>
-          <Link to="/settings/indexers">{t(msg`Back`)}</Link>
+          <Link to="/settings/modules">{t(msg`Back`)}</Link>
         </Button>
         <div className="flex-1 text-sm text-muted-foreground truncate">{url}</div>
         <Button asChild variant="outline" size="sm" icon={ExternalLinkIcon}>

@@ -41,7 +41,7 @@ export function useUpdateProfile() {
       if (current && current.id === data.id) {
         useAuth.getState().setUser({ ...current, ...data });
       }
-      toast.success(t`Profile updated`);
+      toast.info(t`Profile updated`);
     },
     onError: (error) => {
       toast.error(t`Could not update profile`, { description: formatError(error) });
@@ -72,7 +72,7 @@ export function useUploadAvatar() {
       if (current && current.id === data.id) {
         useAuth.getState().setUser({ ...current, avatarPath: data.avatarPath });
       }
-      toast.success(t`Profile picture updated`);
+      toast.info(t`Profile picture updated`);
     },
     onError: (error) => {
       toast.error(t`Could not update profile picture`, { description: formatError(error) });
@@ -91,7 +91,7 @@ export function useSyncLetterboxd() {
     onSuccess: (data) => {
       invalidateUserQueries(queryClient);
       queryClient.invalidateQueries({ queryKey: ["media"] });
-      toast.success(t`Letterboxd synchronized`, {
+      toast.info(t`Letterboxd synchronized`, {
         description: t`${data.synced} imported · ${data.skipped} skipped · ${data.errors} errors`,
       });
     },

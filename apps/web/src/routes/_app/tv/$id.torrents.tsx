@@ -6,14 +6,16 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 import { DropSelect } from "@/shared/components/drop-select";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
+import { redirectIfNotRole } from "@/shared/helpers/role.helper";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Container } from "@/shared/ui/container";
 import { Label } from "@/shared/ui/label";
 
 import { MediaCardHorizontal } from "@/features/media/components/card/media-card-horizontal";
+import { moduleQueries } from "@/features/module/hooks/module.queries";
+import { useIndexerModules } from "@/features/module/hooks/use-module";
 import { TorrentIndexersTable } from "@/features/torrent/components/torrent-indexers-table";
 import { TorrentTable } from "@/features/torrent/components/torrent-table";
-import { indexerQueries } from "@/features/torrent/hooks/indexer.queries";
 import { useTorrents } from "@/features/torrent/hooks/torrent.queries";
 import { tvQueries } from "@/features/tv/hooks/tv.queries";
 
@@ -33,10 +35,13 @@ const optionalPositiveInt = (v: unknown): number | undefined => {
 
 export const Route = createFileRoute("/_app/tv/$id/torrents")({
   component: TVTorrentsPage,
+  beforeLoad: ({ context, params }) => {
+    redirectIfNotRole(context, "member", { to: "/tv/$id", params: { id: params.id } });
+  },
   loader: ({ context, params }) =>
     Promise.all([
       context.queryClient.ensureQueryData(tvQueries.details(params.id, countryToTmdbLocale(context.language))),
-      context.queryClient.ensureQueryData(indexerQueries.list({ withDisabled: false })),
+      context.queryClient.ensureQueryData(moduleQueries.list()),
     ]),
   validateSearch: (search: Record<string, unknown>): TvTorrentsSearch => {
     return {
@@ -55,7 +60,7 @@ function TVTorrentsPage() {
 
   const locale = useTmdbLocale();
   const { data: tvData } = useSuspenseQuery(tvQueries.details(params.id, locale));
-  const { data: managers } = useSuspenseQuery(indexerQueries.list({ withDisabled: false }));
+  const { indexers: managers, hasIndexers } = useIndexerModules();
   const { torrents, sources, indexerStats, isLoading } = useTorrents(tvData.media, managers, {
     season: search.season,
     episode: search.episode,
@@ -146,7 +151,7 @@ function TVTorrentsPage() {
       {sources.length > 1 ? (
         <div className="xl:grid xl:grid-cols-7 xl:gap-6">
           <div className="xl:col-span-5">
-            <TorrentTable torrents={filteredTorrents} media={media} isLoading={isLoading} />
+            <TorrentTable torrents={filteredTorrents} media={media} isLoading={isLoading} hasIndexers={hasIndexers} />
           </div>
           <div className="hidden xl:block xl:col-span-2">
             <TorrentIndexersTable
@@ -157,7 +162,7 @@ function TVTorrentsPage() {
           </div>
         </div>
       ) : (
-        <TorrentTable torrents={filteredTorrents} media={media} isLoading={isLoading} />
+        <TorrentTable torrents={filteredTorrents} media={media} isLoading={isLoading} hasIndexers={hasIndexers} />
       )}
     </Container>
   );

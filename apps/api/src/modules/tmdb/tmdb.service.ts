@@ -10,8 +10,8 @@ import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.
 import { mergeMediaEnrichment } from "@/modules/media/media.helper";
 import { MediaService } from "@/modules/media/media.service";
 import type { MediaEnriched } from "@/modules/media/media.types";
-import { getTmdbApiKey } from "@/modules/settings/tmdb-key.query";
 import { tmdbMovieToMedia, tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
+import { getTmdbApiKey } from "@/modules/tmdb/tmdb-key.query";
 import type { User } from "@/modules/user/user.schema";
 import type {
   FetchOptions,

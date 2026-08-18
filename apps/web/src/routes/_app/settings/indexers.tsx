@@ -1,14 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-
-import { redirectIfNotRole } from "@/shared/helpers/role.helper";
-
-import { SettingsIndexersTab } from "@/features/settings/components/settings-indexers-tab";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_app/settings/indexers")({
-  beforeLoad: ({ context }) => redirectIfNotRole(context, "admin", { to: "/settings/general" }),
-  component: SettingsIndexersPage,
+  beforeLoad: () => {
+    throw redirect({ to: "/settings/modules" });
+  },
 });
-
-function SettingsIndexersPage() {
-  return <SettingsIndexersTab />;
-}

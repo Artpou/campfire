@@ -1,21 +1,9 @@
 ---
 title: General settings
-description: Configure TMDB, appearance, torrent defaults, and instance preferences.
+description: Configure appearance, torrent defaults, and instance preferences.
 ---
 
-Open **Settings → General** after signing in as an admin (or owner for some options).
-
-## TMDB API key
-
-Seedarr needs a [TMDB API key](https://www.themoviedb.org/settings/api) to browse the catalog, search titles, and enrich metadata.
-
-1. Create a free TMDB account and request an API key.
-2. In Seedarr, go to **Settings → General**.
-3. Paste the key into the TMDB field and save.
-
-You can also set `TMDB_API_KEY` in `.env` for local development. A key saved in Settings takes precedence for the running instance.
-
-Without a key, browse and search features will not work.
+Open **Settings → General** after signing in.
 
 ## Appearance & language
 
@@ -33,6 +21,14 @@ Change your account password from General. The first registered user is the **ow
 
 These filters speed up picking a release; you can still choose other results in the torrent table.
 
-## Media ratings (owner)
+## TMDB API key
 
-Owners can toggle whether media ratings are shown in the UI across the instance.
+TMDB is managed as a **system module** under **Settings → Modules** (not in General).
+
+1. Create a free [TMDB](https://www.themoviedb.org/settings/api) account and request an API key.
+2. Open **Settings → Modules** → **The Movie Database** → Configure.
+3. Paste the key and save.
+
+You can also set `TMDB_API_KEY` in `.env` as a fallback for local development. A key saved on the TMDB module takes precedence.
+
+Without a key, browse and search features will not work.

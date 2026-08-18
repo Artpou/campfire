@@ -9,22 +9,19 @@ import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Container } from "@/shared/ui/container";
 
 import { MediaCardHorizontal } from "@/features/media/components/card/media-card-horizontal";
+import { useIndexerModules } from "@/features/module/hooks/use-module";
 import { movieQueries } from "@/features/movies/hooks/movie.queries";
 import { TorrentIndexersTable } from "@/features/torrent/components/torrent-indexers-table";
 import { TorrentTable } from "@/features/torrent/components/torrent-table";
-import { indexerQueries } from "@/features/torrent/hooks/indexer.queries";
 import { useTorrents } from "@/features/torrent/hooks/torrent.queries";
 
 export const Route = createFileRoute("/_app/movies/$id/torrents")({
   component: MovieTorrentsPage,
   beforeLoad: ({ context, params }) => {
-    redirectIfNotRole(context, "admin", { to: "/movies/$id", params: { id: params.id } });
+    redirectIfNotRole(context, "member", { to: "/movies/$id", params: { id: params.id } });
   },
   loader: ({ context, params }) =>
-    Promise.all([
-      context.queryClient.ensureQueryData(movieQueries.details(params.id, countryToTmdbLocale(context.language))),
-      context.queryClient.ensureQueryData(indexerQueries.list({ withDisabled: false })),
-    ]),
+    context.queryClient.ensureQueryData(movieQueries.details(params.id, countryToTmdbLocale(context.language))),
 });
 
 function MovieTorrentsPage() {
@@ -32,7 +29,7 @@ function MovieTorrentsPage() {
 
   const locale = useTmdbLocale();
   const { data: movie } = useSuspenseQuery(movieQueries.details(params.id, locale));
-  const { data: managers } = useSuspenseQuery(indexerQueries.list({ withDisabled: false }));
+  const { indexers: managers, hasIndexers } = useIndexerModules();
   const { torrents, sources, indexerStats, isLoading } = useTorrents(movie.media, managers);
 
   const [visibleSources, setVisibleSources] = useState<Set<string>>(new Set());
@@ -51,7 +48,7 @@ function MovieTorrentsPage() {
       {sources.length > 1 ? (
         <div className="xl:grid xl:grid-cols-7 xl:gap-6">
           <div className="xl:col-span-5">
-            <TorrentTable torrents={filteredTorrents} media={media} isLoading={isLoading} />
+            <TorrentTable torrents={filteredTorrents} media={media} isLoading={isLoading} hasIndexers={hasIndexers} />
           </div>
           <div className="hidden xl:block xl:col-span-2">
             <TorrentIndexersTable
@@ -62,7 +59,7 @@ function MovieTorrentsPage() {
           </div>
         </div>
       ) : (
-        <TorrentTable torrents={filteredTorrents} media={media} isLoading={isLoading} />
+        <TorrentTable torrents={filteredTorrents} media={media} isLoading={isLoading} hasIndexers={hasIndexers} />
       )}
     </Container>
   );

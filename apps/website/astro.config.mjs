@@ -33,6 +33,7 @@ export default defineConfig({
           items: [
             { label: "Features", slug: "guides/features" },
             { label: "General settings", slug: "guides/general" },
+            { label: "Modules", slug: "guides/modules" },
             { label: "Indexers", slug: "guides/indexers" },
             { label: "Remote storage", slug: "guides/remote-storage" },
             { label: "Users & roles", slug: "guides/users" },

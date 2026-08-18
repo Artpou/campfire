@@ -4,7 +4,7 @@ import { pickLargestVideoFromEntries } from "@/shared/helpers/video-file.helper"
 
 import type { Download } from "@/modules/download/download.schema";
 import type { RemoteFileEntry } from "@/modules/storage-config/adapters/storage.adapter";
-import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
+import { remoteStorageService } from "@/modules/storage-config/remote/remote-storage.service";
 
 export interface ByteRange {
   start: number;

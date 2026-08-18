@@ -14,7 +14,7 @@ docker compose pull
 docker compose up -d
 ```
 
-Seedarr will be available at **http://localhost:5551**. Create your account, configure your indexer (Jackett or Prowlarr), and start browsing.
+Seedarr will be available at **http://localhost:5551**. Create your account, open **Settings → Modules**, install an indexer (Torrentio is recommended), and start browsing.
 
 **Update to the latest beta:**
 

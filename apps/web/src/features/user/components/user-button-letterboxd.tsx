@@ -10,6 +10,7 @@ import { Card } from "@/shared/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
 import { FileDropzone } from "@/shared/ui/file-dropzone";
 
+import { useModule } from "@/features/module/hooks/use-module";
 import { useImportLetterboxd, useSyncLetterboxd } from "@/features/user/hooks/user.queries";
 
 const MAX_ZIP_BYTES = 50 * 1024 * 1024;
@@ -21,11 +22,14 @@ interface UserButtonLetterboxdProps {
 }
 
 export function UserButtonLetterboxd({ user, variant = "default", className }: UserButtonLetterboxdProps) {
+  const { isAvailable, isLoading } = useModule("letterboxd");
   const syncLetterboxd = useSyncLetterboxd();
   const importLetterboxd = useImportLetterboxd();
   const connected = Boolean(user.letterboxdUsername);
   const [importOpen, setImportOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+
+  if (isLoading || !isAvailable) return null;
 
   const handleImport = () => {
     if (!file) return;

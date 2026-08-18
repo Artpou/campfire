@@ -39,7 +39,7 @@ vi.mock("@/modules/download/webtorrent/webtorrent.helper", () => ({
   findLargestVideoFile,
 }));
 
-vi.mock("@/modules/storage-config/remote-storage.service", () => ({
+vi.mock("@/modules/storage-config/remote/remote-storage.service", () => ({
   remoteStorageService: {
     createReadStream: vi.fn(),
   },

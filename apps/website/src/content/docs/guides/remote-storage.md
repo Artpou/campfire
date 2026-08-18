@@ -3,7 +3,7 @@ title: Remote storage
 description: Offload completed downloads to FTP/FTPS or WebDAV (NAS, Nextcloud, and more).
 ---
 
-Configure remote offloading under **Settings → Storage**.
+Configure remote offloading under **Settings → Modules** (Storage category).
 
 ## When to use it
 
@@ -29,12 +29,13 @@ Paths are relative to the remote root your credentials can access. Seedarr build
 
 ## Setup steps
 
-1. Open **Settings → Storage**.
-2. Enable remote storage.
-3. Choose **FTP** or **WebDAV**.
-4. Fill host, port, username, password, and movie/TV paths.
-5. Click **Test connection** before saving.
-6. Optionally enable **delete local files after transfer** so disk is reclaimed automatically after a successful upload.
+1. Open **Settings → Modules**.
+2. **Install** **FTP / FTPS** or **WebDAV**.
+3. Open **Configure** and fill host, port, username, password, and movie/TV paths.
+4. Click **Test connection** (or rely on the list **Healthy** / **Issue** status).
+5. Optionally enable **auto transfer** and **delete local files after transfer**.
+
+Until host credentials are set, the module shows **Need configuration**.
 
 ## Transferring
 

@@ -12,7 +12,7 @@ import { ActivityLogService } from "@/modules/activity-log/activity-log.service"
 import type { TorrentLiveData } from "@/modules/download/download.schema";
 import { download } from "@/modules/download/download.schema";
 import { mediaRequest } from "@/modules/request/request.schema";
-import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
+import { remoteStorageService } from "@/modules/storage-config/remote/remote-storage.service";
 import { invalidateStreamSource } from "@/modules/streaming/streaming.service";
 import fs from "node:fs/promises";
 import path from "node:path";

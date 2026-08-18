@@ -33,6 +33,7 @@ import {
   WATCHED_RATIO,
   watchedProgressSql,
 } from "@/modules/media/watch-progress.helper";
+import { remoteStorageService } from "@/modules/storage-config/remote/remote-storage.service";
 import type { MediaEnriched } from "./media.types";
 
 const TOGGLE_TABLE_MAP = {
@@ -84,9 +85,15 @@ export class MediaService extends IdentifiableService<MediaEnriched> {
       case "watch-list":
         conditions.push(existMediaRelation(userWatchList, userId));
         break;
-      case "downloaded":
-        conditions.push(existMediaRelation(download));
+      case "downloaded": {
+        const storageEnabled = await remoteStorageService.isEnabled();
+        conditions.push(
+          storageEnabled
+            ? existMediaRelation(download)
+            : existMediaRelation(download, undefined, sql`${download.torrent} IS NOT NULL`),
+        );
         break;
+      }
     }
 
     const orderBy = [];

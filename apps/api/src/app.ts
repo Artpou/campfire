@@ -15,13 +15,11 @@ import { authGuard } from "./modules/auth/auth.guard";
 import { authRoutes } from "./modules/auth/auth.route";
 import { downloadRoutes } from "./modules/download/download.route";
 import { localFileRoutes } from "./modules/download/local/local-file.route";
-import { indexerManagerRoutes } from "./modules/indexer-manager/indexer-manager.route";
 import { mediaRoutes } from "./modules/media/media.route";
+import { moduleRoutes } from "./modules/module/module.route";
 import { movieRoutes } from "./modules/movie/movie.route";
 import { personRoutes } from "./modules/person/person.route";
 import { requestRoutes } from "./modules/request/request.route";
-import { settingsRoutes } from "./modules/settings/settings.route";
-import { storageConfigRoutes } from "./modules/storage-config/storage-config.route";
 import { streamingRoutes } from "./modules/streaming/streaming.route";
 import { subtitleRoutes } from "./modules/subtitle/subtitle.route";
 import { torrentRoutes } from "./modules/torrent/torrent.route";
@@ -51,8 +49,8 @@ export const app = new Hono<{ Variables: HonoVariables }>()
   .use("*", requestTimeout)
   .route("/auth", authRoutes)
   .route("/users", userRoutes)
-  .route("/indexer-manager", indexerManagerRoutes)
   .route("/media", mediaRoutes)
+  .route("/modules", moduleRoutes)
   .route("/movies", movieRoutes)
   .route("/person", personRoutes)
   .route("/tv", tvRoutes)
@@ -62,8 +60,6 @@ export const app = new Hono<{ Variables: HonoVariables }>()
   .route("/streaming", streamingRoutes)
   .route("/subtitles", subtitleRoutes)
   .route("/activity-logs", activityLogRoutes)
-  .route("/storage-config", storageConfigRoutes)
-  .route("/settings", settingsRoutes)
   .route("/requests", requestRoutes)
   .get("/avatars/:userId", authGuard, async (c) => {
     const userId = c.req.param("userId");

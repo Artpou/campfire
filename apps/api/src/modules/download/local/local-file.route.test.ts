@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { signToken } from "@/modules/storage-config/crypto.helper";
+import { signToken } from "@/shared/helpers/crypto.helper";
+
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";

@@ -65,7 +65,7 @@ export function useCancelRequest() {
     mutationFn: (requestId: string) => unwrap(api.requests[":id"].cancel.$patch({ param: { id: requestId } })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: requestQueries.key });
-      toast.success(t`Request cancelled`);
+      toast.info(t`Request cancelled`);
     },
     onError: (error) => {
       toast.error(t`Could not cancel request`, { description: formatError(error) });
@@ -79,7 +79,7 @@ export function useReopenRequest() {
     mutationFn: (requestId: string) => unwrap(api.requests[":id"].reopen.$patch({ param: { id: requestId } })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: requestQueries.key });
-      toast.success(t`Request reopened`);
+      toast.info(t`Request reopened`);
     },
     onError: (error) => {
       toast.error(t`Could not reopen request`, { description: formatError(error) });
@@ -93,7 +93,7 @@ export function useDeleteRequest() {
     mutationFn: (requestId: string) => unwrap(api.requests[":id"].$delete({ param: { id: requestId } })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: requestQueries.key });
-      toast.success(t`Request deleted`);
+      toast.info(t`Request deleted`);
     },
     onError: (error) => {
       toast.error(t`Could not delete request`, { description: formatError(error) });

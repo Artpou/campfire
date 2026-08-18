@@ -1,8 +1,10 @@
 import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
-import { useQuery } from "@tanstack/react-query";
-import { FileIcon, GlobeIcon, KeyIcon, PaletteIcon, SaveIcon } from "lucide-react";
+import { api, unwrap } from "@seedarr/sdk";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import { FileIcon, GlobeIcon, KeyIcon, LogOutIcon, PaletteIcon } from "lucide-react";
 
 import { SelectI18nLang } from "@/shared/components/select/select-i18n-lang";
 import { SelectQuality } from "@/shared/components/select/select-quality";
@@ -10,25 +12,33 @@ import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 
-import { useRole } from "@/features/auth/hooks/use-role";
+import { useAuth } from "@/features/auth/auth-store";
 import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
 import { PasswordChangeModal } from "@/features/user/components/password-change-modal";
-import { settingsQueries, useUpsertSettings } from "../hooks/settings.queries";
 
 export function SettingsGeneralTab() {
-  const { isAdmin } = useRole();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const logout = useAuth((s) => s.logout);
   const quality = useUserPreferences((s) => s.quality);
   const maxSize = useUserPreferences((s) => s.maxSize);
   const setQuality = useUserPreferences((s) => s.setQuality);
   const setMaxSize = useUserPreferences((s) => s.setMaxSize);
   const [passwordOpen, setPasswordOpen] = useState(false);
 
+  const handleSignOut = async () => {
+    try {
+      await unwrap(api.auth.logout.$post());
+    } catch {
+      // continue even if server logout fails
+    }
+    logout();
+    queryClient.clear();
+    navigate({ to: "/login" });
+  };
+
   return (
     <section className="space-y-6">
-      <h2 className="hidden md:block">
-        <Trans>General</Trans>
-      </h2>
-
       <div className="flex flex-col gap-4 border rounded-md p-4">
         <h3 className="flex items-center gap-3">
           <PaletteIcon className="size-4" />
@@ -59,8 +69,6 @@ export function SettingsGeneralTab() {
           <Trans>Change Password</Trans>
         </Button>
       </div>
-
-      {isAdmin && <TmdbApiKeySection />}
 
       <div className="flex flex-col gap-4 border rounded-md p-4">
         <h3 className="flex items-center gap-3">
@@ -107,56 +115,13 @@ export function SettingsGeneralTab() {
         </div>
       </div>
 
+      <div className="flex justify-end border rounded-md p-4">
+        <Button variant="destructive" onClick={handleSignOut} icon={LogOutIcon}>
+          <Trans>Sign out</Trans>
+        </Button>
+      </div>
+
       <PasswordChangeModal open={passwordOpen} onOpenChange={setPasswordOpen} />
     </section>
-  );
-}
-
-function TmdbApiKeySection() {
-  const { data: settings } = useQuery(settingsQueries.get());
-  const upsertSettings = useUpsertSettings();
-  const [tmdbApiKey, setTmdbApiKey] = useState("");
-  const [touched, setTouched] = useState(false);
-
-  const handleSave = () => {
-    upsertSettings.mutate({ tmdbApiKey }, { onSuccess: () => setTouched(false) });
-  };
-
-  return (
-    <div className="flex flex-col gap-4 border rounded-md p-4">
-      <h3 className="flex items-center gap-3">
-        <KeyIcon className="size-4" />
-        <Trans>API Keys</Trans>
-      </h3>
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <Label htmlFor="tmdb-api-key">
-            <Trans>TMDB API Key (v3)</Trans>
-          </Label>
-          <p className="hidden md:block text-sm text-muted-foreground">
-            <Trans>Required for remote media synchronization. Get one at themoviedb.org.</Trans>
-          </p>
-          {settings?.tmdbApiKey && !touched && (
-            <p className="text-xs text-muted-foreground font-mono">{settings.tmdbApiKey}</p>
-          )}
-        </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full md:w-auto">
-          <Input
-            id="tmdb-api-key"
-            type="password"
-            className="w-full md:w-64"
-            placeholder={settings?.tmdbApiKey ? "••••••••" : "Enter API key"}
-            value={tmdbApiKey}
-            onChange={(e) => {
-              setTmdbApiKey(e.target.value);
-              setTouched(true);
-            }}
-          />
-          <Button size="sm" disabled={!touched} loading={upsertSettings.isPending} onClick={handleSave} icon={SaveIcon}>
-            <Trans>Save</Trans>
-          </Button>
-        </div>
-      </div>
-    </div>
   );
 }

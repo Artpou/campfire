@@ -130,7 +130,7 @@ export function useToggleLike() {
       } else {
         queryClient.invalidateQueries({ queryKey: [...tvQueries.key] });
       }
-      toast.success(data.liked ? t`Added to your likes` : t`Removed from your likes`, {
+      toast.info(data.liked ? t`Added to your likes` : t`Removed from your likes`, {
         description: data.title,
       });
     },
@@ -153,7 +153,7 @@ export function useToggleWatchList() {
       } else {
         queryClient.invalidateQueries({ queryKey: [...tvQueries.key] });
       }
-      toast.success(data.inWatchList ? t`Added to watch list` : t`Removed from watch list`, {
+      toast.info(data.inWatchList ? t`Added to watch list` : t`Removed from watch list`, {
         description: data.title,
       });
     },
@@ -193,7 +193,7 @@ export function useUpsertReview() {
       ),
     onSuccess: (data) => {
       invalidateMediaCaches(queryClient, data.type);
-      toast.success(t`Review saved`, { description: data.title });
+      toast.info(t`Review saved`, { description: data.title });
     },
     onError: (error) => {
       toast.error(t`Could not save review`, { description: formatError(error) });
@@ -207,7 +207,7 @@ export function useDeleteReview() {
     mutationFn: (media: Media) => unwrap(api.media[":id"].review.$delete({ param: { id: media.id.toString() } })),
     onSuccess: (data) => {
       invalidateMediaCaches(queryClient, data.type);
-      toast.success(t`Rating removed`, { description: data.title });
+      toast.info(t`Rating removed`, { description: data.title });
     },
     onError: (error) => {
       toast.error(t`Could not remove rating`, { description: formatError(error) });

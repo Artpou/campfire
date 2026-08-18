@@ -7,7 +7,6 @@ import { InfoIcon } from "lucide-react";
 
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
-import { CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/shared/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
@@ -38,15 +37,7 @@ export function SettingsActivityTab() {
 
   return (
     <div className="space-y-6">
-      <CardHeader>
-        <CardTitle className="hidden md:block">
-          <Trans>Activity</Trans>
-        </CardTitle>
-        <CardDescription className="hidden md:block">
-          <Trans>Recent activity on this instance.</Trans>
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+      <div>
         {results.length > 0 ? (
           <Table>
             <TableHeader>
@@ -96,7 +87,7 @@ export function SettingsActivityTab() {
             <Trans>No activity yet.</Trans>
           </p>
         )}
-      </CardContent>
+      </div>
 
       <Sheet open={!!selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)}>
         <SheetContent side="right" className="sm:max-w-md overflow-y-auto">

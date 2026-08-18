@@ -37,17 +37,9 @@ export function SettingsUsersTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold">
-            <Trans>User Management</Trans>
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            <Trans>Manage user accounts and permissions</Trans>
-          </p>
-        </div>
+      <div className="flex items-center justify-between gap-4">
         {isAdmin && (
-          <Button onClick={handleCreateUser} icon={UserPlusIcon}>
+          <Button onClick={handleCreateUser} icon={UserPlusIcon} className="shrink-0">
             <Trans>Create User</Trans>
           </Button>
         )}

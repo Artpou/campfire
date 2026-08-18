@@ -50,7 +50,29 @@ function RootComponent() {
   return (
     <>
       <Outlet />
-      <Toaster richColors position="bottom-right" theme={theme} />
+      <Toaster
+        richColors
+        position="bottom-right"
+        theme={theme}
+        toastOptions={{
+          classNames: {
+            toast: "cn-toast",
+          },
+        }}
+        style={
+          {
+            "--success-text": "var(--success)",
+            "--success-border": "var(--success)",
+            "--error-text": "var(--destructive)",
+            "--error-border": "var(--destructive)",
+            "--warning-text": "var(--warning)",
+            "--warning-border": "var(--warning)",
+            "--info-bg": "var(--popover)",
+            "--info-text": "var(--foreground)",
+            "--info-border": "var(--border)",
+          } as React.CSSProperties
+        }
+      />
       <TanStackDevtools />
     </>
   );

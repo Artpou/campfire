@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { Download } from "@seedarr/sdk";
 import { formatBytes } from "@seedarr/shared";
-import { useQuery } from "@tanstack/react-query";
 import { AlertCircleIcon, MegaphoneIcon, RefreshCwIcon, ServerIcon, Trash2Icon } from "lucide-react";
 
 import { DialogDelete } from "@/shared/components/dialog/dialog-delete";
@@ -23,7 +22,7 @@ import {
   useDownloadRecheck,
   useDownloadTransfer,
 } from "@/features/downloads/hooks/download.queries";
-import { storageConfigQueries } from "@/features/settings/hooks/storage-config.queries";
+import { useStorageModule } from "@/features/module/hooks/use-module";
 
 interface MediaDownloadProps {
   downloads: Download[];
@@ -49,7 +48,7 @@ function DownloadEntry({ download }: { download: Download }) {
   const recheckTorrent = useDownloadRecheck();
   const reannounce = useDownloadReannounce();
   const transfer = useDownloadTransfer();
-  const { data: storageEnabled } = useQuery(storageConfigQueries.enabled());
+  const { isEnabled: storageRemoteEnabled } = useStorageModule();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const status = getDownloadStatus(download);
@@ -65,7 +64,7 @@ function DownloadEntry({ download }: { download: Download }) {
   const showProgress = isActive || isPaused;
   const canTransfer =
     Boolean(download.torrent?.done && !download.remoteLocation && !download.torrent?.transferring) &&
-    storageEnabled?.enabled === true;
+    storageRemoteEnabled;
 
   const handleDelete = () => {
     deleteTorrent.mutate({ id: download.id, scope: "torrent" }, { onSuccess: () => setShowDeleteConfirm(false) });

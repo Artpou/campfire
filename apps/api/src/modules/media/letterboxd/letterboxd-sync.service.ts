@@ -9,7 +9,7 @@ import { logger } from "@/shared/helpers/logger.helper";
 import { db } from "@/db/db";
 import { applyUserReview, ensureUserLike, upsertMediaRow } from "@/modules/media/letterboxd/letterboxd-apply.query";
 import { media } from "@/modules/media/media.schema";
-import { getSettingsTmdbApiKey } from "@/modules/settings/tmdb-key.query";
+import { getTmdbApiKey } from "@/modules/tmdb/tmdb-key.query";
 import { fetchTmdbById, sleep, tmdbItemToMediaInsert } from "@/modules/tmdb/tmdb-resolve.helper";
 import { user } from "@/modules/user/user.schema";
 
@@ -105,7 +105,7 @@ export async function syncLetterboxdDiary(userId: string): Promise<LetterboxdSyn
   const username = profile?.letterboxdUsername?.trim();
   if (!username) throw new BadRequestError("Import your Letterboxd export first");
 
-  const apiKey = await getSettingsTmdbApiKey();
+  const apiKey = await getTmdbApiKey();
   if (!apiKey) throw new BadRequestError("TMDB API key is required");
 
   const rssUrl = `https://letterboxd.com/${username.toLowerCase()}/rss/`;

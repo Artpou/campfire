@@ -13,7 +13,7 @@ import {
   markMediaWatched,
   upsertMediaRow,
 } from "@/modules/media/letterboxd/letterboxd-apply.query";
-import { getSettingsTmdbApiKey } from "@/modules/settings/tmdb-key.query";
+import { getTmdbApiKey } from "@/modules/tmdb/tmdb-key.query";
 import { searchTmdbByTitle, sleep, tmdbItemToMediaInsert } from "@/modules/tmdb/tmdb-resolve.helper";
 import { user } from "@/modules/user/user.schema";
 
@@ -176,7 +176,7 @@ export async function importLetterboxdZip(userId: string, file: File): Promise<L
     throw new BadRequestError("Zip file is too large (max 50MB)");
   }
 
-  const apiKey = await getSettingsTmdbApiKey();
+  const apiKey = await getTmdbApiKey();
   if (!apiKey) throw new BadRequestError("TMDB API key is required");
 
   const buffer = Buffer.from(await file.arrayBuffer());

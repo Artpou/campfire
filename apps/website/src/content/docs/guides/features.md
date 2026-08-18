@@ -10,14 +10,20 @@ description: What Seedarr can do today.
 - Search across the entire TMDB database
 - Personalized **Watchlist** and **Likes**
 
+## Modules & integrations
+
+- Unified **Settings → Modules** catalog (system, indexers, storage, social, notifications)
+- **TMDB** as a system module (API key + optional `TMDB_API_KEY` env fallback)
+- Indexers: **Torrentio**, **Jackett**, **Prowlarr**, custom Stremio addon — with health status
+- Optional **remote storage** modules (FTP/FTPS or WebDAV) to a NAS, Nextcloud, or remote server
+
 ## Torrent search & download
 
-- Search from **Stremio addons** (like Torrentio), **Jackett**, or **Prowlarr** with live indexer status
+- Search from enabled indexer modules with live Healthy / Issue status
 - Built-in **WebTorrent client** — no external download client needed
 - Real-time progress, speed, peers, seeds, and ratio
 - Pause, resume, and manage downloads from the UI
 - Quality and language info on each result
-- Optional **remote storage** (FTP/FTPS or WebDAV) to a NAS, Nextcloud, or remote server
 
 ## Stream & watch
 

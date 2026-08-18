@@ -4,10 +4,10 @@ import { type Context, Hono } from "hono";
 import { stream } from "hono/streaming";
 
 import { NotFoundError, UnauthorizedError } from "@/shared/errors/error";
+import { verifyToken } from "@/shared/helpers/crypto.helper";
 import { pipeNodeStream } from "@/shared/helpers/stream.helper";
 
-import { verifyToken } from "@/modules/storage-config/crypto.helper";
-import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
+import { remoteStorageService } from "@/modules/storage-config/remote/remote-storage.service";
 import { getDownloadableFile } from "./local-file.helper";
 
 async function streamDownloadFile(c: Context, id: string): Promise<Response> {

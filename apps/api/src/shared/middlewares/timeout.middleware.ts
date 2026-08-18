@@ -5,7 +5,7 @@ import { timeout } from "hono/timeout";
 const DEFAULT_TIMEOUT_MS = 30_000;
 
 /** Streaming + long batch jobs that routinely exceed 30s. */
-const TIMEOUT_EXEMPT_PREFIXES = ["/streaming/", "/users/me/letterboxd/", "/storage-config/sync"] as const;
+const TIMEOUT_EXEMPT_PREFIXES = ["/streaming/", "/users/me/letterboxd/", "/modules/storage/sync"] as const;
 
 const timed = timeout(DEFAULT_TIMEOUT_MS, () => {
   return new HTTPException(504, { message: "Server took too long to respond" });

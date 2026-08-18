@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { IndexerManager } from "@/modules/indexer-manager/indexer-manager.schema";
+import type { IndexerModule } from "@/modules/module/indexer.types";
 import { JackettAdapter } from "./jackett.adapter";
 import { ProwlarrAdapter } from "./prowlarr.adapter";
 import { StremioAdapter } from "./stremio.adapter";
 
-function manager(partial: Partial<IndexerManager> & Pick<IndexerManager, "indexerType">): IndexerManager {
+function manager(partial: Partial<IndexerModule> & Pick<IndexerModule, "indexerType">): IndexerModule {
   return {
     id: "idx-1",
     indexerUrl: "http://indexer.local",
@@ -23,7 +23,7 @@ afterEach(() => {
 
 describe("IndexerAdapter constructors", () => {
   it("rejects missing / disabled / wrong type managers", () => {
-    expect(() => new JackettAdapter(undefined as unknown as IndexerManager)).toThrow();
+    expect(() => new JackettAdapter(undefined as unknown as IndexerModule)).toThrow();
     expect(() => new JackettAdapter(manager({ indexerType: "jackett", disabled: true }))).toThrow(/disabled/);
     expect(() => new JackettAdapter(manager({ indexerType: "prowlarr" }))).toThrow(/valid indexer/);
   });
@@ -82,7 +82,7 @@ describe("JackettAdapter", () => {
 
     const adapter = new JackettAdapter(manager({ indexerType: "jackett" }));
     const torrents = await adapter.getTorrents({
-      indexerManagerId: "idx-1",
+      moduleId: "idx-1",
       media: { id: 1, type: "movie", title: "Dune", imdbId: "tt1160419" },
     });
 
@@ -97,7 +97,7 @@ describe("JackettAdapter", () => {
   });
 
   it("requires an API key", async () => {
-    const adapter = new JackettAdapter(manager({ indexerType: "jackett", indexerApiKey: null }));
+    const adapter = new JackettAdapter(manager({ indexerType: "jackett", indexerApiKey: "" }));
     await expect(adapter.getIndexers()).rejects.toThrow(/API key/);
   });
 });
@@ -162,7 +162,7 @@ describe("ProwlarrAdapter", () => {
 
     const adapter = new ProwlarrAdapter(manager({ indexerType: "prowlarr" }));
     const torrents = await adapter.getTorrents({
-      indexerManagerId: "idx-1",
+      moduleId: "idx-1",
       media: { id: 2, type: "tv", title: "Show", imdbId: "tt0000002" },
       season: 1,
       episode: 1,
@@ -181,7 +181,7 @@ describe("ProwlarrAdapter", () => {
 
 describe("StremioAdapter", () => {
   it("returns empty indexers list", async () => {
-    const adapter = new StremioAdapter(manager({ indexerType: "stremio", indexerApiKey: null }));
+    const adapter = new StremioAdapter(manager({ indexerType: "stremio", indexerApiKey: "" }));
     await expect(adapter.getIndexers()).resolves.toEqual([]);
   });
 
@@ -207,9 +207,9 @@ describe("StremioAdapter", () => {
       }),
     );
 
-    const adapter = new StremioAdapter(manager({ indexerType: "stremio", indexerApiKey: null }));
+    const adapter = new StremioAdapter(manager({ indexerType: "stremio", indexerApiKey: "" }));
     const torrents = await adapter.getTorrents({
-      indexerManagerId: "idx-1",
+      moduleId: "idx-1",
       media: { id: 1, type: "movie", title: "Dune", imdbId: "tt1160419" },
     });
 
@@ -234,9 +234,9 @@ describe("StremioAdapter", () => {
       }),
     );
 
-    const adapter = new StremioAdapter(manager({ indexerType: "stremio", indexerApiKey: null }));
+    const adapter = new StremioAdapter(manager({ indexerType: "stremio", indexerApiKey: "" }));
     await adapter.getTorrents({
-      indexerManagerId: "idx-1",
+      moduleId: "idx-1",
       media: { id: 2, type: "tv", title: "Show", imdbId: "tt999" },
       season: 2,
       episode: 5,

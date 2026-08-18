@@ -9,6 +9,7 @@ import { TooltipWrapper } from "@/shared/ui/tooltip-wrapper";
 
 import { downloadQueries } from "@/features/downloads/hooks/download.queries";
 import { ACTIVE_DOWNLOAD_INTERVAL } from "@/features/media/hooks/media.queries";
+import { useStorageModule } from "@/features/module/hooks/use-module";
 
 interface StorageSpace {
   seedarrUsed: number;
@@ -58,6 +59,7 @@ function StorageBar({ space, kind }: { space: StorageSpace; kind: "local" | "rem
 
 export function LibraryStats() {
   const { t } = useLingui();
+  const { isEnabled: storageEnabled } = useStorageModule();
   const { data: stats } = useQuery({
     ...downloadQueries.stats(),
     refetchInterval: ({ state }) => {
@@ -69,7 +71,7 @@ export function LibraryStats() {
 
   if (!stats) return null;
 
-  const hasStorage = stats.storage.local || stats.storage.remote;
+  const hasStorage = stats.storage.local || (storageEnabled && stats.storage.remote);
 
   return (
     <div className="flex flex-col lg:flex-row justify-between gap-3">
@@ -81,7 +83,7 @@ export function LibraryStats() {
             </Card>
           )}
 
-          {stats.storage.remote && (
+          {storageEnabled && stats.storage.remote && (
             <Card className="w-full flex flex-row gap-4 py-2.5 px-4 items-center flex-wrap">
               <StorageBar space={stats.storage.remote} kind="remote" />
             </Card>

@@ -17,7 +17,7 @@ vi.mock("@/db/db", () => ({
   },
 }));
 
-vi.mock("@/modules/storage-config/remote-storage.service", () => ({
+vi.mock("@/modules/storage-config/remote/remote-storage.service", () => ({
   remoteStorageService: {
     listFiles: vi.fn(),
   },

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { indexerManager } from "@/modules/indexer-manager/indexer-manager.schema";
+import { module } from "@/modules/module/module.schema";
 import { createAuthGuardMock, seedTestUser } from "@/tests/route-test.helper";
 import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
 
@@ -93,23 +93,23 @@ describe("Torrent Routes", () => {
 
   describe("POST /list", () => {
     it("returns 404 when manager not found", async () => {
-      const res = await torrentRoutes.request(
-        "/list",
-        json("POST", { media: testMedia, indexerManagerId: "nonexistent" }),
-      );
+      const res = await torrentRoutes.request("/list", json("POST", { media: testMedia, moduleId: "nonexistent" }));
       expect(res.status).toBe(404);
     });
 
     it("returns search results for jackett", async () => {
       testDbRef.current
-        ?.insert(indexerManager)
-        .values({ id: "c1", indexerType: "jackett", indexerUrl: "http://x", indexerApiKey: "k" })
+        ?.insert(module)
+        .values({
+          id: "c1",
+          type: "jackett",
+          category: "indexer",
+          enabled: true,
+          config: { url: "http://x", apiKey: "k" },
+        })
         .run();
       const body = await bodyOf(
-        await torrentRoutes.request(
-          "/list",
-          json("POST", { media: testMedia, indexerManagerId: "c1", indexerId: "idx-1" }),
-        ),
+        await torrentRoutes.request("/list", json("POST", { media: testMedia, moduleId: "c1", indexerId: "idx-1" })),
       );
       expect(body).toHaveLength(1);
       expect(body[0].title).toBe("Movie.2024.1080p");
@@ -117,17 +117,21 @@ describe("Torrent Routes", () => {
 
     it("returns search results for stremio", async () => {
       testDbRef.current
-        ?.insert(indexerManager)
+        ?.insert(module)
         .values({
           id: "c2",
-          indexerType: "stremio",
-          indexerUrl: "https://torrentio.strem.fun/yts",
-          indexerApiKey: "",
+          type: "stremio",
+          category: "indexer",
+          enabled: true,
+          config: {
+            manifestUrl: "https://torrentio.strem.fun/manifest.json",
+            baseUrl: "https://torrentio.strem.fun/yts",
+          },
         })
         .run();
 
       const body = await bodyOf(
-        await torrentRoutes.request("/list", json("POST", { media: testMedia, indexerManagerId: "c2" })),
+        await torrentRoutes.request("/list", json("POST", { media: testMedia, moduleId: "c2" })),
       );
       expect(body).toHaveLength(1);
       expect(body[0].title).toBe("Movie.2024.4K");
@@ -135,10 +139,16 @@ describe("Torrent Routes", () => {
 
     it("rejects search on disabled manager", async () => {
       testDbRef.current
-        ?.insert(indexerManager)
-        .values({ id: "c1", indexerType: "jackett", indexerUrl: "http://x", indexerApiKey: "k", disabled: true })
+        ?.insert(module)
+        .values({
+          id: "c1",
+          type: "jackett",
+          category: "indexer",
+          enabled: false,
+          config: { url: "http://x", apiKey: "k" },
+        })
         .run();
-      const res = await torrentRoutes.request("/list", json("POST", { media: testMedia, indexerManagerId: "c1" }));
+      const res = await torrentRoutes.request("/list", json("POST", { media: testMedia, moduleId: "c1" }));
       expect(res.status).toBe(400);
     });
   });

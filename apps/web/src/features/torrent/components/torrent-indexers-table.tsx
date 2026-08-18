@@ -25,6 +25,35 @@ interface TorrentIndexersTableProps {
   onVisibilityChange: (visibleSources: Set<string>) => void;
 }
 
+function ModuleIndexerStatusBadge({ status }: { status: "loading" | "success" | "error" | "idle" }) {
+  switch (status) {
+    case "loading":
+      return (
+        <Badge variant="outline">
+          <Trans>Loading</Trans>
+        </Badge>
+      );
+    case "error":
+      return (
+        <Badge variant="destructive-outline">
+          <Trans>Error</Trans>
+        </Badge>
+      );
+    case "success":
+      return (
+        <Badge variant="success-outline">
+          <Trans>Success</Trans>
+        </Badge>
+      );
+    default:
+      return (
+        <Badge variant="warning-outline">
+          <Trans>Idle</Trans>
+        </Badge>
+      );
+  }
+}
+
 export function TorrentIndexersTable({ sources, indexerStats, onVisibilityChange }: TorrentIndexersTableProps) {
   const [visibleSources, setVisibleSources] = useState<Set<string>>(new Set());
 
@@ -46,37 +75,8 @@ export function TorrentIndexersTable({ sources, indexerStats, onVisibilityChange
     });
   };
 
-  const getStatusBadge = (status: IndexerQueryStat["status"]) => {
-    switch (status) {
-      case "loading":
-        return (
-          <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
-            <Trans>Loading</Trans>
-          </Badge>
-        );
-      case "error":
-        return (
-          <Badge variant="destructive" className="bg-red-500/10 text-red-500 border-red-500/20">
-            <Trans>Error</Trans>
-          </Badge>
-        );
-      case "success":
-        return (
-          <Badge variant="default" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
-            <Trans>Success</Trans>
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="outline" className="text-muted-foreground">
-            <Trans>Idle</Trans>
-          </Badge>
-        );
-    }
-  };
-
   return (
-    <div className="space-y-3 sticky top-4">
+    <div className="space-y-3 sticky top-4 mt-9">
       <h3 className="pl-1 text-sm font-bold tracking-wider text-muted-foreground uppercase">
         <Trans>Indexers</Trans> ({sources.length})
       </h3>
@@ -125,7 +125,9 @@ export function TorrentIndexersTable({ sources, indexerStats, onVisibilityChange
                       </Button>
                     </TableCell>
                     <TableCell className="font-medium text-sm truncate max-w-[140px]">{source.label}</TableCell>
-                    <TableCell>{getStatusBadge(stat?.status ?? "idle")}</TableCell>
+                    <TableCell>
+                      <ModuleIndexerStatusBadge status={stat?.status ?? "idle"} />
+                    </TableCell>
                     <TableCell className="text-right font-bold">{stat?.count ?? 0}</TableCell>
                   </TableRow>
                 );
@@ -143,7 +145,7 @@ export function TorrentIndexersTable({ sources, indexerStats, onVisibilityChange
         </Table>
       </div>
       <Button asChild variant="outline" className="w-full" icon={SettingsIcon}>
-        <Link to="/settings">
+        <Link to="/settings/modules" params={{ tab: "indexer" }}>
           <Trans>Configure indexers</Trans>
         </Link>
       </Button>

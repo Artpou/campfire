@@ -112,7 +112,7 @@ export function useTorrentColumns({ media, count, onInspect, onDownload }: UseTo
             const torrent = row.original;
             return (
               <div className="flex items-center justify-end gap-3">
-                <div className="flex items-center gap-1 font-bold text-green-500">
+                <div className="flex items-center gap-1 font-bold text-success">
                   <ArrowUpIcon className="size-3" />
                   <span className="text-xs">{torrent.seeders}</span>
                 </div>

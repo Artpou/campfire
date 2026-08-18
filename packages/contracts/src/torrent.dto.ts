@@ -3,7 +3,7 @@ import { z } from "zod";
 import { mediaInputSchema } from "./media.dto";
 
 export const torrentListDto = z.object({
-  indexerManagerId: z.string(),
+  moduleId: z.string(),
   media: mediaInputSchema,
   indexerId: z.string().optional(),
   season: z.number().int().positive().optional(),

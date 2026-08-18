@@ -1,7 +1,6 @@
 import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
-import { useQuery } from "@tanstack/react-query";
 import { KeyIcon, SaveIcon } from "lucide-react";
 
 import { Button } from "@/shared/ui/button";
@@ -9,9 +8,10 @@ import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 
 import { useAuth } from "@/features/auth/auth-store";
+import { useUpdateModule } from "@/features/module/hooks/module.queries";
+import { useModule } from "@/features/module/hooks/use-module";
 import { OnboardingNav } from "@/features/onboarding/components/onboarding-nav";
 import { useCompleteOnboarding } from "@/features/onboarding/hooks/use-complete-onboarding";
-import { settingsQueries, useUpsertSettings } from "@/features/settings/hooks/settings.queries";
 import { UserButtonLetterboxd } from "@/features/user/components/user-button-letterboxd";
 
 interface OnboardingIntegrationsProps {
@@ -20,17 +20,21 @@ interface OnboardingIntegrationsProps {
 
 export function OnboardingIntegrations({ onBack }: OnboardingIntegrationsProps) {
   const user = useAuth((s) => s.user);
-  const { data: settings } = useQuery(settingsQueries.get());
-  const upsertSettings = useUpsertSettings();
+  const { module: tmdb, isLoading } = useModule("tmdb");
+  const updateModule = useUpdateModule();
   const complete = useCompleteOnboarding("owner");
   const [tmdbApiKey, setTmdbApiKey] = useState("");
   const [touched, setTouched] = useState(false);
 
   if (!user) return null;
 
+  const savedKey = typeof tmdb?.config.apiKey === "string" ? tmdb.config.apiKey : "";
+  const hasSavedKey = Boolean(savedKey);
+
   const saveTmdb = () => {
-    upsertSettings.mutate(
-      { tmdbApiKey },
+    if (!tmdb) return;
+    updateModule.mutate(
+      { id: tmdb.id, config: { apiKey: tmdbApiKey } },
       {
         onSuccess: () => {
           setTouched(false);
@@ -61,14 +65,12 @@ export function OnboardingIntegrations({ onBack }: OnboardingIntegrationsProps) 
         <p className="text-muted-foreground text-xs leading-relaxed">
           <Trans>Required for catalog browse and search if not set in the server environment.</Trans>
         </p>
-        {settings?.tmdbApiKey && !touched && (
-          <p className="text-muted-foreground font-mono text-xs">{settings.tmdbApiKey}</p>
-        )}
+        {hasSavedKey && !touched && <p className="text-muted-foreground font-mono text-xs">{savedKey}</p>}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <Input
-            type="password"
+            password
             className="flex-1"
-            placeholder={settings?.tmdbApiKey ? "••••••••" : "Enter API key"}
+            placeholder={hasSavedKey ? "••••••••" : "Enter API key"}
             value={tmdbApiKey}
             onChange={(e) => {
               setTmdbApiKey(e.target.value);
@@ -77,8 +79,8 @@ export function OnboardingIntegrations({ onBack }: OnboardingIntegrationsProps) 
           />
           <Button
             size="sm"
-            disabled={!touched || !tmdbApiKey}
-            loading={upsertSettings.isPending}
+            disabled={!tmdb || isLoading || !touched || !tmdbApiKey}
+            loading={updateModule.isPending}
             onClick={saveTmdb}
             icon={SaveIcon}
           >

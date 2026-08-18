@@ -6,7 +6,7 @@ import { BadRequestError, NotFoundError, ServiceUnavailableError } from "@/share
 import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
 import { torrentClient } from "@/modules/download/webtorrent/webtorrent-manager";
-import { IndexerManagerService } from "@/modules/indexer-manager/indexer-manager.service";
+import { ModuleIndexerService } from "@/modules/module/module-indexer.service";
 import type { User } from "@/modules/user/user.schema";
 import type { Torrent, TorrentInspectResult } from "./torrent.types";
 import { probeTorrentPeers } from "./torrent-peer.helper";
@@ -15,15 +15,15 @@ import { resolveTorrentSource } from "./torrent-source.helper";
 const METADATA_TIMEOUT_MS = 30_000;
 
 export class TorrentService extends AuthenticatedService {
-  private readonly managerService: IndexerManagerService;
+  private readonly managerService: ModuleIndexerService;
 
-  constructor(user: User, managerService = new IndexerManagerService(user)) {
+  constructor(user: User, managerService = new ModuleIndexerService(user)) {
     super(user);
     this.managerService = managerService;
   }
 
   async list(query: TorrentListQuery): Promise<Torrent[]> {
-    const manager = await this.managerService.get(query.indexerManagerId);
+    const manager = await this.managerService.get(query.moduleId);
     if (!manager) throw new NotFoundError("Indexer manager not found");
     if (manager.disabled) throw new BadRequestError("Indexer manager is disabled");
 

@@ -31,6 +31,7 @@ import { Route as AppSettingsGeneralRouteImport } from './routes/_app/settings/g
 import { Route as AppSettingsActivityRouteImport } from './routes/_app/settings/activity'
 import { Route as AppUserIdIndexRouteImport } from './routes/_app/user/$id.index'
 import { Route as AppTvIdIndexRouteImport } from './routes/_app/tv/$id.index'
+import { Route as AppSettingsModulesIndexRouteImport } from './routes/_app/settings/modules/index'
 import { Route as AppPersonIdIndexRouteImport } from './routes/_app/person/$id.index'
 import { Route as AppMoviesIdIndexRouteImport } from './routes/_app/movies/$id.index'
 import { Route as AppDownloadsIdIndexRouteImport } from './routes/_app/downloads/$id.index'
@@ -39,6 +40,8 @@ import { Route as AppUserIdRequestsRouteImport } from './routes/_app/user/$id.re
 import { Route as AppUserIdLikesRouteImport } from './routes/_app/user/$id.likes'
 import { Route as AppUserIdHistoryRouteImport } from './routes/_app/user/$id.history'
 import { Route as AppTvIdTorrentsRouteImport } from './routes/_app/tv/$id.torrents'
+import { Route as AppSettingsModulesNewRouteImport } from './routes/_app/settings/modules/new'
+import { Route as AppSettingsModulesIdRouteImport } from './routes/_app/settings/modules/$id'
 import { Route as AppMoviesIdTorrentsRouteImport } from './routes/_app/movies/$id.torrents'
 import { Route as AppDownloadsIdPlayRouteImport } from './routes/_app/downloads/$id.play'
 
@@ -150,6 +153,11 @@ const AppTvIdIndexRoute = AppTvIdIndexRouteImport.update({
   path: '/tv/$id/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsModulesIndexRoute = AppSettingsModulesIndexRouteImport.update({
+  id: '/modules/',
+  path: '/modules/',
+  getParentRoute: () => AppSettingsRouteRoute,
+} as any)
 const AppPersonIdIndexRoute = AppPersonIdIndexRouteImport.update({
   id: '/person/$id/',
   path: '/person/$id/',
@@ -190,6 +198,16 @@ const AppTvIdTorrentsRoute = AppTvIdTorrentsRouteImport.update({
   path: '/tv/$id/torrents',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsModulesNewRoute = AppSettingsModulesNewRouteImport.update({
+  id: '/modules/new',
+  path: '/modules/new',
+  getParentRoute: () => AppSettingsRouteRoute,
+} as any)
+const AppSettingsModulesIdRoute = AppSettingsModulesIdRouteImport.update({
+  id: '/modules/$id',
+  path: '/modules/$id',
+  getParentRoute: () => AppSettingsRouteRoute,
+} as any)
 const AppMoviesIdTorrentsRoute = AppMoviesIdTorrentsRouteImport.update({
   id: '/movies/$id/torrents',
   path: '/movies/$id/torrents',
@@ -222,6 +240,8 @@ export interface FileRoutesByFullPath {
   '/tv': typeof AppTvIndexRoute
   '/downloads/$id/play': typeof AppDownloadsIdPlayRoute
   '/movies/$id/torrents': typeof AppMoviesIdTorrentsRoute
+  '/settings/modules/$id': typeof AppSettingsModulesIdRoute
+  '/settings/modules/new': typeof AppSettingsModulesNewRoute
   '/tv/$id/torrents': typeof AppTvIdTorrentsRoute
   '/user/$id/history': typeof AppUserIdHistoryRoute
   '/user/$id/likes': typeof AppUserIdLikesRoute
@@ -230,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/downloads/$id': typeof AppDownloadsIdIndexRoute
   '/movies/$id': typeof AppMoviesIdIndexRoute
   '/person/$id': typeof AppPersonIdIndexRoute
+  '/settings/modules': typeof AppSettingsModulesIndexRoute
   '/tv/$id': typeof AppTvIdIndexRoute
   '/user/$id': typeof AppUserIdIndexRoute
 }
@@ -253,6 +274,8 @@ export interface FileRoutesByTo {
   '/tv': typeof AppTvIndexRoute
   '/downloads/$id/play': typeof AppDownloadsIdPlayRoute
   '/movies/$id/torrents': typeof AppMoviesIdTorrentsRoute
+  '/settings/modules/$id': typeof AppSettingsModulesIdRoute
+  '/settings/modules/new': typeof AppSettingsModulesNewRoute
   '/tv/$id/torrents': typeof AppTvIdTorrentsRoute
   '/user/$id/history': typeof AppUserIdHistoryRoute
   '/user/$id/likes': typeof AppUserIdLikesRoute
@@ -261,6 +284,7 @@ export interface FileRoutesByTo {
   '/downloads/$id': typeof AppDownloadsIdIndexRoute
   '/movies/$id': typeof AppMoviesIdIndexRoute
   '/person/$id': typeof AppPersonIdIndexRoute
+  '/settings/modules': typeof AppSettingsModulesIndexRoute
   '/tv/$id': typeof AppTvIdIndexRoute
   '/user/$id': typeof AppUserIdIndexRoute
 }
@@ -288,6 +312,8 @@ export interface FileRoutesById {
   '/_app/tv/': typeof AppTvIndexRoute
   '/_app/downloads/$id/play': typeof AppDownloadsIdPlayRoute
   '/_app/movies/$id/torrents': typeof AppMoviesIdTorrentsRoute
+  '/_app/settings/modules/$id': typeof AppSettingsModulesIdRoute
+  '/_app/settings/modules/new': typeof AppSettingsModulesNewRoute
   '/_app/tv/$id/torrents': typeof AppTvIdTorrentsRoute
   '/_app/user/$id/history': typeof AppUserIdHistoryRoute
   '/_app/user/$id/likes': typeof AppUserIdLikesRoute
@@ -296,6 +322,7 @@ export interface FileRoutesById {
   '/_app/downloads/$id/': typeof AppDownloadsIdIndexRoute
   '/_app/movies/$id/': typeof AppMoviesIdIndexRoute
   '/_app/person/$id/': typeof AppPersonIdIndexRoute
+  '/_app/settings/modules/': typeof AppSettingsModulesIndexRoute
   '/_app/tv/$id/': typeof AppTvIdIndexRoute
   '/_app/user/$id/': typeof AppUserIdIndexRoute
 }
@@ -322,6 +349,8 @@ export interface FileRouteTypes {
     | '/tv'
     | '/downloads/$id/play'
     | '/movies/$id/torrents'
+    | '/settings/modules/$id'
+    | '/settings/modules/new'
     | '/tv/$id/torrents'
     | '/user/$id/history'
     | '/user/$id/likes'
@@ -330,6 +359,7 @@ export interface FileRouteTypes {
     | '/downloads/$id'
     | '/movies/$id'
     | '/person/$id'
+    | '/settings/modules'
     | '/tv/$id'
     | '/user/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -353,6 +383,8 @@ export interface FileRouteTypes {
     | '/tv'
     | '/downloads/$id/play'
     | '/movies/$id/torrents'
+    | '/settings/modules/$id'
+    | '/settings/modules/new'
     | '/tv/$id/torrents'
     | '/user/$id/history'
     | '/user/$id/likes'
@@ -361,6 +393,7 @@ export interface FileRouteTypes {
     | '/downloads/$id'
     | '/movies/$id'
     | '/person/$id'
+    | '/settings/modules'
     | '/tv/$id'
     | '/user/$id'
   id:
@@ -387,6 +420,8 @@ export interface FileRouteTypes {
     | '/_app/tv/'
     | '/_app/downloads/$id/play'
     | '/_app/movies/$id/torrents'
+    | '/_app/settings/modules/$id'
+    | '/_app/settings/modules/new'
     | '/_app/tv/$id/torrents'
     | '/_app/user/$id/history'
     | '/_app/user/$id/likes'
@@ -395,6 +430,7 @@ export interface FileRouteTypes {
     | '/_app/downloads/$id/'
     | '/_app/movies/$id/'
     | '/_app/person/$id/'
+    | '/_app/settings/modules/'
     | '/_app/tv/$id/'
     | '/_app/user/$id/'
   fileRoutesById: FileRoutesById
@@ -561,6 +597,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTvIdIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/settings/modules/': {
+      id: '/_app/settings/modules/'
+      path: '/modules'
+      fullPath: '/settings/modules'
+      preLoaderRoute: typeof AppSettingsModulesIndexRouteImport
+      parentRoute: typeof AppSettingsRouteRoute
+    }
     '/_app/person/$id/': {
       id: '/_app/person/$id/'
       path: '/person/$id'
@@ -617,6 +660,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTvIdTorrentsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/settings/modules/new': {
+      id: '/_app/settings/modules/new'
+      path: '/modules/new'
+      fullPath: '/settings/modules/new'
+      preLoaderRoute: typeof AppSettingsModulesNewRouteImport
+      parentRoute: typeof AppSettingsRouteRoute
+    }
+    '/_app/settings/modules/$id': {
+      id: '/_app/settings/modules/$id'
+      path: '/modules/$id'
+      fullPath: '/settings/modules/$id'
+      preLoaderRoute: typeof AppSettingsModulesIdRouteImport
+      parentRoute: typeof AppSettingsRouteRoute
+    }
     '/_app/movies/$id/torrents': {
       id: '/_app/movies/$id/torrents'
       path: '/movies/$id/torrents'
@@ -642,6 +699,9 @@ interface AppSettingsRouteRouteChildren {
   AppSettingsStorageRoute: typeof AppSettingsStorageRoute
   AppSettingsUsersRoute: typeof AppSettingsUsersRoute
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
+  AppSettingsModulesIdRoute: typeof AppSettingsModulesIdRoute
+  AppSettingsModulesNewRoute: typeof AppSettingsModulesNewRoute
+  AppSettingsModulesIndexRoute: typeof AppSettingsModulesIndexRoute
 }
 
 const AppSettingsRouteRouteChildren: AppSettingsRouteRouteChildren = {
@@ -652,6 +712,9 @@ const AppSettingsRouteRouteChildren: AppSettingsRouteRouteChildren = {
   AppSettingsStorageRoute: AppSettingsStorageRoute,
   AppSettingsUsersRoute: AppSettingsUsersRoute,
   AppSettingsIndexRoute: AppSettingsIndexRoute,
+  AppSettingsModulesIdRoute: AppSettingsModulesIdRoute,
+  AppSettingsModulesNewRoute: AppSettingsModulesNewRoute,
+  AppSettingsModulesIndexRoute: AppSettingsModulesIndexRoute,
 }
 
 const AppSettingsRouteRouteWithChildren =

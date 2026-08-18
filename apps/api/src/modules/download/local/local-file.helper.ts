@@ -9,7 +9,7 @@ import { findLargestVideoInDirectory } from "@/shared/helpers/video-file.helper"
 import { db } from "@/db/db";
 import type { Download } from "@/modules/download/download.schema";
 import { download } from "@/modules/download/download.schema";
-import { remoteStorageService } from "@/modules/storage-config/remote-storage.service";
+import { remoteStorageService } from "@/modules/storage-config/remote/remote-storage.service";
 import { isFsNotFoundError, resolveRemoteVideoInfo } from "@/modules/streaming/streaming.helper";
 import fs from "node:fs/promises";
 import * as path from "node:path";

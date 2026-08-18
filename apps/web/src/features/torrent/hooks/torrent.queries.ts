@@ -30,7 +30,7 @@ export const torrentQueries = {
 export type TorrentSource = {
   id: string;
   label: string;
-  indexerManagerId: string;
+  moduleId: string;
   indexerManagerType: IndexerType;
   indexerId?: string;
 };
@@ -43,7 +43,7 @@ function buildTorrentSources(managers: IndexerManager[]): TorrentSource[] {
       return manager.indexers.map((indexer) => ({
         id: indexer.id,
         label: indexer.label ?? indexer.name,
-        indexerManagerId: manager.id,
+        moduleId: manager.id,
         indexerManagerType: manager.indexerType,
         indexerId: indexer.id,
       }));
@@ -53,7 +53,7 @@ function buildTorrentSources(managers: IndexerManager[]): TorrentSource[] {
       {
         id: manager.id,
         label: manager.indexerType === "stremio" ? "Torrentio" : (manager.indexerUrl ?? manager.indexerType),
-        indexerManagerId: manager.id,
+        moduleId: manager.id,
         indexerManagerType: manager.indexerType,
       },
     ];
@@ -69,8 +69,8 @@ export function useTorrents(media: Media, managers: IndexerManager[], { season, 
   const sources = useMemo(() => buildTorrentSources(managers), [managers]);
 
   return useQueries({
-    queries: sources.map(({ indexerManagerId, indexerId }) => ({
-      queryKey: [...torrentQueries.key, media.id, media.type, indexerManagerId, indexerId, season, episode],
+    queries: sources.map(({ moduleId, indexerId }) => ({
+      queryKey: [...torrentQueries.key, media.id, media.type, moduleId, indexerId, season, episode],
       queryFn: async () => {
         if (!media) return [];
 
@@ -78,7 +78,7 @@ export function useTorrents(media: Media, managers: IndexerManager[], { season, 
           api.torrents.list.$post({
             json: {
               media,
-              indexerManagerId,
+              moduleId,
               indexerId,
               season,
               episode,

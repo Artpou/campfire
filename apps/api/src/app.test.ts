@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/modules/auth/auth.route", () => ({ authRoutes: new Hono() }));
 vi.mock("@/modules/user/user.route", () => ({ userRoutes: new Hono() }));
-vi.mock("@/modules/indexer-manager/indexer-manager.route", () => ({ indexerManagerRoutes: new Hono() }));
+vi.mock("@/modules/module/module.route", () => ({ moduleRoutes: new Hono() }));
 vi.mock("@/modules/media/media.route", () => ({ mediaRoutes: new Hono() }));
 vi.mock("@/modules/movie/movie.route", () => ({ movieRoutes: new Hono() }));
 vi.mock("@/modules/person/person.route", () => ({ personRoutes: new Hono() }));
@@ -14,8 +14,6 @@ vi.mock("@/modules/download/local/local-file.route", () => ({ localFileRoutes: n
 vi.mock("@/modules/streaming/streaming.route", () => ({ streamingRoutes: new Hono() }));
 vi.mock("@/modules/subtitle/subtitle.route", () => ({ subtitleRoutes: new Hono() }));
 vi.mock("@/modules/activity-log/activity-log.route", () => ({ activityLogRoutes: new Hono() }));
-vi.mock("@/modules/storage-config/storage-config.route", () => ({ storageConfigRoutes: new Hono() }));
-vi.mock("@/modules/settings/settings.route", () => ({ settingsRoutes: new Hono() }));
 vi.mock("@/modules/request/request.route", () => ({ requestRoutes: new Hono() }));
 vi.mock("@/modules/user/user.service", () => ({
   UserService: class {

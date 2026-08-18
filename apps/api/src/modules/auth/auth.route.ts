@@ -9,7 +9,7 @@ import { authRateLimiter } from "@/shared/middlewares/rate-limiter.middleware";
 import { SESSION_COOKIE_NAME, sessionCookieOptions } from "@/auth/auth.constants";
 import { hashPassword, verifyPassword } from "@/auth/password.util";
 import { createSession, deleteOtherSessions, deleteSession, resolveAuthenticatedSession } from "@/auth/session.util";
-import { IndexerManagerService } from "@/modules/indexer-manager/indexer-manager.service";
+import { ModuleIndexerService } from "@/modules/module/module-indexer.service";
 import { ActivityLogService } from "../activity-log/activity-log.service";
 import { UserService } from "../user/user.service";
 import type { AuthUser } from "./auth.types";
@@ -96,7 +96,7 @@ export const authRoutes = new Hono()
     const currentUser = resolved.user;
     if (!currentUser) throw new NotFoundError("User");
 
-    const countIndexerManagers = await new IndexerManagerService(currentUser).count();
+    const countIndexerManagers = await new ModuleIndexerService(currentUser).count();
 
     const user: AuthUser = {
       ...currentUser,

@@ -44,10 +44,22 @@ MediaRequest
  ├── dismissed: boolean (legacy compat)
  └── createdAt
 
-IndexerManager → multiple configs (Jackett, Prowlarr, Stremio addons/presets)
+IndexerManager / Module → Jackett, Prowlarr, Stremio addons, TMDB, storage, social
 ```
 
 **Flow:** Browse TMDB → Search torrents → Start download (upserts Media + creates Download) → WebTorrent streams to disk → Play via `/streaming/:id/direct` (byte-range; movi-player handles MKV/HEVC natively).
+
+### Modules / Integrations
+
+Unified **Settings → Modules** replaces separate Indexers + Storage settings:
+
+- **System:** TMDB (locked; API key + `TMDB_API_KEY` env fallback)
+- **Indexers:** Torrentio (recommended), Jackett, Prowlarr, custom Stremio addon
+- **Storage:** WebDAV, FTP (SMB coming soon)
+- **Social:** Letterboxd (Trakt coming soon)
+- **Notifications:** Discord / Telegram / Email (coming soon)
+
+One DB table `module` (`type`, `category`, `enabled`, JSON `config`). System modules (TMDB, SUBDL) are seeded on startup. Health probes run from the Modules list (~30s React Query cache). Jackett/Prowlarr may use localhost / LAN URLs.
 
 ### Request Management
 
@@ -138,7 +150,7 @@ apps/
 │       └── db/             # Drizzle config, schema aggregation, migrations
 └── web/                    # React frontend
     └── src/
-        ├── features/       # Feature modules (media, movies, tv, torrent, downloads, subtitles, user, indexers-manager, settings)
+        ├── features/       # Feature modules (media, movies, tv, torrent, downloads, subtitles, user, module, settings)
         │   └── [feature]/
         │       ├── components/
         │       ├── hooks/          # *.queries.ts (queryOptions + mutations)
@@ -175,9 +187,9 @@ pnpm --filter @seedarr/api db:studio   # Open Drizzle Studio
 ```
 AuthenticatedService        → user in context, createRouter() factory
 ├── IdentifiableService<T>  → get/getMany/list with pagination
-│   ├── DownloadService, MediaService, UserService, IndexerManagerService
+│   ├── DownloadService, MediaService, UserService, ModuleService
 │   └── TMDBService<S>      → MovieService, TVService (createTMDBRouter)
-├── ActivityLogService, StorageConfigService
+├── ActivityLogService
 └── TorrentService, SubtitleService
 ```
 

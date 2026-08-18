@@ -1,74 +1,46 @@
-import { t } from "@lingui/core/macro";
+import type { ManualSyncInput } from "@seedarr/contracts";
 import { api, unwrap } from "@seedarr/sdk";
 import { formatError } from "@seedarr/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-interface SyncError {
+const remoteSyncQueries = {
+  key: ["modules", "storage", "sync"] as const,
+};
+
+type RemoteSyncError = {
   name: string;
   path: string;
   type: "movie" | "tv";
-}
+};
 
-export function useRemoteSync(onUnmatchedFiles?: (files: SyncError[]) => void) {
+type RemoteSyncResponse = {
+  synced: number;
+  skipped: number;
+  errors: RemoteSyncError[];
+};
+
+export function useRemoteSync(onUnmatched?: (files: RemoteSyncError[]) => void) {
   const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: () => unwrap(api["storage-config"].sync.$post()),
-    onSuccess: (result) => {
-      if (result.synced > 0) {
-        toast.success(t`Synchronization complete`, {
-          description: t`${result.synced} media synced, ${result.skipped} skipped`,
+    mutationFn: () => unwrap(api.modules.storage.sync.$post()) as Promise<RemoteSyncResponse>,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: remoteSyncQueries.key });
+      if (data.errors.length > 0) {
+        onUnmatched?.(data.errors);
+        toast.warning("Remote sync finished with unmatched files", {
+          description: `${data.synced} synced, ${data.errors.length} need manual matching`,
         });
-      } else if (result.skipped > 0) {
-        toast.info(t`Nothing new to sync`, {
-          description: t`${result.skipped} media already up to date`,
-        });
-      } else {
-        toast.info(t`No media found on remote server`);
+        return;
       }
-
-      if (result.errors.length > 0) {
-        const errorNames = result.errors.map((e) => e.name);
-        const errorList = errorNames.slice(0, 10).join(", ");
-        const suffix = errorNames.length > 10 ? t` and ${errorNames.length - 10} more` : "";
-        toast.error(t`Could not detect ${result.errors.length} items`, {
-          description: `${errorList}${suffix}`,
-          duration: 15000,
-          action: onUnmatchedFiles
-            ? {
-                label: t`Manual sync`,
-                onClick: () => onUnmatchedFiles(result.errors),
-              }
-            : undefined,
-        });
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["downloads"] });
-      queryClient.invalidateQueries({ queryKey: ["media"] });
+      toast.success("Remote sync finished", { description: `${data.synced} files synced` });
     },
-    onError: (error) => {
-      toast.error(t`Synchronization failed`, {
-        description: formatError(error),
-      });
-    },
+    onError: (error) => toast.error("Remote sync failed", { description: formatError(error) }),
   });
 }
 
 export function useManualSync() {
-  const queryClient = useQueryClient();
-
   return useMutation({
-    mutationFn: (input: { remotePath: string; mediaId: number; type: "movie" | "tv" }) =>
-      unwrap(api["storage-config"]["sync-manual"].$post({ json: input })),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["downloads"] });
-      queryClient.invalidateQueries({ queryKey: ["media"] });
-    },
-    onError: (error) => {
-      toast.error(t`Manual sync failed`, {
-        description: formatError(error),
-      });
-    },
+    mutationFn: (input: ManualSyncInput) => unwrap(api.modules.storage["sync-manual"].$post({ json: input })),
   });
 }

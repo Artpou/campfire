@@ -20,7 +20,7 @@ vi.mock("@/db/db", () => ({
 vi.mock("@/modules/auth/auth.guard", () => ({
   authGuard: createAuthGuardMock(fakeUser),
 }));
-vi.mock("@/modules/storage-config/remote-storage.service", () => ({
+vi.mock("@/modules/storage-config/remote/remote-storage.service", () => ({
   remoteStorageService: {
     shouldDeleteLocalAfterTransfer: vi.fn().mockResolvedValue(false),
     isEnabled: vi.fn().mockResolvedValue(false),

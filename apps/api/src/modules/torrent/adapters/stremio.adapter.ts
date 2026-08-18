@@ -1,8 +1,7 @@
 import { filenameParse } from "@ctrl/video-filename-parser";
 import type { TorrentListQuery } from "@seedarr/contracts";
 
-import type { IndexerManager } from "@/modules/indexer-manager/indexer-manager.schema";
-import type { Indexer } from "@/modules/indexer-manager/indexer-manager.types";
+import type { Indexer, IndexerModule } from "@/modules/module/indexer.types";
 import type { Torrent } from "../torrent.types";
 import { IndexerAdapter } from "./indexer.adapter";
 
@@ -46,7 +45,7 @@ function parseSource(title: string): string {
 }
 
 export class StremioAdapter extends IndexerAdapter {
-  constructor(indexerManager: IndexerManager) {
+  constructor(indexerManager: IndexerModule) {
     super(indexerManager, "stremio");
   }
 

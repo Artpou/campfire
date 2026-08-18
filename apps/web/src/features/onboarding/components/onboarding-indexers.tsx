@@ -2,9 +2,7 @@ import { useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
-import type { CreateIndexerManagerInput } from "@seedarr/contracts";
-import { api, unwrap } from "@seedarr/sdk";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { MODULE_CATALOG } from "@seedarr/shared";
 import { ZapIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -13,9 +11,9 @@ import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
 
-import { INDEXER_DEFAULTS } from "@/features/indexers-manager/indexers-manager";
+import { buildCreatePayload } from "@/features/module/helpers/module-list.helper";
+import { useCreateModule } from "@/features/module/hooks/module.queries";
 import { OnboardingNav } from "@/features/onboarding/components/onboarding-nav";
-import { indexerManagerQueries } from "@/features/torrent/hooks/indexer.queries";
 
 type Selection = "torrentio" | "prowlarr" | "jackett";
 
@@ -26,25 +24,17 @@ interface OnboardingIndexersProps {
 
 export function OnboardingIndexers({ onContinue, onBack }: OnboardingIndexersProps) {
   const { t } = useLingui();
-  const queryClient = useQueryClient();
   const [selection, setSelection] = useState<Selection | null>(null);
   const [indexerUrl, setIndexerUrl] = useState("");
   const [indexerApiKey, setIndexerApiKey] = useState("");
 
-  const createMutation = useMutation({
-    mutationFn: (data: CreateIndexerManagerInput) => unwrap(api["indexer-manager"].$post({ json: data })),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: indexerManagerQueries.key });
-      onContinue();
-    },
-  });
+  const createMutation = useCreateModule();
 
   const select = (type: Selection) => {
     setSelection(type);
-    if (type === "prowlarr" || type === "jackett") {
-      setIndexerUrl(INDEXER_DEFAULTS[type] ?? "");
-      setIndexerApiKey("");
-    }
+    if (type === "prowlarr") setIndexerUrl("http://localhost:9696");
+    if (type === "jackett") setIndexerUrl("http://localhost:9117");
+    if (type === "prowlarr" || type === "jackett") setIndexerApiKey("");
   };
 
   const canContinue =
@@ -54,15 +44,16 @@ export function OnboardingIndexers({ onContinue, onBack }: OnboardingIndexersPro
   const handleContinue = () => {
     if (!selection || !canContinue) return;
     if (selection === "torrentio") {
-      createMutation.mutate({ type: "PRESET", preset: "torrentio" });
+      const catalog = MODULE_CATALOG.find((c) => c.preset === "torrentio");
+      const payload = catalog ? buildCreatePayload(catalog) : null;
+      if (!payload) return;
+      createMutation.mutate(payload, { onSuccess: () => onContinue() });
       return;
     }
-    createMutation.mutate({
-      type: "SELF_HOSTED",
-      indexerType: selection,
-      indexerUrl,
-      indexerApiKey,
-    });
+    createMutation.mutate(
+      { type: selection, config: { url: indexerUrl, apiKey: indexerApiKey } },
+      { onSuccess: () => onContinue() },
+    );
   };
 
   return (
@@ -136,7 +127,7 @@ export function OnboardingIndexers({ onContinue, onBack }: OnboardingIndexersPro
         <Card className="p-4 bg-transparent">
           <Input
             label={<Trans>URL</Trans>}
-            placeholder={INDEXER_DEFAULTS[selection]}
+            placeholder={selection === "prowlarr" ? "http://localhost:9696" : "http://localhost:9117"}
             value={indexerUrl}
             onChange={(e) => setIndexerUrl(e.target.value)}
           />

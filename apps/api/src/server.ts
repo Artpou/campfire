@@ -80,6 +80,13 @@ const start = async () => {
   const avatarsPath = getAvatarsRoot();
   await fsPromises.mkdir(avatarsPath, { recursive: true });
 
+  try {
+    const { ensureSystemModules } = await import("./modules/module/module.seed");
+    await ensureSystemModules();
+  } catch (error) {
+    logger.error("STARTUP", "Module migration failed:", error);
+  }
+
   torrentClient
     .initialize()
     .then(() => {
