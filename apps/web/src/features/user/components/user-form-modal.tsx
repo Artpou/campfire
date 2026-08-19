@@ -8,6 +8,7 @@ import { api, unwrap } from "@seedarr/sdk";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 
+import { cn } from "@/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
@@ -192,7 +193,7 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
               <SelectTrigger>
                 <SelectValue>
                   <div className="flex items-center gap-2">
-                    <SelectedRoleIcon className="size-4" style={{ color: roleConfig[selectedRole].color }} />
+                    <SelectedRoleIcon className={cn("size-4", roleConfig[selectedRole].iconClass)} />
                     {t(ROLE_LABELS[selectedRole])}
                   </div>
                 </SelectValue>
@@ -203,7 +204,7 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
                   return (
                     <SelectItem key={roleOption} value={roleOption}>
                       <div className="flex items-center gap-2">
-                        <RoleIcon className="size-4" style={{ color: roleConfig[roleOption].color }} />
+                        <RoleIcon className={cn("size-4", roleConfig[roleOption].iconClass)} />
                         {t(ROLE_LABELS[roleOption])}
                       </div>
                     </SelectItem>

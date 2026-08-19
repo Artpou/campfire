@@ -5,7 +5,7 @@ import type {
   UpdateUserInput,
   UserStats,
 } from "@seedarr/contracts";
-import { count, eq } from "drizzle-orm";
+import { count, eq, like, or } from "drizzle-orm";
 
 import {
   BadRequestError,
@@ -61,8 +61,19 @@ export class UserService extends IdentifiableService<User> {
     super(user as User);
   }
 
-  async getMany(): Promise<User[]> {
+  async getMany(_args?: { ids?: string[] }): Promise<User[]> {
     return db.query.user.findMany({ columns: userColumns });
+  }
+
+  async search(q?: string): Promise<User[]> {
+    const term = q?.trim();
+    if (!term) return this.getMany();
+
+    const pattern = `%${term.replaceAll("\\", "").replaceAll("%", "").replaceAll("_", "")}%`;
+    return db.query.user.findMany({
+      columns: userColumns,
+      where: or(like(user.username, pattern), like(user.pseudo, pattern)),
+    });
   }
 
   async get(id: string): Promise<User> {

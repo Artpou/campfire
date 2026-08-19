@@ -5,6 +5,7 @@ import type { Media } from "@seedarr/sdk";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import type { SortingState } from "@tanstack/react-table";
 
+import { SentinelStuck, StickyFilterBar } from "@/shared/components/sentinel/sentinel-stuck";
 import { Card } from "@/shared/ui/card";
 import { Container } from "@/shared/ui/container";
 import { Input } from "@/shared/ui/input";
@@ -48,7 +49,8 @@ function DownloadsPage() {
   const navigate = useNavigate();
   const { t } = useLingui();
   const [query, setQuery] = useState("");
-  const viewMode = useEffectiveViewMode();
+  const [isStuck, setIsStuck] = useState(false);
+  const viewMode = useEffectiveViewMode("downloads");
   const showCategories = useUserPreferences((s) => s.showCategories);
 
   const listQuery = {
@@ -86,40 +88,55 @@ function DownloadsPage() {
       <div className="space-y-4">
         <LibraryStats />
 
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 flex-wrap w-full">
-            <MediaTabsViewMode />
-            <MediaTypeTabs value={type} />
+        <SentinelStuck setIsStuck={setIsStuck} marginTop={-30} />
+        <StickyFilterBar isStuck={isStuck}>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-wrap w-full">
+              <MediaTabsViewMode scope="downloads" />
+              <MediaTypeTabs value={type} />
+            </div>
+            <div className="flex items-center gap-2">
+              {isStuck && (
+                <Input
+                  type="search"
+                  search
+                  classNameWrapper="hidden lg:block w-full"
+                  h="lg"
+                  placeholder={t`Search in your library...`}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              )}
+              {!isStuck && <MediaButtonCategory />}
+              <DownloadButtonSynchronize />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <MediaButtonCategory />
-            <DownloadButtonSynchronize />
-          </div>
-        </div>
+          {showCategories && !isStuck && (
+            <MediaCarouselCategory
+              type={type ?? "movie"}
+              valueMode="name"
+              value={withGenres}
+              onValueChange={(value) =>
+                navigate({
+                  to: "/downloads",
+                  search: { ...search, with_genres: value },
+                  resetScroll: false,
+                })
+              }
+            />
+          )}
+        </StickyFilterBar>
 
-        {showCategories && (
-          <MediaCarouselCategory
-            type={type ?? "movie"}
-            valueMode="name"
-            value={withGenres}
-            onValueChange={(value) =>
-              navigate({
-                to: "/downloads",
-                search: { ...search, with_genres: value },
-                resetScroll: false,
-              })
-            }
+        {!isStuck && (
+          <Input
+            type="text"
+            search
+            className="w-full"
+            placeholder={t`Search in your library...`}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
           />
         )}
-
-        <Input
-          type="text"
-          search
-          className="w-full"
-          placeholder={t`Search in your library...`}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
 
         {filteredResults.length > 0 ? (
           viewMode === "grid" ? (

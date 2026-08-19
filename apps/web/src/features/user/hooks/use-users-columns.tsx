@@ -16,6 +16,7 @@ import { Button } from "@/shared/ui/button";
 import { DataTableColumnHeader } from "@/shared/ui/data-table-column-header";
 
 import { RoleBadge } from "@/features/user/components/role-badge";
+import { UserProfile } from "@/features/user/components/user-profile";
 
 export const usersTableFeatures = tableFeatures({
   rowSortingFeature,
@@ -50,8 +51,8 @@ export function useUsersColumns({ canEditUser, canDeleteUser, onEdit, onDelete }
       columnHelper.columns([
         columnHelper.accessor((row) => row.pseudo || row.username, {
           id: "username",
-          header: ({ column }) => <DataTableColumnHeader column={column} title={<Trans>Username</Trans>} />,
-          cell: ({ row }) => <span className="font-medium">{row.original.pseudo || row.original.username}</span>,
+          header: ({ column }) => <DataTableColumnHeader column={column} title={<Trans>User</Trans>} />,
+          cell: ({ row }) => <UserProfile user={row.original} size="sm" />,
           sortFn: "text",
         }),
         columnHelper.accessor("role", {
@@ -73,14 +74,24 @@ export function useUsersColumns({ canEditUser, canDeleteUser, onEdit, onDelete }
             return (
               <div className="flex justify-end gap-2 min-h-8 items-center">
                 {canEditUser(user) && (
-                  <Button variant="secondary" size="sm" onClick={() => onEdit(user)} icon={PencilIcon}>
-                    <Trans>Edit</Trans>
-                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="icon-sm"
+                    icon={PencilIcon}
+                    tooltip={<Trans>Edit</Trans>}
+                    aria-label="Edit"
+                    onClick={() => onEdit(user)}
+                  />
                 )}
                 {canDeleteUser(user) && (
-                  <Button variant="destructive" size="sm" onClick={() => onDelete(user)} icon={Trash2Icon}>
-                    <Trans>Delete</Trans>
-                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="icon-sm"
+                    icon={Trash2Icon}
+                    tooltip={<Trans>Delete</Trans>}
+                    aria-label="Delete"
+                    onClick={() => onDelete(user)}
+                  />
                 )}
               </div>
             );

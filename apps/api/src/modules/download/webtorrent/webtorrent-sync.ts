@@ -8,7 +8,7 @@ import { probeVideoDuration } from "@/shared/helpers/video.helper";
 import { findLargestVideoInDirectory } from "@/shared/helpers/video-file.helper";
 
 import { db } from "@/db/db";
-import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
+import { activityFor } from "@/modules/activity/activity.service";
 import type { TorrentLiveData } from "@/modules/download/download.schema";
 import { download } from "@/modules/download/download.schema";
 import { mediaRequest } from "@/modules/request/request.schema";
@@ -93,12 +93,10 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
         if (wrapped) dl = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
       }
 
-      ActivityLogService.log({
-        userId: dl?.userId,
-        type: "SUCCESS",
+      await activityFor(dl?.userId).log({
         action: "DOWNLOAD_COMPLETE",
-        title: `Download completed: ${torrent.name}`,
-        metadata: { downloadId },
+        mediaId: dl?.mediaId,
+        metadata: { downloadId, name: torrent.name },
       });
 
       if (dl?.mediaId) {

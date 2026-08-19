@@ -9,8 +9,8 @@ import { authRateLimiter } from "@/shared/middlewares/rate-limiter.middleware";
 import { SESSION_COOKIE_NAME, sessionCookieOptions } from "@/auth/auth.constants";
 import { hashPassword, verifyPassword } from "@/auth/password.util";
 import { createSession, deleteOtherSessions, deleteSession, resolveAuthenticatedSession } from "@/auth/session.util";
+import { ActivityService, trackRoute } from "@/modules/activity/activity.service";
 import { ModuleIndexerService } from "@/modules/module/module-indexer.service";
-import { ActivityLogService } from "../activity-log/activity-log.service";
 import { UserService } from "../user/user.service";
 import type { AuthUser } from "./auth.types";
 
@@ -24,14 +24,10 @@ export const authRoutes = new Hono()
     const { username, password } = c.req.valid("json");
     const userService = new UserService();
 
-    const newUser = await userService.register(username, hashPassword(password));
+    const newUser = await trackRoute(c, { action: "USER_CREATE", metadata: { username } }, () =>
+      userService.register(username, hashPassword(password)),
+    );
     const sessionToken = await createSession(newUser.id);
-    ActivityLogService.log({
-      userId: newUser.id,
-      type: "SUCCESS",
-      action: "USER_CREATE",
-      title: `${username} registered`,
-    });
 
     setCookie(c, SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions);
     return c.json(newUser);
@@ -39,25 +35,18 @@ export const authRoutes = new Hono()
   .post("/login", authRateLimiter, zValidator("json", loginDto), async (c) => {
     const { username, password } = c.req.valid("json");
 
-    const userService = new UserService();
+    const user = await trackRoute(c, { action: "USER_LOGIN", metadata: { username } }, async () => {
+      const userService = new UserService();
+      const existingUser = await userService.getFullUser(username);
+      if (!existingUser) throw new UnauthorizedError("Invalid username or password");
 
-    const existingUser = await userService.getFullUser(username);
-    if (!existingUser) throw new UnauthorizedError("Invalid username or password");
+      const isValid = verifyPassword(password, existingUser.password);
+      if (!isValid) throw new UnauthorizedError("Invalid username or password");
 
-    const isValid = verifyPassword(password, existingUser.password);
-    if (!isValid) throw new UnauthorizedError("Invalid username or password");
-
-    const sessionToken = await createSession(existingUser.id);
-    await deleteOtherSessions(existingUser.id, sessionToken);
-
-    setCookie(c, SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions);
-
-    const user = await userService.get(existingUser.id);
-    ActivityLogService.log({
-      userId: existingUser.id,
-      type: "SUCCESS",
-      action: "USER_LOGIN",
-      title: `${username} logged in`,
+      const sessionToken = await createSession(existingUser.id);
+      await deleteOtherSessions(existingUser.id, sessionToken);
+      setCookie(c, SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions);
+      return userService.get(existingUser.id);
     });
     return c.json(user);
   })
@@ -67,14 +56,7 @@ export const authRoutes = new Hono()
     if (typeof sessionToken === "string") {
       const resolved = await resolveAuthenticatedSession(sessionToken);
       await deleteSession(sessionToken);
-      if (resolved) {
-        ActivityLogService.log({
-          userId: resolved.user.id,
-          type: "INFO",
-          action: "USER_LOGOUT",
-          title: "User logged out",
-        });
-      }
+      if (resolved) await new ActivityService(resolved.user).log({ action: "USER_LOGOUT" });
     }
 
     deleteCookie(c, SESSION_COOKIE_NAME);

@@ -7,6 +7,7 @@ import { stream } from "hono/streaming";
 import { NotFoundError } from "@/shared/errors/error";
 
 import { db } from "@/db/db";
+import { trackRoute } from "@/modules/activity/activity.service";
 import { authGuard } from "@/modules/auth/auth.guard";
 import { download } from "@/modules/download/download.schema";
 import type { HonoVariables } from "@/types/hono";
@@ -27,7 +28,13 @@ export const streamingRoutes = new Hono<{ Variables: HonoVariables }>()
   .use("*", authGuard)
   .get("/:id/info", zValidator("param", stringIdParamDto), async (c) => {
     const download = await getDownload(c.req.valid("param").id);
-    return c.json(await streamingService.getPlaybackInfo(download));
+    return c.json(
+      await trackRoute(
+        c,
+        { action: "MEDIA_WATCH", mediaId: download.mediaId, metadata: { downloadId: download.id } },
+        () => streamingService.getPlaybackInfo(download),
+      ),
+    );
   })
   .get("/:id/direct", zValidator("param", stringIdParamDto), async (c) => {
     const download = await getDownload(c.req.valid("param").id);

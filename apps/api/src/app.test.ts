@@ -13,7 +13,7 @@ vi.mock("@/modules/download/download.route", () => ({ downloadRoutes: new Hono()
 vi.mock("@/modules/download/local/local-file.route", () => ({ localFileRoutes: new Hono() }));
 vi.mock("@/modules/streaming/streaming.route", () => ({ streamingRoutes: new Hono() }));
 vi.mock("@/modules/subtitle/subtitle.route", () => ({ subtitleRoutes: new Hono() }));
-vi.mock("@/modules/activity-log/activity-log.route", () => ({ activityLogRoutes: new Hono() }));
+vi.mock("@/modules/activity/activity.route", () => ({ activityRoutes: new Hono() }));
 vi.mock("@/modules/request/request.route", () => ({ requestRoutes: new Hono() }));
 vi.mock("@/modules/user/user.service", () => ({
   UserService: class {

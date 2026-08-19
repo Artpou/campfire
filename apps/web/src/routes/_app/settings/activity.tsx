@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { redirectIfNotRole } from "@/shared/helpers/role.helper";
 
-import { SettingsActivityTab } from "@/features/settings/components/settings-activity-tab";
+import { SettingsActivityTab } from "@/features/settings/components/settings-activity";
 
 export const Route = createFileRoute("/_app/settings/activity")({
   beforeLoad: ({ context }) => redirectIfNotRole(context, "member", { to: "/settings/general" }),

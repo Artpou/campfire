@@ -10,7 +10,7 @@ import { requestLogger } from "@/shared/middlewares/logger.middleware";
 import { requestTimeout } from "@/shared/middlewares/timeout.middleware";
 
 import { createReadStream, existsSync } from "node:fs";
-import { activityLogRoutes } from "./modules/activity-log/activity-log.route";
+import { activityRoutes } from "./modules/activity/activity.route";
 import { authGuard } from "./modules/auth/auth.guard";
 import { authRoutes } from "./modules/auth/auth.route";
 import { downloadRoutes } from "./modules/download/download.route";
@@ -59,7 +59,7 @@ export const app = new Hono<{ Variables: HonoVariables }>()
   .route("/download-files", localFileRoutes)
   .route("/streaming", streamingRoutes)
   .route("/subtitles", subtitleRoutes)
-  .route("/activity-logs", activityLogRoutes)
+  .route("/activity", activityRoutes)
   .route("/requests", requestRoutes)
   .get("/avatars/:userId", authGuard, async (c) => {
     const userId = c.req.param("userId");

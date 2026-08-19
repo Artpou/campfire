@@ -5,7 +5,6 @@ import { logger } from "@/shared/helpers/logger.helper";
 import { IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { db } from "@/db/db";
-import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import type { IndexerAdapter } from "@/modules/torrent/adapters/indexer.adapter";
 import { JackettAdapter } from "@/modules/torrent/adapters/jackett.adapter";
@@ -93,13 +92,6 @@ export class ModuleIndexerService extends IdentifiableService<IndexerModule> {
     if (!existing[0]) throw new NotFoundError("Indexer module not found");
     await new ModuleService(this.user).delete(id);
     this.adapterCache.delete(id);
-    ActivityLogService.log({
-      userId: this.user.id,
-      type: "INFO",
-      action: "INDEXER_DELETE",
-      title: `Indexer removed: ${existing[0].indexerType}`,
-      metadata: { moduleId: id, indexerType: existing[0].indexerType },
-    });
     return { success: true };
   }
 }

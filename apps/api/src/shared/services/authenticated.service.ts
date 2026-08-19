@@ -39,9 +39,8 @@ export abstract class IdentifiableService<T extends Identifiable> extends Authen
 
   async get(id: string): Promise<T> {
     const result = (await this.getMany({ ids: [id] }))?.[0];
-    if (!result) {
-      throw new NotFoundError("Item not found");
-    }
+    if (!result) throw new NotFoundError("Item not found");
+
     return result;
   }
 

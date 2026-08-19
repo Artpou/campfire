@@ -28,6 +28,8 @@ interface DropSelectProps<T extends string> {
   options: DropSelectOption<T>[];
   triggerClassName?: string;
   label?: ReactNode;
+  /** Always use DropDrawer, including on desktop. */
+  forceDrawer?: boolean;
 }
 
 export function DropSelect<T extends string>({
@@ -36,11 +38,12 @@ export function DropSelect<T extends string>({
   options,
   triggerClassName,
   label,
+  forceDrawer = false,
 }: DropSelectProps<T>) {
   const isMobile = useIsMobile();
   const selected = options.find((option) => option.value === value);
 
-  if (!isMobile) {
+  if (!isMobile && !forceDrawer) {
     return (
       <Select value={value} onValueChange={(next) => onValueChange(next as T)}>
         <SelectTrigger className={cn(triggerClassName)}>

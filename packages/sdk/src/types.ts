@@ -2,7 +2,7 @@ import type { InferResponseType } from "hono";
 
 import type { ApiClient } from "./client";
 
-type ActivityLogsListResponse = InferResponseType<ApiClient["activity-logs"]["$get"], 200>;
+type ActivityListResponse = InferResponseType<ApiClient["activity"]["$get"], 200>;
 type TorrentListResponse = InferResponseType<ApiClient["torrents"]["list"]["$post"], 200>;
 type IndexerManagerListResponse = InferResponseType<ApiClient["modules"]["indexers"]["$get"], 200>;
 
@@ -14,7 +14,7 @@ export type User = InferResponseType<ApiClient["users"][":id"]["$get"], 200>;
 export type AuthUser = InferResponseType<ApiClient["auth"]["me"]["$get"], 200>;
 export type Download = InferResponseType<ApiClient["downloads"][":id"]["$get"], 200>;
 export type DownloadStats = InferResponseType<ApiClient["downloads"]["stats"]["$get"], 200>;
-export type ActivityLog = ActivityLogsListResponse["results"][number];
+export type Activity = ActivityListResponse["results"][number];
 export type Torrent = TorrentListResponse[number];
 export type TorrentInspectResult = InferResponseType<ApiClient["torrents"]["inspect"]["$get"], 200>;
 export type SubdlSearchResponse = InferResponseType<ApiClient["subtitles"]["search"]["$get"], 200>;

@@ -1,25 +1,27 @@
 ---
 title: Activity
-description: Audit log of logins, downloads, transfers, and other instance events.
+description: Audit log of logins, downloads, modules, and other instance events.
 ---
 
-Open **Settings → Activity** (admin) to review what happened on the instance.
+Open **Settings → Activity** (admin or member) to review what happened on the instance. Members only see their own events.
 
 ## What is logged
 
-Activity entries typically include:
+Each event has a type (**success**, **warning**, or **error**), an action, optional media or module, metadata (never passwords or API keys), a timestamp, and the user when relevant.
 
-- User logins
-- Download start / completion / errors
-- Remote transfer success or failure
-- Other operational events (info, success, warning, error)
+Typical actions:
 
-Each row has a type, action, title, optional metadata, timestamp, and associated user when relevant.
+- **User** — login, logout, create, modify, delete
+- **Download** — start, complete, delete, remote transfer
+- **Module** — enable, disable, modify, remote sync
+- **Others** — watch a title, unexpected system errors
+
+Click a media poster to open that title, or a module logo to open its configuration.
 
 ## How to use it
 
-- Filter or scroll to diagnose failed transfers or download errors.
-- Confirm that a household member’s download or request-related action ran as expected.
-- Correlate timestamps with disk/network issues on the host.
+- Filter by category (user / download / module / others) and by type.
+- Diagnose failed transfers or download errors from the metadata panel.
+- Confirm that a household member’s download or module change ran as expected.
 
-Activity is an operational log for admins — it is not a full analytics dashboard. For live download speed and peers, use the **Downloads** page instead.
+Activity is an operational log — not a full analytics dashboard. For live download speed and peers, use the **Downloads** page instead.

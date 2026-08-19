@@ -19,6 +19,10 @@ const badgeVariants = cva(
         "destructive-outline": "border-destructive bg-destructive/10 text-destructive [a&]:hover:bg-destructive/20",
         "success-outline": "border-success bg-success/10 text-success [a&]:hover:bg-success/20",
         "warning-outline": "border-warning bg-warning/10 text-warning [a&]:hover:bg-warning/20",
+        "primary-outline": "border-primary bg-primary/10 text-primary [a&]:hover:bg-primary/20",
+        "red-outline": "border-red bg-red/10 text-red [a&]:hover:bg-red/20",
+        "purple-outline": "border-purple bg-purple/10 text-purple [a&]:hover:bg-purple/20",
+        "blue-outline": "border-blue bg-blue/10 text-blue [a&]:hover:bg-blue/20",
       },
       size: {
         default: "text-xs",

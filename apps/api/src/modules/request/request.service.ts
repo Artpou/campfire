@@ -8,7 +8,7 @@ import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
 import { db } from "@/db/db";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
-import { type MediaInsert, media } from "@/modules/media/media.schema";
+import { media } from "@/modules/media/media.schema";
 import { mediaRequest } from "./request.schema";
 
 export interface RequestWithUser {
@@ -35,10 +35,7 @@ export class RequestService extends AuthenticatedService {
 
     const existingMedia = await db.query.media.findFirst({ where: eq(media.id, input.id) });
     if (!existingMedia) {
-      await db
-        .insert(media)
-        .values(input as MediaInsert)
-        .onConflictDoUpdate({ target: media.id, set: input as MediaInsert });
+      await db.insert(media).values(input).onConflictDoUpdate({ target: media.id, set: input });
     }
 
     const existing = await db.query.mediaRequest.findFirst({

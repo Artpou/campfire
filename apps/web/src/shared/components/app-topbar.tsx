@@ -47,9 +47,9 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full transition-all duration-200",
+        "sticky top-0 z-50 w-full h-14 transition-all duration-200",
         isScrolled
-          ? "bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80"
+          ? "bg-background/80 backdrop-blur-md border-b border-border"
           : "bg-linear-to-b from-background/90 to-transparent",
       )}
     >

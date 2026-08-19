@@ -60,10 +60,6 @@ vi.mock("@/modules/tmdb/tmdb-resolve.helper", () => ({
   tmdbItemToMediaInsert,
 }));
 
-vi.mock("@/modules/activity-log/activity-log.service", () => ({
-  ActivityLogService: { log: vi.fn() },
-}));
-
 const { runManualSync, runRemoteSync } = await import("./remote-sync.service");
 
 describe("remote-sync.service", () => {

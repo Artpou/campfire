@@ -52,8 +52,12 @@ vi.mock("@/modules/streaming/streaming.service", () => ({
   invalidateStreamSource: vi.fn(),
 }));
 
-vi.mock("@/modules/activity-log/activity-log.service", () => ({
-  ActivityLogService: { log: vi.fn() },
+vi.mock("@/modules/activity/activity.service", () => ({
+  ActivityService: class {
+    log = vi.fn();
+  },
+  activityFor: () => ({ log: vi.fn() }),
+  trackRoute: async (_c: unknown, _input: unknown, fn: () => unknown) => fn(),
 }));
 
 const { isTransferInProgress, markTransferStarting, runRemoteTransfer } = await import("./remote-transfer.helper");

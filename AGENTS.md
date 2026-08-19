@@ -32,11 +32,15 @@ Download
  ├── remoteLocation (optional — remote storage path)
  └── error: string | null
 
-ActivityLog
+Activity
  ├── userId FK → User
- ├── type: INFO | SUCCESS | WARNING | ERROR
- ├── action: USER_LOGIN | DOWNLOAD_START | ...
- ├── title, metadata (JSON)
+ ├── mediaId FK → Media (optional)
+ ├── moduleId FK → Module (optional)
+ ├── type: SUCCESS | WARNING | ERROR
+ ├── action: USER_LOGIN | USER_CREATE | USER_LOGOUT | USER_DELETE | USER_MODIFY
+ │          | DOWNLOAD_START | DOWNLOAD_DELETE | DOWNLOAD_COMPLETE | DOWNLOAD_TRANSFERRED
+ │          | ADDON_ENABLE | ADDON_DISABLE | ADDON_MODIFY | REMOTE_SYNC | MEDIA_WATCH | SYSTEM_ERROR
+ ├── metadata (JSON — never secrets)
  └── createdAt
 
 MediaRequest
@@ -191,11 +195,13 @@ AuthenticatedService        → user in context, createRouter() factory
 ├── IdentifiableService<T>  → get/getMany/list with pagination
 │   ├── DownloadService, MediaService, UserService, ModuleService
 │   └── TMDBService<S>      → MovieService, TVService (createTMDBRouter)
-├── ActivityLogService
+├── ActivityService
 └── TorrentService, SubtitleService
 ```
 
 `createRouter()` applies `authGuard` + injects `c.var.service` automatically.
+
+Wrap mutating routes with `trackRoute(c, { action, mediaId?, moduleId?, metadata? }, () => service.fn())`. It infers `userId` from the session, logs SUCCESS, or WARNING/ERROR on thrown HTTP exceptions (then rethrows). Never put secrets in metadata (`password`, `apiKey`, `magnetUri`, tokens). Background jobs without a Hono context use `activityFor(userId).log(...)`.
 
 ### DTO Pattern
 

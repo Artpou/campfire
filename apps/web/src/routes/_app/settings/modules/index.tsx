@@ -3,8 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { redirectIfNotRole } from "@/shared/helpers/role.helper";
 
 import { parseModuleFilter } from "@/features/module/components/module-tabs-filter";
-import { SettingsModulesTab } from "@/features/module/components/settings-modules-tab";
 import type { ModuleListFilter } from "@/features/module/helpers/module-list.helper";
+import { SettingsModules } from "@/features/settings/components/settings-modules";
 
 export type ModulesSearch = {
   tab?: Exclude<ModuleListFilter, "all">;
@@ -30,7 +30,7 @@ function SettingsModulesPage() {
   const q = search.q ?? "";
 
   return (
-    <SettingsModulesTab
+    <SettingsModules
       filter={filter}
       search={q}
       onFilterChange={(next) => navigate({ search: (prev) => ({ ...prev, tab: next === "all" ? undefined : next }) })}

@@ -16,7 +16,12 @@ export function UserProfile({ user, size = "md", className }: UserProfileProps) 
   const avatarUser = { ...user, avatarPath: user.avatarPath ?? null };
 
   return (
-    <Link to="/user/$id" params={{ id: user.id }} className={cn("hover:opacity-80 transition-opacity", className)}>
+    <Link
+      to="/user/$id"
+      params={{ id: user.id }}
+      className={cn("hover:opacity-80 transition-opacity", className)}
+      onClick={(e) => e.stopPropagation()}
+    >
       <div className={cn("flex items-center gap-2", size === "xs" && "gap-1.5", className)}>
         <UserAvatar user={avatarUser} size={size === "md" ? "sm" : "xs"} />
         <span

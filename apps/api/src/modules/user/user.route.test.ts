@@ -51,6 +51,12 @@ describe("User Routes", () => {
       const body = await bodyOf(await userRoutes.request("/"));
       expect(body).toHaveLength(3);
     });
+
+    it("filters users by search", async () => {
+      const body = await bodyOf(await userRoutes.request("/?q=member"));
+      expect(body).toHaveLength(1);
+      expect(body[0].username).toBe("member1");
+    });
   });
 
   describe("POST / - create user", () => {

@@ -12,6 +12,7 @@ import {
 import { NotFoundError } from "@/shared/errors/error";
 import { downloadStartRateLimiter } from "@/shared/middlewares/rate-limiter.middleware";
 
+import { trackRoute } from "@/modules/activity/activity.service";
 import { requireRole } from "@/modules/auth/role.guard";
 import { requireDownloadExists, requireDownloadOwner } from "./download.guard";
 import { DownloadService } from "./download.service";
@@ -49,7 +50,17 @@ export const downloadRoutes = DownloadService.createRouter()
     return c.json(download);
   })
   .post("/", requireRole("member"), downloadStartRateLimiter, zValidator("json", downloadTorrentDto), async (c) => {
-    const result = await c.var.service.start(c.req.valid("json"));
+    const body = c.req.valid("json");
+    const result = await trackRoute(
+      c,
+      {
+        action: "DOWNLOAD_START",
+        mediaId: body.media.id,
+        moduleId: body.moduleIndexerId,
+        metadata: { name: body.name, quality: body.quality, language: body.language, origin: body.origin },
+      },
+      () => c.var.service.start(body),
+    );
     if ("status" in result && result.status === "REMOTE_UNAVAILABLE") {
       return c.json({ status: "REMOTE_UNAVAILABLE", error: "Remote storage server is unavailable" }, 409);
     }
@@ -106,8 +117,16 @@ export const downloadRoutes = DownloadService.createRouter()
   )
   .post("/batch-delete", requireRole("admin"), zValidator("json", batchDeleteDownloadsDto), async (c) => {
     const { ids, dbOnly } = c.req.valid("json");
-    const results = await c.var.service.batchDelete(ids, { dbOnly });
-    return c.json(results);
+    return c.json(
+      await trackRoute(
+        c,
+        {
+          action: "DOWNLOAD_DELETE",
+          metadata: { ids, dbOnly: Boolean(dbOnly) },
+        },
+        () => c.var.service.batchDelete(ids, { dbOnly }),
+      ),
+    );
   })
   .delete(
     "/:id",
@@ -120,6 +139,18 @@ export const downloadRoutes = DownloadService.createRouter()
       const dbOnly = query.dbOnly === "true";
       const scope = query.scope ?? "all";
       const unlink = query.unlink === "true";
-      return c.json(await c.var.service.delete(getDownloadId(c), { dbOnly, scope, unlink }));
+      const id = getDownloadId(c);
+      const item = await c.var.service.get(id);
+      return c.json(
+        await trackRoute(
+          c,
+          {
+            action: "DOWNLOAD_DELETE",
+            mediaId: item.mediaId,
+            metadata: { downloadId: id, dbOnly, scope, unlink, name: item.torrent?.name },
+          },
+          () => c.var.service.delete(id, { dbOnly, scope, unlink }),
+        ),
+      );
     },
   );

@@ -2,6 +2,11 @@ import { z } from "zod";
 
 import { mediaTypeEnum, userRoleEnum } from "./enums";
 
+export const listUsersDto = z.object({
+  q: z.string().max(128).optional(),
+});
+export type ListUsersQuery = z.infer<typeof listUsersDto>;
+
 export const createUserDto = z.object({
   username: z.string().min(3).max(64),
   password: z.string().min(8).max(128),

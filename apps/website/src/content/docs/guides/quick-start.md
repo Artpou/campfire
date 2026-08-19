@@ -27,6 +27,7 @@ docker compose pull && docker compose up -d
 ```bash
 git clone https://github.com/Artpou/seedarr.git
 cd seedarr
+cp .env.example .env
 pnpm install
 pnpm db:push
 pnpm dev

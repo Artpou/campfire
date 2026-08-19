@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
@@ -17,6 +17,7 @@ import {
 import { SettingsIcon, SparklesIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { SentinelStuck, StickyFilterBar } from "@/shared/components/sentinel/sentinel-stuck";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { DataTable } from "@/shared/ui/data-table";
@@ -76,16 +77,17 @@ function ModuleInfoBadges({ item }: { item: ModuleListItem }) {
   );
 }
 
-interface SettingsModulesTabProps {
+interface SettingsModulesProps {
   filter: ModuleListFilter;
   search: string;
   onFilterChange: (filter: ModuleListFilter) => void;
   onSearchChange: (search: string) => void;
 }
 
-export function SettingsModulesTab({ filter, search, onFilterChange, onSearchChange }: SettingsModulesTabProps) {
+export function SettingsModules({ filter, search, onFilterChange, onSearchChange }: SettingsModulesProps) {
   const { t } = useLingui();
   const navigate = useNavigate();
+  const [isStuck, setIsStuck] = useState(false);
   const { data: modules = [] } = useQuery(moduleQueries.list());
   const createMutation = useCreateModule();
   const updateMutation = useUpdateModule();
@@ -229,14 +231,21 @@ export function SettingsModulesTab({ filter, search, onFilterChange, onSearchCha
 
   return (
     <section className="space-y-4">
-      <ModuleTabsFilter value={filter} onChange={onFilterChange} />
+      <SentinelStuck setIsStuck={setIsStuck} marginTop={-30} />
+      <StickyFilterBar isStuck={isStuck}>
+        <div className="flex items-center justify-between gap-2">
+          <ModuleTabsFilter value={filter} onChange={onFilterChange} className="flex-1" />
+        </div>
+      </StickyFilterBar>
 
-      <Input
-        placeholder={t(msg`Search modules…`)}
-        value={search}
-        onChange={(e) => onSearchChange(e.target.value)}
-        search
-      />
+      {!isStuck && (
+        <Input
+          placeholder={t(msg`Search modules…`)}
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          search
+        />
+      )}
 
       <DataTable
         classNameContainer="px-2"

@@ -10,6 +10,7 @@ import { BookmarkIcon, CalendarIcon, ClockIcon, HeartIcon, PencilIcon, SaveIcon 
 
 import { ResponsiveTabs } from "@/shared/components/responsive-tabs";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
+import { SentinelStuck, StickyFilterBar } from "@/shared/components/sentinel/sentinel-stuck";
 import { flattenInfiniteResults, type InfiniteResultsQuery } from "@/shared/hooks/use-infinite-list";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
@@ -85,10 +86,11 @@ function UserProfilePage() {
   const currentUser = useAuth((s) => s.user);
   const isOwnProfile = currentUser?.id === id;
   const updateProfile = useUpdateProfile();
-  const viewMode = useEffectiveViewMode();
+  const viewMode = useEffectiveViewMode("profile");
   const showCategories = useUserPreferences((s) => s.showCategories);
   const [tab, setTab] = useState<ProfileTab>("calendar");
   const [search, setSearch] = useState("");
+  const [isStuck, setIsStuck] = useState(false);
   const [withGenres, setWithGenres] = useState<string | undefined>();
   const [sorting, setSorting] = useState<SortingState>([]);
   const sortQuery = sortingToListQuery(sorting);
@@ -258,44 +260,59 @@ function UserProfilePage() {
 
       {availableTabs.length > 0 && (
         <div className="space-y-4">
-          <div className="flex flex-row items-center gap-2">
-            <MediaTabsViewMode />
-            <ResponsiveTabs
-              className="min-w-0 flex-1"
-              value={tab}
-              onValueChange={(v) => {
-                setSorting([]);
-                setTab(v as ProfileTab);
-              }}
-              options={availableTabs.map(({ value, label, icon }) => ({
-                value,
-                label,
-                icon,
-              }))}
-            />
-            <MediaButtonCategory />
-          </div>
+          <SentinelStuck setIsStuck={setIsStuck} marginTop={-30} />
+          <StickyFilterBar isStuck={isStuck}>
+            <div className="flex flex-row items-center gap-2">
+              <MediaTabsViewMode scope="profile" />
+              <ResponsiveTabs
+                className="min-w-0 flex-1"
+                value={tab}
+                onValueChange={(v) => {
+                  setSorting([]);
+                  setTab(v as ProfileTab);
+                }}
+                options={availableTabs.map(({ value, label, icon }) => ({
+                  value,
+                  label,
+                  icon,
+                }))}
+              />
+              {isStuck && (
+                <Input
+                  type="search"
+                  search
+                  classNameWrapper="hidden lg:block w-full"
+                  h="lg"
+                  placeholder={t`Search in my profile...`}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              )}
+              {!isStuck && <MediaButtonCategory />}
+            </div>
+            {showCategories && !isStuck && (
+              <MediaCarouselCategory
+                type="movie"
+                valueMode="name"
+                value={withGenres}
+                onValueChange={(value) => {
+                  setSorting([]);
+                  setWithGenres(value);
+                }}
+              />
+            )}
+          </StickyFilterBar>
 
-          {showCategories && (
-            <MediaCarouselCategory
-              type="movie"
-              valueMode="name"
-              value={withGenres}
-              onValueChange={(value) => {
-                setSorting([]);
-                setWithGenres(value);
-              }}
+          {!isStuck && (
+            <Input
+              type="text"
+              search
+              className="w-full"
+              placeholder={t`Search in my profile...`}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
           )}
-
-          <Input
-            type="text"
-            search
-            className="w-full"
-            placeholder={t`Search in my profile...`}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
 
           {activeQuery.isLoading ? (
             <SeedarrLoader />

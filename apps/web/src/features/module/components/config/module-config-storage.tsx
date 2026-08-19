@@ -18,6 +18,7 @@ type StorageForm = {
   tvPath: string;
   autoTransfer: boolean;
   deleteLocalAfterTransfer: boolean;
+  diskQuotaGb: number | "";
 };
 
 export function ModuleConfigStorage({ mod }: { mod: Module }) {
@@ -35,6 +36,7 @@ export function ModuleConfigStorage({ mod }: { mod: Module }) {
       tvPath: typeof config.tvPath === "string" ? config.tvPath : "",
       autoTransfer: config.autoTransfer === true,
       deleteLocalAfterTransfer: config.deleteLocalAfterTransfer === true,
+      diskQuotaGb: typeof config.diskQuotaGb === "number" ? config.diskQuotaGb : "",
     },
   });
 
@@ -61,6 +63,21 @@ export function ModuleConfigStorage({ mod }: { mod: Module }) {
       </div>
       <Input label={<Trans>Movie path</Trans>} {...register("moviePath")} />
       <Input label={<Trans>TV path</Trans>} {...register("tvPath")} />
+      {mod.type === "ftp" && (
+        <Input
+          label={<Trans>Disk quota (GB)</Trans>}
+          type="number"
+          min={1}
+          placeholder="∞"
+          {...register("diskQuotaGb", {
+            setValueAs: (value) => {
+              if (value === "" || value == null) return "";
+              const n = Number(value);
+              return Number.isFinite(n) && n > 0 ? n : "";
+            },
+          })}
+        />
+      )}
       <Controller
         control={control}
         name="autoTransfer"

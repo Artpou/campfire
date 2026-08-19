@@ -168,6 +168,11 @@ export function buildModulePatchConfig(
       if (typeof values.deleteLocalAfterTransfer === "boolean") {
         config.deleteLocalAfterTransfer = values.deleteLocalAfterTransfer;
       }
+      if (typeof values.diskQuotaGb === "number" && Number.isFinite(values.diskQuotaGb) && values.diskQuotaGb > 0) {
+        config.diskQuotaGb = Math.trunc(values.diskQuotaGb);
+      } else {
+        config.diskQuotaGb = undefined;
+      }
       break;
     }
     default:

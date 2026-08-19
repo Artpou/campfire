@@ -34,11 +34,13 @@ export function parseModuleFilter(value: unknown): ModuleListFilter {
 interface ModuleTabsFilterProps {
   value: ModuleListFilter;
   onChange: (value: ModuleListFilter) => void;
+  className?: string;
 }
 
-export function ModuleTabsFilter({ value, onChange }: ModuleTabsFilterProps) {
+export function ModuleTabsFilter({ value, onChange, className }: ModuleTabsFilterProps) {
   return (
     <ResponsiveTabs
+      className={className}
       value={value}
       onValueChange={(v) => onChange(v as ModuleListFilter)}
       options={FILTERS.map((f) => ({ value: f.id, label: f.label, icon: f.icon }))}

@@ -23,8 +23,10 @@ function readFrontendIndex(): string | null {
 }
 
 /** Browser page loads (reload / typed URL), not XHR/fetch from the SPA. */
-function isSpaDocumentRequest(method: string, headers: Headers): boolean {
+function isSpaDocumentRequest(method: string, pathname: string, headers: Headers): boolean {
   if (method !== "GET") return false;
+  // `/modules/subdl.webp` must not be treated as a client route — it collides with API `/modules/:id`.
+  if (path.extname(pathname)) return false;
   if (headers.get("Sec-Fetch-Dest") === "document") return true;
   const accept = headers.get("Accept") ?? "";
   return accept.startsWith("text/html");
@@ -33,7 +35,8 @@ function isSpaDocumentRequest(method: string, headers: Headers): boolean {
 function createProductionApp(): Hono {
   return new Hono()
     .use("*", async (c, next) => {
-      if (!isSpaDocumentRequest(c.req.method, c.req.raw.headers)) {
+      const pathname = new URL(c.req.url).pathname;
+      if (!isSpaDocumentRequest(c.req.method, pathname, c.req.raw.headers)) {
         await next();
         return;
       }
@@ -41,12 +44,11 @@ function createProductionApp(): Hono {
       if (!html) return c.json({ error: "Frontend not found" }, 404);
       return c.html(html);
     })
-    .route("/", app)
     .use(
       "*",
       serveStatic({
         root: WEB_DIST_PATH,
-        // Vite emits content-hashed filenames under /assets — safe to cache forever.
+        // Serve hashed Vite assets and public files (module logos, favicon) before API routes.
         onFound: (filePath, c) => {
           if (filePath.includes(`${path.sep}assets${path.sep}`) || filePath.includes("/assets/")) {
             c.header("Cache-Control", "public, max-age=31536000, immutable");
@@ -54,6 +56,7 @@ function createProductionApp(): Hono {
         },
       }),
     )
+    .route("/", app)
     .get("*", async (c) => {
       const html = readFrontendIndex();
       if (!html) return c.json({ error: "Frontend not found" }, 404);

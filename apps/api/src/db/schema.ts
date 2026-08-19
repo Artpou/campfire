@@ -1,4 +1,4 @@
-import * as activityLogSchema from "@/modules/activity-log/activity-log.schema";
+import * as activityLogSchema from "@/modules/activity/activity.schema";
 import * as authSchema from "@/modules/auth/auth.schema";
 import * as downloadSchema from "@/modules/download/download.schema";
 import * as mediaSchema from "@/modules/media/media.schema";

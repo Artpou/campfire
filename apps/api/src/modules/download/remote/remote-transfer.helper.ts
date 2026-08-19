@@ -5,7 +5,7 @@ import { logger } from "@/shared/helpers/logger.helper";
 import { resolveWithinDownloads } from "@/shared/helpers/path.helper";
 
 import { db } from "@/db/db";
-import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
+import { activityFor } from "@/modules/activity/activity.service";
 import { download } from "@/modules/download/download.schema";
 import { getEnabledStorageModuleId } from "@/modules/download/download-storage.helper";
 import { media } from "@/modules/media/media.schema";
@@ -177,12 +177,11 @@ export async function runRemoteTransfer(
       logger.info("TRANSFER", `Kept local files after transfer: ${torrentName}`);
     }
 
-    ActivityLogService.log({
-      userId,
-      type: "SUCCESS",
+    await activityFor(userId).log({
       action: "DOWNLOAD_TRANSFERRED",
-      title: `Download transferred to remote: ${torrentName}`,
-      metadata: { downloadId, remotePath },
+      mediaId: dl.mediaId,
+      moduleId: dl.moduleStorageId,
+      metadata: { downloadId, remotePath, name: torrentName },
     });
   } catch (error) {
     const message = formatError(error);
@@ -203,12 +202,12 @@ export async function runRemoteTransfer(
         .where(eq(download.id, downloadId));
     }
 
-    ActivityLogService.log({
-      userId: dl?.userId,
-      type: "ERROR",
+    await activityFor(dl?.userId).log({
       action: "DOWNLOAD_TRANSFERRED",
-      title: `Remote transfer failed: ${dl?.torrent?.name ?? downloadId}`,
-      metadata: { downloadId, error: message },
+      type: "ERROR",
+      mediaId: dl?.mediaId,
+      moduleId: dl?.moduleStorageId,
+      metadata: { downloadId, error: message, name: dl?.torrent?.name },
     });
 
     throw error;

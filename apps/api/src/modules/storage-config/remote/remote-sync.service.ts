@@ -7,7 +7,6 @@ import { BadRequestError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
 
 import { db } from "@/db/db";
-import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { download } from "@/modules/download/download.schema";
 import { getEnabledStorageModuleId } from "@/modules/download/download-storage.helper";
 import { media } from "@/modules/media/media.schema";
@@ -295,14 +294,6 @@ export async function runRemoteSync(userId: string): Promise<RemoteSyncResponse>
     if (i + BATCH_SIZE < uniqueEntries.length) await sleep(BATCH_DELAY_MS);
   }
 
-  ActivityLogService.log({
-    userId,
-    type: errors.length > 0 ? "WARNING" : "SUCCESS",
-    action: "REMOTE_SYNC",
-    title: `Remote sync completed: ${synced} synced, ${skipped} skipped, ${errors.length} errors`,
-    metadata: { synced, skipped, errors },
-  });
-
   logger.info("REMOTE_SYNC", `Completed: ${synced} synced, ${skipped} skipped, ${errors.length} errors`);
   return { synced, skipped, errors };
 }
@@ -455,14 +446,6 @@ export async function runManualSync(userId: string, input: ManualSyncInput): Pro
       torrent: null,
     });
   }
-
-  ActivityLogService.log({
-    userId,
-    type: "SUCCESS",
-    action: "REMOTE_SYNC",
-    title: `Manual sync: ${mediaInsert.title}`,
-    metadata: { mediaId: input.mediaId, remotePath: input.remotePath },
-  });
 
   return { success: true };
 }

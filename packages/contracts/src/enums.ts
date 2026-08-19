@@ -29,24 +29,27 @@ export type TorrentStatus = (typeof torrentStatusEnum)[number];
 export const storageProtocolEnum = ["ftp", "webdav"] as const;
 export type StorageProtocol = (typeof storageProtocolEnum)[number];
 
-export const activityLogTypeEnum = ["INFO", "SUCCESS", "WARNING", "ERROR"] as const;
-export type ActivityLogType = (typeof activityLogTypeEnum)[number];
+export const activityTypeEnum = ["SUCCESS", "WARNING", "ERROR"] as const;
+export type ActivityType = (typeof activityTypeEnum)[number];
 
-export const activityLogActionEnum = [
+export const activityActionEnum = [
   "USER_LOGIN",
   "USER_CREATE",
   "USER_LOGOUT",
-  "MEDIA_SEARCH",
-  "STREAM_START",
+  "USER_DELETE",
+  "USER_MODIFY",
   "DOWNLOAD_START",
-  "DOWNLOAD_PAUSE",
-  "DOWNLOAD_RESUME",
   "DOWNLOAD_DELETE",
   "DOWNLOAD_COMPLETE",
   "DOWNLOAD_TRANSFERRED",
-  "INDEXER_ADD",
-  "INDEXER_DELETE",
   "REMOTE_SYNC",
+  "ADDON_ENABLE",
+  "ADDON_DISABLE",
+  "ADDON_MODIFY",
+  "MEDIA_WATCH",
   "SYSTEM_ERROR",
 ] as const;
-export type ActivityLogAction = (typeof activityLogActionEnum)[number];
+export type ActivityAction = (typeof activityActionEnum)[number];
+
+export const activityCategoryEnum = ["user", "download", "module", "others"] as const;
+export type ActivityCategory = (typeof activityCategoryEnum)[number];

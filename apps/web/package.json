@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev --port 3000",
-    "build": "lingui compile && vite build",
+    "build": "lingui extract && lingui compile && vite build",
     "serve": "vite preview",
     "lint": "biome check .",
     "lint:fix": "biome check --write --unsafe .",

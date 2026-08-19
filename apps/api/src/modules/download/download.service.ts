@@ -8,7 +8,6 @@ import { paginate } from "@/shared/helpers/pagination.helper";
 import { IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { db } from "@/db/db";
-import { ActivityLogService } from "@/modules/activity-log/activity-log.service";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import { type Download, type DownloadStats, download } from "@/modules/download/download.schema";
 import { type DownloadableFile, getDownloadableFile } from "@/modules/download/local/local-file.helper";
@@ -61,7 +60,7 @@ export class DownloadService extends IdentifiableService<Download> {
   }
 
   private async requireDownload(id: string): Promise<Download> {
-    const [item] = await this.findMany({ ids: [id] });
+    const [item] = await this.getMany({ ids: [id] });
     if (!item) throw new NotFoundError("Download");
     return item;
   }
@@ -198,14 +197,6 @@ export class DownloadService extends IdentifiableService<Download> {
 
       logger.info("DOWNLOAD", `Started in background: ${input.name || torrent.infoHash}`);
 
-      ActivityLogService.log({
-        userId: this.user.id,
-        type: "SUCCESS",
-        action: "DOWNLOAD_START",
-        title: `Download started: ${input.name || "Torrent"}`,
-        metadata: { downloadId: newDownload.id, mediaId: newMedia.id, magnetUri: input.magnetUri, preferLocal },
-      });
-
       return newDownload;
     } catch (error) {
       try {
@@ -278,17 +269,9 @@ export class DownloadService extends IdentifiableService<Download> {
   }
 
   async reassignMedia(id: string, newMediaId: number): Promise<{ success: true }> {
-    const item = await this.requireDownload(id);
+    await this.requireDownload(id);
 
     await db.update(download).set({ mediaId: newMediaId }).where(eq(download.id, id));
-
-    ActivityLogService.log({
-      userId: this.user.id,
-      type: "INFO",
-      action: "REMOTE_SYNC",
-      title: `Download reassigned to media ${newMediaId}`,
-      metadata: { downloadId: id, previousMediaId: item.mediaId, newMediaId },
-    });
 
     return { success: true };
   }
@@ -339,14 +322,6 @@ export class DownloadService extends IdentifiableService<Download> {
       await db.delete(watchProgress).where(eq(watchProgress.downloadId, id));
       await db.delete(download).where(eq(download.id, id));
 
-      ActivityLogService.log({
-        userId: this.user.id,
-        type: "INFO",
-        action: "DOWNLOAD_DELETE",
-        title: `Download deleted (DB only): ${item.torrent?.name || id}`,
-        metadata: { downloadId: id, dbOnly: true },
-      });
-
       return { success: true };
     }
 
@@ -370,15 +345,6 @@ export class DownloadService extends IdentifiableService<Download> {
     } else if (scope === "remote") {
       await db.update(download).set({ remoteLocation: null }).where(eq(download.id, id));
     }
-
-    const label = options?.unlink ? "unlinked" : "deleted";
-    ActivityLogService.log({
-      userId: this.user.id,
-      type: "INFO",
-      action: "DOWNLOAD_DELETE",
-      title: `Download ${label} (${scope}): ${item.torrent?.name || id}`,
-      metadata: { downloadId: id, scope, unlink: options?.unlink },
-    });
 
     return { success: true };
   }

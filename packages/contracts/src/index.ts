@@ -1,6 +1,6 @@
 export type { Language, Resolution, Source } from "@ctrl/video-filename-parser";
 
-export * from "./activity-log.dto";
+export * from "./activity.dto";
 export * from "./auth.dto";
 export * from "./download.dto";
 export * from "./enums";
