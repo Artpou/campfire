@@ -2,25 +2,26 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { module } from "@/modules/module/module.schema";
-import { createAuthGuardMock, seedTestUser } from "@/tests/route-test.helper";
-import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
+import {
+  bodyOf,
+  createAuthGuardMock,
+  createTestDb,
+  json,
+  seedTestUser,
+  type TestDb,
+  testDbRef,
+} from "@/tests/test.helper";
 
-const { fakeUser, testDbRef } = vi.hoisted(() => {
+const { fakeUser } = vi.hoisted(() => {
   const fakeUser = {
     id: "admin-1",
     username: "admin",
     role: "admin" as const,
     createdAt: new Date("2024-01-01"),
   };
-  const testDbRef = { current: null as TestDb | null };
-  return { fakeUser, testDbRef };
+  return { fakeUser };
 });
 
-vi.mock("@/db/db", () => ({
-  get db() {
-    return testDbRef.current;
-  },
-}));
 vi.mock("@/modules/auth/auth.guard", () => ({
   authGuard: createAuthGuardMock(fakeUser),
 }));
@@ -73,7 +74,7 @@ describe("Module Routes", () => {
 
   it("GET /:id returns module for admin with api key when configured", async () => {
     testDbRef.current
-      ?.update(module)
+      .update(module)
       .set({ config: { apiKey: "test-tmdb-key" } })
       .where(eq(module.id, "tmdb-default"))
       .run();
@@ -84,7 +85,7 @@ describe("Module Routes", () => {
 
   it("PATCH /:id clears TMDB api key override when empty string sent", async () => {
     testDbRef.current
-      ?.update(module)
+      .update(module)
       .set({ config: { apiKey: "old-key" } })
       .where(eq(module.id, "tmdb-default"))
       .run();

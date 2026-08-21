@@ -1,17 +1,15 @@
 import { buildOrganizedRemotePath, extractYearFromDate, formatError, parseSeasonEpisode } from "@seedarr/shared";
-import { eq } from "drizzle-orm";
 
 import { logger } from "@/shared/helpers/logger.helper";
 import { resolveWithinDownloads } from "@/shared/helpers/path.helper";
 
-import { db } from "@/db/db";
 import { activityFor } from "@/modules/activity/activity.service";
-import { download } from "@/modules/download/download.schema";
-import { getEnabledStorageModuleId } from "@/modules/download/download-storage.helper";
-import { media } from "@/modules/media/media.schema";
+import { downloadRepository } from "@/modules/download/download.repository";
+import { mediaRepository } from "@/modules/media/media.repository";
+import { moduleRepository } from "@/modules/module/module.repository";
 import { remoteStorageService } from "@/modules/storage-config/remote/remote-storage.service";
+import { waitUntilNoStreams } from "@/modules/streaming/lease/streaming-lease";
 import { invalidateStreamSource } from "@/modules/streaming/streaming.service";
-import { waitUntilNoStreams } from "@/modules/streaming/streaming-lease";
 import fs from "node:fs/promises";
 import { torrentClient, UNMARK_DESTROYING_DELAY_MS } from "../webtorrent/webtorrent-manager";
 
@@ -23,7 +21,7 @@ export function isTransferInProgress(downloadId: string): boolean {
 
 async function resolveMediaRow(mediaId: number | null | undefined) {
   if (!mediaId) return null;
-  return (await db.query.media.findFirst({ where: eq(media.id, mediaId) })) ?? null;
+  return (await mediaRepository.find(mediaId)) ?? null;
 }
 
 async function resolveOrganizedTransferPath(dl: {
@@ -67,20 +65,17 @@ function unloadTorrentSession(downloadId: string): void {
 
 /** Mark transfer started in DB so the UI can poll immediately (auto + manual). */
 export async function markTransferStarting(downloadId: string): Promise<void> {
-  const dl = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
+  const dl = await downloadRepository.find(downloadId);
   if (!dl?.torrent) return;
 
-  await db
-    .update(download)
-    .set({
-      torrent: {
-        ...dl.torrent,
-        transferring: true,
-        transferProgress: 0,
-      },
-      error: null,
-    })
-    .where(eq(download.id, downloadId));
+  await downloadRepository.update(downloadId, {
+    torrent: {
+      ...dl.torrent,
+      transferring: true,
+      transferProgress: 0,
+    },
+    error: null,
+  });
 }
 
 export async function runRemoteTransfer(
@@ -94,7 +89,7 @@ export async function runRemoteTransfer(
   activeTransfers.add(downloadId);
 
   try {
-    const dl = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
+    const dl = await downloadRepository.find(downloadId);
     if (!dl?.torrent?.name) throw new Error("Download not found or has no torrent name");
     if (!dl.torrent.done) throw new Error("Download is not complete");
 
@@ -102,7 +97,7 @@ export async function runRemoteTransfer(
     const localPath = resolveWithinDownloads(torrentName);
     const userId = dl.userId;
     const remotePath = await resolveOrganizedTransferPath(dl);
-    const storageModuleId = await getEnabledStorageModuleId();
+    const storageModuleId = await moduleRepository.getEnabledStorageModuleId();
 
     if (!dl.torrent.transferring) {
       await markTransferStarting(downloadId);
@@ -120,7 +115,7 @@ export async function runRemoteTransfer(
     let lastProgressBytes = 0;
 
     await remoteStorageService.transferDirectory(localPath, remotePath, async (progress) => {
-      const current = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
+      const current = await downloadRepository.find(downloadId);
       if (!current?.torrent) return;
 
       const now = Date.now();
@@ -130,34 +125,28 @@ export async function runRemoteTransfer(
       lastProgressAt = now;
       lastProgressBytes = currentBytes;
 
-      await db
-        .update(download)
-        .set({
-          torrent: {
-            ...current.torrent,
-            transferring: true,
-            transferProgress: progress,
-            transferSpeed: Math.max(0, Math.round(speed)),
-          },
-        })
-        .where(eq(download.id, downloadId));
+      await downloadRepository.update(downloadId, {
+        torrent: {
+          ...current.torrent,
+          transferring: true,
+          transferProgress: progress,
+          transferSpeed: Math.max(0, Math.round(speed)),
+        },
+      });
     });
 
-    const after = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
+    const after = await downloadRepository.find(downloadId);
     if (after?.torrent) {
-      await db
-        .update(download)
-        .set({
-          torrent: {
-            ...after.torrent,
-            transferring: false,
-            transferProgress: 1,
-          },
-          remoteLocation: remotePath,
-          moduleStorageId: storageModuleId,
-          error: null,
-        })
-        .where(eq(download.id, downloadId));
+      await downloadRepository.update(downloadId, {
+        torrent: {
+          ...after.torrent,
+          transferring: false,
+          transferProgress: 1,
+        },
+        remoteLocation: remotePath,
+        moduleStorageId: storageModuleId,
+        error: null,
+      });
     }
 
     invalidateStreamSource(downloadId);
@@ -171,7 +160,7 @@ export async function runRemoteTransfer(
       unloadTorrentSession(downloadId);
       await fs.rm(localPath, { recursive: true, force: true });
       // Drop torrent metadata — local source is gone; remoteLocation is the source of truth.
-      await db.update(download).set({ torrent: null }).where(eq(download.id, downloadId));
+      await downloadRepository.update(downloadId, { torrent: null });
       logger.info("TRANSFER", `Deleted local files and cleared torrent data: ${torrentName}`);
     } else {
       logger.info("TRANSFER", `Kept local files after transfer: ${torrentName}`);
@@ -187,19 +176,16 @@ export async function runRemoteTransfer(
     const message = formatError(error);
     logger.error("TRANSFER", `Remote transfer failed for "${downloadId}": ${message}`);
 
-    const dl = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
+    const dl = await downloadRepository.find(downloadId);
     if (dl?.torrent) {
-      await db
-        .update(download)
-        .set({
-          torrent: {
-            ...dl.torrent,
-            transferring: false,
-            transferProgress: undefined,
-          },
-          error: `Remote transfer failed: ${message}`,
-        })
-        .where(eq(download.id, downloadId));
+      await downloadRepository.update(downloadId, {
+        torrent: {
+          ...dl.torrent,
+          transferring: false,
+          transferProgress: undefined,
+        },
+        error: `Remote transfer failed: ${message}`,
+      });
     }
 
     await activityFor(dl?.userId).log({

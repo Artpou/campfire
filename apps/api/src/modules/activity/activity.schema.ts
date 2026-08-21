@@ -1,7 +1,7 @@
 import { activityActionEnum, activityTypeEnum } from "@seedarr/contracts";
 import { relations } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { createSelectSchema } from "drizzle-zod";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import type { z } from "zod";
 
 import { media } from "@/modules/media/media.schema";
@@ -43,3 +43,6 @@ export const activityLogRelations = relations(activityLog, ({ one }) => ({
 
 export const activitySelectSchema = createSelectSchema(activityLog);
 export type Activity = z.infer<typeof activitySelectSchema>;
+
+export const activityInsertSchema = createInsertSchema(activityLog);
+export type ActivityInsert = z.infer<typeof activityInsertSchema>;

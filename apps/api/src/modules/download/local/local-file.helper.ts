@@ -1,14 +1,12 @@
 import { formatError, VIDEO_EXTENSIONS } from "@seedarr/shared";
-import { eq } from "drizzle-orm";
 
 import { NotFoundError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
 import { getDownloadFolderName, resolveWithinDownloads } from "@/shared/helpers/path.helper";
 import { findLargestVideoInDirectory } from "@/shared/helpers/video-file.helper";
 
-import { db } from "@/db/db";
+import { downloadRepository } from "@/modules/download/download.repository";
 import type { Download } from "@/modules/download/download.schema";
-import { download } from "@/modules/download/download.schema";
 import { remoteStorageService } from "@/modules/storage-config/remote/remote-storage.service";
 import { isFsNotFoundError, resolveRemoteVideoInfo } from "@/modules/streaming/streaming.helper";
 import fs from "node:fs/promises";
@@ -75,8 +73,7 @@ async function resolveReadableRemoteFile(item: Download): Promise<DownloadableFi
  * Prefers a verified remote file, otherwise a completed local torrent file.
  */
 export async function getDownloadableFile(id: string): Promise<DownloadableFile> {
-  const item = await db.query.download.findFirst({ where: eq(download.id, id) });
-  if (!item) throw new NotFoundError("Download");
+  const item = await downloadRepository.get(id);
 
   const remote = await resolveReadableRemoteFile(item);
   if (remote) return remote;

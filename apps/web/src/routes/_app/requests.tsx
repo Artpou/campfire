@@ -1,14 +1,7 @@
-import { Trans } from "@lingui/react/macro";
 import { hasMinRole, type RequestStatus } from "@seedarr/contracts";
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
-import { flattenInfiniteResults } from "@/shared/hooks/use-infinite-list";
-import { Container } from "@/shared/ui/container";
-
-import { RequestGrid } from "@/features/request/components/request-grid";
-import { RequestTabs } from "@/features/request/components/request-tabs";
-import { requestQueries } from "@/features/request/hooks/request.queries";
+import { RequestsView } from "@/features/request/components/requests-view";
 
 function validateSearch(search: Record<string, unknown>): {
   type: "movie" | "tv" | undefined;
@@ -23,7 +16,7 @@ function validateSearch(search: Record<string, unknown>): {
 }
 
 export const Route = createFileRoute("/_app/requests")({
-  component: RequestsPage,
+  component: RequestsRoute,
   validateSearch,
   beforeLoad: ({ context }) => {
     if (!hasMinRole(context.user?.role, "admin")) {
@@ -32,32 +25,7 @@ export const Route = createFileRoute("/_app/requests")({
   },
 });
 
-function RequestsPage() {
+function RequestsRoute() {
   const { type, status } = Route.useSearch();
-  const navigate = useNavigate();
-
-  const query = useInfiniteQuery(requestQueries.list({ type, status }));
-
-  return (
-    <Container>
-      <div className="space-y-6">
-        <RequestTabs
-          status={status}
-          type={type}
-          onStatusChange={(next) => navigate({ to: "/requests", search: { type, status: next } })}
-          onTypeChange={(next) => navigate({ to: "/requests", search: { status, type: next } })}
-        />
-
-        {!query.isPending && flattenInfiniteResults(query).length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-            <p className="text-lg">
-              <Trans>No requests found.</Trans>
-            </p>
-          </div>
-        ) : (
-          <RequestGrid query={query} />
-        )}
-      </div>
-    </Container>
-  );
+  return <RequestsView type={type} status={status} />;
 }

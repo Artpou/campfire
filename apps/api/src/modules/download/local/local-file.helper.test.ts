@@ -1,21 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { download } from "@/modules/download/download.schema";
-import { seedTestUser } from "@/tests/route-test.helper";
-import { createTestDb, sampleTorrent, type TestDb } from "@/tests/test.helper";
+import { createTestDb, sampleTorrent, seedTestUser, testDbRef } from "@/tests/test.helper";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-
-const { testDbRef } = vi.hoisted(() => ({
-  testDbRef: { current: null as TestDb | null },
-}));
-
-vi.mock("@/db/db", () => ({
-  get db() {
-    return testDbRef.current;
-  },
-}));
 
 vi.mock("@/modules/storage-config/remote/remote-storage.service", () => ({
   remoteStorageService: {
@@ -54,7 +43,7 @@ describe("getDownloadableFile", () => {
     await fs.writeFile(path.join(folder, "sample.mp4"), Buffer.alloc(4096));
 
     testDbRef.current
-      ?.insert(download)
+      .insert(download)
       .values({
         id: "dl-1",
         userId: user.id,
@@ -71,7 +60,7 @@ describe("getDownloadableFile", () => {
 
   it("throws when no readable file exists", async () => {
     testDbRef.current
-      ?.insert(download)
+      .insert(download)
       .values({
         id: "dl-empty",
         userId: user.id,

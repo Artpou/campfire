@@ -1,15 +1,13 @@
 import { filenameParse } from "@ctrl/video-filename-parser";
 import type { ManualSyncInput } from "@seedarr/contracts";
 import { buildOrganizedRemotePath, extractYearFromDate, getVideoContainer, isVideoFile } from "@seedarr/shared";
-import { and, eq, or } from "drizzle-orm";
 
 import { BadRequestError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
 
-import { db } from "@/db/db";
-import { download } from "@/modules/download/download.schema";
-import { getEnabledStorageModuleId } from "@/modules/download/download-storage.helper";
-import { media } from "@/modules/media/media.schema";
+import { downloadRepository } from "@/modules/download/download.repository";
+import { mediaRepository } from "@/modules/media/media.repository";
+import { moduleRepository } from "@/modules/module/module.repository";
 import type { TMDBItem } from "@/modules/tmdb/tmdb.types";
 import { getTmdbApiKey } from "@/modules/tmdb/tmdb-key.query";
 import {
@@ -230,7 +228,7 @@ export async function runRemoteSync(userId: string): Promise<RemoteSyncResponse>
 
   const config = await remoteStorageService.getMediaPaths();
 
-  const existingDownloads = await db.query.download.findMany({ with: { media: true } });
+  const existingDownloads = await downloadRepository.findManyWithMedia();
   const existingLocations = new Set<string>();
   const existingTitles = new Set<string>();
 
@@ -325,9 +323,7 @@ async function processEntry(
     return "skipped";
   }
 
-  const existingDls = await db.query.download.findMany({
-    where: eq(download.mediaId, tmdbItem.id),
-  });
+  const existingDls = await downloadRepository.findByMediaId(tmdbItem.id);
 
   if (existingDls.length > 0) {
     const needsUpdate = existingDls.some((dl) => !dl.remoteLocation);
@@ -335,13 +331,13 @@ async function processEntry(
       const targetLocation = type === "file" ? buildDownloadLocation(entry, tmdbItem, resolvedType) : remoteLocation;
       for (const dl of existingDls) {
         if (!dl.remoteLocation) {
-          await db
-            .update(download)
-            .set({ remoteLocation: targetLocation, moduleStorageId: await getEnabledStorageModuleId() })
-            .where(eq(download.id, dl.id));
+          await downloadRepository.update(dl.id, {
+            remoteLocation: targetLocation,
+            moduleStorageId: await moduleRepository.getEnabledStorageModuleId(),
+          });
         }
       }
-      await db.insert(media).values(mediaInsert).onConflictDoUpdate({ target: media.id, set: mediaInsert });
+      await mediaRepository.upsert(mediaInsert);
     }
 
     if (type === "file") await organizeFile(entry, tmdbItem, resolvedType, seasons);
@@ -356,7 +352,7 @@ async function processEntry(
 
   const downloadLocation = type === "file" ? buildDownloadLocation(entry, tmdbItem, resolvedType) : remoteLocation;
 
-  await db.insert(media).values(mediaInsert).onConflictDoUpdate({ target: media.id, set: mediaInsert });
+  await mediaRepository.upsert(mediaInsert);
 
   let remoteSize: number | null = null;
   try {
@@ -366,7 +362,7 @@ async function processEntry(
     /* size remains null */
   }
 
-  await db.insert(download).values({
+  await downloadRepository.insert({
     userId,
     mediaId: tmdbItem.id,
     origin: "remote-sync",
@@ -374,7 +370,7 @@ async function processEntry(
     language,
     container,
     remoteLocation: downloadLocation,
-    moduleStorageId: await getEnabledStorageModuleId(),
+    moduleStorageId: await moduleRepository.getEnabledStorageModuleId(),
     size: remoteSize,
     torrent: null,
   });
@@ -395,7 +391,7 @@ export async function runManualSync(userId: string, input: ManualSyncInput): Pro
   if (!tmdbItem) throw new BadRequestError("Could not find media on TMDB");
 
   const mediaInsert = tmdbItemToMediaInsert(tmdbItem, input.type);
-  await db.insert(media).values(mediaInsert).onConflictDoUpdate({ target: media.id, set: mediaInsert });
+  await mediaRepository.upsert(mediaInsert);
 
   const paths = await remoteStorageService.getMediaPaths();
   const basePath = input.type === "tv" ? paths.tvPath : paths.moviePath;
@@ -412,12 +408,10 @@ export async function runManualSync(userId: string, input: ManualSyncInput): Pro
   const downloadLocation =
     entry.type === "file" ? buildDownloadLocation(entry, tmdbItem, input.type) : input.remotePath;
 
-  const existing = await db.query.download.findFirst({
-    where: and(
-      eq(download.mediaId, input.mediaId),
-      or(eq(download.remoteLocation, downloadLocation), eq(download.remoteLocation, input.remotePath)),
-    ),
-  });
+  const existing = await downloadRepository.findByMediaIdAndRemoteLocations(input.mediaId, [
+    downloadLocation,
+    input.remotePath,
+  ]);
   const alreadyLinked = Boolean(existing);
 
   if (entry.type === "file") {
@@ -433,7 +427,7 @@ export async function runManualSync(userId: string, input: ManualSyncInput): Pro
       /* size remains null */
     }
 
-    await db.insert(download).values({
+    await downloadRepository.insert({
       userId,
       mediaId: input.mediaId,
       origin: "remote-sync",
@@ -441,7 +435,7 @@ export async function runManualSync(userId: string, input: ManualSyncInput): Pro
       language,
       container,
       remoteLocation: downloadLocation,
-      moduleStorageId: await getEnabledStorageModuleId(),
+      moduleStorageId: await moduleRepository.getEnabledStorageModuleId(),
       size: remoteSize,
       torrent: null,
     });

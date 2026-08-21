@@ -1,12 +1,12 @@
-import { and, desc, eq, exists, getTableName, type SQL, sql } from "drizzle-orm";
+import { and, desc, eq, exists, getTableName, or, type SQL, sql } from "drizzle-orm";
 import type { AnySQLiteColumn, SQLiteTable } from "drizzle-orm/sqlite-core";
 
 import { isColumn, sqlColumn } from "@/shared/sql/base.sql";
 
 import { db } from "@/db/db";
 import { download } from "@/modules/download/download.schema";
+import { WATCHED_RATIO } from "@/modules/media/media.helper";
 import { media, userLikes, userReviews, watchProgress } from "@/modules/media/media.schema";
-import { WATCHED_RATIO } from "./watch-progress.helper";
 
 export type MediaRelatedTable = SQLiteTable & {
   userId: AnySQLiteColumn;
@@ -128,4 +128,20 @@ export function sortDateSql(userId: string): SQL {
     ${activityAtSql(userId)},
     ${scalarUserRelation(watchProgress, watchProgress.updatedAt, media.id, { userId })}
   )`;
+}
+
+/** SQL: completed flag OR position/duration >= WATCHED_RATIO. */
+export function watchedProgressSql() {
+  return or(
+    eq(watchProgress.completed, true),
+    sql`${watchProgress.duration} > 0 AND CAST(${watchProgress.position} AS REAL) / ${watchProgress.duration} >= ${WATCHED_RATIO}`,
+  );
+}
+
+/** SQL: not completed and 0 < ratio < WATCHED_RATIO. */
+export function inProgressProgressSql(): SQL | undefined {
+  return and(
+    eq(watchProgress.completed, false),
+    sql`${watchProgress.duration} > 0 AND ${watchProgress.position} > 0 AND CAST(${watchProgress.position} AS REAL) / ${watchProgress.duration} < ${WATCHED_RATIO}`,
+  );
 }

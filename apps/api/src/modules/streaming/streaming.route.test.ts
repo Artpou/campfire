@@ -1,15 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { download } from "@/modules/download/download.schema";
-import { createAuthGuardMock, seedTestUser } from "@/tests/route-test.helper";
-import { bodyOf, createTestDb, sampleTorrent, type TestDb } from "@/tests/test.helper";
+import {
+  bodyOf,
+  createAuthGuardMock,
+  createTestDb,
+  sampleTorrent,
+  seedTestUser,
+  type TestDb,
+  testDbRef,
+} from "@/tests/test.helper";
 
-const { fakeUser, testDbRef, playbackInfo, directStream, liveStream, listSubtitles, getSubtitle } = vi.hoisted(() => {
+const { fakeUser, playbackInfo, directStream, liveStream, listSubtitles, getSubtitle } = vi.hoisted(() => {
   const fakeUser = { id: "user-1", username: "member", role: "member" as const, createdAt: new Date("2024-01-01") };
-  const testDbRef = { current: null as TestDb | null };
   return {
     fakeUser,
-    testDbRef,
     playbackInfo: vi.fn(),
     directStream: vi.fn(),
     liveStream: vi.fn(),
@@ -18,23 +23,22 @@ const { fakeUser, testDbRef, playbackInfo, directStream, liveStream, listSubtitl
   };
 });
 
-vi.mock("@/db/db", () => ({
-  get db() {
-    return testDbRef.current;
-  },
-}));
 vi.mock("@/modules/auth/auth.guard", () => ({
   authGuard: createAuthGuardMock(fakeUser),
 }));
 vi.mock("./streaming.service", () => ({
   StreamingService: class {
+    getDownload = async (id: string) => {
+      const { downloadRepository } = await import("@/modules/download/download.repository");
+      return downloadRepository.get(id);
+    };
     getPlaybackInfo = playbackInfo;
     prepareDirectStream = directStream;
     prepareLiveStream = liveStream;
   },
   invalidateStreamSource: vi.fn(),
 }));
-vi.mock("./streaming-subtitle.service", () => ({
+vi.mock("./subtitle/streaming-subtitle.service", () => ({
   StreamingSubtitleService: class {
     listExternalSubtitles = listSubtitles;
     getSubtitleFile = getSubtitle;

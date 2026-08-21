@@ -1,5 +1,6 @@
-import { fetchImdbRating } from "@/modules/media/imdb-rating.helper";
+import { fetchImdbRating } from "@/modules/media/cinemeta/cinemeta.service";
 import { mergeMediaEnrichment } from "@/modules/media/media.helper";
+import { listEnrichedMedia } from "@/modules/media/media-list.repository";
 import { tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
 import { TMDBService } from "@/modules/tmdb/tmdb.service";
 import type { TMDBSeasonDetails, TMDBTvDetails } from "@/modules/tmdb/tmdb.types";
@@ -17,7 +18,7 @@ export class TVService extends TMDBService<TV> {
 
     const recommendations = tvData.recommendations?.results ?? [];
     const related = recommendations.map((item) => tmdbTVToMedia(item));
-    const mediaMap = await this.mediaService.getMany({
+    const mediaMap = await listEnrichedMedia(this.user.id, {
       ids: [id, ...related.map((m) => m.id.toString())],
     });
 

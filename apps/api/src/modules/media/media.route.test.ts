@@ -1,20 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { media } from "@/modules/media/media.schema";
-import { createAuthGuardMock, seedTestUser } from "@/tests/route-test.helper";
-import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
+import { bodyOf, createAuthGuardMock, createTestDb, json, seedTestUser, testDbRef } from "@/tests/test.helper";
 
-const { fakeUser, testDbRef } = vi.hoisted(() => {
+const { fakeUser } = vi.hoisted(() => {
   const fakeUser = { id: "user-1", username: "testuser", role: "member" as const, createdAt: new Date("2024-01-01") };
-  const testDbRef = { current: null as TestDb | null };
-  return { fakeUser, testDbRef };
+  return { fakeUser };
 });
 
-vi.mock("@/db/db", () => ({
-  get db() {
-    return testDbRef.current;
-  },
-}));
 vi.mock("@/modules/auth/auth.guard", () => ({
   authGuard: createAuthGuardMock(fakeUser),
 }));
@@ -45,7 +38,7 @@ describe("Media Routes", () => {
 
   describe("with existing media (id: 500)", () => {
     beforeEach(() => {
-      testDbRef.current?.insert(media).values(SAMPLE_MEDIA).run();
+      testDbRef.current.insert(media).values(SAMPLE_MEDIA).run();
     });
 
     it("GET /:id - returns media with status", async () => {
@@ -76,7 +69,7 @@ describe("Media Routes", () => {
     beforeEach(() => {
       // Données insérées volontairement hors ordre alphabétique
       testDbRef.current
-        ?.insert(media)
+        .insert(media)
         .values([
           { id: 1, type: "movie", title: "Zebra", imdbId: "tt0000001" },
           { id: 2, type: "tv", title: "Alpha", imdbId: "tt0000002" },

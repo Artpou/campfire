@@ -21,7 +21,7 @@ import { getBackdropUrl, getPosterUrl } from "@/features/media/helpers/media.hel
 
 export type MediaDetailTab = "info" | "downloads" | "server";
 
-interface MediaDetailPageProps {
+interface MediaDetailViewProps {
   data: Movie | TV;
   download?: Download | null;
   torrentDownloads?: Download[];
@@ -32,7 +32,7 @@ interface MediaDetailPageProps {
   children?: ReactNode;
 }
 
-export function MediaDetailPage({
+export function MediaDetailView({
   data,
   download,
   torrentDownloads = [],
@@ -40,7 +40,7 @@ export function MediaDetailPage({
   tab,
   onTabChange,
   children,
-}: MediaDetailPageProps) {
+}: MediaDetailViewProps) {
   const { theme } = useTheme();
 
   const media = data.media;

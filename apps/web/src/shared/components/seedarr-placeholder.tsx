@@ -1,23 +1,18 @@
-import { SeedarrLogoSad } from "@/shared/components/seedarr-logo";
-import { Card, CardContent } from "@/shared/ui/card";
+import type { ReactNode } from "react";
+
+import { EmptyState } from "@/shared/components/empty-state";
 
 interface PlaceholderEmptyProps {
-  title?: React.ReactNode;
-  subtitle?: React.ReactNode;
+  title?: ReactNode;
+  subtitle?: ReactNode;
+  action?: ReactNode;
 }
 
-export function PlaceholderEmpty({ title, subtitle }: PlaceholderEmptyProps) {
+/** @deprecated Prefer EmptyState directly — kept for discover empty slots. */
+export function PlaceholderEmpty({ title, subtitle, action }: PlaceholderEmptyProps) {
   return (
-    <Card className="w-full bg-secondary">
-      <CardContent className="flex flex-col items-center justify-center py-16 gap-6">
-        <SeedarrLogoSad />
-        {(title || subtitle) && (
-          <div className="text-center space-y-2">
-            {title && <h3 className="text-xl font-semibold">{title}</h3>}
-            {subtitle && <p className="text-muted-foreground">{subtitle}</p>}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <div className="w-full flex justify-center py-8">
+      <EmptyState title={title ?? "—"} subtitle={subtitle} action={action} />
+    </div>
   );
 }

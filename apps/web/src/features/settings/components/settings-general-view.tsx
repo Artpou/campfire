@@ -16,7 +16,7 @@ import { useAuth } from "@/features/auth/auth-store";
 import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
 import { PasswordChangeModal } from "@/features/user/components/password-change-modal";
 
-export function SettingsGeneralTab() {
+export function SettingsGeneralView() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const logout = useAuth((s) => s.logout);

@@ -8,8 +8,8 @@ import { type Identifiable, IdentifiableService } from "@/shared/services/authen
 
 import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
 import { mergeMediaEnrichment } from "@/modules/media/media.helper";
-import { MediaService } from "@/modules/media/media.service";
 import type { MediaEnriched } from "@/modules/media/media.types";
+import { listEnrichedMedia } from "@/modules/media/media-list.repository";
 import { tmdbMovieToMedia, tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
 import { getTmdbApiKey } from "@/modules/tmdb/tmdb-key.query";
 import type { User } from "@/modules/user/user.schema";
@@ -99,13 +99,11 @@ export async function tmdbRequest<T>(url: string, locale: string, options?: Fetc
 export abstract class TMDBService<S extends Identifiable> extends IdentifiableService<S> {
   protected locale: string;
   protected readonly type: "movie" | "tv";
-  protected readonly mediaService: MediaService;
 
-  constructor(user: User, locale: string, type: "movie" | "tv", mediaService = new MediaService(user)) {
+  constructor(user: User, locale: string, type: "movie" | "tv") {
     super(user);
     this.locale = locale;
     this.type = type;
-    this.mediaService = mediaService;
   }
 
   static createTMDBRouter<E extends Identifiable, S extends TMDBService<E>>(
@@ -145,7 +143,7 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
 
     const items = data.results.slice(0, TRENDING_LIMIT);
     const [mediaMap, genresData] = await Promise.all([
-      this.mediaService.getMany({ ids: items.map((r) => r.id.toString()) }),
+      listEnrichedMedia(this.user.id, { ids: items.map((r) => r.id.toString()) }),
       this.genres(),
     ]);
     const genreMap = new Map(genresData.genres.map((g) => [g.id, g.name]));
@@ -167,7 +165,7 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
       ...this.toMedia(item, genreMap),
       backdrop_path: item.backdrop_path ?? null,
     }));
-    const mediaMap = await this.mediaService.getMany({ ids: items.map((m) => m.id.toString()) });
+    const mediaMap = await listEnrichedMedia(this.user.id, { ids: items.map((m) => m.id.toString()) });
 
     return {
       results: mergeMediaEnrichment(items, mediaMap).map((item) => ({
@@ -192,7 +190,7 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
       ...this.toMedia(item, genreMap),
       backdrop_path: item.backdrop_path ?? null,
     }));
-    const mediaMap = await this.mediaService.getMany({ ids: items.map((m) => m.id.toString()) });
+    const mediaMap = await listEnrichedMedia(this.user.id, { ids: items.map((m) => m.id.toString()) });
 
     return {
       results: mergeMediaEnrichment(items, mediaMap).map((item) => ({

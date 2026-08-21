@@ -85,52 +85,40 @@ export function OnboardingAccount({ onContinue }: OnboardingAccountProps) {
       </div>
 
       <div className="space-y-4">
-        <div>
-          <label htmlFor="username" className="text-sm font-medium">
-            <Trans>Username</Trans>
-          </label>
-          <Input
-            id="username"
-            autoComplete="username"
-            {...register("username", {
-              required: t(msg`Username is required`),
-              minLength: { value: 3, message: t(msg`Min 3 characters`) },
-            })}
-          />
-          {errors.username && <p className="text-destructive text-sm">{errors.username.message}</p>}
-        </div>
+        <Input
+          id="username"
+          autoComplete="username"
+          label={<Trans>Username</Trans>}
+          {...register("username", {
+            required: t(msg`Username is required`),
+            minLength: { value: 3, message: t(msg`Min 3 characters`) },
+          })}
+        />
+        {errors.username && <p className="text-destructive text-sm">{errors.username.message}</p>}
 
-        <div>
-          <label htmlFor="password" className="text-sm font-medium">
-            <Trans>Password</Trans>
-          </label>
-          <Input
-            id="password"
-            type="password"
-            autoComplete="new-password"
-            {...register("password", {
-              required: t(msg`Password is required`),
-              minLength: { value: 8, message: t(msg`Min 8 characters`) },
-            })}
-          />
-          {errors.password && <p className="text-destructive text-sm">{errors.password.message}</p>}
-        </div>
+        <Input
+          id="password"
+          type="password"
+          autoComplete="new-password"
+          label={<Trans>Password</Trans>}
+          {...register("password", {
+            required: t(msg`Password is required`),
+            minLength: { value: 8, message: t(msg`Min 8 characters`) },
+          })}
+        />
+        {errors.password && <p className="text-destructive text-sm">{errors.password.message}</p>}
 
-        <div>
-          <label htmlFor="confirmPassword" className="text-sm font-medium">
-            <Trans>Confirm Password</Trans>
-          </label>
-          <Input
-            id="confirmPassword"
-            type="password"
-            autoComplete="new-password"
-            {...register("confirmPassword", {
-              required: t(msg`Please confirm your password`),
-              validate: (value) => value === password || t(msg`Passwords do not match`),
-            })}
-          />
-          {errors.confirmPassword && <p className="text-destructive text-sm">{errors.confirmPassword.message}</p>}
-        </div>
+        <Input
+          id="confirmPassword"
+          type="password"
+          autoComplete="new-password"
+          label={<Trans>Confirm Password</Trans>}
+          {...register("confirmPassword", {
+            required: t(msg`Please confirm your password`),
+            validate: (value) => value === password || t(msg`Passwords do not match`),
+          })}
+        />
+        {errors.confirmPassword && <p className="text-destructive text-sm">{errors.confirmPassword.message}</p>}
 
         {error && <p className="text-destructive text-sm">{error}</p>}
       </div>

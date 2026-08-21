@@ -3,27 +3,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { download } from "@/modules/download/download.schema";
 import { media } from "@/modules/media/media.schema";
-import { seedTestUser } from "@/tests/route-test.helper";
-import { createTestDb, sampleTorrent, type TestDb } from "@/tests/test.helper";
+import { createTestDb, sampleTorrent, seedTestUser, testDbRef } from "@/tests/test.helper";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-const { testDbRef, transferDirectory, remove, resolveTransferPath, shouldDeleteLocalAfterTransfer, getActiveTorrent } =
-  vi.hoisted(() => ({
-    testDbRef: { current: null as TestDb | null },
+const { transferDirectory, remove, resolveTransferPath, shouldDeleteLocalAfterTransfer, getActiveTorrent } = vi.hoisted(
+  () => ({
     transferDirectory: vi.fn(),
     remove: vi.fn(),
     resolveTransferPath: vi.fn(),
     shouldDeleteLocalAfterTransfer: vi.fn(),
     getActiveTorrent: vi.fn(),
-  }));
-
-vi.mock("@/db/db", () => ({
-  get db() {
-    return testDbRef.current;
-  },
-}));
+  }),
+);
 
 vi.mock("@/modules/storage-config/remote/remote-storage.service", () => ({
   remoteStorageService: {
@@ -93,10 +86,10 @@ describe("remote-transfer.helper", () => {
     await fs.mkdir(folder);
     await fs.writeFile(path.join(folder, "Movie.mkv"), Buffer.alloc(100));
 
-    testDbRef.current?.insert(media).values({ id: 1, type: "movie", title: "Movie", imdbId: "tt1" }).run();
+    testDbRef.current.insert(media).values({ id: 1, type: "movie", title: "Movie", imdbId: "tt1" }).run();
 
     testDbRef.current
-      ?.insert(download)
+      .insert(download)
       .values({
         id,
         userId: user.id,
@@ -110,7 +103,7 @@ describe("remote-transfer.helper", () => {
   it("markTransferStarting sets transferring flag", async () => {
     await seedDoneDownload();
     await markTransferStarting("dl-1");
-    const row = await testDbRef.current?.query.download.findFirst({ where: eq(download.id, "dl-1") });
+    const row = await testDbRef.current.query.download.findFirst({ where: eq(download.id, "dl-1") });
     expect(row?.torrent?.transferring).toBe(true);
     expect(row?.torrent?.transferProgress).toBe(0);
   });
@@ -119,7 +112,7 @@ describe("remote-transfer.helper", () => {
     await seedDoneDownload();
     await runRemoteTransfer("dl-1");
 
-    const row = await testDbRef.current?.query.download.findFirst({ where: eq(download.id, "dl-1") });
+    const row = await testDbRef.current.query.download.findFirst({ where: eq(download.id, "dl-1") });
     expect(row?.remoteLocation).toBe("movies/Movie");
     expect(row?.torrent?.transferring).toBe(false);
     expect(row?.torrent?.transferProgress).toBe(1);
@@ -140,7 +133,7 @@ describe("remote-transfer.helper", () => {
 
   it("rejects incomplete downloads", async () => {
     testDbRef.current
-      ?.insert(download)
+      .insert(download)
       .values({
         id: "dl-partial",
         userId: user.id,
@@ -157,7 +150,7 @@ describe("remote-transfer.helper", () => {
     transferDirectory.mockRejectedValue(new Error("NAS down"));
 
     await expect(runRemoteTransfer("dl-fail")).rejects.toThrow(/NAS down/);
-    const row = await testDbRef.current?.query.download.findFirst({ where: eq(download.id, "dl-fail") });
+    const row = await testDbRef.current.query.download.findFirst({ where: eq(download.id, "dl-fail") });
     expect(row?.error).toContain("Remote transfer failed");
     expect(row?.torrent?.transferring).toBe(false);
   });
@@ -168,7 +161,7 @@ describe("remote-transfer.helper", () => {
 
     await runRemoteTransfer("dl-auto", { isAutoTransfer: true });
 
-    const row = await testDbRef.current?.query.download.findFirst({ where: eq(download.id, "dl-auto") });
+    const row = await testDbRef.current.query.download.findFirst({ where: eq(download.id, "dl-auto") });
     expect(row?.torrent).toBeNull();
     expect(row?.remoteLocation).toBe("movies/Movie");
     await expect(fs.stat(path.join(tmpRoot, "Movie"))).rejects.toThrow();

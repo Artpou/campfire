@@ -1,19 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { hashPassword } from "@/auth/password.util";
 import { user } from "@/modules/user/user.schema";
-import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
-
-const { testDbRef } = vi.hoisted(() => {
-  const testDbRef = { current: null as TestDb | null };
-  return { testDbRef };
-});
-
-vi.mock("@/db/db", () => ({
-  get db() {
-    return testDbRef.current;
-  },
-}));
+import { bodyOf, createTestDb, json, testDbRef } from "@/tests/test.helper";
 
 const { authRoutes } = await import("./auth.route");
 
@@ -30,7 +19,7 @@ describe("Auth Routes", () => {
 
     it("returns true when owner exists", async () => {
       testDbRef.current
-        ?.insert(user)
+        .insert(user)
         .values({ id: "o1", username: "owner", password: "x", role: "owner", createdAt: new Date() })
         .run();
       const body = await bodyOf(await authRoutes.request("/has-owner"));
@@ -48,7 +37,7 @@ describe("Auth Routes", () => {
 
     it("returns 403 when owner already exists", async () => {
       testDbRef.current
-        ?.insert(user)
+        .insert(user)
         .values({ id: "o1", username: "existing", password: "x", role: "owner", createdAt: new Date() })
         .run();
       expect(
@@ -66,7 +55,7 @@ describe("Auth Routes", () => {
 
     it("sets session cookie and returns user on success", async () => {
       testDbRef.current
-        ?.insert(user)
+        .insert(user)
         .values({
           id: "u1",
           username: "alice",

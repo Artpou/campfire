@@ -4,26 +4,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { TorrentLiveData } from "@/modules/download/download.schema";
 import { download } from "@/modules/download/download.schema";
 import { media } from "@/modules/media/media.schema";
-import { seedTestUser } from "@/tests/route-test.helper";
-import { createTestDb, sampleTorrent, type TestDb } from "@/tests/test.helper";
+import { createTestDb, sampleTorrent, seedTestUser, testDbRef } from "@/tests/test.helper";
 import { DownloadService } from "./download.service";
 
-const { testDbRef, isEnabled, isAvailable, listFiles, remove, pauseTorrent, destroyLocalTorrentFiles } = vi.hoisted(
-  () => ({
-    testDbRef: { current: null as TestDb | null },
-    isEnabled: vi.fn(),
-    isAvailable: vi.fn(),
-    listFiles: vi.fn(),
-    remove: vi.fn(),
-    pauseTorrent: vi.fn(),
-    destroyLocalTorrentFiles: vi.fn(),
-  }),
-);
-
-vi.mock("@/db/db", () => ({
-  get db() {
-    return testDbRef.current;
-  },
+const { isEnabled, isAvailable, listFiles, remove, pauseTorrent, destroyLocalTorrentFiles } = vi.hoisted(() => ({
+  isEnabled: vi.fn(),
+  isAvailable: vi.fn(),
+  listFiles: vi.fn(),
+  remove: vi.fn(),
+  pauseTorrent: vi.fn(),
+  destroyLocalTorrentFiles: vi.fn(),
 }));
 
 vi.mock("@/modules/storage-config/remote/remote-storage.service", () => ({
@@ -98,7 +88,7 @@ describe("DownloadService", () => {
   ) {
     const { torrent: torrentOverrides, ...rest } = overrides;
     testDbRef.current
-      ?.insert(download)
+      .insert(download)
       .values({
         id,
         userId: user.id,
@@ -111,8 +101,8 @@ describe("DownloadService", () => {
   }
 
   it("getStats aggregates size and speeds", async () => {
-    testDbRef.current?.insert(media).values({ id: 1, type: "movie", title: "A", imdbId: "tt1" }).run();
-    testDbRef.current?.insert(media).values({ id: 2, type: "tv", title: "B", imdbId: "tt2" }).run();
+    testDbRef.current.insert(media).values({ id: 1, type: "movie", title: "A", imdbId: "tt1" }).run();
+    testDbRef.current.insert(media).values({ id: 2, type: "tv", title: "B", imdbId: "tt2" }).run();
     seedDownload("dl-1", { mediaId: 1 });
     seedDownload("dl-2", {
       mediaId: 2,
@@ -146,7 +136,7 @@ describe("DownloadService", () => {
   });
 
   it("getByMediaId filters downloads", async () => {
-    testDbRef.current?.insert(media).values({ id: 7, type: "movie", title: "X", imdbId: "tt7" }).run();
+    testDbRef.current.insert(media).values({ id: 7, type: "movie", title: "X", imdbId: "tt7" }).run();
     seedDownload("dl-1", { mediaId: 7 });
     seedDownload("dl-2", { mediaId: null });
 
@@ -188,10 +178,10 @@ describe("DownloadService", () => {
   });
 
   it("reassignMedia updates mediaId", async () => {
-    testDbRef.current?.insert(media).values({ id: 99, type: "movie", title: "Y", imdbId: "tt99" }).run();
+    testDbRef.current.insert(media).values({ id: 99, type: "movie", title: "Y", imdbId: "tt99" }).run();
     seedDownload("dl-1", { mediaId: null });
     await expect(service.reassignMedia("dl-1", 99)).resolves.toEqual({ success: true });
-    const row = await testDbRef.current?.query.download.findFirst({ where: eq(download.id, "dl-1") });
+    const row = await testDbRef.current.query.download.findFirst({ where: eq(download.id, "dl-1") });
     expect(row?.mediaId).toBe(99);
   });
 
@@ -203,13 +193,13 @@ describe("DownloadService", () => {
   it("delete removes owned download", async () => {
     seedDownload("dl-1");
     await expect(service.delete("dl-1", { scope: "all" })).resolves.toEqual({ success: true });
-    const row = await testDbRef.current?.query.download.findFirst({ where: eq(download.id, "dl-1") });
+    const row = await testDbRef.current.query.download.findFirst({ where: eq(download.id, "dl-1") });
     expect(row).toBeUndefined();
     expect(destroyLocalTorrentFiles).toHaveBeenCalled();
   });
 
   it("batchDelete skips foreign downloads for members", async () => {
-    seedTestUser(testDbRef.current!, {
+    seedTestUser(testDbRef.current, {
       id: "user-2",
       username: "other",
       role: "member",
@@ -217,7 +207,7 @@ describe("DownloadService", () => {
     });
     seedDownload("mine");
     testDbRef.current
-      ?.insert(download)
+      .insert(download)
       .values({
         id: "theirs",
         userId: "user-2",

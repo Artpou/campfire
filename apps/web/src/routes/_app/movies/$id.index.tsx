@@ -1,15 +1,9 @@
-import { useMemo } from "react";
-
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
-import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 
-import { downloadQueries } from "@/features/downloads/hooks/download.queries";
-import { MediaCarouselCast } from "@/features/media/components/carousel/media-carousel-cast";
-import { MediaDetailPage, type MediaDetailTab } from "@/features/media/components/media-detail-page";
-import { MovieRelated } from "@/features/movies/components/movie-related";
+import type { MediaDetailTab } from "@/features/media/components/media-detail-view";
+import { MovieDetailView } from "@/features/movies/components/movie-detail-view";
 import { movieQueries } from "@/features/movies/hooks/movie.queries";
 
 const VALID_TABS: MediaDetailTab[] = ["info", "downloads", "server"];
@@ -23,54 +17,12 @@ function validateSearch(search: Record<string, unknown>): { tab?: MediaDetailTab
 export const Route = createFileRoute("/_app/movies/$id/")({
   loader: ({ context, params }) =>
     context.queryClient.ensureQueryData(movieQueries.details(params.id, countryToTmdbLocale(context.language))),
-  component: MoviePage,
+  component: MovieRoute,
   validateSearch,
 });
 
-function MoviePage() {
-  const params = Route.useParams();
-  const { tab: urlTab } = Route.useSearch();
-  const navigate = useNavigate();
-  const locale = useTmdbLocale();
-  const { data } = useSuspenseQuery(movieQueries.details(params.id, locale));
-  const { media } = data;
-
-  const { data: mediaDownloads = [] } = useQuery(downloadQueries.byMedia(media));
-
-  const liveDownload = useMemo(() => {
-    if (!media) return null;
-    if (media.download?.id) {
-      return mediaDownloads.find((d) => d.id === media.download?.id) ?? media.download;
-    }
-    return mediaDownloads[0] ?? null;
-  }, [media, mediaDownloads]);
-
-  const torrentDownloads = useMemo(() => mediaDownloads.filter((d) => d.torrent), [mediaDownloads]);
-  const remoteDownloads = useMemo(() => mediaDownloads.filter((d) => d.remoteLocation), [mediaDownloads]);
-  const hasActiveDownload = torrentDownloads.some((d) => d.torrent && !d.torrent.done);
-
-  const tab = useMemo((): MediaDetailTab => {
-    if (urlTab === "downloads" && torrentDownloads.length === 0) return "info";
-    if (urlTab === "server" && remoteDownloads.length === 0) return "info";
-    if (urlTab) return urlTab;
-    return hasActiveDownload ? "downloads" : "info";
-  }, [urlTab, torrentDownloads.length, remoteDownloads.length, hasActiveDownload]);
-
-  return (
-    <MediaDetailPage
-      data={data}
-      download={liveDownload}
-      torrentDownloads={torrentDownloads}
-      remoteDownloads={remoteDownloads}
-      tab={tab}
-      onTabChange={(t) => navigate({ to: ".", search: { tab: t }, replace: true })}
-    >
-      <MediaCarouselCast data={data} />
-      <MovieRelated
-        collection={data.collection}
-        collectionMedia={data.related.collection}
-        recommendedMovies={data.related.recommendations}
-      />
-    </MediaDetailPage>
-  );
+function MovieRoute() {
+  const { id } = Route.useParams();
+  const { tab } = Route.useSearch();
+  return <MovieDetailView movieId={id} urlTab={tab} />;
 }

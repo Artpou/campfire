@@ -1,17 +1,15 @@
 import type { LetterboxdSyncResponse } from "@seedarr/contracts";
-import { eq, inArray } from "drizzle-orm";
 import { XMLParser } from "fast-xml-parser";
 
 import { BadRequestError } from "@/shared/errors/error";
 import { parseIsoDate } from "@/shared/helpers/csv.helper";
 import { logger } from "@/shared/helpers/logger.helper";
 
-import { db } from "@/db/db";
-import { applyUserReview, ensureUserLike, upsertMediaRow } from "@/modules/media/letterboxd/letterboxd-apply.query";
-import { media } from "@/modules/media/media.schema";
+import { mediaRepository } from "@/modules/media/media.repository";
+import { mediaRelationsRepository } from "@/modules/media/media-relations.repository";
 import { getTmdbApiKey } from "@/modules/tmdb/tmdb-key.query";
 import { fetchTmdbById, sleep, tmdbItemToMediaInsert } from "@/modules/tmdb/tmdb-resolve.helper";
-import { user } from "@/modules/user/user.schema";
+import { userRepository } from "@/modules/user/user.repository";
 
 const BATCH_SIZE = 10;
 const BATCH_DELAY_MS = 1000;
@@ -88,21 +86,17 @@ function parseRss(xml: string): LetterboxdRssEntry[] {
 }
 
 async function applyEntry(userId: string, entry: LetterboxdRssEntry): Promise<void> {
-  await applyUserReview(
+  await mediaRelationsRepository.applyUserReview(
     userId,
     entry.tmdbId,
     { score: entry.score, comment: entry.comment, watchedAt: entry.watchedAt },
     "freshest",
   );
-  if (entry.liked) await ensureUserLike(userId, entry.tmdbId);
+  if (entry.liked) await mediaRelationsRepository.ensureUserLike(userId, entry.tmdbId);
 }
 
 export async function syncLetterboxdDiary(userId: string): Promise<LetterboxdSyncResponse> {
-  const profile = await db.query.user.findFirst({
-    where: eq(user.id, userId),
-    columns: { letterboxdUsername: true },
-  });
-  const username = profile?.letterboxdUsername?.trim();
+  const username = (await userRepository.getLetterboxdUsername(userId))?.trim();
   if (!username) throw new BadRequestError("Import your Letterboxd export first");
 
   const apiKey = await getTmdbApiKey();
@@ -125,15 +119,7 @@ export async function syncLetterboxdDiary(userId: string): Promise<LetterboxdSyn
     return { synced: 0, skipped: 0, errors: 0 };
   }
 
-  const existingRows = await db
-    .select({ id: media.id, duration: media.duration, categories: media.categories })
-    .from(media)
-    .where(
-      inArray(
-        media.id,
-        entries.map((e) => e.tmdbId),
-      ),
-    );
+  const existingRows = await mediaRepository.findManyByIds(entries.map((e) => e.tmdbId));
   const existingMap = new Map(existingRows.map((r) => [r.id, r]));
 
   let synced = 0;
@@ -163,7 +149,7 @@ export async function syncLetterboxdDiary(userId: string): Promise<LetterboxdSyn
       batch.map(async (entry) => {
         const item = await fetchTmdbById(entry.tmdbId, entry.type);
         if (!item?.id) return;
-        await upsertMediaRow(tmdbItemToMediaInsert(item, entry.type));
+        await mediaRepository.upsert(tmdbItemToMediaInsert(item, entry.type));
       }),
     );
     if (i + BATCH_SIZE < needsMetadataRefresh.length) await sleep(BATCH_DELAY_MS);
@@ -178,7 +164,7 @@ export async function syncLetterboxdDiary(userId: string): Promise<LetterboxdSyn
           skipped++;
           return;
         }
-        await upsertMediaRow(tmdbItemToMediaInsert(item, entry.type));
+        await mediaRepository.upsert(tmdbItemToMediaInsert(item, entry.type));
         await applyEntry(userId, entry);
         synced++;
       }),

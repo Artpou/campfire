@@ -62,7 +62,7 @@ export const userRoutes = UserService.createRouter()
   })
   .use("*", requireRole("admin"))
   .get("/", zValidator("query", listUsersDto), async (c) => {
-    return c.json(await c.var.service.search(c.req.valid("query").q));
+    return c.json(await c.var.service.searchPaginated(c.req.valid("query")));
   })
   .post("/", zValidator("json", createUserDto), async (c) => {
     const body = c.req.valid("json");

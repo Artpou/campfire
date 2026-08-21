@@ -1,6 +1,6 @@
 import { createCache } from "@/shared/helpers/cache.helper";
 
-import { db } from "@/db/db";
+import { moduleRepository } from "@/modules/module/module.repository";
 import path from "node:path";
 import { decrypt } from "../../../shared/helpers/crypto.helper";
 import { FtpAdapter } from "../adapters/ftp.adapter";
@@ -60,14 +60,7 @@ async function loadConfig(): Promise<StorageConfigFull> {
   const cached = configCache.get(CONFIG_CACHE_KEY);
   if (cached) return cached;
 
-  const { ensureSystemModules } = await import("@/modules/module/module.seed");
-  const { module } = await import("@/modules/module/module.schema");
-  const { eq } = await import("drizzle-orm");
-
-  await ensureSystemModules();
-  const storageModule = await db.query.module.findFirst({
-    where: eq(module.category, "storage"),
-  });
+  const storageModule = await moduleRepository.findFirstByCategory("storage");
 
   if (storageModule) {
     const cfg = storageModule.config as {

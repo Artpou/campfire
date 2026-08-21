@@ -4,7 +4,7 @@ import { redirectIfNotRole } from "@/shared/helpers/role.helper";
 
 import { parseModuleFilter } from "@/features/module/components/module-tabs-filter";
 import type { ModuleListFilter } from "@/features/module/helpers/module-list.helper";
-import { SettingsModules } from "@/features/settings/components/settings-modules";
+import { SettingsModulesView } from "@/features/settings/components/settings-modules-view";
 
 export type ModulesSearch = {
   tab?: Exclude<ModuleListFilter, "all">;
@@ -20,17 +20,17 @@ export const Route = createFileRoute("/_app/settings/modules/")({
       q: typeof search.q === "string" && search.q.length > 0 ? search.q : undefined,
     };
   },
-  component: SettingsModulesPage,
+  component: SettingsModulesRoute,
 });
 
-function SettingsModulesPage() {
+function SettingsModulesRoute() {
   const navigate = Route.useNavigate();
   const search = Route.useSearch();
   const filter = search.tab ?? "all";
   const q = search.q ?? "";
 
   return (
-    <SettingsModules
+    <SettingsModulesView
       filter={filter}
       search={q}
       onFilterChange={(next) => navigate({ search: (prev) => ({ ...prev, tab: next === "all" ? undefined : next }) })}

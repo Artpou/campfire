@@ -1,5 +1,4 @@
 import { formatError, VIDEO_EXTENSIONS } from "@seedarr/shared";
-import { and, eq } from "drizzle-orm";
 import type WebTorrent from "webtorrent";
 
 import { logger } from "@/shared/helpers/logger.helper";
@@ -7,11 +6,10 @@ import { resolveWithinDownloads } from "@/shared/helpers/path.helper";
 import { probeVideoDuration } from "@/shared/helpers/video.helper";
 import { findLargestVideoInDirectory } from "@/shared/helpers/video-file.helper";
 
-import { db } from "@/db/db";
 import { activityFor } from "@/modules/activity/activity.service";
+import { downloadRepository } from "@/modules/download/download.repository";
 import type { TorrentLiveData } from "@/modules/download/download.schema";
-import { download } from "@/modules/download/download.schema";
-import { mediaRequest } from "@/modules/request/request.schema";
+import { requestRepository } from "@/modules/request/request.repository";
 import { remoteStorageService } from "@/modules/storage-config/remote/remote-storage.service";
 import { invalidateStreamSource } from "@/modules/streaming/streaming.service";
 import fs from "node:fs/promises";
@@ -47,7 +45,7 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
 
     lastSyncTimestamps.set(downloadId, Date.now());
 
-    const current = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
+    const current = await downloadRepository.find(downloadId);
     const liveData = extractTorrentLiveData(torrent);
     if (current?.torrent?.paused && extraFields?.paused !== false) {
       liveData.paused = true;
@@ -57,16 +55,13 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
 
     // Preserve DB-only fields (durationSeconds, skipAutoTransfer, transferring…),
     // then refresh live WebTorrent metrics, then apply explicit overrides.
-    await db
-      .update(download)
-      .set({
-        torrent: {
-          ...current?.torrent,
-          ...liveData,
-          ...extraFields,
-        },
-      })
-      .where(eq(download.id, downloadId));
+    await downloadRepository.update(downloadId, {
+      torrent: {
+        ...current?.torrent,
+        ...liveData,
+        ...extraFields,
+      },
+    });
   };
 
   torrent.on("ready", () => {
@@ -85,12 +80,12 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
       invalidateStreamSource(downloadId);
       await syncDb(true, { done: true });
 
-      let dl = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
+      let dl = await downloadRepository.find(downloadId);
 
       // Wrap single-file torrents into a folder so the layout is consistent.
       if (torrent.files.length === 1 && torrent.name) {
         const wrapped = await wrapSingleFileInFolder(downloadId, torrent.name, dl?.torrent ?? undefined);
-        if (wrapped) dl = await db.query.download.findFirst({ where: eq(download.id, downloadId) });
+        if (wrapped) dl = await downloadRepository.find(downloadId);
       }
 
       await activityFor(dl?.userId).log({
@@ -100,20 +95,16 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
       });
 
       if (dl?.mediaId) {
-        await db
-          .update(mediaRequest)
-          .set({ status: "validated" })
-          .where(and(eq(mediaRequest.mediaId, dl.mediaId), eq(mediaRequest.status, "pending")));
+        await requestRepository.validatePendingByMediaId(dl.mediaId);
       }
 
       if (dl?.torrent && !dl.torrent.durationSeconds && torrent.name) {
         const torrentName = dl.torrent.name;
         const durationSeconds = await probeLargestVideoDuration(torrentName);
         if (durationSeconds != null) {
-          await db
-            .update(download)
-            .set({ torrent: { ...dl.torrent, done: true, durationSeconds } })
-            .where(eq(download.id, downloadId));
+          await downloadRepository.update(downloadId, {
+            torrent: { ...dl.torrent, done: true, durationSeconds },
+          });
         }
       }
 
@@ -141,7 +132,7 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
       if (torrentClient.isDestroying(downloadId)) return;
       const message = formatError(err);
       logger.error("WEBTORRENT", `Error on "${torrent.name || downloadId}": ${message}`);
-      await db.update(download).set({ error: message }).where(eq(download.id, downloadId));
+      await downloadRepository.update(downloadId, { error: message });
       await syncDb(true);
     } catch (handlerErr) {
       logger.error("WEBTORRENT", `Error in error handler for "${downloadId}": ${handlerErr}`);
@@ -189,10 +180,9 @@ async function wrapSingleFileInFolder(
       ...f,
       path: path.join(folderName, f.name),
     }));
-    await db
-      .update(download)
-      .set({ torrent: { ...torrentData, name: folderName, path: resolveWithinDownloads(), files: updatedFiles } })
-      .where(eq(download.id, downloadId));
+    await downloadRepository.update(downloadId, {
+      torrent: { ...torrentData, name: folderName, path: resolveWithinDownloads(), files: updatedFiles },
+    });
   }
 
   logger.info("WEBTORRENT", `Wrapped single file into folder: ${torrentName} → ${folderName}/`);
@@ -229,7 +219,7 @@ function scheduleUnload(downloadId: string): void {
 }
 
 export async function restoreActiveTorrents(): Promise<void> {
-  const downloads = await db.select().from(download).all();
+  const downloads = await downloadRepository.listAll();
   const activeDownloads = downloads.filter(
     (item) => item.torrent && !item.torrent.done && !item.torrent.paused && item.torrent.magnetURI,
   );

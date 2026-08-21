@@ -77,14 +77,14 @@ function ModuleInfoBadges({ item }: { item: ModuleListItem }) {
   );
 }
 
-interface SettingsModulesProps {
+interface SettingsModulesViewProps {
   filter: ModuleListFilter;
   search: string;
   onFilterChange: (filter: ModuleListFilter) => void;
   onSearchChange: (search: string) => void;
 }
 
-export function SettingsModules({ filter, search, onFilterChange, onSearchChange }: SettingsModulesProps) {
+export function SettingsModulesView({ filter, search, onFilterChange, onSearchChange }: SettingsModulesViewProps) {
   const { t } = useLingui();
   const navigate = useNavigate();
   const [isStuck, setIsStuck] = useState(false);

@@ -4,11 +4,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { download } from "@/modules/download/download.schema";
 import { media } from "@/modules/media/media.schema";
 import { module } from "@/modules/module/module.schema";
-import { seedTestUser } from "@/tests/route-test.helper";
-import { createTestDb, type TestDb } from "@/tests/test.helper";
+import { createTestDb, seedTestUser, testDbRef } from "@/tests/test.helper";
 
 const {
-  testDbRef,
   getTmdbApiKey,
   listDirectories,
   listFiles,
@@ -19,7 +17,6 @@ const {
   searchTmdbByTitle,
   tmdbItemToMediaInsert,
 } = vi.hoisted(() => ({
-  testDbRef: { current: null as TestDb | null },
   getTmdbApiKey: vi.fn(),
   listDirectories: vi.fn(),
   listFiles: vi.fn(),
@@ -29,12 +26,6 @@ const {
   fetchTmdbByImdbId: vi.fn(),
   searchTmdbByTitle: vi.fn(),
   tmdbItemToMediaInsert: vi.fn(),
-}));
-
-vi.mock("@/db/db", () => ({
-  get db() {
-    return testDbRef.current;
-  },
 }));
 
 vi.mock("@/modules/tmdb/tmdb-key.query", () => ({
@@ -86,7 +77,7 @@ describe("remote-sync.service", () => {
 
   function seedStorage(enabled = true) {
     testDbRef.current
-      ?.insert(module)
+      .insert(module)
       .values({
         id: "cfg",
         type: "ftp",
@@ -134,16 +125,16 @@ describe("remote-sync.service", () => {
     expect(result.synced).toBe(1);
     expect(result.errors).toEqual([]);
 
-    const dl = await testDbRef.current?.query.download.findFirst();
+    const dl = await testDbRef.current.query.download.findFirst();
     expect(dl?.remoteLocation).toContain("Dune");
     expect(dl?.mediaId).toBe(123);
   });
 
   it("runRemoteSync skips already imported remote locations", async () => {
     seedStorage(true);
-    testDbRef.current?.insert(media).values({ id: 1, type: "movie", title: "Old", imdbId: "tt1" }).run();
+    testDbRef.current.insert(media).values({ id: 1, type: "movie", title: "Old", imdbId: "tt1" }).run();
     testDbRef.current
-      ?.insert(download)
+      .insert(download)
       .values({
         id: "dl-existing",
         userId: user.id,
@@ -174,7 +165,7 @@ describe("remote-sync.service", () => {
       runManualSync(user.id, { mediaId: 55, type: "movie", remotePath: "movies/Manual.mkv" }),
     ).resolves.toEqual({ success: true });
 
-    const row = await testDbRef.current?.query.download.findFirst({ where: eq(download.mediaId, 55) });
+    const row = await testDbRef.current.query.download.findFirst({ where: eq(download.mediaId, 55) });
     expect(row?.mediaId).toBe(55);
     expect(row?.remoteLocation).toBe("movies/Manual Film (2020)");
     expect(moveFile).toHaveBeenCalled();
@@ -185,7 +176,7 @@ describe("remote-sync.service", () => {
     await runManualSync(user.id, { mediaId: 55, type: "movie", remotePath: "movies/Manual.mkv" });
     await runManualSync(user.id, { mediaId: 55, type: "movie", remotePath: "movies/Manual.mkv" });
 
-    const rows = await testDbRef.current?.query.download.findMany();
+    const rows = await testDbRef.current.query.download.findMany();
     expect(rows).toHaveLength(1);
   });
 });

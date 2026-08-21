@@ -1,5 +1,6 @@
 import type {
   CreateModuleInput,
+  ManualSyncInput,
   ModuleConfig,
   ModuleTestInput,
   ModuleType,
@@ -7,20 +8,27 @@ import type {
 } from "@seedarr/contracts";
 import { parseModuleConfig } from "@seedarr/contracts";
 import { getModuleCatalogEntry, STREMIO_PRESETS } from "@seedarr/shared";
-import { and, eq, ne } from "drizzle-orm";
 
-import { BadRequestError, ConflictError, NotFoundError } from "@/shared/errors/error";
+import { BadRequestError, ConflictError } from "@/shared/errors/error";
 import { decrypt, encrypt } from "@/shared/helpers/crypto.helper";
 import { assertPublicHttpUrl, assertSafeIndexerUrl } from "@/shared/helpers/url.helper";
-import { AuthenticatedService } from "@/shared/services/authenticated.service";
+import { IdentifiableService } from "@/shared/services/authenticated.service";
 
-import { db } from "@/db/db";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
-import { invalidateStorageConfigCache } from "@/modules/storage-config/remote/remote-storage.service";
+import { downloadRepository } from "@/modules/download/download.repository";
+import { moduleRepository } from "@/modules/module/module.repository";
+import {
+  invalidateStorageConfigCache,
+  remoteStorageService,
+} from "@/modules/storage-config/remote/remote-storage.service";
+import {
+  type RemoteSyncResponse,
+  runManualSync,
+  runRemoteSync,
+} from "@/modules/storage-config/remote/remote-sync.service";
 import { invalidateTmdbKeyCache } from "@/modules/tmdb/tmdb-key.query";
 import { ensureCategory, type ModulePublic, revealAdminSecrets, toPublicModule } from "./module.helper";
-import { type ModuleRow, module } from "./module.schema";
-import { ensureSystemModules } from "./module.seed";
+import type { ModuleRow } from "./module.schema";
 
 type StremioManifest = {
   id: string;
@@ -83,25 +91,20 @@ function resolveSecret(value: unknown): string | null {
   }
 }
 
-export class ModuleService extends AuthenticatedService {
+export class ModuleService extends IdentifiableService<ModulePublic> {
   private async assertUnique(type: ModuleType, excludeId?: string): Promise<void> {
     const entry = getModuleCatalogEntry(type);
     if (!entry.unique) return;
-    const existing = await db
-      .select({ id: module.id })
-      .from(module)
-      .where(excludeId ? and(eq(module.type, type), ne(module.id, excludeId)) : eq(module.type, type))
-      .limit(1);
-    if (existing.length > 0) {
+    if (await moduleRepository.existsByType(type, excludeId)) {
       throw new ConflictError(`${entry.label} is already installed`);
     }
   }
 
-  async list(): Promise<ModulePublic[]> {
-    await ensureSystemModules();
-    const rows = await db.select().from(module);
+  async getMany(args?: { ids?: string[] }): Promise<ModulePublic[]> {
+    const rows = await moduleRepository.listAll();
+    const filtered = args?.ids?.length ? rows.filter((row) => args.ids?.includes(row.id)) : rows;
     const isAdmin = this.roleLevel >= ROLE_LEVELS.admin;
-    return rows.map((row) => {
+    return filtered.map((row) => {
       const pub = toPublicModule(row);
       if (!isAdmin && "apiKey" in pub.config) {
         delete pub.config.apiKey;
@@ -110,10 +113,13 @@ export class ModuleService extends AuthenticatedService {
     });
   }
 
-  async get(id: string): Promise<ModulePublic> {
-    await ensureSystemModules();
-    const row = await db.query.module.findFirst({ where: eq(module.id, id) });
-    if (!row) throw new NotFoundError("Module not found");
+  /** Full catalog list (modules are few; not page-sliced). */
+  async listAll(): Promise<ModulePublic[]> {
+    return this.getMany();
+  }
+
+  override async get(id: string): Promise<ModulePublic> {
+    const row = await moduleRepository.get(id);
     const pub = toPublicModule(row);
     if (this.roleLevel >= ROLE_LEVELS.admin) {
       revealAdminSecrets(pub, row.config as Record<string, unknown>);
@@ -122,19 +128,36 @@ export class ModuleService extends AuthenticatedService {
   }
 
   async getRaw(id: string): Promise<ModuleRow> {
-    const row = await db.query.module.findFirst({ where: eq(module.id, id) });
-    if (!row) throw new NotFoundError("Module not found");
-    return row;
+    return moduleRepository.get(id);
   }
 
   async getByType(type: ModuleType): Promise<ModuleRow | null> {
-    await ensureSystemModules();
-    return (await db.query.module.findFirst({ where: eq(module.type, type) })) ?? null;
+    return (await moduleRepository.findByType(type)) ?? null;
   }
 
   async listByCategory(category: ModuleRow["category"]): Promise<ModuleRow[]> {
-    await ensureSystemModules();
-    return db.select().from(module).where(eq(module.category, category));
+    return moduleRepository.listByCategory(category);
+  }
+
+  async isStorageEnabled(): Promise<boolean> {
+    return remoteStorageService.isEnabled();
+  }
+
+  async runStorageSync(): Promise<RemoteSyncResponse> {
+    return runRemoteSync(this.user.id);
+  }
+
+  async runStorageManualSync(input: ManualSyncInput): Promise<{ success: true }> {
+    return runManualSync(this.user.id, input);
+  }
+
+  async disconnectStorage(): Promise<{ ok: true }> {
+    const rows = await this.listByCategory("storage");
+    const row = rows[0];
+    if (!row) return { ok: true };
+    await this.update(row.id, { enabled: false });
+    invalidateStorageConfigCache();
+    return { ok: true };
   }
 
   async create(input: CreateModuleInput): Promise<ModulePublic> {
@@ -174,15 +197,12 @@ export class ModuleService extends AuthenticatedService {
       if (presetTaken) throw new ConflictError(`${preset} is already installed`);
     }
 
-    const [row] = await db
-      .insert(module)
-      .values({
-        type: input.type,
-        category: ensureCategory(input.type),
-        enabled: true,
-        config,
-      })
-      .returning();
+    const row = await moduleRepository.insert({
+      type: input.type,
+      category: ensureCategory(input.type),
+      enabled: true,
+      config,
+    });
 
     this.invalidateCaches(input.type);
     return toPublicModule(row);
@@ -224,15 +244,11 @@ export class ModuleService extends AuthenticatedService {
       nextConfig = parseModuleConfig(row.type, merged);
     }
 
-    const [updated] = await db
-      .update(module)
-      .set({
-        enabled: input.enabled ?? row.enabled,
-        config: nextConfig,
-        updatedAt: new Date(),
-      })
-      .where(eq(module.id, id))
-      .returning();
+    const updated = await moduleRepository.update(id, {
+      enabled: input.enabled ?? row.enabled,
+      config: nextConfig,
+      updatedAt: new Date(),
+    });
 
     this.invalidateCaches(row.type);
     return toPublicModule(updated);
@@ -243,10 +259,9 @@ export class ModuleService extends AuthenticatedService {
     const entry = getModuleCatalogEntry(row.type);
     if (entry.locked) throw new BadRequestError("This module cannot be uninstalled");
     if (row.category === "storage") {
-      const { deleteOrphanRemoteDownloads } = await import("@/modules/download/download-storage.helper");
-      await deleteOrphanRemoteDownloads(row.id);
+      await downloadRepository.deleteRemoteOrphans(row.id);
     }
-    await db.delete(module).where(eq(module.id, id));
+    await moduleRepository.delete(id);
     this.invalidateCaches(row.type);
     return { ok: true };
   }
@@ -313,7 +328,6 @@ export class ModuleService extends AuthenticatedService {
         case "ftp": {
           const host = String(config.host || "");
           if (!host) return { ok: false, message: "Host missing" };
-          const { remoteStorageService } = await import("@/modules/storage-config/remote/remote-storage.service");
           const result = await remoteStorageService.testConnection({
             protocol: type,
             host,

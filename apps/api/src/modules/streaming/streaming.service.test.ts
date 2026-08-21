@@ -2,33 +2,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Download } from "@/modules/download/download.schema";
 import { download as downloadTable } from "@/modules/download/download.schema";
-import { seedTestUser } from "@/tests/route-test.helper";
-import { createTestDb, sampleTorrent, type TestDb } from "@/tests/test.helper";
+import { createTestDb, sampleTorrent, seedTestUser, testDbRef } from "@/tests/test.helper";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { PassThrough } from "node:stream";
 
 const {
-  testDbRef,
   getActiveTorrent,
   findLargestVideoFile,
   resolveRemoteVideoInfo,
   probeVideoStreams,
   convertToFragmentedMp4Stream,
 } = vi.hoisted(() => ({
-  testDbRef: { current: null as TestDb | null },
   getActiveTorrent: vi.fn(),
   findLargestVideoFile: vi.fn(),
   resolveRemoteVideoInfo: vi.fn(),
   probeVideoStreams: vi.fn(),
   convertToFragmentedMp4Stream: vi.fn(),
-}));
-
-vi.mock("@/db/db", () => ({
-  get db() {
-    return testDbRef.current;
-  },
 }));
 
 vi.mock("@/modules/download/webtorrent/webtorrent-manager", () => ({
@@ -221,7 +212,7 @@ describe("StreamingService", () => {
     invalidateStreamSource("dl-probe");
 
     testDbRef.current
-      ?.insert(downloadTable)
+      .insert(downloadTable)
       .values({
         id: "dl-probe",
         userId: user.id,

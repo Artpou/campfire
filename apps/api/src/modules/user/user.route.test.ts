@@ -1,20 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { user } from "@/modules/user/user.schema";
-import { createAuthGuardMock } from "@/tests/route-test.helper";
-import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
+import { bodyOf, createAuthGuardMock, createTestDb, json, testDbRef } from "@/tests/test.helper";
 
-const { adminUser, testDbRef } = vi.hoisted(() => {
+const { adminUser } = vi.hoisted(() => {
   const adminUser = { id: "user-admin", username: "admin", role: "admin" as const, createdAt: new Date("2024-01-01") };
-  const testDbRef = { current: null as TestDb | null };
-  return { adminUser, testDbRef };
+  return { adminUser };
 });
 
-vi.mock("@/db/db", () => ({
-  get db() {
-    return testDbRef.current;
-  },
-}));
 vi.mock("@/modules/auth/auth.guard", () => ({
   authGuard: createAuthGuardMock(adminUser),
 }));
@@ -49,13 +42,16 @@ describe("User Routes", () => {
   describe("GET / - list users", () => {
     it("returns all users", async () => {
       const body = await bodyOf(await userRoutes.request("/"));
-      expect(body).toHaveLength(3);
+      expect(body.results).toHaveLength(3);
+      expect(body.total).toBe(3);
+      expect(body.page).toBe(1);
+      expect(body.hasMore).toBe(false);
     });
 
     it("filters users by search", async () => {
       const body = await bodyOf(await userRoutes.request("/?q=member"));
-      expect(body).toHaveLength(1);
-      expect(body[0].username).toBe("member1");
+      expect(body.results).toHaveLength(1);
+      expect(body.results[0].username).toBe("member1");
     });
   });
 

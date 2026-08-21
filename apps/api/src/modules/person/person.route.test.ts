@@ -1,20 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createAuthGuardMock, seedTestUser } from "@/tests/route-test.helper";
-import type { TestDb } from "@/tests/test.helper";
-import { bodyOf, createTestDb } from "@/tests/test.helper";
+import { bodyOf, createAuthGuardMock, createTestDb, seedTestUser, testDbRef } from "@/tests/test.helper";
 
-const { fakeUser, testDbRef } = vi.hoisted(() => {
-  const fakeUser = { id: "user-1", username: "testuser", role: "member" as const, createdAt: new Date("2024-01-01") };
-  const testDbRef = { current: null as TestDb | null };
-  return { fakeUser, testDbRef };
-});
-
-vi.mock("@/db/db", () => ({
-  get db() {
-    return testDbRef.current;
-  },
+const { fakeUser } = vi.hoisted(() => ({
+  fakeUser: { id: "user-1", username: "testuser", role: "member" as const, createdAt: new Date("2024-01-01") },
 }));
+
 vi.mock("@/modules/auth/auth.guard", () => ({
   authGuard: createAuthGuardMock(fakeUser),
 }));

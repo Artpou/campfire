@@ -66,10 +66,11 @@ export function OnboardingIntegrations({ onBack }: OnboardingIntegrationsProps) 
           <Trans>Required for catalog browse and search if not set in the server environment.</Trans>
         </p>
         {hasSavedKey && !touched && <p className="text-muted-foreground font-mono text-xs">{savedKey}</p>}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
           <Input
             password
-            className="flex-1"
+            classNameWrapper="flex-1"
+            label={<Trans>TMDB API Key</Trans>}
             placeholder={hasSavedKey ? "••••••••" : "Enter API key"}
             value={tmdbApiKey}
             onChange={(e) => {

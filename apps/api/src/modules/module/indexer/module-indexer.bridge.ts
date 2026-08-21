@@ -1,5 +1,5 @@
-import type { IndexerModule } from "./indexer.types";
-import type { ModuleRow } from "./module.schema";
+import type { ModuleRow } from "../module.schema";
+import type { IndexerModule } from "./module-indexer.types";
 
 /** Map an indexer module row to the shape used by torrent adapters. */
 export function moduleToIndexer(row: ModuleRow): IndexerModule {

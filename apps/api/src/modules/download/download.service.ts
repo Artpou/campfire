@@ -1,5 +1,4 @@
 import type { DownloadTorrentInput, PaginationQuery } from "@seedarr/contracts";
-import { and, desc, eq, inArray } from "drizzle-orm";
 
 import { BadRequestError, ForbiddenError, NotFoundError } from "@/shared/errors/error";
 import { signToken } from "@/shared/helpers/crypto.helper";
@@ -7,15 +6,14 @@ import { logger } from "@/shared/helpers/logger.helper";
 import { paginate } from "@/shared/helpers/pagination.helper";
 import { IdentifiableService } from "@/shared/services/authenticated.service";
 
-import { db } from "@/db/db";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
-import { type Download, type DownloadStats, download } from "@/modules/download/download.schema";
+import { downloadRepository } from "@/modules/download/download.repository";
+import type { Download, DownloadStats } from "@/modules/download/download.schema";
 import { type DownloadableFile, getDownloadableFile } from "@/modules/download/local/local-file.helper";
-import { media, watchProgress } from "@/modules/media/media.schema";
+import { mediaRepository } from "@/modules/media/media.repository";
 import { remoteStorageService } from "@/modules/storage-config/remote/remote-storage.service";
 import { invalidateStreamSource } from "@/modules/streaming/streaming.service";
 import { resolveTorrentSource } from "@/modules/torrent/torrent-source.helper";
-import { visibleDownloadSql } from "./download-storage.helper";
 import { getLocalDiskSpace } from "./local/local-disk.helper";
 import { isTransferInProgress, markTransferStarting, runRemoteTransfer } from "./remote/remote-transfer.helper";
 import { extractTorrentLiveData, waitForTorrentMetadata } from "./webtorrent/webtorrent.helper";
@@ -38,21 +36,15 @@ const METADATA_TIMEOUT_FILE_MS = 5_000;
 
 export class DownloadService extends IdentifiableService<Download> {
   async getMany(params?: PaginationQuery): Promise<Download[]> {
-    const where = params?.ids ? inArray(download.id, params.ids) : await visibleDownloadSql();
     const paginationOpts = !params?.ids && params?.page && params?.limit ? paginate(params) : {};
-
-    return db.query.download.findMany({
-      where,
-      orderBy: desc(download.createdAt),
+    return downloadRepository.findManyVisible({
+      ids: params?.ids,
       ...paginationOpts,
     });
   }
 
   async getByMediaId(mediaId: number): Promise<Download[]> {
-    return db.query.download.findMany({
-      where: and(eq(download.mediaId, mediaId), await visibleDownloadSql()),
-      orderBy: desc(download.createdAt),
-    });
+    return downloadRepository.findByMediaIdVisible(mediaId);
   }
 
   async findMany(params?: PaginationQuery): Promise<Download[]> {
@@ -66,9 +58,7 @@ export class DownloadService extends IdentifiableService<Download> {
   }
 
   async getStats(): Promise<DownloadStats> {
-    const downloads = await db.query.download.findMany({
-      with: { media: { columns: { type: true } } },
-    });
+    const downloads = await downloadRepository.findManyVisibleWithMedia();
 
     let totalSize = 0;
     let downloadSpeed = 0;
@@ -172,26 +162,19 @@ export class DownloadService extends IdentifiableService<Download> {
       const metadataTimeout = typeof torrentSource === "string" ? METADATA_TIMEOUT_MAGNET_MS : METADATA_TIMEOUT_FILE_MS;
       await waitForTorrentMetadata(torrent, metadataTimeout);
 
-      const [newMedia] = await db
-        .insert(media)
-        .values(input.media)
-        .onConflictDoUpdate({ target: media.id, set: input.media })
-        .returning();
+      const newMedia = await mediaRepository.upsert(input.media);
 
       const liveData = extractTorrentLiveData(torrent);
       if (preferLocal) liveData.skipAutoTransfer = true;
 
-      const [newDownload] = await db
-        .insert(download)
-        .values({
-          ...downloadInput,
-          userId: this.user.id,
-          mediaId: newMedia.id,
-          moduleIndexerId: input.moduleIndexerId,
-          size: liveData.length || null,
-          torrent: liveData,
-        })
-        .returning();
+      const newDownload = await downloadRepository.insert({
+        ...downloadInput,
+        userId: this.user.id,
+        mediaId: newMedia.id,
+        moduleIndexerId: input.moduleIndexerId,
+        size: liveData.length || null,
+        torrent: liveData,
+      });
 
       setupTorrentHandlers(torrent, newDownload.id);
 
@@ -263,24 +246,17 @@ export class DownloadService extends IdentifiableService<Download> {
   }
 
   async getDownloadableFile(id: string): Promise<DownloadableFile> {
-    const file = await getDownloadableFile(id);
-    if (!file) throw new NotFoundError("Download");
-    return file;
+    return getDownloadableFile(id);
   }
 
   async reassignMedia(id: string, newMediaId: number): Promise<{ success: true }> {
     await this.requireDownload(id);
-
-    await db.update(download).set({ mediaId: newMediaId }).where(eq(download.id, id));
-
+    await downloadRepository.update(id, { mediaId: newMediaId });
     return { success: true };
   }
 
   async batchDelete(ids: string[], options?: { dbOnly?: boolean }): Promise<{ deleted: number; skipped: number }> {
-    const rows = await db.query.download.findMany({
-      where: inArray(download.id, ids),
-      columns: { id: true, userId: true },
-    });
+    const rows = await downloadRepository.findByIds(ids, { id: true, userId: true });
 
     let deleted = 0;
     let skipped = 0;
@@ -318,10 +294,7 @@ export class DownloadService extends IdentifiableService<Download> {
 
     if (options?.dbOnly) {
       if (this.roleLevel < ROLE_LEVELS.admin) throw new ForbiddenError();
-
-      await db.delete(watchProgress).where(eq(watchProgress.downloadId, id));
-      await db.delete(download).where(eq(download.id, id));
-
+      await downloadRepository.deleteWithProgress(id);
       return { success: true };
     }
 
@@ -338,12 +311,11 @@ export class DownloadService extends IdentifiableService<Download> {
 
     const otherSideExists = scope === "torrent" ? item.remoteLocation : scope === "remote" ? item.torrent : false;
     if (scope === "all" || !otherSideExists) {
-      await db.delete(watchProgress).where(eq(watchProgress.downloadId, id));
-      await db.delete(download).where(eq(download.id, id));
+      await downloadRepository.deleteWithProgress(id);
     } else if (scope === "torrent") {
-      await db.update(download).set({ torrent: null, error: null }).where(eq(download.id, id));
+      await downloadRepository.update(id, { torrent: null, error: null });
     } else if (scope === "remote") {
-      await db.update(download).set({ remoteLocation: null }).where(eq(download.id, id));
+      await downloadRepository.update(id, { remoteLocation: null });
     }
 
     return { success: true };

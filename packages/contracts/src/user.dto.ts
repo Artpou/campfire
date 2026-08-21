@@ -1,8 +1,9 @@
 import { z } from "zod";
 
 import { mediaTypeEnum, userRoleEnum } from "./enums";
+import { paginationDto } from "./pagination.dto";
 
-export const listUsersDto = z.object({
+export const listUsersDto = paginationDto.extend({
   q: z.string().max(128).optional(),
 });
 export type ListUsersQuery = z.infer<typeof listUsersDto>;

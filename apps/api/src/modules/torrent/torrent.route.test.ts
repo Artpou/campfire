@@ -1,20 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { module } from "@/modules/module/module.schema";
-import { createAuthGuardMock, seedTestUser } from "@/tests/route-test.helper";
-import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
+import { bodyOf, createAuthGuardMock, createTestDb, json, seedTestUser, testDbRef } from "@/tests/test.helper";
 
-const { fakeUser, testDbRef } = vi.hoisted(() => {
+const { fakeUser } = vi.hoisted(() => {
   const fakeUser = { id: "user-1", username: "testuser", role: "member" as const, createdAt: new Date("2024-01-01") };
-  const testDbRef = { current: null as TestDb | null };
-  return { fakeUser, testDbRef };
+  return { fakeUser };
 });
 
-vi.mock("@/db/db", () => ({
-  get db() {
-    return testDbRef.current;
-  },
-}));
 vi.mock("@/modules/auth/auth.guard", () => ({
   authGuard: createAuthGuardMock(fakeUser),
 }));
@@ -99,7 +92,7 @@ describe("Torrent Routes", () => {
 
     it("returns search results for jackett", async () => {
       testDbRef.current
-        ?.insert(module)
+        .insert(module)
         .values({
           id: "c1",
           type: "jackett",
@@ -117,7 +110,7 @@ describe("Torrent Routes", () => {
 
     it("returns search results for stremio", async () => {
       testDbRef.current
-        ?.insert(module)
+        .insert(module)
         .values({
           id: "c2",
           type: "stremio",
@@ -139,7 +132,7 @@ describe("Torrent Routes", () => {
 
     it("rejects search on disabled manager", async () => {
       testDbRef.current
-        ?.insert(module)
+        .insert(module)
         .values({
           id: "c1",
           type: "jackett",

@@ -1,14 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { module } from "@/modules/module/module.schema";
-import { seedTestUser } from "@/tests/route-test.helper";
-import { createTestDb, type TestDb } from "@/tests/test.helper";
+import { createTestDb, seedTestUser, testDbRef } from "@/tests/test.helper";
 import { encrypt } from "../../../shared/helpers/crypto.helper";
 import { invalidateStorageConfigCache, remoteStorageService } from "./remote-storage.service";
 
-const { testDbRef, ftpTest, ftpTransfer, ftpRemove, ftpListDirs, ftpListFiles, ftpMove, ftpEnsure, ftpStream } =
-  vi.hoisted(() => ({
-    testDbRef: { current: null as TestDb | null },
+const { ftpTest, ftpTransfer, ftpRemove, ftpListDirs, ftpListFiles, ftpMove, ftpEnsure, ftpStream } = vi.hoisted(
+  () => ({
     ftpTest: vi.fn(),
     ftpTransfer: vi.fn(),
     ftpRemove: vi.fn(),
@@ -17,13 +15,8 @@ const { testDbRef, ftpTest, ftpTransfer, ftpRemove, ftpListDirs, ftpListFiles, f
     ftpMove: vi.fn(),
     ftpEnsure: vi.fn(),
     ftpStream: vi.fn(),
-  }));
-
-vi.mock("@/db/db", () => ({
-  get db() {
-    return testDbRef.current;
-  },
-}));
+  }),
+);
 
 vi.mock("@/modules/module/module.seed", () => ({
   ensureSystemModules: vi.fn().mockResolvedValue(undefined),
@@ -61,7 +54,7 @@ describe("remoteStorageService", () => {
 
   function seedConfig(overrides: { enabled?: boolean; deleteLocalAfterTransfer?: boolean } = {}) {
     testDbRef.current
-      ?.insert(module)
+      .insert(module)
       .values({
         id: "cfg-1",
         type: "ftp",

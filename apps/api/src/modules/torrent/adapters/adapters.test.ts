@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { IndexerModule } from "@/modules/module/indexer.types";
+import type { IndexerModule } from "@/modules/module/indexer/module-indexer.types";
 import { JackettAdapter } from "./jackett.adapter";
 import { ProwlarrAdapter } from "./prowlarr.adapter";
 import { StremioAdapter } from "./stremio.adapter";

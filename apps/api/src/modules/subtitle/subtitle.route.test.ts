@@ -1,20 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { download } from "@/modules/download/download.schema";
-import { createAuthGuardMock, seedTestUser } from "@/tests/route-test.helper";
-import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
+import { bodyOf, createAuthGuardMock, createTestDb, json, seedTestUser, testDbRef } from "@/tests/test.helper";
 
-const { fakeUser, testDbRef } = vi.hoisted(() => {
+const { fakeUser } = vi.hoisted(() => {
   const fakeUser = { id: "user-1", username: "testuser", role: "member" as const, createdAt: new Date("2024-01-01") };
-  const testDbRef = { current: null as TestDb | null };
-  return { fakeUser, testDbRef };
+  return { fakeUser };
 });
 
-vi.mock("@/db/db", () => ({
-  get db() {
-    return testDbRef.current;
-  },
-}));
 vi.mock("@/modules/auth/auth.guard", () => ({
   authGuard: createAuthGuardMock(fakeUser),
 }));
@@ -63,7 +56,7 @@ describe("Subtitle Routes", () => {
   describe("POST /download", () => {
     it("downloads subtitle for user's download", async () => {
       testDbRef.current
-        ?.insert(download)
+        .insert(download)
         .values({
           id: "dl-1",
           userId: fakeUser.id,

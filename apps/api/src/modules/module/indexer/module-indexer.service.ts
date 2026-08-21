@@ -1,20 +1,16 @@
-import { eq, inArray } from "drizzle-orm";
-
 import { NotFoundError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
 import { IdentifiableService } from "@/shared/services/authenticated.service";
 
-import { db } from "@/db/db";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import type { IndexerAdapter } from "@/modules/torrent/adapters/indexer.adapter";
 import { JackettAdapter } from "@/modules/torrent/adapters/jackett.adapter";
 import { ProwlarrAdapter } from "@/modules/torrent/adapters/prowlarr.adapter";
 import { StremioAdapter } from "@/modules/torrent/adapters/stremio.adapter";
-import type { Indexer, IndexerModule, IndexerModuleWithIndexers } from "./indexer.types";
-import { module } from "./module.schema";
-import { ensureSystemModules } from "./module.seed";
-import { ModuleService } from "./module.service";
+import { moduleRepository } from "../module.repository";
+import { ModuleService } from "../module.service";
 import { moduleToIndexer } from "./module-indexer.bridge";
+import type { Indexer, IndexerModule, IndexerModuleWithIndexers } from "./module-indexer.types";
 
 type IndexerModuleDto = IndexerModule | IndexerModuleWithIndexers;
 
@@ -53,19 +49,14 @@ export class ModuleIndexerService extends IdentifiableService<IndexerModule> {
   }
 
   private async loadIndexers(ids?: string[]): Promise<IndexerModule[]> {
-    await ensureSystemModules();
-    const rows = await db
-      .select()
-      .from(module)
-      .where(ids ? inArray(module.id, ids) : eq(module.category, "indexer"));
+    let rows = await moduleRepository.listByCategory("indexer");
+    if (ids?.length) rows = rows.filter((row) => ids.includes(row.id));
 
-    return rows
-      .filter((row) => row.category === "indexer")
-      .map((row) => {
-        const indexer = moduleToIndexer(row);
-        if (this.roleLevel < ROLE_LEVELS.admin) indexer.indexerApiKey = "";
-        return indexer;
-      });
+    return rows.map((row) => {
+      const indexer = moduleToIndexer(row);
+      if (this.roleLevel < ROLE_LEVELS.admin) indexer.indexerApiKey = "";
+      return indexer;
+    });
   }
 
   async getMany(options: { ids?: string[]; withIndexers: true }): Promise<IndexerModuleWithIndexers[]>;

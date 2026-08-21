@@ -3,7 +3,7 @@ import type { TorrentListQuery } from "@seedarr/contracts";
 
 import { BadRequestError } from "@/shared/errors/error";
 
-import type { Indexer, IndexerModule } from "@/modules/module/indexer.types";
+import type { Indexer, IndexerModule } from "@/modules/module/indexer/module-indexer.types";
 import type { Torrent } from "../torrent.types";
 import { buildIndexerSearchPlan, searchWithTitleFallback } from "../torrent-search.helper";
 import { IndexerAdapter } from "./indexer.adapter";

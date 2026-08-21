@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import { Trans } from "@lingui/react/macro";
-import type { ModuleCategory, ModuleType } from "@seedarr/contracts";
+import type { ModuleType } from "@seedarr/contracts";
 import type { Activity } from "@seedarr/sdk";
 import { getModuleCatalogEntry } from "@seedarr/shared";
 import { Link } from "@tanstack/react-router";
@@ -14,7 +14,7 @@ import {
 } from "@tanstack/react-table";
 import { InfoIcon } from "lucide-react";
 
-import { Badge } from "@/shared/ui/badge";
+import { cn } from "@/lib/utils";
 import { Button } from "@/shared/ui/button";
 import { DataTableColumnHeader } from "@/shared/ui/data-table-column-header";
 import { Img } from "@/shared/ui/image";
@@ -48,68 +48,28 @@ function moduleLogo(type: string): string {
 function ActivitySubjectCell({ log }: { log: Activity }) {
   const metadata = parseActivityMetadata(log.metadata);
   const moduleType = log.module?.type ?? (typeof metadata?.type === "string" ? metadata.type : null);
-  const moduleCategory =
-    log.module?.category ?? (typeof metadata?.category === "string" ? (metadata.category as ModuleCategory) : null);
   const Icon = getActivityActionIcon(log.action);
-
-  if (moduleType) {
-    const image = (
-      <Img
-        src={moduleLogo(moduleType)}
-        alt={moduleType}
-        fallback={
-          <div className="size-10 flex items-center justify-center rounded bg-muted">
-            <Icon className="size-4 text-muted-foreground" />
-          </div>
-        }
-        className="size-10 object-contain rounded shrink-0 bg-muted p-1"
-      />
-    );
-
-    return (
-      <div className="flex flex-col items-start gap-1 min-w-20">
-        {log.module ? (
-          <Link
-            to="/settings/modules/$id"
-            params={{ id: log.module.id }}
-            onClick={(e) => e.stopPropagation()}
-            className="shrink-0"
-          >
-            {image}
-          </Link>
-        ) : (
-          image
-        )}
-        {moduleCategory ? (
-          <Badge variant="glass" className="capitalize text-[10px]">
-            {moduleCategory}
-          </Badge>
-        ) : null}
-        <span className="text-xs text-muted-foreground capitalize truncate max-w-24">{moduleType}</span>
-      </div>
-    );
-  }
 
   const media = log.media;
   const poster = getPosterUrl(media?.poster_path, "w92");
   const image = (
     <Img
-      src={poster}
-      alt={media?.title || ""}
+      src={poster || moduleLogo(moduleType ?? "")}
+      alt={media?.title || moduleType || ""}
       fallback={
         <div className="w-10 h-14 flex items-center justify-center rounded bg-muted">
           <Icon className="size-4 text-muted-foreground" />
         </div>
       }
-      className="w-10 h-14 object-cover rounded shrink-0"
+      className={cn("w-10 h-14 rounded shrink-0", moduleType ? "object-contain" : "object-cover")}
     />
   );
 
-  if (media) {
+  if (media || moduleType) {
     return (
       <Link
-        to={media.type === "tv" ? "/tv/$id" : "/movies/$id"}
-        params={{ id: media.id.toString() }}
+        to={moduleType ? `/settings/modules/$id` : media?.type === "tv" ? "/tv/$id" : "/movies/$id"}
+        params={{ id: moduleType ? (log.module?.id ?? "") : (media?.id.toString() ?? "") }}
         onClick={(e) => e.stopPropagation()}
         className="shrink-0"
       >
@@ -131,7 +91,7 @@ export function useActivityColumns({ onDetail }: UseActivityColumnsOptions) {
       columnHelper.columns([
         columnHelper.display({
           id: "subject",
-          meta: { headerClassName: "w-24", cellClassName: "w-24 align-top" },
+          meta: { headerClassName: "w-16", cellClassName: "w-16 align-top" },
           cell: ({ row }) => <ActivitySubjectCell log={row.original} />,
         }),
         columnHelper.accessor("action", {
@@ -139,6 +99,7 @@ export function useActivityColumns({ onDetail }: UseActivityColumnsOptions) {
           header: ({ column }) => <DataTableColumnHeader column={column} title={<Trans>Action</Trans>} />,
           cell: ({ row }) => {
             const Icon = getActivityActionIcon(row.original.action);
+
             return (
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
@@ -148,7 +109,7 @@ export function useActivityColumns({ onDetail }: UseActivityColumnsOptions) {
                   </span>
                 </div>
                 <span className="text-xs text-muted-foreground max-w-60 truncate">
-                  {row.original.media?.title || ""}
+                  {row.original.module?.type || row.original.media?.title || ""}
                 </span>
               </div>
             );
@@ -158,7 +119,7 @@ export function useActivityColumns({ onDetail }: UseActivityColumnsOptions) {
         columnHelper.accessor("type", {
           id: "type",
           meta: { headerClassName: "w-28", cellClassName: "w-28" },
-          header: () => <Trans>Type</Trans>,
+          header: () => <Trans>Status</Trans>,
           cell: ({ row }) => <SettingsActivityBadgeType type={row.original.type} />,
         }),
         columnHelper.display({

@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
@@ -11,9 +11,11 @@ import { DownloadIcon, LayoutGridIcon, type LucideIcon, MoreHorizontalIcon, Puzz
 
 import { cn } from "@/lib/utils";
 import { DropSelect } from "@/shared/components/drop-select";
+import { EmptyState } from "@/shared/components/empty-state";
 import { ResponsiveTabs } from "@/shared/components/responsive-tabs";
 import { SentinelStuck, StickyFilterBar } from "@/shared/components/sentinel/sentinel-stuck";
 import { DataTable } from "@/shared/ui/data-table";
+import { DataTablePagination } from "@/shared/ui/data-table-pagination";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/shared/ui/sheet";
@@ -26,6 +28,8 @@ import { UserProfile } from "@/features/user/components/user-profile";
 
 type ActivityCategoryFilter = "all" | ActivityCategory;
 type ActivityTypeFilter = "all" | ActivityType;
+
+const PAGE_SIZE = 20;
 
 const CATEGORY_FILTERS: { id: ActivityCategoryFilter; label: React.ReactNode; icon: LucideIcon }[] = [
   { id: "all", label: <Trans>All</Trans>, icon: LayoutGridIcon },
@@ -42,17 +46,24 @@ const TYPE_FILTERS: { value: ActivityTypeFilter; label: React.ReactNode }[] = [
   { value: "ERROR", label: <Trans>Error</Trans> },
 ];
 
-export function SettingsActivityTab() {
+export function SettingsActivityView() {
   const { t } = useLingui();
   const [selectedLog, setSelectedLog] = useState<Activity | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<ActivityCategoryFilter>("all");
   const [typeFilter, setTypeFilter] = useState<ActivityTypeFilter>("all");
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
   const [isStuck, setIsStuck] = useState(false);
   const debouncedQuery = useDebounce(query, 300);
 
+  useEffect(() => {
+    setPage(1);
+  }, []);
+
   const { data: logs } = useQuery(
     activityQueries.list({
+      page,
+      limit: PAGE_SIZE,
       type: typeFilter === "all" ? undefined : typeFilter,
       category: categoryFilter === "all" ? undefined : categoryFilter,
       q: debouncedQuery.trim() || undefined,
@@ -60,6 +71,7 @@ export function SettingsActivityTab() {
   );
 
   const results = logs?.results ?? [];
+  const total = logs?.total ?? results.length;
   const parsedMetadata = selectedLog ? parseActivityMetadata(selectedLog.metadata) : null;
   const onDetail = useCallback((log: Activity) => setSelectedLog(log), []);
   const columns = useActivityColumns({ onDetail });
@@ -85,7 +97,7 @@ export function SettingsActivityTab() {
 
   return (
     <div className="space-y-4">
-      <SentinelStuck setIsStuck={setIsStuck} marginTop={-30} />
+      <SentinelStuck setIsStuck={setIsStuck} />
       <StickyFilterBar isStuck={isStuck}>
         <div className="flex items-center justify-between gap-2 w-full">
           <ResponsiveTabs
@@ -94,21 +106,33 @@ export function SettingsActivityTab() {
             onValueChange={(v) => setCategoryFilter(v as ActivityCategoryFilter)}
             options={CATEGORY_FILTERS.map((f) => ({ value: f.id, label: f.label, icon: f.icon }))}
           />
-          <DropSelect
-            value={typeFilter}
-            onValueChange={setTypeFilter}
-            options={TYPE_FILTERS}
-            forceDrawer
-            triggerClassName="shrink-0 min-w-36"
-            label={<Trans>Type</Trans>}
-          />
+          {!isStuck && (
+            <DropSelect
+              value={typeFilter}
+              onValueChange={setTypeFilter}
+              options={TYPE_FILTERS}
+              forceDrawer
+              triggerClassName="shrink-0 min-w-36 w-fit"
+              label={<Trans>Type</Trans>}
+            />
+          )}
           {!!isStuck && searchInput}
         </div>
       </StickyFilterBar>
 
       {!isStuck && searchInput}
 
-      <DataTable table={table} empty={<Trans>No activity yet.</Trans>} />
+      <DataTablePagination page={page} limit={PAGE_SIZE} total={total} onPageChange={setPage} />
+
+      <DataTable
+        table={table}
+        empty={
+          <EmptyState
+            title={<Trans>No activity yet</Trans>}
+            subtitle={<Trans>Actions from the household will show up here.</Trans>}
+          />
+        }
+      />
 
       <Sheet open={!!selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)}>
         <SheetContent side="right" className="sm:max-w-md overflow-y-auto">

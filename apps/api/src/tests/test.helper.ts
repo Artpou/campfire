@@ -4,6 +4,8 @@ import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 
 import { schema } from "@/db/schema";
 import type { TorrentLiveData } from "@/modules/download/download.schema";
+import type { User } from "@/modules/user/user.schema";
+import { user } from "@/modules/user/user.schema";
 import path from "node:path";
 
 const MIGRATIONS_FOLDER = path.resolve(__dirname, "../db/drizzle");
@@ -17,6 +19,51 @@ export function createTestDb() {
   const db = drizzle(sqlite, { schema });
   migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
   return db;
+}
+
+export type TestDbRef = {
+  current: TestDb;
+};
+
+function createTestDbRef(): TestDbRef {
+  let dbInstance: TestDb | null = null;
+  return {
+    get current(): TestDb {
+      if (!dbInstance) {
+        throw new Error("TestDb is not initialized. Did you forget testDbRef.current = createTestDb() in beforeEach?");
+      }
+      return dbInstance;
+    },
+    set current(val: TestDb) {
+      dbInstance = val;
+    },
+  };
+}
+
+/**
+ * Shared in-memory DB for the current test file.
+ * Assign in `beforeEach`: `testDbRef.current = createTestDb()`.
+ * Accessing `.current` before init throws (no silent `null` / `!`).
+ */
+export const testDbRef = createTestDbRef();
+
+export function seedTestUser(db: TestDb, fakeUser: Pick<User, "id" | "username" | "role" | "createdAt">): void {
+  db.insert(user)
+    .values({
+      id: fakeUser.id,
+      username: fakeUser.username,
+      password: "x",
+      role: fakeUser.role,
+      createdAt: fakeUser.createdAt,
+    })
+    .run();
+}
+
+export function createAuthGuardMock(fakeUser: Pick<User, "id" | "username" | "role" | "createdAt">) {
+  return async (c: unknown, next: () => Promise<void>) => {
+    (c as { set: (k: string, v: unknown) => void }).set("user", fakeUser);
+    await next();
+  };
 }
 
 export function sampleTorrent(overrides: Partial<TorrentLiveData> = {}): TorrentLiveData {

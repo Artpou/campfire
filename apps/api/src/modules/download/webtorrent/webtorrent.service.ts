@@ -1,13 +1,11 @@
-import { eq } from "drizzle-orm";
 import type WebTorrent from "webtorrent";
 
 import { BadRequestError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
 import { resolveWithinDownloads } from "@/shared/helpers/path.helper";
 
-import { db } from "@/db/db";
+import { downloadRepository } from "@/modules/download/download.repository";
 import type { Download, TorrentLiveData } from "@/modules/download/download.schema";
-import { download } from "@/modules/download/download.schema";
 import fs from "node:fs/promises";
 import { extractTorrentLiveData } from "./webtorrent.helper";
 import { torrentClient, UNMARK_DESTROYING_DELAY_MS } from "./webtorrent-manager";
@@ -29,7 +27,7 @@ export async function pauseTorrent(id: string, item: Download): Promise<{ succes
   if (!activeTorrent) {
     if (item.torrent?.paused) return { success: true };
     const pausedData = { ...item.torrent, paused: true } as TorrentLiveData;
-    await db.update(download).set({ torrent: pausedData }).where(eq(download.id, id));
+    await downloadRepository.update(id, { torrent: pausedData });
     logger.info("DOWNLOAD", `Paused (no active session): ${item.torrent?.name || id}`);
     return { success: true };
   }
@@ -38,7 +36,7 @@ export async function pauseTorrent(id: string, item: Download): Promise<{ succes
   clearHandlersForDownload(id);
 
   const pausedData = { ...extractTorrentLiveData(activeTorrent), paused: true, downloadSpeed: 0, uploadSpeed: 0 };
-  await db.update(download).set({ torrent: pausedData }).where(eq(download.id, id));
+  await downloadRepository.update(id, { torrent: pausedData });
 
   await destroyTorrent(activeTorrent, { destroyStore: false });
   torrentClient.deleteActiveTorrent(id);
@@ -55,10 +53,7 @@ export async function resumeTorrent(id: string, item: Download): Promise<{ succe
   const resumed = await torrentClient.attachTorrent(id, item.torrent.magnetURI, item.torrent.infoHash);
   setupTorrentHandlers(resumed, id);
 
-  await db
-    .update(download)
-    .set({ torrent: { ...item.torrent, paused: false } as TorrentLiveData })
-    .where(eq(download.id, id));
+  await downloadRepository.update(id, { torrent: { ...item.torrent, paused: false } as TorrentLiveData });
 
   logger.info("DOWNLOAD", `Resumed torrent: ${item.torrent.name || id}`);
   return { success: true };
@@ -81,10 +76,7 @@ export async function recheckTorrent(id: string, item: Download): Promise<{ succ
   const resumed = await torrentClient.attachTorrent(id, item.torrent.magnetURI, item.torrent.infoHash);
   setupTorrentHandlers(resumed, id);
 
-  await db
-    .update(download)
-    .set({ torrent: { ...item.torrent, paused: false }, error: null })
-    .where(eq(download.id, id));
+  await downloadRepository.update(id, { torrent: { ...item.torrent, paused: false }, error: null });
 
   logger.info("DOWNLOAD", `Force recheck: ${item.torrent.name || id}`);
   return { success: true };

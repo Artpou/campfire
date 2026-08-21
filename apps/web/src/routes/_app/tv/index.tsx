@@ -1,62 +1,14 @@
-import { Trans, useLingui } from "@lingui/react/macro";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 
-import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
-
-import { MediaDiscover } from "@/features/media/components/media-discover";
-import {
-  buildTvDiscoverOptions,
-  isDiscoverTextSearch,
-  isDownloadedTab,
-  pickTvFilters,
-  type TvDiscoverSearch,
-  validateTvDiscoverSearch,
-} from "@/features/media/helpers/discover-search.helper";
-import { mediaQueries } from "@/features/media/hooks/media.queries";
-import { TvFiltersSheet } from "@/features/tv/components/tv-filters-sheet";
-import { tvQueries } from "@/features/tv/hooks/tv.queries";
+import { validateTvDiscoverSearch } from "@/features/media/helpers/discover-search.helper";
+import { TvView } from "@/features/tv/components/tv-view";
 
 export const Route = createFileRoute("/_app/tv/")({
-  component: TVPage,
+  component: TvRoute,
   validateSearch: validateTvDiscoverSearch,
 });
 
-function TVPage() {
-  const { t } = useLingui();
+function TvRoute() {
   const search = Route.useSearch();
-  const locale = useTmdbLocale();
-  const navigate = useNavigate();
-  const isSearching = isDiscoverTextSearch(search.q);
-  const isDownloaded = isDownloadedTab(search.selected);
-  const query = (search.q ?? "").trim();
-  const discoverOptions = buildTvDiscoverOptions(search);
-
-  const handleSearchChange = (value: Partial<TvDiscoverSearch>) => {
-    const next = { ...search, ...value };
-    if (isDownloadedTab(next.selected)) {
-      next.with_genres = undefined;
-    }
-    navigate({ to: "/tv", search: next, resetScroll: false });
-  };
-
-  const queryOptions = isSearching
-    ? tvQueries.search(query, locale)
-    : isDownloaded
-      ? mediaQueries.list({ filter: "downloaded", type: "tv" })
-      : tvQueries.discover(discoverOptions, locale);
-
-  return (
-    <MediaDiscover
-      type="tv"
-      search={search}
-      queryOptions={queryOptions}
-      onSearchChange={handleSearchChange}
-      filtersSheet={
-        !isDownloaded ? <TvFiltersSheet value={pickTvFilters(search)} onChange={handleSearchChange} /> : null
-      }
-      emptyTitle={<Trans>No TV shows found</Trans>}
-      emptySubtitle={<Trans>Try adjusting your filters or search criteria</Trans>}
-      searchPlaceholder={t`Search TV shows...`}
-    />
-  );
+  return <TvView search={search} />;
 }

@@ -1,22 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { session } from "@/modules/auth/auth.schema";
 import { user } from "@/modules/user/user.schema";
-import { bodyOf, createTestDb, type TestDb } from "@/tests/test.helper";
+import { bodyOf, createTestDb, type TestDb, testDbRef } from "@/tests/test.helper";
 import { createHash } from "node:crypto";
 import { activityLog } from "./activity.schema";
 import { ActivityService } from "./activity.service";
-
-const { testDbRef } = vi.hoisted(() => {
-  const testDbRef = { current: null as TestDb | null };
-  return { testDbRef };
-});
-
-vi.mock("@/db/db", () => ({
-  get db() {
-    return testDbRef.current;
-  },
-}));
 
 const { activityRoutes } = await import("./activity.route");
 
@@ -47,9 +36,7 @@ function seedUsers(db: TestDb) {
     .run();
 }
 
-function seedLogs(db: TestDb | null) {
-  if (!db) throw new Error("Database not found");
-
+function seedLogs(db: TestDb) {
   db.insert(activityLog)
     .values([
       {
@@ -135,12 +122,11 @@ describe("Activity Routes", () => {
     });
 
     it("includes user, media and module relations", async () => {
-      const db = testDbRef.current;
-      if (!db) throw new Error("Database not found");
       const { media } = await import("@/modules/media/media.schema");
       const { module } = await import("@/modules/module/module.schema");
-      db.insert(media).values({ id: 42, type: "movie", title: "Dune", imdbId: "tt42" }).run();
-      db.insert(module)
+      testDbRef.current.insert(media).values({ id: 42, type: "movie", title: "Dune", imdbId: "tt42" }).run();
+      testDbRef.current
+        .insert(module)
         .values({
           id: "mod-1",
           type: "jackett",
@@ -149,7 +135,8 @@ describe("Activity Routes", () => {
           config: { url: "http://localhost:9117", apiKey: "x" },
         })
         .run();
-      db.insert(activityLog)
+      testDbRef.current
+        .insert(activityLog)
         .values({
           id: "log-media",
           userId: "owner-1",
@@ -177,8 +164,7 @@ describe("Activity Routes", () => {
         metadata: { key: "value" },
       });
 
-      const logs = testDbRef.current?.select().from(activityLog).all();
-      if (!logs) throw new Error("Logs not found");
+      const logs = testDbRef.current.select().from(activityLog).all();
 
       expect(logs.length).toBe(1);
       expect(logs[0].userId).toBe("owner-1");
@@ -193,16 +179,16 @@ describe("Activity Routes", () => {
         metadata: { url: "http://localhost", apiKey: "secret", password: "p" },
       });
 
-      const logs = testDbRef.current?.select().from(activityLog).all();
-      expect(logs?.[0].metadata).toBe('{"url":"http://localhost"}');
+      const logs = testDbRef.current.select().from(activityLog).all();
+      expect(logs[0].metadata).toBe('{"url":"http://localhost"}');
     });
 
     it("stores mediaId and moduleId from params", async () => {
       const { media } = await import("@/modules/media/media.schema");
       const { module } = await import("@/modules/module/module.schema");
-      testDbRef.current?.insert(media).values({ id: 7, type: "movie", title: "X", imdbId: "tt7" }).run();
+      testDbRef.current.insert(media).values({ id: 7, type: "movie", title: "X", imdbId: "tt7" }).run();
       testDbRef.current
-        ?.insert(module)
+        .insert(module)
         .values({
           id: "mod-2",
           type: "stremio",
@@ -218,9 +204,9 @@ describe("Activity Routes", () => {
         action: "DOWNLOAD_START",
       });
 
-      const logs = testDbRef.current?.select().from(activityLog).all();
-      expect(logs?.[0].mediaId).toBe(7);
-      expect(logs?.[0].moduleId).toBe("mod-2");
+      const logs = testDbRef.current.select().from(activityLog).all();
+      expect(logs[0].mediaId).toBe(7);
+      expect(logs[0].moduleId).toBe("mod-2");
     });
 
     it("handles null userId", async () => {
@@ -229,8 +215,7 @@ describe("Activity Routes", () => {
         action: "SYSTEM_ERROR",
       });
 
-      const logs = testDbRef.current?.select().from(activityLog).all();
-      if (!logs) throw new Error("Logs not found");
+      const logs = testDbRef.current.select().from(activityLog).all();
 
       expect(logs.length).toBe(1);
       expect(logs[0].userId).toBeNull();

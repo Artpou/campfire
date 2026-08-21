@@ -1,11 +1,11 @@
 import type {
   ChangePasswordInput,
   CreateUserInput,
+  ListUsersQuery,
   UpdateProfileInput,
   UpdateUserInput,
   UserStats,
 } from "@seedarr/contracts";
-import { count, eq, like, or } from "drizzle-orm";
 
 import {
   BadRequestError,
@@ -14,29 +14,19 @@ import {
   NotFoundError,
   UnauthorizedError,
 } from "@/shared/errors/error";
+import { paginate, toPaginate } from "@/shared/helpers/pagination.helper";
+import type { Paginate } from "@/shared/helpers/pagination.types";
 import { getAvatarsRoot, resolveWithinAvatars } from "@/shared/helpers/path.helper";
 import { IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { hashPassword, verifyPassword } from "@/auth/password.util";
 import { invalidateSessionsForUser } from "@/auth/session.util";
-import { db } from "@/db/db";
 import { importLetterboxdZip } from "@/modules/media/letterboxd/letterboxd-import.service";
 import { syncLetterboxdDiary } from "@/modules/media/letterboxd/letterboxd-sync.service";
-import { type NewUser, type User, user } from "@/modules/user/user.schema";
-import { getUserStats } from "@/modules/user/user-stats.query";
+import { userRepository } from "@/modules/user/user.repository";
+import type { NewUser, User } from "@/modules/user/user.schema";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-
-const userColumns = {
-  id: true,
-  username: true,
-  pseudo: true,
-  avatarPath: true,
-  role: true,
-  letterboxdUsername: true,
-  onboarded: true,
-  createdAt: true,
-} as const;
 
 const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
 const AVATAR_MIME_TO_EXT: Record<string, string> = {
@@ -57,85 +47,64 @@ function isUniqueConstraintError(error: unknown): boolean {
 
 export class UserService extends IdentifiableService<User> {
   constructor(user?: User) {
-    // userService can be instantiated without a user
     super(user as User);
   }
 
   async getMany(_args?: { ids?: string[] }): Promise<User[]> {
-    return db.query.user.findMany({ columns: userColumns });
+    return userRepository.list();
   }
 
   async search(q?: string): Promise<User[]> {
     const term = q?.trim();
     if (!term) return this.getMany();
+    return userRepository.search(term);
+  }
 
-    const pattern = `%${term.replaceAll("\\", "").replaceAll("%", "").replaceAll("_", "")}%`;
-    return db.query.user.findMany({
-      columns: userColumns,
-      where: or(like(user.username, pattern), like(user.pseudo, pattern)),
-    });
+  async searchPaginated(query: ListUsersQuery): Promise<Paginate<User>> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const paginationOpts = paginate({ page, limit });
+    const [rows, total] = await Promise.all([
+      userRepository.searchPage({ q: query.q, ...paginationOpts }),
+      userRepository.searchCount(query.q),
+    ]);
+    return toPaginate(rows, { page, limit }, total);
   }
 
   async get(id: string): Promise<User> {
-    const result = await db.query.user.findFirst({ where: eq(user.id, id), columns: userColumns });
-    if (!result) throw new NotFoundError("User");
-    return result;
+    return userRepository.get(id);
   }
 
   async getByUsername(username: string): Promise<User | undefined> {
-    return db.query.user.findFirst({ where: eq(user.username, username), columns: userColumns });
+    return userRepository.findByUsername(username);
   }
 
   async getFullUser(username: string) {
-    return db.query.user.findFirst({ where: eq(user.username, username) });
+    return userRepository.findFullByUsername(username);
   }
 
   async getFullUserById(id: string) {
-    return db.query.user.findFirst({ where: eq(user.id, id) });
+    return userRepository.findFullById(id);
   }
 
   async count(): Promise<number> {
-    const [result] = await db.select({ count: count() }).from(user);
-    return result?.count ?? 0;
+    return userRepository.count();
   }
 
   async hasOwner(): Promise<boolean> {
-    const result = await db.query.user.findFirst({
-      where: eq(user.role, "owner"),
-      columns: { id: true },
-    });
-    return !!result;
+    return userRepository.hasOwner();
   }
 
   async register(username: string, hashedPassword: string): Promise<User> {
-    const existingOwner = await db.query.user.findFirst({
-      where: eq(user.role, "owner"),
-      columns: { id: true },
-    });
-    if (existingOwner) {
+    if (await userRepository.hasOwner()) {
       throw new ForbiddenError("Registration is closed. Contact an administrator.");
     }
-
-    const existing = await db.query.user.findFirst({
-      where: eq(user.username, username),
-      columns: { id: true },
-    });
-    if (existing) throw new ConflictError("Username already exists");
+    if (await userRepository.usernameExists(username)) {
+      throw new ConflictError("Username already exists");
+    }
 
     try {
-      const [created] = await db.insert(user).values({ username, password: hashedPassword, role: "owner" }).returning({
-        id: user.id,
-        username: user.username,
-        pseudo: user.pseudo,
-        avatarPath: user.avatarPath,
-        role: user.role,
-        letterboxdUsername: user.letterboxdUsername,
-        onboarded: user.onboarded,
-        createdAt: user.createdAt,
-      });
-
-      if (!created) throw new ConflictError("Failed to create user");
-      return created;
+      return await userRepository.insertOwner(username, hashedPassword);
     } catch (error) {
       if (isUniqueConstraintError(error)) {
         throw new ForbiddenError("Registration is closed. Contact an administrator.");
@@ -149,16 +118,17 @@ export class UserService extends IdentifiableService<User> {
       throw new ForbiddenError("Admin can only create member or viewer roles");
     }
 
-    const existing = await this.getByUsername(input.username);
-    if (existing) throw new ConflictError("Username already exists");
+    if (await userRepository.usernameExists(input.username)) {
+      throw new ConflictError("Username already exists");
+    }
 
-    await db.insert(user).values({
+    await userRepository.insert({
       username: input.username,
       password: hashPassword(input.password),
       role: input.role,
     });
 
-    const created = await this.getByUsername(input.username);
+    const created = await userRepository.findByUsername(input.username);
     if (!created) throw new ConflictError("Failed to create user");
     return created;
   }
@@ -181,7 +151,7 @@ export class UserService extends IdentifiableService<User> {
     if (input.password) data.password = hashPassword(input.password);
     if (input.role) data.role = input.role;
 
-    await db.update(user).set(data).where(eq(user.id, id));
+    await userRepository.update(id, data);
     if (input.role || input.password) invalidateSessionsForUser(id);
     return this.get(id);
   }
@@ -198,29 +168,26 @@ export class UserService extends IdentifiableService<User> {
     }
 
     if (Object.keys(data).length > 0) {
-      await db.update(user).set(data).where(eq(user.id, this.user.id));
+      await userRepository.update(this.user.id, data);
     }
     return this.get(this.user.id);
   }
 
   async completeOnboarding(): Promise<User> {
-    await db.update(user).set({ onboarded: true }).where(eq(user.id, this.user.id));
+    await userRepository.update(this.user.id, { onboarded: true });
     invalidateSessionsForUser(this.user.id);
     return this.get(this.user.id);
   }
 
   async changePassword(input: ChangePasswordInput): Promise<{ success: true }> {
-    const fullUser = await this.getFullUserById(this.user.id);
+    const fullUser = await userRepository.findFullById(this.user.id);
     if (!fullUser) throw new NotFoundError("User");
 
     if (!verifyPassword(input.oldPassword, fullUser.password)) {
       throw new UnauthorizedError("Current password is incorrect");
     }
 
-    await db
-      .update(user)
-      .set({ password: hashPassword(input.newPassword) })
-      .where(eq(user.id, this.user.id));
+    await userRepository.update(this.user.id, { password: hashPassword(input.newPassword) });
     invalidateSessionsForUser(this.user.id);
     return { success: true };
   }
@@ -251,7 +218,7 @@ export class UserService extends IdentifiableService<User> {
     const buffer = Buffer.from(await file.arrayBuffer());
     await writeFile(absolutePath, buffer);
 
-    await db.update(user).set({ avatarPath: relativePath }).where(eq(user.id, this.user.id));
+    await userRepository.update(this.user.id, { avatarPath: relativePath });
     return this.get(this.user.id);
   }
 
@@ -285,13 +252,13 @@ export class UserService extends IdentifiableService<User> {
       }
     }
 
-    await db.delete(user).where(eq(user.id, id));
+    await userRepository.delete(id);
     invalidateSessionsForUser(id);
     return { success: true };
   }
 
   async getStats(userId: string): Promise<UserStats> {
-    return getUserStats(userId);
+    return userRepository.getStats(userId);
   }
 
   async importLetterboxd(file: File) {

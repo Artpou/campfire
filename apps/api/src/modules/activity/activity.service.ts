@@ -1,6 +1,6 @@
 import type { ActivityAction, ActivityType, ListActivityQuery } from "@seedarr/contracts";
 import { formatError } from "@seedarr/shared";
-import { and, desc, eq, exists, inArray, like, or } from "drizzle-orm";
+import { and } from "drizzle-orm";
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 
@@ -10,33 +10,12 @@ import { paginate, toPaginate } from "@/shared/helpers/pagination.helper";
 import type { Paginate } from "@/shared/helpers/pagination.types";
 import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
-import { db } from "@/db/db";
-import { type MediaSelect, media } from "@/modules/media/media.schema";
-import type { ModuleRow } from "@/modules/module/module.schema";
+import { type ActivityListItem, activityRepository } from "@/modules/activity/activity.repository";
+import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import type { User } from "@/modules/user/user.schema";
 import { actionsForCategory, sanitizeActivityMetadata } from "./activity.helper";
-import type { Activity, ActivityAction as SchemaAction, ActivityType as SchemaType } from "./activity.schema";
-import { activityLog } from "./activity.schema";
 
-const activityUserColumns = {
-  id: true,
-  username: true,
-  pseudo: true,
-  avatarPath: true,
-  role: true,
-} as const;
-
-const activityModuleColumns = {
-  id: true,
-  type: true,
-  category: true,
-} as const;
-
-export type ActivityListItem = Activity & {
-  user: Pick<User, "id" | "username" | "pseudo" | "avatarPath" | "role"> | null;
-  media: MediaSelect | null;
-  module: Pick<ModuleRow, "id" | "type" | "category"> | null;
-};
+export type { ActivityListItem };
 
 export type ActivityLogInput = {
   action: ActivityAction;
@@ -88,12 +67,12 @@ export class ActivityService extends AuthenticatedService {
       : undefined;
 
     try {
-      await db.insert(activityLog).values({
+      await activityRepository.insert({
         userId,
         mediaId: mediaIdFromLog({ mediaId: params.mediaId, metadata }),
         moduleId: moduleIdFromLog({ moduleId: params.moduleId, metadata }),
-        type: (params.type ?? "SUCCESS") as SchemaType,
-        action: params.action as SchemaAction,
+        type: params.type ?? "SUCCESS",
+        action: params.action,
         metadata: metadata ? JSON.stringify(metadata) : null,
       });
     } catch (err) {
@@ -105,43 +84,25 @@ export class ActivityService extends AuthenticatedService {
     if (this.user.role === "viewer") throw new ForbiddenError();
 
     const conditions = [];
-    if (this.roleLevel < 3) conditions.push(eq(activityLog.userId, this.user.id));
-    if (query.action) conditions.push(eq(activityLog.action, query.action));
-    if (query.type) conditions.push(eq(activityLog.type, query.type));
-    if (query.category) conditions.push(inArray(activityLog.action, actionsForCategory(query.category)));
+    if (this.roleLevel < ROLE_LEVELS.admin) conditions.push(activityRepository.buildUserFilter(this.user.id));
+    if (query.action) conditions.push(activityRepository.buildActionFilter(query.action));
+    if (query.type) conditions.push(activityRepository.buildTypeFilter(query.type));
+    if (query.category) conditions.push(activityRepository.buildCategoryFilter(actionsForCategory(query.category)));
 
     const q = query.q?.trim();
-    if (q) {
-      const pattern = likePattern(q);
-      conditions.push(
-        or(
-          like(activityLog.action, pattern),
-          like(activityLog.metadata, pattern),
-          exists(
-            db
-              .select({ id: media.id })
-              .from(media)
-              .where(and(eq(media.id, activityLog.mediaId), like(media.title, pattern))),
-          ),
-        ),
-      );
-    }
+    if (q) conditions.push(activityRepository.buildSearchFilter(likePattern(q)));
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
-    const paginationOpts = query.page && query.limit ? paginate(query) : {};
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const paginationOpts = paginate({ page, limit });
 
-    const items = await db.query.activityLog.findMany({
-      where,
-      orderBy: desc(activityLog.createdAt),
-      with: {
-        user: { columns: activityUserColumns },
-        media: true,
-        module: { columns: activityModuleColumns },
-      },
-      ...paginationOpts,
-    });
+    const [items, total] = await Promise.all([
+      activityRepository.list({ where, ...paginationOpts }),
+      activityRepository.count({ where }),
+    ]);
 
-    return toPaginate(items, query);
+    return toPaginate(items, { page, limit }, total);
   }
 }
 

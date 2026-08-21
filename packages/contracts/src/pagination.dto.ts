@@ -4,6 +4,8 @@ export interface Paginate<T> {
   results: T[];
   page: number;
   hasMore: boolean;
+  /** Total matching rows when the API provides a count. */
+  total?: number;
 }
 
 export const paginationDto = z.object({
@@ -16,3 +18,9 @@ export const paginationDto = z.object({
     .optional(),
 });
 export type PaginationQuery = z.infer<typeof paginationDto>;
+
+/** Number of pages for a paginated list (at least 1). */
+export function pageCount(total: number, limit: number): number {
+  if (limit <= 0) return 1;
+  return Math.max(1, Math.ceil(total / limit));
+}

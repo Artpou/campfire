@@ -80,7 +80,10 @@ export function ResponsiveTabs({
 
   return (
     <Tabs value={value} onValueChange={onValueChange} className={cn("min-w-0", className)}>
-      <TabsList size="lg" className={cn("overflow-x-auto justify-start flex-nowrap", listClassName)}>
+      <TabsList
+        size="lg"
+        className={cn("overflow-x-auto overscroll-x-contain touch-pan-x justify-start flex-nowrap", listClassName)}
+      >
         {options.map((option) => {
           const Icon = option.icon;
           return (

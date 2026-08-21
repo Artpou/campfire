@@ -1,22 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { download } from "@/modules/download/download.schema";
-import { createAuthGuardMock, seedTestUser } from "@/tests/route-test.helper";
-import { bodyOf, createTestDb, json, sampleTorrent, type TestDb } from "@/tests/test.helper";
+import {
+  bodyOf,
+  createAuthGuardMock,
+  createTestDb,
+  json,
+  sampleTorrent,
+  seedTestUser,
+  testDbRef,
+} from "@/tests/test.helper";
 
 process.env.STORAGE_ENCRYPTION_KEY = "test-storage-encryption-key";
 
-const { fakeUser, testDbRef } = vi.hoisted(() => {
+const { fakeUser } = vi.hoisted(() => {
   const fakeUser = { id: "user-1", username: "testuser", role: "member" as const, createdAt: new Date("2024-01-01") };
-  const testDbRef = { current: null as TestDb | null };
-  return { fakeUser, testDbRef };
+  return { fakeUser };
 });
 
-vi.mock("@/db/db", () => ({
-  get db() {
-    return testDbRef.current;
-  },
-}));
 vi.mock("@/modules/auth/auth.guard", () => ({
   authGuard: createAuthGuardMock(fakeUser),
 }));
@@ -128,7 +129,7 @@ describe("Download Routes", () => {
 
     it("returns downloads", async () => {
       testDbRef.current
-        ?.insert(download)
+        .insert(download)
         .values({
           id: "dl-1",
           userId: fakeUser.id,
@@ -145,15 +146,14 @@ describe("Download Routes", () => {
     });
 
     it("returns downloads from all users for members", async () => {
-      const db = testDbRef.current;
-      if (!db) throw new Error("test db not initialized");
-      seedTestUser(db, {
+      seedTestUser(testDbRef.current, {
         id: "user-2",
         username: "other",
         role: "member",
         createdAt: new Date("2024-01-02"),
       });
-      db.insert(download)
+      testDbRef.current
+        .insert(download)
         .values([
           {
             id: "dl-mine",
@@ -183,7 +183,7 @@ describe("Download Routes", () => {
 
     it("returns download details", async () => {
       testDbRef.current
-        ?.insert(download)
+        .insert(download)
         .values({
           id: "dl-1",
           userId: fakeUser.id,
@@ -211,7 +211,7 @@ describe("Download Routes", () => {
 
     it("creates a new download even if magnet already exists", async () => {
       testDbRef.current
-        ?.insert(download)
+        .insert(download)
         .values({
           id: "existing",
           userId: fakeUser.id,
@@ -232,7 +232,7 @@ describe("Download Routes", () => {
   describe("DELETE /:id", () => {
     it("deletes a download", async () => {
       testDbRef.current
-        ?.insert(download)
+        .insert(download)
         .values({
           id: "dl-del",
           userId: fakeUser.id,
@@ -254,7 +254,7 @@ describe("Download Routes", () => {
   describe("POST /:id/fileToken + GET /download-files/:id", () => {
     it("issues a short-lived file token", async () => {
       testDbRef.current
-        ?.insert(download)
+        .insert(download)
         .values({
           id: "dl-file",
           userId: fakeUser.id,
@@ -275,7 +275,7 @@ describe("Download Routes", () => {
 
     it("rejects file download when token downloadId does not match", async () => {
       testDbRef.current
-        ?.insert(download)
+        .insert(download)
         .values({
           id: "dl-a",
           userId: fakeUser.id,

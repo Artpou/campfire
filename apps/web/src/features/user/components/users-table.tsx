@@ -17,9 +17,10 @@ interface UsersTableProps {
   isLoading: boolean;
   onEditUser: (user: User) => void;
   onRefetch: () => void;
+  empty?: React.ReactNode;
 }
 
-export function UsersTable({ users, isLoading, onEditUser, onRefetch }: UsersTableProps) {
+export function UsersTable({ users, isLoading, onEditUser, onRefetch, empty }: UsersTableProps) {
   const { role } = useRole();
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -71,7 +72,7 @@ export function UsersTable({ users, isLoading, onEditUser, onRefetch }: UsersTab
 
   return (
     <>
-      <DataTable table={table} empty={<Trans>No users found</Trans>} />
+      <DataTable table={table} empty={empty ?? <Trans>No users found</Trans>} />
 
       <DialogDelete
         open={!!userToDelete}

@@ -6,7 +6,7 @@ import { BadRequestError, NotFoundError, ServiceUnavailableError } from "@/share
 import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
 import { torrentClient } from "@/modules/download/webtorrent/webtorrent-manager";
-import { ModuleIndexerService } from "@/modules/module/module-indexer.service";
+import { ModuleIndexerService } from "@/modules/module/indexer/module-indexer.service";
 import type { User } from "@/modules/user/user.schema";
 import type { Torrent, TorrentInspectResult } from "./torrent.types";
 import { probeTorrentPeers } from "./torrent-peer.helper";

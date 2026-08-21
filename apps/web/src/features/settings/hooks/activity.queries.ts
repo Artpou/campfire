@@ -4,14 +4,17 @@ import { queryOptions } from "@tanstack/react-query";
 
 export const activityQueries = {
   key: ["activity"] as const,
-  list: (params: { limit?: number; type?: ActivityType; category?: ActivityCategory; q?: string } = {}) => {
-    const { limit = 50, type, category, q } = params;
+  list: (
+    params: { page?: number; limit?: number; type?: ActivityType; category?: ActivityCategory; q?: string } = {},
+  ) => {
+    const { page = 1, limit = 20, type, category, q } = params;
     return queryOptions({
-      queryKey: [...activityQueries.key, { limit, type, category, q }],
+      queryKey: [...activityQueries.key, { page, limit, type, category, q }],
       queryFn: () =>
         unwrap(
           api.activity.$get({
             query: {
+              page: String(page),
               limit: String(limit),
               ...(type ? { type } : {}),
               ...(category ? { category } : {}),

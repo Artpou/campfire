@@ -37,7 +37,11 @@ interface StickyFilterBarProps {
 export function StickyFilterBar({ isStuck, children, className }: StickyFilterBarProps) {
   return (
     <div
-      className={cn("sticky top-14 z-20 flex flex-col bg-background/80 backdrop-blur-md", isStuck && "py-2", className)}
+      className={cn(
+        "sticky top-14 z-20 flex flex-col bg-background/80 backdrop-blur-md py-2",
+        isStuck && "border-b border-border/60",
+        className,
+      )}
     >
       {children}
     </div>

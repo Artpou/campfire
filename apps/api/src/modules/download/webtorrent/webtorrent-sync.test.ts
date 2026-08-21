@@ -6,25 +6,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { download } from "@/modules/download/download.schema";
 import { media } from "@/modules/media/media.schema";
 import { mediaRequest } from "@/modules/request/request.schema";
-import { seedTestUser } from "@/tests/route-test.helper";
-import { createTestDb, sampleTorrent, type TestDb } from "@/tests/test.helper";
+import { createTestDb, sampleTorrent, seedTestUser, testDbRef } from "@/tests/test.helper";
 import { EventEmitter } from "node:events";
 
-const { testDbRef, isEnabled, isAutoTransferEnabled, markTransferStarting, runRemoteTransfer, invalidateStreamSource } =
+const { isEnabled, isAutoTransferEnabled, markTransferStarting, runRemoteTransfer, invalidateStreamSource } =
   vi.hoisted(() => ({
-    testDbRef: { current: null as TestDb | null },
     isEnabled: vi.fn(),
     isAutoTransferEnabled: vi.fn(),
     markTransferStarting: vi.fn(),
     runRemoteTransfer: vi.fn(),
     invalidateStreamSource: vi.fn(),
   }));
-
-vi.mock("@/db/db", () => ({
-  get db() {
-    return testDbRef.current;
-  },
-}));
 
 vi.mock("@/modules/storage-config/remote/remote-storage.service", () => ({
   remoteStorageService: { isEnabled, isAutoTransferEnabled },
@@ -119,7 +111,7 @@ describe("webtorrent-sync", () => {
 
   it("syncs torrent live data on ready", async () => {
     testDbRef.current
-      ?.insert(download)
+      .insert(download)
       .values({
         id: "dl-1",
         userId: user.id,
@@ -134,16 +126,16 @@ describe("webtorrent-sync", () => {
     torrent.emit("ready");
 
     await vi.waitFor(async () => {
-      const row = await testDbRef.current?.query.download.findFirst({ where: eq(download.id, "dl-1") });
+      const row = await testDbRef.current.query.download.findFirst({ where: eq(download.id, "dl-1") });
       expect(row?.torrent?.progress).toBe(0.5);
       expect(torrentClient.getActiveTorrent("dl-1")).toBe(torrent);
     });
   });
 
   it("marks download done, validates requests, and skips auto-transfer", async () => {
-    testDbRef.current?.insert(media).values({ id: 10, type: "movie", title: "Movie", imdbId: "tt10" }).run();
+    testDbRef.current.insert(media).values({ id: 10, type: "movie", title: "Movie", imdbId: "tt10" }).run();
     testDbRef.current
-      ?.insert(download)
+      .insert(download)
       .values({
         id: "dl-1",
         userId: user.id,
@@ -153,7 +145,7 @@ describe("webtorrent-sync", () => {
       })
       .run();
     testDbRef.current
-      ?.insert(mediaRequest)
+      .insert(mediaRequest)
       .values({ id: "req-1", userId: user.id, mediaId: 10, status: "pending", dismissed: false, createdAt: new Date() })
       .run();
 
@@ -170,9 +162,9 @@ describe("webtorrent-sync", () => {
     });
 
     await vi.waitFor(async () => {
-      const row = await testDbRef.current?.query.download.findFirst({ where: eq(download.id, "dl-1") });
+      const row = await testDbRef.current.query.download.findFirst({ where: eq(download.id, "dl-1") });
       expect(row?.torrent?.done).toBe(true);
-      const req = await testDbRef.current?.query.mediaRequest.findFirst({ where: eq(mediaRequest.id, "req-1") });
+      const req = await testDbRef.current.query.mediaRequest.findFirst({ where: eq(mediaRequest.id, "req-1") });
       expect(req?.status).toBe("validated");
       expect(invalidateStreamSource).toHaveBeenCalledWith("dl-1");
       expect(runRemoteTransfer).not.toHaveBeenCalled();
@@ -182,7 +174,7 @@ describe("webtorrent-sync", () => {
   it("starts auto remote transfer when enabled", async () => {
     isAutoTransferEnabled.mockResolvedValue(true);
     testDbRef.current
-      ?.insert(download)
+      .insert(download)
       .values({
         id: "dl-1",
         userId: user.id,
@@ -203,7 +195,7 @@ describe("webtorrent-sync", () => {
 
   it("persists torrent errors", async () => {
     testDbRef.current
-      ?.insert(download)
+      .insert(download)
       .values({
         id: "dl-1",
         userId: user.id,
@@ -217,7 +209,7 @@ describe("webtorrent-sync", () => {
     torrent.emit("error", new Error("peer ban"));
 
     await vi.waitFor(async () => {
-      const row = await testDbRef.current?.query.download.findFirst({ where: eq(download.id, "dl-1") });
+      const row = await testDbRef.current.query.download.findFirst({ where: eq(download.id, "dl-1") });
       expect(row?.error).toContain("peer ban");
     });
   });

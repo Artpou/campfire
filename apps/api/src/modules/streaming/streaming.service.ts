@@ -1,5 +1,4 @@
 import { VIDEO_EXTENSIONS } from "@seedarr/shared";
-import { eq } from "drizzle-orm";
 import type { StreamingApi } from "hono/utils/stream";
 
 import { BadRequestError, NotFoundError } from "@/shared/errors/error";
@@ -15,15 +14,15 @@ import {
 } from "@/shared/helpers/video.helper";
 import { findLargestVideoInDirectory } from "@/shared/helpers/video-file.helper";
 
-import { db } from "@/db/db";
+import { downloadRepository } from "@/modules/download/download.repository";
 import type { Download, TorrentLiveData } from "@/modules/download/download.schema";
-import { download as downloadTable } from "@/modules/download/download.schema";
 import { findLargestVideoFile } from "@/modules/download/webtorrent/webtorrent.helper";
 import { torrentClient } from "@/modules/download/webtorrent/webtorrent-manager";
 import { remoteStorageService } from "@/modules/storage-config/remote/remote-storage.service";
 import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import * as path from "node:path";
+import { acquireStreamLease } from "./lease/streaming-lease";
 import {
   type ByteRange,
   buildStreamHeaders,
@@ -31,7 +30,6 @@ import {
   parseRangeHeader,
   resolveRemoteVideoInfo,
 } from "./streaming.helper";
-import { acquireStreamLease } from "./streaming-lease";
 
 /** Resolved source metadata — cacheable (no open streams/handles). */
 export interface StreamSourceInfo {
@@ -74,6 +72,10 @@ export function invalidateStreamSource(downloadId: string): void {
 }
 
 export class StreamingService {
+  async getDownload(id: string): Promise<Download> {
+    return downloadRepository.get(id);
+  }
+
   async resolveSourceInfo(download: Download): Promise<StreamSourceInfo | undefined> {
     const cached = sourceCache.get(download.id);
     if (cached) return cached;
@@ -307,9 +309,6 @@ export class StreamingService {
     durationSeconds: number,
   ): Promise<void> {
     if (!torrent) return;
-    await db
-      .update(downloadTable)
-      .set({ torrent: { ...torrent, durationSeconds } })
-      .where(eq(downloadTable.id, downloadId));
+    await downloadRepository.update(downloadId, { torrent: { ...torrent, durationSeconds } });
   }
 }

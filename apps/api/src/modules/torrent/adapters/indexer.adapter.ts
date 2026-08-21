@@ -3,7 +3,7 @@ import type { TorrentListQuery } from "@seedarr/contracts";
 import { BadRequestError, ServiceUnavailableError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
 
-import type { Indexer, IndexerModule } from "@/modules/module/indexer.types";
+import type { Indexer, IndexerModule } from "@/modules/module/indexer/module-indexer.types";
 import type { Torrent } from "@/modules/torrent/torrent.types";
 
 export abstract class IndexerAdapter {

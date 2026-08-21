@@ -1,7 +1,7 @@
 import { filenameParse } from "@ctrl/video-filename-parser";
 import type { TorrentListQuery } from "@seedarr/contracts";
 
-import type { Indexer, IndexerModule } from "@/modules/module/indexer.types";
+import type { Indexer, IndexerModule } from "@/modules/module/indexer/module-indexer.types";
 import type { Torrent } from "../torrent.types";
 import { IndexerAdapter } from "./indexer.adapter";
 

@@ -1,11 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { SettingsGeneralTab } from "@/features/settings/components/settings-general";
+import { SettingsGeneralView } from "@/features/settings/components/settings-general-view";
 
 export const Route = createFileRoute("/_app/settings/general")({
-  component: SettingsGeneralPage,
+  component: SettingsGeneralView,
 });
-
-function SettingsGeneralPage() {
-  return <SettingsGeneralTab />;
-}

@@ -1,21 +1,14 @@
 import type { LetterboxdSyncResponse } from "@seedarr/contracts";
-import { eq } from "drizzle-orm";
 
 import { BadRequestError } from "@/shared/errors/error";
 import { parseCsv, parseIsoDate } from "@/shared/helpers/csv.helper";
 import { logger } from "@/shared/helpers/logger.helper";
 
-import { db } from "@/db/db";
-import {
-  applyUserReview,
-  ensureUserLike,
-  ensureUserWatchList,
-  markMediaWatched,
-  upsertMediaRow,
-} from "@/modules/media/letterboxd/letterboxd-apply.query";
+import { mediaRepository } from "@/modules/media/media.repository";
+import { mediaRelationsRepository } from "@/modules/media/media-relations.repository";
 import { getTmdbApiKey } from "@/modules/tmdb/tmdb-key.query";
 import { searchTmdbByTitle, sleep, tmdbItemToMediaInsert } from "@/modules/tmdb/tmdb-resolve.helper";
-import { user } from "@/modules/user/user.schema";
+import { userRepository } from "@/modules/user/user.repository";
 
 const BATCH_SIZE = 10;
 const BATCH_DELAY_MS = 1000;
@@ -190,7 +183,7 @@ export async function importLetterboxdZip(userId: string, file: File): Promise<L
     throw new BadRequestError("Invalid Letterboxd export: missing profile.csv Username");
   }
 
-  await db.update(user).set({ letterboxdUsername: username.toLowerCase() }).where(eq(user.id, userId));
+  await userRepository.setLetterboxdUsername(userId, username);
 
   const films = aggregateFilms({
     ratings: await readCsvFile(files, "ratings.csv"),
@@ -220,18 +213,18 @@ export async function importLetterboxdZip(userId: string, file: File): Promise<L
 
         const mediaId = Number(item.id);
         const insert = tmdbItemToMediaInsert(item, "movie");
-        await upsertMediaRow(insert);
+        await mediaRepository.upsert(insert);
 
-        await applyUserReview(
+        await mediaRelationsRepository.applyUserReview(
           userId,
           mediaId,
           { score: film.score, comment: film.comment, watchedAt: film.watchedAt },
           "overwrite",
         );
 
-        if (film.liked) await ensureUserLike(userId, mediaId);
-        if (film.watchlist) await ensureUserWatchList(userId, mediaId);
-        if (film.watched) await markMediaWatched(userId, mediaId, insert.duration);
+        if (film.liked) await mediaRelationsRepository.ensureUserLike(userId, mediaId);
+        if (film.watchlist) await mediaRelationsRepository.ensureUserWatchList(userId, mediaId);
+        if (film.watched) await mediaRelationsRepository.markMediaWatched(userId, mediaId, insert.duration);
 
         synced++;
       }),

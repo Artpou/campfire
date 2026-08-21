@@ -2,8 +2,8 @@ import { BadRequestError } from "@/shared/errors/error";
 import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
 import { mergeMediaEnrichment } from "@/modules/media/media.helper";
-import { MediaService } from "@/modules/media/media.service";
 import type { MediaEnriched } from "@/modules/media/media.types";
+import { listEnrichedMedia } from "@/modules/media/media-list.repository";
 import { tmdbMovieToMedia, tmdbTVToMedia } from "@/modules/tmdb/tmdb.helper";
 import { tmdbRequest } from "@/modules/tmdb/tmdb.service";
 import type {
@@ -47,12 +47,10 @@ function releaseKey(media: MediaEnriched): string {
 
 export class PersonService extends AuthenticatedService {
   private readonly locale: string;
-  private readonly mediaService: MediaService;
 
-  constructor(user: User, locale: string, mediaService = new MediaService(user)) {
+  constructor(user: User, locale: string) {
     super(user);
     this.locale = locale;
-    this.mediaService = mediaService;
   }
 
   async get(id: string): Promise<Person> {
@@ -107,7 +105,7 @@ export class PersonService extends AuthenticatedService {
 
     const allMedia = [...knownForCredits.map(creditToMedia), ...castMedia, ...crewMedia];
     const uniqueIds = [...new Set(allMedia.map((m) => m.id.toString()))];
-    const mediaMap = await this.mediaService.getMany({ ids: uniqueIds });
+    const mediaMap = await listEnrichedMedia(this.user.id, { ids: uniqueIds });
 
     const departments = [...new Set(crewMedia.map((c) => c.department).filter(Boolean))].sort((a, b) =>
       a.localeCompare(b),

@@ -10,7 +10,7 @@ import { SESSION_COOKIE_NAME, sessionCookieOptions } from "@/auth/auth.constants
 import { hashPassword, verifyPassword } from "@/auth/password.util";
 import { createSession, deleteOtherSessions, deleteSession, resolveAuthenticatedSession } from "@/auth/session.util";
 import { ActivityService, trackRoute } from "@/modules/activity/activity.service";
-import { ModuleIndexerService } from "@/modules/module/module-indexer.service";
+import { moduleRepository } from "@/modules/module/module.repository";
 import { UserService } from "../user/user.service";
 import type { AuthUser } from "./auth.types";
 
@@ -78,7 +78,7 @@ export const authRoutes = new Hono()
     const currentUser = resolved.user;
     if (!currentUser) throw new NotFoundError("User");
 
-    const countIndexerManagers = await new ModuleIndexerService(currentUser).count();
+    const countIndexerManagers = (await moduleRepository.listByCategory("indexer")).length;
 
     const user: AuthUser = {
       ...currentUser,

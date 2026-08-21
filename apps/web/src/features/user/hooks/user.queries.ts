@@ -9,11 +9,22 @@ import { useAuth } from "@/features/auth/auth-store";
 
 export const userQueries = {
   key: ["users"] as const,
-  list: (q?: string) =>
-    queryOptions({
-      queryKey: [...userQueries.key, { q }],
-      queryFn: () => unwrap(api.users.$get({ query: q ? { q } : {} })),
-    }),
+  list: (params: { q?: string; page?: number; limit?: number } = {}) => {
+    const { q, page = 1, limit = 20 } = params;
+    return queryOptions({
+      queryKey: [...userQueries.key, { q, page, limit }],
+      queryFn: () =>
+        unwrap(
+          api.users.$get({
+            query: {
+              page: String(page),
+              limit: String(limit),
+              ...(q ? { q } : {}),
+            },
+          }),
+        ),
+    });
+  },
   details: (id: string) =>
     queryOptions({
       queryKey: [...userQueries.key, id],

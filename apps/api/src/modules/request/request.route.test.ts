@@ -1,26 +1,27 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { media } from "@/modules/media/media.schema";
-import { createAuthGuardMock, seedTestUser } from "@/tests/route-test.helper";
-import { bodyOf, createTestDb, json, type TestDb } from "@/tests/test.helper";
+import type { UserRole } from "@/modules/user/user.schema";
+import {
+  bodyOf,
+  createAuthGuardMock,
+  createTestDb,
+  json,
+  seedTestUser,
+  type TestDb,
+  testDbRef,
+} from "@/tests/test.helper";
 import { mediaRequest } from "./request.schema";
 
-const { fakeUser, testDbRef } = vi.hoisted(() => {
-  const fakeUser = {
+const { fakeUser } = vi.hoisted(() => ({
+  fakeUser: {
     id: "user-1",
     username: "member",
-    role: "member" as "member" | "admin" | "owner" | "viewer",
+    role: "member" as UserRole,
     createdAt: new Date("2024-01-01"),
-  };
-  const testDbRef = { current: null as TestDb | null };
-  return { fakeUser, testDbRef };
-});
-
-vi.mock("@/db/db", () => ({
-  get db() {
-    return testDbRef.current;
   },
 }));
+
 vi.mock("@/modules/auth/auth.guard", () => ({
   authGuard: createAuthGuardMock(fakeUser),
 }));
@@ -70,13 +71,13 @@ describe("Request Routes", () => {
     });
 
     it("returns 409 when a pending request already exists", async () => {
-      seedRequest(testDbRef.current!);
+      seedRequest(testDbRef.current);
       const res = await requestRoutes.request("/", json("POST", SAMPLE_MEDIA));
       expect(res.status).toBe(409);
     });
 
     it("reopens a cancelled request as pending", async () => {
-      seedRequest(testDbRef.current!, { status: "cancelled", dismissed: true });
+      seedRequest(testDbRef.current, { status: "cancelled", dismissed: true });
       const res = await requestRoutes.request("/", json("POST", SAMPLE_MEDIA));
       expect(res.status).toBe(201);
       const body = await bodyOf(res);
@@ -98,14 +99,14 @@ describe("Request Routes", () => {
 
   describe("GET /mine", () => {
     it("lists only the current user's requests", async () => {
-      seedTestUser(testDbRef.current!, {
+      seedTestUser(testDbRef.current, {
         id: "user-2",
         username: "other",
         role: "member",
         createdAt: new Date(),
       });
-      seedRequest(testDbRef.current!);
-      seedRequest(testDbRef.current!, { id: "req-2", userId: "user-2" });
+      seedRequest(testDbRef.current);
+      seedRequest(testDbRef.current, { id: "req-2", userId: "user-2" });
 
       const body = await bodyOf(await requestRoutes.request("/mine"));
       expect(body).toHaveLength(1);
@@ -115,7 +116,7 @@ describe("Request Routes", () => {
 
   describe("GET /user/:id", () => {
     it("allows a user to list their own requests", async () => {
-      seedRequest(testDbRef.current!);
+      seedRequest(testDbRef.current);
       const body = await bodyOf(await requestRoutes.request("/user/user-1"));
       expect(body).toHaveLength(1);
     });
@@ -127,13 +128,13 @@ describe("Request Routes", () => {
 
     it("allows admins to list any user's requests", async () => {
       fakeUser.role = "admin";
-      seedTestUser(testDbRef.current!, {
+      seedTestUser(testDbRef.current, {
         id: "user-2",
         username: "other",
         role: "member",
         createdAt: new Date(),
       });
-      seedRequest(testDbRef.current!, { id: "req-2", userId: "user-2" });
+      seedRequest(testDbRef.current, { id: "req-2", userId: "user-2" });
 
       const body = await bodyOf(await requestRoutes.request("/user/user-2"));
       expect(body).toHaveLength(1);
@@ -148,9 +149,9 @@ describe("Request Routes", () => {
 
     it("lists all requests for admins with status filter", async () => {
       fakeUser.role = "admin";
-      testDbRef.current?.insert(media).values({ id: 43, type: "movie", title: "Other", imdbId: "tt0000043" }).run();
-      seedRequest(testDbRef.current!);
-      seedRequest(testDbRef.current!, { id: "req-2", mediaId: 43, status: "validated" });
+      testDbRef.current.insert(media).values({ id: 43, type: "movie", title: "Other", imdbId: "tt0000043" }).run();
+      seedRequest(testDbRef.current);
+      seedRequest(testDbRef.current, { id: "req-2", mediaId: 43, status: "validated" });
 
       const pending = await bodyOf(await requestRoutes.request("/?status=pending&page=1&limit=10"));
       expect(pending.results).toHaveLength(1);
@@ -164,7 +165,7 @@ describe("Request Routes", () => {
   describe("admin cancel / validate", () => {
     beforeEach(() => {
       fakeUser.role = "admin";
-      seedRequest(testDbRef.current!);
+      seedRequest(testDbRef.current);
     });
 
     it("cancels a request", async () => {
@@ -188,7 +189,7 @@ describe("Request Routes", () => {
 
   describe("reopen / delete (owner)", () => {
     it("reopens a cancelled request", async () => {
-      seedRequest(testDbRef.current!, { status: "cancelled", dismissed: true });
+      seedRequest(testDbRef.current, { status: "cancelled", dismissed: true });
       const res = await requestRoutes.request("/req-1/reopen", { method: "PATCH" });
       expect(res.status).toBe(200);
       const mine = await bodyOf(await requestRoutes.request("/mine"));
@@ -196,25 +197,25 @@ describe("Request Routes", () => {
     });
 
     it("rejects reopen when not cancelled", async () => {
-      seedRequest(testDbRef.current!);
+      seedRequest(testDbRef.current);
       expect((await requestRoutes.request("/req-1/reopen", { method: "PATCH" })).status).toBe(400);
     });
 
     it("deletes own request", async () => {
-      seedRequest(testDbRef.current!);
+      seedRequest(testDbRef.current);
       expect((await requestRoutes.request("/req-1", { method: "DELETE" })).status).toBe(200);
       const mine = await bodyOf(await requestRoutes.request("/mine"));
       expect(mine).toHaveLength(0);
     });
 
     it("forbids deleting another user's request", async () => {
-      seedTestUser(testDbRef.current!, {
+      seedTestUser(testDbRef.current, {
         id: "user-2",
         username: "other",
         role: "member",
         createdAt: new Date(),
       });
-      seedRequest(testDbRef.current!, { userId: "user-2" });
+      seedRequest(testDbRef.current, { userId: "user-2" });
       expect((await requestRoutes.request("/req-1", { method: "DELETE" })).status).toBe(403);
     });
   });

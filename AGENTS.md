@@ -194,10 +194,17 @@ pnpm --filter @seedarr/api db:studio   # Open Drizzle Studio
 AuthenticatedService        → user in context, createRouter() factory
 ├── IdentifiableService<T>  → get/getMany/list with pagination
 │   ├── DownloadService, MediaService, UserService, ModuleService
+│   ├── ModuleIndexerService
 │   └── TMDBService<S>      → MovieService, TVService (createTMDBRouter)
 ├── ActivityService
-└── TorrentService, SubtitleService
+└── TorrentService, SubtitleService, StreamingService, RequestService
 ```
+
+**Repositories** (`*.repository.ts`) hold shared data access and may throw (`get` → NotFound, `upsert` → BadRequest). Import repositories across modules; keep **services** scoped to their own folder (routes call local services only — cross-cutting helpers like `trackRoute` are the exception). Examples: `mediaRepository`, `mediaListRepository`, `mediaRelationsRepository`, `downloadRepository`, `moduleRepository`, `requestRepository`, `userRepository`, `activityRepository`.
+
+Guards may import repositories for existence/ownership checks. Pure helpers (e.g. `parseWatchedAt`) live in `*.helper.ts`, not guards.
+
+`ModuleService` extends `IdentifiableService` (`getMany` / `get`); the modules list endpoint uses `listAll()` (small catalog, not page-sliced).
 
 `createRouter()` applies `authGuard` + injects `c.var.service` automatically.
 

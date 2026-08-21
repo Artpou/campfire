@@ -1,7 +1,8 @@
 import { BadRequestError } from "@/shared/errors/error";
 
-import { fetchImdbRating } from "@/modules/media/imdb-rating.helper";
+import { fetchImdbRating } from "@/modules/media/cinemeta/cinemeta.service";
 import { mergeMediaEnrichment } from "@/modules/media/media.helper";
+import { listEnrichedMedia } from "@/modules/media/media-list.repository";
 import { tmdbMovieToMedia } from "@/modules/tmdb/tmdb.helper";
 import { TMDBService } from "@/modules/tmdb/tmdb.service";
 import type { TMDBItem, TMDBMovieDetails } from "@/modules/tmdb/tmdb.types";
@@ -40,7 +41,7 @@ export class MovieService extends TMDBService<Movie> {
       ...recommendations.map((item) => tmdbMovieToMedia(item)),
     ];
 
-    const mediaMap = await this.mediaService.getMany({
+    const mediaMap = await listEnrichedMedia(this.user.id, {
       ids: [id, ...allRelated.map((m) => m.id.toString())],
     });
     const collectionIds = new Set(collectionParts.map((p) => p.id));

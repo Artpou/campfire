@@ -10,6 +10,7 @@ import { type SortingState, useTable } from "@tanstack/react-table";
 import { ArrowDownIcon, ArrowUpIcon, DownloadIcon, InfoIcon } from "lucide-react";
 import { toast } from "sonner";
 
+import { EmptyState } from "@/shared/components/empty-state";
 import { Flag } from "@/shared/components/flag";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { SelectLang } from "@/shared/components/select/select-lang";
@@ -41,31 +42,22 @@ interface TorrentTableProps {
 function TorrentEmptyState({ hasIndexers }: { hasIndexers: boolean }) {
   if (!hasIndexers) {
     return (
-      <div className="p-10 border border-dashed rounded-sm bg-muted border-border inline-block space-y-3">
-        <p className="font-bold uppercase text-popover-foreground">
-          <Trans>No indexers configured</Trans>
-        </p>
-        <p className="text-sm text-muted-foreground max-w-md">
-          <Trans>Install and enable an indexer module to search torrents.</Trans>
-        </p>
-        <Button variant="secondary" size="sm" asChild>
-          <Link to="/settings/modules" search={{ tab: "indexer" }}>
-            <Trans>Configure indexers</Trans>
-          </Link>
-        </Button>
-      </div>
+      <EmptyState
+        title={<Trans>No indexers configured</Trans>}
+        subtitle={<Trans>Install and enable an indexer module to search torrents.</Trans>}
+        action={
+          <Button variant="secondary" size="sm" asChild>
+            <Link to="/settings/modules" search={{ tab: "indexer" }}>
+              <Trans>Configure indexers</Trans>
+            </Link>
+          </Button>
+        }
+      />
     );
   }
 
   return (
-    <div className="p-10 border border-dashed rounded-sm bg-muted border-border inline-block">
-      <p className="font-bold uppercase text-popover-foreground">
-        <Trans>No torrents found</Trans>
-      </p>
-      <p className="mt-1 text-xs uppercase text-popover-foreground/50">
-        <Trans>Try adjusting your search query</Trans>
-      </p>
-    </div>
+    <EmptyState title={<Trans>No torrents found</Trans>} subtitle={<Trans>Try adjusting your search query</Trans>} />
   );
 }
 

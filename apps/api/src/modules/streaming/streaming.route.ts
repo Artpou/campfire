@@ -1,33 +1,22 @@
 import { zValidator } from "@hono/zod-validator";
 import { downloadFilePathParamDto, stringIdParamDto } from "@seedarr/contracts";
-import { eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { stream } from "hono/streaming";
 
-import { NotFoundError } from "@/shared/errors/error";
-
-import { db } from "@/db/db";
 import { trackRoute } from "@/modules/activity/activity.service";
 import { authGuard } from "@/modules/auth/auth.guard";
-import { download } from "@/modules/download/download.schema";
 import type { HonoVariables } from "@/types/hono";
 import { StreamingService } from "./streaming.service";
-import { StreamingSubtitleService } from "./streaming-subtitle.service";
+import { StreamingSubtitleService } from "./subtitle/streaming-subtitle.service";
 
 const streamingService = new StreamingService();
 const subtitleService = new StreamingSubtitleService();
-
-async function getDownload(id: string) {
-  const row = await db.query.download.findFirst({ where: eq(download.id, id) });
-  if (!row) throw new NotFoundError("Download");
-  return row;
-}
 
 /** Any authenticated user (session cookie) can stream any playable download. */
 export const streamingRoutes = new Hono<{ Variables: HonoVariables }>()
   .use("*", authGuard)
   .get("/:id/info", zValidator("param", stringIdParamDto), async (c) => {
-    const download = await getDownload(c.req.valid("param").id);
+    const download = await streamingService.getDownload(c.req.valid("param").id);
     return c.json(
       await trackRoute(
         c,
@@ -37,7 +26,7 @@ export const streamingRoutes = new Hono<{ Variables: HonoVariables }>()
     );
   })
   .get("/:id/direct", zValidator("param", stringIdParamDto), async (c) => {
-    const download = await getDownload(c.req.valid("param").id);
+    const download = await streamingService.getDownload(c.req.valid("param").id);
     const { status, headers, pipe } = await streamingService.prepareDirectStream(download, c.req.header("range"));
 
     c.status(status);
@@ -46,19 +35,19 @@ export const streamingRoutes = new Hono<{ Variables: HonoVariables }>()
     return stream(c, pipe);
   })
   .get("/:id/live", zValidator("param", stringIdParamDto), async (c) => {
-    const download = await getDownload(c.req.valid("param").id);
+    const download = await streamingService.getDownload(c.req.valid("param").id);
     const { headers, pipe } = await streamingService.prepareLiveStream(download);
 
     for (const [key, value] of Object.entries(headers)) c.header(key, value);
     return stream(c, pipe);
   })
   .get("/:id/subtitles", zValidator("param", stringIdParamDto), async (c) => {
-    const download = await getDownload(c.req.valid("param").id);
+    const download = await streamingService.getDownload(c.req.valid("param").id);
     return c.json(await subtitleService.listExternalSubtitles(download));
   })
   .get("/:id/subtitles/:filePath", zValidator("param", downloadFilePathParamDto), async (c) => {
     const { id, filePath } = c.req.valid("param");
-    const download = await getDownload(id);
+    const download = await streamingService.getDownload(id);
     const { content, contentType } = await subtitleService.getSubtitleFile(download, filePath);
 
     c.header("Content-Type", contentType);

@@ -1,5 +1,1 @@
-export interface Paginate<T> {
-  results: T[];
-  page: number;
-  hasMore: boolean;
-}
+export type { Paginate } from "./pagination.helper";
