@@ -64,26 +64,28 @@ export function SettingsUsersView() {
       placeholder={t(msg`Search users…`)}
       value={query}
       onChange={(e) => setQuery(e.target.value)}
-      classNameWrapper={isStuck ? "hidden lg:block w-full" : "w-full"}
-      h={isStuck ? "lg" : undefined}
+      classNameWrapper="w-full"
+      h="lg"
     />
   );
 
   return (
     <div className="space-y-4">
       <SentinelStuck setIsStuck={setIsStuck} />
-      <StickyFilterBar isStuck={isStuck}>
-        <div className="flex items-center justify-between gap-2">
-          {isAdmin && (
-            <Button onClick={handleCreateUser} icon={UserPlusIcon} className="shrink-0">
-              <Trans>Create User</Trans>
-            </Button>
-          )}
-          {isStuck ? searchInput : null}
-        </div>
-      </StickyFilterBar>
-
       {!isStuck && searchInput}
+      <StickyFilterBar isStuck={isStuck}>
+        {isStuck ? (
+          <div className="flex w-full items-center gap-2">{searchInput}</div>
+        ) : (
+          <div className="flex items-center justify-between gap-2">
+            {isAdmin && (
+              <Button onClick={handleCreateUser} icon={UserPlusIcon} className="shrink-0">
+                <Trans>Create User</Trans>
+              </Button>
+            )}
+          </div>
+        )}
+      </StickyFilterBar>
 
       <DataTablePagination page={page} limit={PAGE_SIZE} total={total} onPageChange={setPage} />
 

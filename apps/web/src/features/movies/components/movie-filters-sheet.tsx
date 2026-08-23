@@ -1,6 +1,6 @@
 import { Trans } from "@lingui/react/macro";
 
-import { MediaFiltersSheet, type MediaFiltersValue } from "@/features/media/components/media-filters-sheet";
+import { type MediaFiltersValue, MediaSheetFilter } from "@/features/media/components/sheet/media-sheet-filter";
 
 export interface MovieFiltersValue {
   release_date_gte?: string;
@@ -14,9 +14,14 @@ export interface MovieFiltersValue {
   vote_average_gte?: number;
 }
 
+type MediaSortValue = "new" | "top-rated" | "downloaded" | "upcoming";
+
 interface MovieFiltersSheetProps {
   value: MovieFiltersValue;
   onChange: (value: MovieFiltersValue) => void;
+  sortValue?: MediaSortValue;
+  onSortChange?: (value: MediaSortValue) => void;
+  showSortInSheet?: boolean;
 }
 
 function toGeneric(value: MovieFiltersValue): MediaFiltersValue {
@@ -41,17 +46,27 @@ function fromGeneric(value: MediaFiltersValue): MovieFiltersValue {
   };
 }
 
-export function MovieFiltersSheet({ value, onChange }: MovieFiltersSheetProps) {
+export function MovieFiltersSheet({
+  value,
+  onChange,
+  sortValue,
+  onSortChange,
+  showSortInSheet,
+}: MovieFiltersSheetProps) {
   return (
-    <MediaFiltersSheet
+    <MediaSheetFilter
+      mode="discover"
+      genreScope="movie"
+      categoryValueMode="id"
       type="movie"
       value={toGeneric(value)}
       onChange={(v) => onChange(fromGeneric(v))}
-      dateLabel={<Trans>Release date</Trans>}
       runtimeLabel={<Trans>Runtime (minutes)</Trans>}
       description={<Trans>Refine the list of movies by combining several criteria.</Trans>}
-      buttonVariant="outline"
       dateInputIdPrefix="release-date"
+      sortValue={sortValue}
+      onSortChange={onSortChange}
+      showSortInSheet={showSortInSheet}
     />
   );
 }

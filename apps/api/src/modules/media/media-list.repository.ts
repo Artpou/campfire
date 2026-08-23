@@ -1,5 +1,5 @@
 import type { ListMediaQuery } from "@seedarr/contracts";
-import { and, asc, desc, eq, inArray, like, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, like, lte, or, sql } from "drizzle-orm";
 
 import { paginate } from "@/shared/helpers/pagination.helper";
 import { order } from "@/shared/sql/base.sql";
@@ -24,7 +24,18 @@ import type { MediaEnriched } from "@/modules/media/media.types";
 
 /** Shared read path for enriched media lists (user-scoped relations + downloads). */
 export async function listEnrichedMedia(userId: string, query: ListMediaQuery = {}): Promise<MediaEnriched[]> {
-  const { type, filter, ids, with_genres: withGenres } = query;
+  const {
+    type,
+    filter,
+    ids,
+    with_genres: withGenres,
+    q,
+    vote_average_gte,
+    release_date_gte,
+    release_date_lte,
+    with_runtime_gte,
+    with_runtime_lte,
+  } = query;
 
   const conditions = [];
   if (type) conditions.push(eq(media.type, type));
@@ -38,6 +49,28 @@ export async function listEnrichedMedia(userId: string, query: ListMediaQuery = 
     if (genreNames.length > 0) {
       conditions.push(or(...genreNames.map((name) => like(media.categories, `%${name}%`))));
     }
+  }
+
+  const searchTerm = q?.trim();
+  if (searchTerm) {
+    const pattern = `%${searchTerm}%`;
+    conditions.push(or(like(media.title, pattern), like(media.original_title, pattern)));
+  }
+
+  if (vote_average_gte != null) {
+    conditions.push(gte(media.vote_average, vote_average_gte));
+  }
+  if (release_date_gte) {
+    conditions.push(gte(media.release_date, release_date_gte));
+  }
+  if (release_date_lte) {
+    conditions.push(lte(media.release_date, release_date_lte));
+  }
+  if (with_runtime_gte != null) {
+    conditions.push(gte(media.duration, with_runtime_gte));
+  }
+  if (with_runtime_lte != null) {
+    conditions.push(lte(media.duration, with_runtime_lte));
   }
 
   switch (filter) {

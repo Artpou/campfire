@@ -1,10 +1,9 @@
 import { useMemo } from "react";
 
 import { useLingui } from "@lingui/react";
-import { Trans } from "@lingui/react/macro";
 
-import { DropSelect } from "@/shared/components/drop-select";
 import { Flag } from "@/shared/components/flag";
+import { Select } from "@/shared/components/select/select";
 import { setStoredCountry, UI_LOCALES } from "@/shared/helpers/i18n.helper";
 import { Badge } from "@/shared/ui/badge";
 
@@ -106,11 +105,10 @@ export function SelectI18nLang() {
   };
 
   return (
-    <DropSelect
+    <Select
       value={currentCountry}
       onValueChange={handleChange}
       triggerClassName="h-9 w-fit gap-2 px-2 border-none shadow-none"
-      label={<Trans>Language</Trans>}
       options={locales.map(({ country, displayName, isUiSupported }) => ({
         value: country,
         label: (

@@ -29,7 +29,7 @@ export function OnboardingNav({
       {hideBack ? (
         <span />
       ) : (
-        <Button size="lg" type="button" variant="outline" onClick={onBack} disabled={!onBack}>
+        <Button size="lg" type="button" variant="secondary" onClick={onBack} disabled={!onBack}>
           <Trans>Back</Trans>
         </Button>
       )}

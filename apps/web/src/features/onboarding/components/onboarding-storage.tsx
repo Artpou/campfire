@@ -127,7 +127,7 @@ export function OnboardingStorage({ onContinue, onBack }: OnboardingStorageProps
         continueLoading={createMutation.isPending}
         continueDisabled={!canSave}
         rightExtra={
-          <Button size="lg" variant="outline" onClick={onContinue}>
+          <Button size="lg" variant="secondary" onClick={onContinue}>
             <Trans>Skip</Trans>
           </Button>
         }

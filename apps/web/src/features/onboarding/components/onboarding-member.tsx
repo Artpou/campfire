@@ -37,7 +37,7 @@ export function OnboardingMember() {
         rightExtra={
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             className="text-muted-foreground"
             loading={complete.isPending}
             onClick={() => complete.mutate()}

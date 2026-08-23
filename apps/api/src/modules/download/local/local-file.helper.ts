@@ -1,6 +1,7 @@
 import { formatError, VIDEO_EXTENSIONS } from "@seedarr/shared";
 
-import { NotFoundError } from "@/shared/errors/error";
+import { NotFoundError, UnauthorizedError } from "@/shared/errors/error";
+import { verifyToken } from "@/shared/helpers/crypto.helper";
 import { logger } from "@/shared/helpers/logger.helper";
 import { getDownloadFolderName, resolveWithinDownloads } from "@/shared/helpers/path.helper";
 import { findLargestVideoInDirectory } from "@/shared/helpers/video-file.helper";
@@ -18,6 +19,15 @@ export type DownloadableFile = {
   filePath?: string;
   remotePath?: string;
 };
+
+export function assertDownloadFileToken(token: string, downloadId: string): { userId: string } {
+  const payload = verifyToken<{ downloadId: string; userId: string }>(token);
+  if (!payload || payload.downloadId !== downloadId || typeof payload.userId !== "string") {
+    logger.warn("DOWNLOAD", `Invalid file download token for download ${downloadId}`);
+    throw new UnauthorizedError("Invalid or expired download token");
+  }
+  return { userId: payload.userId };
+}
 
 /** Resolve a local seekable file on disk (single file or largest video in a folder). */
 async function resolveLocalFile(item: Download): Promise<{ filePath: string; fileName: string; size: number } | null> {

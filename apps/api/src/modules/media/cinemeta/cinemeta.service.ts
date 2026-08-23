@@ -1,6 +1,7 @@
 import ms from "ms";
 
 import { createCache } from "@/shared/helpers/cache.helper";
+import { logger } from "@/shared/helpers/logger.helper";
 
 const CINEMETA_BASE = "https://v3-cinemeta.strem.io/meta";
 const FETCH_TIMEOUT_MS = 8_000;
@@ -31,8 +32,12 @@ export async function fetchImdbRating(imdbId: string | null | undefined, type: "
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
   try {
+    logger.debug("CINEMETA", `Fetching IMDb rating for ${normalizedId}`);
     const response = await fetch(url, { signal: controller.signal });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      logger.warn("CINEMETA", `Rating fetch failed for ${normalizedId} (${response.status})`);
+      return null;
+    }
 
     const payload = (await response.json()) as {
       meta?: { imdbRating?: string | number | null; imdb_id?: string };
@@ -47,7 +52,11 @@ export async function fetchImdbRating(imdbId: string | null | undefined, type: "
       rating,
     });
     return rating;
-  } catch {
+  } catch (err) {
+    logger.warn(
+      "CINEMETA",
+      `Rating fetch error for ${normalizedId}: ${err instanceof Error ? err.message : "unknown"}`,
+    );
     return null;
   } finally {
     clearTimeout(timer);

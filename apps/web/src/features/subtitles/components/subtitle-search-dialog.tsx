@@ -5,12 +5,12 @@ import type { SubdlSubtitle } from "@seedarr/sdk";
 import { useQuery } from "@tanstack/react-query";
 import { DownloadIcon, StarIcon, SubtitlesIcon } from "lucide-react";
 
+import { Select } from "@/shared/components/select/select";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
 import { Label } from "@/shared/ui/label";
 import { ScrollArea } from "@/shared/ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 import { Skeleton } from "@/shared/ui/skeleton";
 
 import { getTorrentFiles } from "@/features/downloads/helpers/downloads.helper";
@@ -93,30 +93,24 @@ export function SubtitleSearchDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="subtitle-lang">
-              <Trans>Language</Trans>
-            </Label>
-            <Select value={language} onValueChange={setLanguage}>
-              <SelectTrigger id="subtitle-lang" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SUBDL_LANGUAGES.map(({ code, label }) => (
-                  <SelectItem key={code} value={code}>
-                    <span className="flex w-full items-center justify-between gap-2">
-                      <span>{label}</span>
-                      {addedLanguages.has(code) && (
-                        <Badge variant="secondary" className="text-[10px]">
-                          <Trans>Already added</Trans>
-                        </Badge>
-                      )}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select
+            value={language}
+            onValueChange={setLanguage}
+            label={<Trans>Language</Trans>}
+            options={SUBDL_LANGUAGES.map(({ code, label }) => ({
+              value: code,
+              label: (
+                <span className="flex w-full items-center justify-between gap-2">
+                  <span>{label}</span>
+                  {addedLanguages.has(code) && (
+                    <Badge variant="secondary" className="text-[10px]">
+                      <Trans>Already added</Trans>
+                    </Badge>
+                  )}
+                </span>
+              ),
+            }))}
+          />
 
           {isLoading && (
             <div className="space-y-2">

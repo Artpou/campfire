@@ -10,9 +10,10 @@ interface MediaSortTabsProps {
   value?: "new" | "top-rated" | "downloaded" | "upcoming";
   type: Media["type"];
   onChange: (value: "new" | "top-rated" | "downloaded" | "upcoming") => void;
+  className?: string;
 }
 
-export function MediaSortTabs({ value, onChange }: MediaSortTabsProps) {
+export function MediaSortTabs({ value, className, onChange }: MediaSortTabsProps) {
   const { t } = useLingui();
 
   const activeValue = value || "new";
@@ -44,5 +45,7 @@ export function MediaSortTabs({ value, onChange }: MediaSortTabsProps) {
     },
   ];
 
-  return <ResponsiveTabs value={activeValue} onValueChange={handleChange} options={sortOptions} />;
+  return (
+    <ResponsiveTabs value={activeValue} onValueChange={handleChange} options={sortOptions} className={className} />
+  );
 }

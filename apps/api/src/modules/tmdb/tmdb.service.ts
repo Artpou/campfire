@@ -4,6 +4,7 @@ import ms from "ms";
 
 import { NotFoundError, ServiceUnavailableError } from "@/shared/errors/error";
 import { createCache } from "@/shared/helpers/cache.helper";
+import { logger } from "@/shared/helpers/logger.helper";
 import { type Identifiable, IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
@@ -85,7 +86,10 @@ export async function tmdbRequest<T>(url: string, locale: string, options?: Fetc
 
   const fullUrl = buildUrl(url, locale, apiKey, options);
   const cached = cache.get(fullUrl) as T | undefined;
-  if (cached !== undefined) return cached;
+  if (cached !== undefined) {
+    logger.debug("TMDB [cached]", `call to ${fullUrl}`);
+    return cached;
+  }
 
   const res = await fetch(fullUrl, { signal: AbortSignal.timeout(TMDB_FETCH_TIMEOUT_MS) });
   if (res.status === 404) throw new NotFoundError("Media");
@@ -93,6 +97,7 @@ export async function tmdbRequest<T>(url: string, locale: string, options?: Fetc
 
   const data = (await res.json()) as T & object;
   cache.set(fullUrl, data);
+  logger.debug("TMDB", `call to ${fullUrl}`);
   return data;
 }
 

@@ -10,9 +10,13 @@ const { getDownloadableFile } = vi.hoisted(() => ({
   getDownloadableFile: vi.fn(),
 }));
 
-vi.mock("./local-file.helper", () => ({
-  getDownloadableFile,
-}));
+vi.mock("./local-file.helper", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./local-file.helper")>();
+  return {
+    ...actual,
+    getDownloadableFile,
+  };
+});
 
 const { localFileRoutes } = await import("./local-file.route");
 

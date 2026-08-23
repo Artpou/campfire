@@ -3,12 +3,11 @@ import { downloadFileQueryDto, stringIdParamDto } from "@seedarr/contracts";
 import { type Context, Hono } from "hono";
 import { stream } from "hono/streaming";
 
-import { NotFoundError, UnauthorizedError } from "@/shared/errors/error";
-import { verifyToken } from "@/shared/helpers/crypto.helper";
+import { NotFoundError } from "@/shared/errors/error";
 import { pipeNodeStream } from "@/shared/helpers/stream.helper";
 
 import { remoteStorageService } from "@/modules/storage-config/remote/remote-storage.service";
-import { getDownloadableFile } from "./local-file.helper";
+import { assertDownloadFileToken, getDownloadableFile } from "./local-file.helper";
 
 async function streamDownloadFile(c: Context, id: string): Promise<Response> {
   const { fileName, size, filePath, remotePath } = await getDownloadableFile(id);
@@ -48,10 +47,7 @@ export const localFileRoutes = new Hono().get(
   async (c) => {
     const { id } = c.req.valid("param");
     const { token } = c.req.valid("query");
-    const payload = verifyToken<{ downloadId: string; userId: string }>(token);
-    if (!payload || payload.downloadId !== id || typeof payload.userId !== "string") {
-      throw new UnauthorizedError("Invalid or expired download token");
-    }
+    assertDownloadFileToken(token, id);
 
     return streamDownloadFile(c, id);
   },

@@ -7,7 +7,7 @@ import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 
 import { downloadQueries } from "@/features/downloads/hooks/download.queries";
 import { MediaCarouselCast } from "@/features/media/components/carousel/media-carousel-cast";
-import { type MediaDetailTab, MediaDetailView } from "@/features/media/components/media-detail-view";
+import { type MediaDetailTab, MediaDetailView } from "@/features/media/components/view/media-detail-view";
 import { TvEpisodesSection } from "@/features/tv/components/tv-episodes-section";
 import { TvRelated } from "@/features/tv/components/tv-related";
 import { tvQueries } from "@/features/tv/hooks/tv.queries";

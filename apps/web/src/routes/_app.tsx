@@ -11,7 +11,7 @@ import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { AppTopbar } from "@/shared/components/app-topbar";
-import { ErrorView } from "@/shared/components/error/error-view";
+import { ErrorView } from "@/shared/components/view/error-view";
 
 import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";

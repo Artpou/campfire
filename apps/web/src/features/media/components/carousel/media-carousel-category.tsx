@@ -1,7 +1,7 @@
+import type { ReactNode } from "react";
+
 import type { Media } from "@seedarr/sdk";
-import { parseString } from "@seedarr/shared";
 import { useQuery } from "@tanstack/react-query";
-import { useSearch } from "@tanstack/react-router";
 
 import { cn } from "@/lib/utils";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
@@ -11,35 +11,59 @@ import { CarouselWrapper } from "@/shared/ui/carousel-wrapper";
 import { Img } from "@/shared/ui/image";
 import { Skeleton } from "@/shared/ui/skeleton";
 
+import {
+  categoryImagePath,
+  isGenreInSelection,
+  type MergedGenre,
+  toggleGenreSelection,
+} from "@/features/media/helpers/genre.helper";
 import { genreQueries } from "@/features/media/hooks/genre.queries";
 
 interface MediaCarouselCategoryProps {
   type: Media["type"];
-  /** Emit genre TMDB id (discover) or genre name (local media list). */
+  genreScope?: Media["type"] | "both";
+  genres?: MergedGenre[];
   valueMode?: "id" | "name";
-  /** Controlled selected value; falls back to URL `with_genres` when omitted. */
   value?: string;
   onValueChange?: (value: string | undefined) => void;
+  title?: ReactNode;
 }
 
-export function MediaCarouselCategory({ type, valueMode = "id", value, onValueChange }: MediaCarouselCategoryProps) {
+export function MediaCarouselCategory({
+  type,
+  genreScope,
+  genres: genresProp,
+  valueMode = "id",
+  value,
+  onValueChange,
+  title,
+}: MediaCarouselCategoryProps) {
   const locale = useTmdbLocale();
-  const { data: genres = [], isLoading } = useQuery(genreQueries.list(type, locale));
-  const search = useSearch({ strict: false });
-  const withGenres = value ?? parseString("with_genres" in search ? search.with_genres : undefined);
+  const scope = genreScope ?? type;
+  const isControlled = onValueChange !== undefined;
+  const { data: fetchedGenres = [], isLoading } = useQuery({
+    ...genreQueries.list(type, locale),
+    enabled: !genresProp && !isControlled,
+  });
 
-  const selectedId = valueMode === "id" && withGenres ? Number.parseInt(withGenres, 10) : undefined;
-  const selectedName = valueMode === "name" ? withGenres : undefined;
+  const genres: MergedGenre[] =
+    genresProp ??
+    fetchedGenres.map((genre) => ({
+      id: genre.id.toString(),
+      name: genre.name,
+      movieId: type === "movie" ? genre.id : undefined,
+      tvId: type === "tv" ? genre.id : undefined,
+    }));
 
-  const handleGenreClick = (genre: { id: number; name: string }) => {
-    const next = valueMode === "name" ? genre.name : genre.id.toString();
-    const isSelected = valueMode === "name" ? selectedName === genre.name : selectedId === genre.id;
-    onValueChange?.(isSelected ? undefined : next);
+  const withGenres = value;
+
+  const handleGenreClick = (genre: MergedGenre) => {
+    onValueChange?.(toggleGenreSelection(genre, valueMode, withGenres));
   };
 
-  if (isLoading) {
+  if (!genresProp && isLoading) {
     return (
-      <CarouselWrapper title="">
+      <CarouselWrapper className="sm:mt-2" title={title}>
         {Array.from({ length: 8 }, (_, i) => `skeleton-${i}`).map((key) => (
           <CarouselItem key={key} className="xl:basis-1/4">
             <Skeleton className="h-24 w-full rounded-lg" />
@@ -51,20 +75,22 @@ export function MediaCarouselCategory({ type, valueMode = "id", value, onValueCh
 
   if (!genres || genres.length === 0) return null;
 
+  const hasSelection = Boolean(withGenres);
+
   return (
-    <CarouselWrapper>
+    <CarouselWrapper className="sm:mt-2" title={title}>
       {genres.map((genre) => {
-        const isSelected = valueMode === "name" ? selectedName === genre.name : selectedId === genre.id;
+        const isSelected = isGenreInSelection(genre, valueMode, withGenres);
         return (
-          <CarouselItem className={cn(" hover:border-primary", isSelected && "border-primary!")} key={genre.id}>
-            <Card className="group h-24 py-0 cursor-pointer overflow-hidden" onClick={() => handleGenreClick(genre)}>
+          <CarouselItem className={cn("hover:border-primary", isSelected && "border-primary!")} key={genre.id}>
+            <Card className="group h-24 cursor-pointer overflow-hidden py-0" onClick={() => handleGenreClick(genre)}>
               <CardContent className="relative h-full p-0">
                 <Img
-                  src={`/${type}/category/${genre.id}.jpg`}
+                  src={categoryImagePath(genre, scope)}
                   alt={genre.name}
                   className={cn(
-                    `absolute inset-0 h-full w-full object-cover transition-all duration-300`,
-                    withGenres && !isSelected && "grayscale",
+                    "absolute inset-0 h-full w-full object-cover transition-all duration-300",
+                    hasSelection && !isSelected && "grayscale",
                   )}
                 />
                 {!isSelected && (

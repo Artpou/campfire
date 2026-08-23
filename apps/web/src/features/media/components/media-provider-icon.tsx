@@ -33,7 +33,7 @@ function providerRedirectUrl(providerName: string, mediaName: string): string | 
   }
 }
 
-export function ProviderIcon({ provider, name }: ProviderIconProps) {
+export function MediaProviderIcon({ provider, name }: ProviderIconProps) {
   const redirectUrl = useMemo(() => providerRedirectUrl(provider.provider_name, name), [provider.provider_name, name]);
 
   return (

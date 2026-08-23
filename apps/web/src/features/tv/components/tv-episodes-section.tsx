@@ -7,13 +7,14 @@ import { Link } from "@tanstack/react-router";
 import { ChevronDownIcon, ChevronUpIcon, ClapperboardIcon, MagnetIcon } from "lucide-react";
 
 import { ResponsiveTabs } from "@/shared/components/responsive-tabs";
+import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
+import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Skeleton } from "@/shared/ui/skeleton";
 
 import { useRole } from "@/features/auth/hooks/use-role";
-import { DownloadButtonDelete } from "@/features/downloads/components/button/download-button-delete";
 import { getDownloadStatus } from "@/features/downloads/helpers/downloads.helper";
 import { useDownloadDelete } from "@/features/downloads/hooks/download.queries";
 import { MediaBadgeDate } from "@/features/media/components/badge/media-badge-date";
@@ -23,10 +24,22 @@ import { getBackdropUrl } from "@/features/media/helpers/media.helper";
 import { type EpisodeDeleteLabel, TvEpisodeDeleteDialog } from "@/features/tv/components/tv-episode-delete-dialog";
 import { TvEpisodeDownloadControls } from "@/features/tv/components/tv-episode-download-controls";
 import { TvEpisodeDownloadPanel } from "@/features/tv/components/tv-episode-download-panel";
-import { formatSeasonEpisode } from "@/features/tv/helpers/episode.helper";
 import { getEpisodesCoveredByDownload } from "@/features/tv/helpers/episode-downloads.helper";
+import { formatSeasonEpisode } from "@/features/tv/helpers/episode.helper";
 import { tvQueries } from "@/features/tv/hooks/tv.queries";
 import { useEpisodeDownloadMap } from "@/features/tv/hooks/use-episode-download-map";
+
+function countSeasonDownloads(
+  seasonNumber: number,
+  episodeCount: number,
+  episodeDownloadMap: Map<string, Download>,
+): number {
+  let downloaded = 0;
+  for (let episode = 1; episode <= episodeCount; episode++) {
+    if (episodeDownloadMap.has(`${seasonNumber}-${episode}`)) downloaded++;
+  }
+  return downloaded;
+}
 
 interface TvEpisodesSectionProps {
   tv: TMDBTvDetails;
@@ -37,6 +50,7 @@ interface TvEpisodesSectionProps {
 export function TvEpisodesSection({ tv, media, downloads }: TvEpisodesSectionProps) {
   const { role } = useRole();
   const { t } = useLingui();
+  const isMobile = useIsMobile();
   const locale = useTmdbLocale();
   const deleteTorrent = useDownloadDelete();
   const validSeasons = useMemo(() => (tv.seasons ?? []).filter((s) => s.season_number > 0), [tv.seasons]);
@@ -71,14 +85,36 @@ export function TvEpisodesSection({ tv, media, downloads }: TvEpisodesSectionPro
 
   return (
     <div className="space-y-4">
-      <ResponsiveTabs
-        value={selectedSeason}
-        onValueChange={setSelectedSeason}
-        options={validSeasons.map((season) => ({
-          value: season.season_number.toString(),
-          label: <Trans>Season {season.season_number}</Trans>,
-        }))}
-      />
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <ResponsiveTabs
+          value={selectedSeason}
+          onValueChange={setSelectedSeason}
+          className="min-w-0 flex-1"
+          options={validSeasons.map((season) => {
+            const episodeCount = season.episode_count ?? 0;
+            const downloaded = countSeasonDownloads(season.season_number, episodeCount, episodeDownloadMap);
+
+            return {
+              value: season.season_number.toString(),
+              label: (
+                <span className="flex items-center gap-2">
+                  <Trans>Season {season.season_number}</Trans>
+                  {downloaded > 0 && (
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                      {downloaded}/{episodeCount}
+                    </Badge>
+                  )}
+                </span>
+              ),
+            };
+          })}
+        />
+        <Button size={isMobile ? "icon-lg" : "default"} asChild icon={MagnetIcon}>
+          <Link to="/tv/$id/torrents" params={{ id: tv.id.toString() }} search={{ season: seasonNumber }}>
+            {!isMobile && <Trans>Torrents</Trans>}
+          </Link>
+        </Button>
+      </div>
 
       <div className="space-y-3">
         {isLoading ? (
@@ -159,8 +195,6 @@ export function TvEpisodesSection({ tv, media, downloads }: TvEpisodesSectionPro
                         className="w-full"
                       />
                     )}
-
-                    {media && episodeDownload && <DownloadButtonDelete media={media} download={episodeDownload} />}
 
                     {role !== "viewer" && !hasDownload && (
                       <Button size="sm" className="w-full" asChild icon={MagnetIcon}>

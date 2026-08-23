@@ -30,8 +30,7 @@ function StorageBar({ space, kind }: { space: StorageSpace; kind: "local" | "rem
 
   let rightText: string | null = null;
   if (diskUsed != null && diskTotal != null) {
-    const free = diskTotal - diskUsed;
-    rightText = `${formatBytes(diskUsed)} / ${formatBytes(free)}`;
+    rightText = `${formatBytes(diskUsed)} / ${formatBytes(diskTotal)}`;
   } else if (diskTotal != null) {
     rightText = `${formatBytes(seedarrUsed)} / ${formatBytes(diskTotal)}`;
   }

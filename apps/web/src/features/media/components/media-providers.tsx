@@ -4,7 +4,6 @@ import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
 import { PlusIcon } from "lucide-react";
 
-import { ProviderIcon } from "@/shared/components/provider-icon";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { useIsMobile } from "@/shared/hooks/use-mobile";
 import {
@@ -17,6 +16,7 @@ import {
 } from "@/shared/ui/dropdown-menu";
 import { Label } from "@/shared/ui/label";
 
+import { MediaProviderIcon } from "@/features/media/components/media-provider-icon";
 import { getFirstWatchProviders, getUniqueWatchProviders } from "@/features/media/helpers/watch-providers.helper";
 
 interface MediaProvidersProps {
@@ -50,7 +50,7 @@ export function MediaProviders({ watchProviders, mediaName }: MediaProvidersProp
       </Label>
       <div className="flex items-center gap-1.5">
         {firstProviders.map((provider) => (
-          <ProviderIcon key={provider.provider_id} provider={provider} name={mediaName} />
+          <MediaProviderIcon key={provider.provider_id} provider={provider} name={mediaName} />
         ))}
         {firstProviders.length < totalCount && (
           <DropdownMenu>
@@ -71,7 +71,7 @@ export function MediaProviders({ watchProviders, mediaName }: MediaProvidersProp
                   </DropdownMenuLabel>
                   <div className="flex flex-wrap gap-2 p-2">
                     {uniqueProviders.flatrate.map((provider) => (
-                      <ProviderIcon key={provider.provider_id} provider={provider} name={mediaName} />
+                      <MediaProviderIcon key={provider.provider_id} provider={provider} name={mediaName} />
                     ))}
                   </div>
                 </DropdownMenuGroup>
@@ -85,7 +85,7 @@ export function MediaProviders({ watchProviders, mediaName }: MediaProvidersProp
                     </DropdownMenuLabel>
                     <div className="flex flex-wrap gap-2 p-2">
                       {uniqueProviders.buyRent.map((provider) => (
-                        <ProviderIcon key={provider.provider_id} provider={provider} name={mediaName} />
+                        <MediaProviderIcon key={provider.provider_id} provider={provider} name={mediaName} />
                       ))}
                     </div>
                   </DropdownMenuGroup>

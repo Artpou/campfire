@@ -177,24 +177,24 @@ function AlertDialogCancel({ className, ...props }: React.ComponentProps<typeof 
   if (isMobile) {
     return (
       <DrawerClose
-        className={cn(buttonVariants({ variant: "outline" }), className)}
+        className={cn(buttonVariants({ variant: "secondary" }), className)}
         {...(props as React.ComponentProps<typeof DrawerClose>)}
       />
     );
   }
-  return <AlertDialogPrimitive.Cancel className={cn(buttonVariants({ variant: "outline" }), className)} {...props} />;
+  return <AlertDialogPrimitive.Cancel className={cn(buttonVariants({ variant: "secondary" }), className)} {...props} />;
 }
 
 export {
   AlertDialog,
-  AlertDialogPortal,
-  AlertDialogOverlay,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogTitle,
-  AlertDialogDescription,
   AlertDialogAction,
   AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
+  AlertDialogPortal,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 };

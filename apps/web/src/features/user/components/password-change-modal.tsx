@@ -116,7 +116,7 @@ export function PasswordChangeModal({ open, onOpenChange }: PasswordChangeModalP
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
               <Trans>Cancel</Trans>
             </Button>
             <Button type="submit" disabled={mutation.isPending || !oldPassword || !newPassword || !confirmPassword}>

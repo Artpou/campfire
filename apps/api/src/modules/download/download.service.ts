@@ -150,7 +150,10 @@ export class DownloadService extends IdentifiableService<Download> {
     const { preferLocal, ...downloadInput } = input;
 
     if (!preferLocal && (await remoteStorageService.isEnabled())) {
-      if (!(await remoteStorageService.isAvailable())) return { status: "REMOTE_UNAVAILABLE" };
+      if (!(await remoteStorageService.isAvailable())) {
+        logger.warn("DOWNLOAD", `Remote storage unavailable for media ${input.media.id}`);
+        return { status: "REMOTE_UNAVAILABLE" };
+      }
     }
 
     const torrentSource = await resolveTorrentSource(input.magnetUri);
@@ -275,6 +278,12 @@ export class DownloadService extends IdentifiableService<Download> {
       }
     }
 
+    if (skipped > 0) {
+      logger.warn("DOWNLOAD", `Batch delete: ${deleted} deleted, ${skipped} skipped`);
+    } else {
+      logger.info("DOWNLOAD", `Batch deleted ${deleted} download(s)${options?.dbOnly ? " (db only)" : ""}`);
+    }
+
     return { deleted, skipped };
   }
 
@@ -318,6 +327,7 @@ export class DownloadService extends IdentifiableService<Download> {
       await downloadRepository.update(id, { remoteLocation: null });
     }
 
+    logger.info("DOWNLOAD", `Deleted download ${id}${item.torrent?.name ? `: ${item.torrent.name}` : ""}`);
     return { success: true };
   }
 }

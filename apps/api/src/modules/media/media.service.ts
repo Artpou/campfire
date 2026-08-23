@@ -1,5 +1,6 @@
 import type { ListMediaQuery, UpdateProgressQuery, UpsertReviewInput } from "@seedarr/contracts";
 
+import { logger } from "@/shared/helpers/logger.helper";
 import { IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { assertMediaId } from "@/modules/media/media.helper";
@@ -17,7 +18,9 @@ export class MediaService extends IdentifiableService<MediaEnriched> {
 
   async upsert(data: MediaInsert): Promise<MediaEnriched> {
     const result = await mediaRepository.upsert(data);
-    return this.get(result.id.toString());
+    const media = await this.get(result.id.toString());
+    logger.info("MEDIA", `Upserted ${media.type} ${media.id} (${media.title})`);
+    return media;
   }
 
   async toggleLike(data: MediaInsert): Promise<MediaEnriched | undefined> {
@@ -38,12 +41,16 @@ export class MediaService extends IdentifiableService<MediaEnriched> {
     mediaData?: MediaInsert,
   ): Promise<MediaEnriched> {
     await mediaRelationsRepository.upsertReview(this.user.id, mediaId, input, mediaData);
-    return this.get(mediaId.toString());
+    const media = await this.get(mediaId.toString());
+    logger.info("MEDIA", `Review saved for ${media.type} ${media.id} (score: ${input.score ?? "none"})`);
+    return media;
   }
 
   async deleteReview(mediaId: number): Promise<MediaEnriched> {
     await mediaRelationsRepository.deleteReview(this.user.id, mediaId);
-    return this.get(mediaId.toString());
+    const media = await this.get(mediaId.toString());
+    logger.info("MEDIA", `Review deleted for ${media.type} ${media.id}`);
+    return media;
   }
 
   async updateProgress(mediaId: number, input: UpdateProgressQuery): Promise<void> {

@@ -1,6 +1,7 @@
 import type { ListRequestsQuery, MediaInput } from "@seedarr/contracts";
 
 import { BadRequestError, ConflictError, ForbiddenError } from "@/shared/errors/error";
+import { logger } from "@/shared/helpers/logger.helper";
 import { toPaginate } from "@/shared/helpers/pagination.helper";
 import type { Paginate } from "@/shared/helpers/pagination.types";
 import { AuthenticatedService } from "@/shared/services/authenticated.service";
@@ -20,9 +21,15 @@ export class RequestService extends AuthenticatedService {
     const existing = await requestRepository.findByUserAndMedia(this.user.id, input.id);
     if (existing && existing.status === "pending") throw new ConflictError("Request already exists");
 
-    if (existing) return requestRepository.reopenExisting(existing.id);
+    if (existing) {
+      const request = await requestRepository.reopenExisting(existing.id);
+      logger.info("REQUEST", `Reopened request ${request.id} for media ${request.mediaId}`);
+      return request;
+    }
 
-    return requestRepository.insert(this.user.id, input.id);
+    const request = await requestRepository.insert(this.user.id, input.id);
+    logger.info("REQUEST", `Created request ${request.id} for media ${request.mediaId}`);
+    return request;
   }
 
   async list(query: ListRequestsQuery): Promise<Paginate<RequestWithUser>> {
@@ -39,25 +46,30 @@ export class RequestService extends AuthenticatedService {
     if (this.roleLevel < ROLE_LEVELS.admin) throw new ForbiddenError();
     await requestRepository.get(requestId);
     await requestRepository.cancel(requestId);
+    logger.info("REQUEST", `Cancelled request ${requestId}`);
   }
 
   async validate(requestId: string): Promise<void> {
     await requestRepository.get(requestId);
     await requestRepository.validate(requestId);
+    logger.info("REQUEST", `Validated request ${requestId}`);
   }
 
   async validateByMedia(mediaId: number): Promise<void> {
     await requestRepository.validatePendingByMediaId(mediaId);
+    logger.info("REQUEST", `Auto-validated pending requests for media ${mediaId}`);
   }
 
   async reopen(requestId: string): Promise<void> {
     const request = await requestRepository.get(requestId);
     if (request.status !== "cancelled") throw new BadRequestError("Only cancelled requests can be reopened");
     await requestRepository.reopen(requestId);
+    logger.info("REQUEST", `Reopened request ${requestId}`);
   }
 
   async remove(requestId: string): Promise<void> {
     await requestRepository.get(requestId);
     await requestRepository.remove(requestId);
+    logger.info("REQUEST", `Removed request ${requestId}`);
   }
 }

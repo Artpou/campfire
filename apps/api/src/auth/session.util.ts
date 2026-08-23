@@ -217,10 +217,21 @@ export async function resolveAuthenticatedSession(rawToken: string): Promise<Res
   return { user: row.user };
 }
 
-export async function deleteSession(rawToken: string): Promise<void> {
+async function deleteSession(rawToken: string): Promise<void> {
   const tokenHash = hashToken(rawToken);
   invalidateSessionCache(rawToken);
   await db.delete(session).where(or(eq(session.token, tokenHash), eq(session.previousToken, tokenHash)));
+}
+
+/** Invalidate session cookie and log when a user was resolved. */
+export async function revokeSession(rawToken: string): Promise<User | null> {
+  const resolved = await resolveAuthenticatedSession(rawToken);
+  await deleteSession(rawToken);
+  if (resolved) {
+    logger.info("AUTH", `Logged out "${resolved.user.username}"`);
+    return resolved.user;
+  }
+  return null;
 }
 
 async function cleanupExpiredSessions(): Promise<void> {

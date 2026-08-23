@@ -1,6 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useNavigate } from "@tanstack/react-router";
 
+import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 
 import { MediaDiscover } from "@/features/media/components/media-discover";
@@ -22,6 +23,7 @@ export interface MoviesViewProps {
 export function MoviesView({ search }: MoviesViewProps) {
   const { t } = useLingui();
   const locale = useTmdbLocale();
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const isSearching = isDiscoverTextSearch(search.q);
   const isDownloaded = isDownloadedTab(search.selected);
@@ -49,7 +51,15 @@ export function MoviesView({ search }: MoviesViewProps) {
       queryOptions={queryOptions}
       onSearchChange={handleSearchChange}
       filtersSheet={
-        !isDownloaded ? <MovieFiltersSheet value={pickMovieFilters(search)} onChange={handleSearchChange} /> : null
+        !isDownloaded ? (
+          <MovieFiltersSheet
+            value={pickMovieFilters(search)}
+            onChange={handleSearchChange}
+            sortValue={search.selected ?? "new"}
+            onSortChange={(selected) => handleSearchChange({ selected })}
+            showSortInSheet={isMobile}
+          />
+        ) : null
       }
       emptyTitle={<Trans>No movies found</Trans>}
       emptySubtitle={<Trans>Try adjusting your filters or search criteria</Trans>}

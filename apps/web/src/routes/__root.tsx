@@ -3,8 +3,8 @@ import { lazy } from "react";
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { Toaster } from "sonner";
 
-import { ErrorView, NotFoundView } from "@/shared/components/error/error-view";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
+import { ErrorView, NotFoundView } from "@/shared/components/view/error-view";
 import { useThemeStore, useThemeSync } from "@/shared/hooks/use-theme";
 import { Container } from "@/shared/ui/container";
 

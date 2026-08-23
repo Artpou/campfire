@@ -232,20 +232,32 @@ export function SettingsModulesView({ filter, search, onFilterChange, onSearchCh
   return (
     <section className="space-y-4">
       <SentinelStuck setIsStuck={setIsStuck} marginTop={-30} />
-      <StickyFilterBar isStuck={isStuck}>
-        <div className="flex items-center justify-between gap-2">
-          <ModuleTabsFilter value={filter} onChange={onFilterChange} className="flex-1" />
-        </div>
-      </StickyFilterBar>
-
       {!isStuck && (
         <Input
           placeholder={t(msg`Search modules…`)}
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           search
+          classNameWrapper="w-full"
+          h="lg"
         />
       )}
+      <StickyFilterBar isStuck={isStuck}>
+        {isStuck ? (
+          <Input
+            placeholder={t(msg`Search modules…`)}
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            search
+            classNameWrapper="w-full min-w-0 flex-1"
+            h="lg"
+          />
+        ) : (
+          <div className="flex items-center justify-between gap-2">
+            <ModuleTabsFilter value={filter} onChange={onFilterChange} className="flex-1" />
+          </div>
+        )}
+      </StickyFilterBar>
 
       <DataTable
         classNameContainer="px-2"

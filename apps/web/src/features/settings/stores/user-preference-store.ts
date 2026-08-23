@@ -16,14 +16,12 @@ interface UserPreferences {
   quality: Resolution | null;
   maxSize: number | null;
   viewModes: Record<ViewModeScope, ViewMode>;
-  showCategories: boolean;
 }
 
 interface UserPreferenceStore extends UserPreferences {
   setQuality: (quality: Resolution | null) => void;
   setMaxSize: (maxSize: number | null) => void;
   setViewMode: (scope: ViewModeScope, viewMode: ViewMode) => void;
-  setShowCategories: (showCategories: boolean) => void;
 }
 
 export const useUserPreferences = create<UserPreferenceStore>()(
@@ -32,15 +30,13 @@ export const useUserPreferences = create<UserPreferenceStore>()(
       quality: null,
       maxSize: null,
       viewModes: { ...DEFAULT_VIEW_MODES },
-      showCategories: false,
       setQuality: (quality) => set({ quality }),
       setMaxSize: (maxSize) => set({ maxSize }),
       setViewMode: (scope, viewMode) => set((state) => ({ viewModes: { ...state.viewModes, [scope]: viewMode } })),
-      setShowCategories: (showCategories) => set({ showCategories }),
     }),
     {
       name: "user-preferences",
-      version: 1,
+      version: 2,
       migrate: (persisted, version) => {
         const state = persisted as Record<string, unknown>;
         if (version < 1) {
@@ -55,10 +51,15 @@ export const useUserPreferences = create<UserPreferenceStore>()(
             },
           };
         }
-        return {
+        const migrated = {
           ...state,
           viewModes: { ...DEFAULT_VIEW_MODES, ...(state.viewModes as Record<ViewModeScope, ViewMode> | undefined) },
         };
+        if (version < 2) {
+          const { showCategories: _removed, ...rest } = migrated as Record<string, unknown>;
+          return rest;
+        }
+        return migrated;
       },
     },
   ),

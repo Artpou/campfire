@@ -1,6 +1,6 @@
 import { Trans } from "@lingui/react/macro";
 
-import { MediaFiltersSheet, type MediaFiltersValue } from "@/features/media/components/media-filters-sheet";
+import { type MediaFiltersValue, MediaSheetFilter } from "@/features/media/components/sheet/media-sheet-filter";
 
 export interface TvFiltersValue {
   first_air_date_gte?: string;
@@ -14,9 +14,14 @@ export interface TvFiltersValue {
   vote_average_gte?: number;
 }
 
+type MediaSortValue = "new" | "top-rated" | "downloaded" | "upcoming";
+
 interface TvFiltersSheetProps {
   value: TvFiltersValue;
   onChange: (value: TvFiltersValue) => void;
+  sortValue?: MediaSortValue;
+  onSortChange?: (value: MediaSortValue) => void;
+  showSortInSheet?: boolean;
 }
 
 function toGeneric(value: TvFiltersValue): MediaFiltersValue {
@@ -41,17 +46,21 @@ function fromGeneric(value: MediaFiltersValue): TvFiltersValue {
   };
 }
 
-export function TvFiltersSheet({ value, onChange }: TvFiltersSheetProps) {
+export function TvFiltersSheet({ value, onChange, sortValue, onSortChange, showSortInSheet }: TvFiltersSheetProps) {
   return (
-    <MediaFiltersSheet
+    <MediaSheetFilter
+      mode="discover"
+      genreScope="tv"
+      categoryValueMode="id"
       type="tv"
       value={toGeneric(value)}
       onChange={(v) => onChange(fromGeneric(v))}
-      dateLabel={<Trans>First air date</Trans>}
       runtimeLabel={<Trans>Episode runtime (minutes)</Trans>}
       description={<Trans>Refine the list of TV shows by combining several criteria.</Trans>}
-      buttonVariant="secondary"
       dateInputIdPrefix="first-air-date"
+      sortValue={sortValue}
+      onSortChange={onSortChange}
+      showSortInSheet={showSortInSheet}
     />
   );
 }

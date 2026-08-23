@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 
 import type { Media } from "@seedarr/sdk";
+import { useElementScrollRestoration } from "@tanstack/react-router";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 
 import { flattenInfiniteResults, type InfiniteResultsQuery } from "@/shared/hooks/use-infinite-list";
@@ -26,19 +27,25 @@ export function MediaGrid({ items, query, showType, downloadMode }: MediaGridPro
   const displayItems = items ?? flattenInfiniteResults(query);
   const isPending = Boolean(query?.isPending) && displayItems.length === 0;
 
+  const scrollEntry = useElementScrollRestoration({
+    getElement: () => (typeof window !== "undefined" ? window : null),
+  });
+
   const [parentEl, setParentEl] = useState<HTMLDivElement | null>(null);
-  const [columns, setColumns] = useState(() =>
-    typeof window === "undefined" ? 6 : getMediaGridColumns(Math.min(window.innerWidth - 64, 1400)),
+  const [gridWidth, setGridWidth] = useState(() =>
+    typeof window === "undefined" ? 1200 : Math.min(window.innerWidth - 64, 1400),
   );
-  const [gridWidth, setGridWidth] = useState(0);
+  const [columns, setColumns] = useState(() => getMediaGridColumns(gridWidth));
+  const [scrollMargin, setScrollMargin] = useState(0);
 
   useLayoutEffect(() => {
     if (!parentEl) return;
 
     const measure = () => {
-      const width = parentEl.getBoundingClientRect().width;
-      setGridWidth(width);
-      setColumns(getMediaGridColumns(width));
+      const rect = parentEl.getBoundingClientRect();
+      setGridWidth(rect.width);
+      setColumns(getMediaGridColumns(rect.width));
+      setScrollMargin(rect.top + window.scrollY);
     };
 
     measure();
@@ -58,26 +65,23 @@ export function MediaGrid({ items, query, showType, downloadMode }: MediaGridPro
     count: isPending ? 0 : rowCount,
     estimateSize,
     overscan: 4,
-    scrollMargin: parentEl?.offsetTop ?? 0,
+    scrollMargin,
+    initialOffset: scrollEntry?.scrollY,
   });
 
   const virtualRows = virtualizer.getVirtualItems();
-  const lastRow = virtualRows.at(-1);
-
-  useEffect(() => {
-    virtualizer.measure();
-  }, [virtualizer]);
+  const lastRowIndex = virtualRows.at(-1)?.index;
 
   const fetchNextPage = query?.fetchNextPage;
   const hasNextPage = query?.hasNextPage;
   const isFetchingNextPage = query?.isFetchingNextPage;
 
   useEffect(() => {
-    if (lastRow == null || rowCount === 0) return;
-    if (lastRow.index >= rowCount - 2 && hasNextPage && !isFetchingNextPage) {
+    if (lastRowIndex == null || rowCount === 0) return;
+    if (lastRowIndex >= rowCount - 2 && hasNextPage && !isFetchingNextPage) {
       void fetchNextPage?.();
     }
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage, lastRow?.index, rowCount, lastRow]);
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, lastRowIndex, rowCount]);
 
   if (isPending) {
     return (
@@ -102,7 +106,6 @@ export function MediaGrid({ items, query, showType, downloadMode }: MediaGridPro
             <div
               key={virtualRow.key}
               data-index={virtualRow.index}
-              ref={virtualizer.measureElement}
               className="absolute top-0 left-0 w-full grid gap-4"
               style={{
                 gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,

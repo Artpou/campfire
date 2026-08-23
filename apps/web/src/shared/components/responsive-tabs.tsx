@@ -47,7 +47,7 @@ export function ResponsiveTabs({
     return (
       <DropDrawer>
         <DropDrawerTrigger asChild>
-          <Button variant="outline" size="lg" className={cn("w-full bg-input justify-between gap-2", className)}>
+          <Button variant="secondary" size="lg" className={cn("w-full bg-input justify-between gap-2", className)}>
             <span className="flex min-w-0 items-center gap-2">
               {SelectedIcon ? <SelectedIcon className="size-4 shrink-0 text-foreground" /> : null}
               <span className="truncate font-medium">{selected?.label}</span>

@@ -28,10 +28,19 @@ export function mergeMediaEnrichment<T extends { id: number }>(
   return items.map((item) => {
     const enriched = mediaMap.find((m) => m.id === item.id);
     if (!enriched) return item;
-    if (options?.preserveType && "type" in item) {
-      return { ...item, ...enriched, type: (item as { type: unknown }).type } as T;
+
+    const merged = {
+      ...item,
+      ...enriched,
+      ...(options?.preserveType && "type" in item ? { type: (item as { type: unknown }).type } : {}),
+    } as T & { categories?: string | null };
+
+    const itemCategories = "categories" in item ? (item as { categories?: string | null }).categories : undefined;
+    if (!enriched.categories && itemCategories) {
+      merged.categories = itemCategories;
     }
-    return enriched as unknown as T;
+
+    return merged as T;
   });
 }
 

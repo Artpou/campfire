@@ -9,11 +9,11 @@ import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 
 import { cn } from "@/lib/utils";
+import { Select } from "@/shared/components/select/select";
 import { Button } from "@/shared/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/ui/select";
 
 import { useRole } from "@/features/auth/hooks/use-role";
 import { ROLE_LABELS, roleConfig } from "@/features/user/components/role-badge";
@@ -96,8 +96,6 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
     }
     return ["member", "viewer"] as const;
   };
-
-  const SelectedRoleIcon = roleConfig[selectedRole].icon;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -182,40 +180,26 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="role">
-              <Trans>Role</Trans>
-            </Label>
-            <Select
-              value={selectedRole}
-              onValueChange={(value) => setValue("role", value as "owner" | "admin" | "member" | "viewer")}
-            >
-              <SelectTrigger>
-                <SelectValue>
-                  <div className="flex items-center gap-2">
-                    <SelectedRoleIcon className={cn("size-4", roleConfig[selectedRole].iconClass)} />
-                    {t(ROLE_LABELS[selectedRole])}
-                  </div>
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {availableRoles().map((roleOption) => {
-                  const RoleIcon = roleConfig[roleOption].icon;
-                  return (
-                    <SelectItem key={roleOption} value={roleOption}>
-                      <div className="flex items-center gap-2">
-                        <RoleIcon className={cn("size-4", roleConfig[roleOption].iconClass)} />
-                        {t(ROLE_LABELS[roleOption])}
-                      </div>
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select
+            value={selectedRole}
+            onValueChange={(value) => setValue("role", value as "owner" | "admin" | "member" | "viewer")}
+            label={<Trans>Role</Trans>}
+            options={availableRoles().map((roleOption) => {
+              const RoleIcon = roleConfig[roleOption].icon;
+              return {
+                value: roleOption,
+                label: (
+                  <span className="flex items-center gap-2">
+                    <RoleIcon className={cn("size-4", roleConfig[roleOption].iconClass)} />
+                    {t(ROLE_LABELS[roleOption])}
+                  </span>
+                ),
+              };
+            })}
+          />
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="secondary" onClick={onClose}>
               <Trans>Cancel</Trans>
             </Button>
             <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>

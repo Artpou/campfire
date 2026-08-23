@@ -65,7 +65,7 @@ function DropDrawerTrigger({
   const TriggerComponent = isMobile ? DrawerTrigger : DropdownMenuTrigger;
 
   return (
-    <TriggerComponent data-slot="drop-drawer-trigger" className={className} {...props}>
+    <TriggerComponent data-slot="drop-drawer-trigger" className={cn("p-5 sm:p-4", className)} {...props}>
       {children}
     </TriggerComponent>
   );
@@ -321,10 +321,10 @@ function DropDrawerContent({
     >
       <DropdownMenuContent
         data-slot="drop-drawer-content"
-        align="end"
+        align="start"
         sideOffset={4}
         className={cn(
-          "max-h-[var(--radix-dropdown-menu-content-available-height)] min-w-[220px] overflow-y-auto",
+          "max-h-80 min-w-[var(--radix-dropdown-menu-trigger-width)] w-[var(--radix-dropdown-menu-trigger-width)] overflow-y-auto",
           className,
         )}
         {...props}

@@ -32,7 +32,7 @@ export function ErrorLayout({ icon: Icon, title, description, children, onRetry 
         {children}
 
         <div className="flex items-center justify-center gap-3">
-          <Button variant="outline" onClick={() => router.history.back()} icon={Undo2Icon}>
+          <Button variant="secondary" onClick={() => router.history.back()} icon={Undo2Icon}>
             <Trans>Go back</Trans>
           </Button>
           {onRetry && (

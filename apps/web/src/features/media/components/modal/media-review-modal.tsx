@@ -6,8 +6,8 @@ import { Trash2Icon } from "lucide-react";
 
 import { DialogDelete } from "@/shared/components/dialog/dialog-delete";
 import { Button } from "@/shared/ui/button";
-import { DatePicker } from "@/shared/ui/date-picker";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/shared/ui/dialog";
+import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { Textarea } from "@/shared/ui/textarea";
 
@@ -84,11 +84,12 @@ export function MediaReviewModal({ media, open, onOpenChange }: MediaReviewModal
               </Label>
               <MediaStarRating value={score} onChange={setScore} size="lg" />
             </div>
-            <DatePicker
+            <Input
+              type="date"
               id="review-watched-at"
-              label={<Trans>Watched on</Trans>}
               value={watchedAt}
-              onChange={setWatchedAt}
+              label={<Trans>Watched on</Trans>}
+              onChange={(e) => setWatchedAt(e.target.value)}
             />
             <div className="space-y-2">
               <Label htmlFor="review-comment">
@@ -120,7 +121,7 @@ export function MediaReviewModal({ media, open, onOpenChange }: MediaReviewModal
               <span />
             )}
             <div className="flex gap-2 justify-end">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
                 <Trans>Cancel</Trans>
               </Button>
               <Button

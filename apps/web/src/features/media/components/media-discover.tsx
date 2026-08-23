@@ -8,13 +8,12 @@ import { useDebounce } from "@uidotdev/usehooks";
 import { PlaceholderEmpty } from "@/shared/components/seedarr-placeholder";
 import { SentinelStuck, StickyFilterBar } from "@/shared/components/sentinel/sentinel-stuck";
 import { flattenInfiniteResults } from "@/shared/hooks/use-infinite-list";
+import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Container } from "@/shared/ui/container";
 import { Input } from "@/shared/ui/input";
 
 import { useRole } from "@/features/auth/hooks/use-role";
-import { MediaButtonCategory } from "@/features/media/components/button/media-button-category";
-import { MediaCarouselCategory } from "@/features/media/components/carousel/media-carousel-category";
 import { MediaCarouselWatching } from "@/features/media/components/carousel/media-carousel-watching";
 import { MediaGrid } from "@/features/media/components/media-grid";
 import { MediaTable } from "@/features/media/components/media-table";
@@ -29,7 +28,6 @@ import { genreQueries } from "@/features/media/hooks/genre.queries";
 import { RequestCarousel } from "@/features/request/components/request-carousel";
 import { requestQueries } from "@/features/request/hooks/request.queries";
 import { useEffectiveViewMode } from "@/features/settings/hooks/use-effective-view-mode";
-import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
 
 type MediaSelected = "new" | "top-rated" | "downloaded" | "upcoming";
 
@@ -60,7 +58,7 @@ type MediaDiscoverSearch = {
   first_air_date_lte?: string;
 };
 
-type MediaDiscover<TSearch extends MediaDiscoverSearch> = {
+type MediaDiscoverProps<TSearch extends MediaDiscoverSearch> = {
   type: "movie" | "tv";
   search: TSearch;
   queryOptions: object;
@@ -80,11 +78,11 @@ export function MediaDiscover<TSearch extends MediaDiscoverSearch>({
   emptyTitle,
   emptySubtitle,
   searchPlaceholder,
-}: MediaDiscover<TSearch>) {
+}: MediaDiscoverProps<TSearch>) {
   const locale = useTmdbLocale();
+  const isMobile = useIsMobile();
   const { isAdmin } = useRole();
   const viewMode = useEffectiveViewMode(type);
-  const showCategories = useUserPreferences((s) => s.showCategories);
   const isDownloaded = isDownloadedTab(search.selected);
 
   const [query, setQuery] = useState(search.q ?? "");
@@ -137,6 +135,21 @@ export function MediaDiscover<TSearch extends MediaDiscoverSearch>({
     );
   }, [genreNameById, isSearching, rawResults, search, type]);
 
+  const showSortTabs = !isDownloaded && (!isMobile || !isStuck);
+  const showViewMode = !isMobile || !isStuck;
+
+  const searchInput = (
+    <Input
+      type="search"
+      search
+      classNameWrapper="w-full min-w-0 flex-1"
+      h="lg"
+      placeholder={searchPlaceholder}
+      value={query}
+      onChange={(e) => setQuery(e.target.value)}
+    />
+  );
+
   return (
     <Container className="space-y-6">
       <MediaCarouselWatching type={type} />
@@ -145,50 +158,32 @@ export function MediaDiscover<TSearch extends MediaDiscoverSearch>({
       )}
       <div className="space-y-4">
         <SentinelStuck setIsStuck={setIsStuck} marginTop={-30} />
+
+        {!isStuck && searchInput}
+
         <StickyFilterBar isStuck={isStuck}>
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <MediaTabsViewMode scope={type} />
-              <MediaSortTabs
-                value={search.selected}
-                onChange={(value) => onSearchChange({ selected: value } as Partial<TSearch>)}
-                type={type}
-              />
+          {isStuck ? (
+            <div className="flex w-full items-center gap-2">
+              {searchInput}
+              {!isDownloaded && filtersSheet}
             </div>
-            <div className="flex items-center justify-end w-full gap-2">
-              {isStuck && (
-                <Input
-                  type="search"
-                  search
-                  classNameWrapper="hidden lg:block w-full"
-                  h="lg"
-                  placeholder={searchPlaceholder}
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-              )}
-              {!isDownloaded && !isStuck && <MediaButtonCategory />}
-              {filtersSheet}
+          ) : (
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-2">
+                {showViewMode && <MediaTabsViewMode scope={type} />}
+                {showSortTabs && (
+                  <MediaSortTabs
+                    value={search.selected}
+                    className="min-w-0 flex-1"
+                    onChange={(value) => onSearchChange({ selected: value } as Partial<TSearch>)}
+                    type={type}
+                  />
+                )}
+              </div>
+              {!isDownloaded && filtersSheet}
             </div>
-          </div>
-          {showCategories && !isDownloaded && (
-            <MediaCarouselCategory
-              type={type}
-              onValueChange={(value) => onSearchChange({ with_genres: value } as Partial<TSearch>)}
-            />
           )}
         </StickyFilterBar>
-
-        {!isStuck && (
-          <Input
-            type="search"
-            search
-            className="w-full"
-            placeholder={searchPlaceholder}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        )}
 
         {discoverQuery.isPending ? (
           viewMode === "grid" ? (

@@ -152,7 +152,7 @@ export function UserButtonLetterboxd({ user, variant = "default", className }: U
           <DialogFooter>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               disabled={importLetterboxd.isPending}
               onClick={() => setImportOpen(false)}
             >

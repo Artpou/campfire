@@ -11,7 +11,7 @@ export interface SeedarrRouterContext {
 
 /** At most 1 retry, and only for network/unknown errors (no HTTP status). */
 function shouldRetry(failureCount: number, error: unknown): boolean {
-  if (failureCount >= 1) return false;
+  if (failureCount > 1) return false;
   if (error && typeof error === "object" && "status" in error) return false;
   return true;
 }
@@ -35,6 +35,6 @@ export const router = createRouter({
   routeTree,
   context: { queryClient, language: "en-US" },
   scrollRestoration: true,
-  getScrollRestorationKey: (location) => location.pathname,
+  scrollRestorationBehavior: "instant",
   defaultPreloadStaleTime: 0,
 });

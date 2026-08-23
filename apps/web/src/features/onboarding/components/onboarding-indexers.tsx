@@ -146,7 +146,7 @@ export function OnboardingIndexers({ onContinue, onBack }: OnboardingIndexersPro
         continueLoading={createMutation.isPending}
         continueDisabled={!canContinue}
         rightExtra={
-          <Button size="lg" variant="outline" onClick={() => onContinue()}>
+          <Button size="lg" variant="secondary" onClick={() => onContinue()}>
             Skip
           </Button>
         }

@@ -2,6 +2,7 @@ import type { SubtitlesSearchQuery } from "@seedarr/contracts";
 import { sanitizeFileName } from "@seedarr/shared";
 
 import { BadRequestError, ForbiddenError, NotFoundError, ServiceUnavailableError } from "@/shared/errors/error";
+import { logger } from "@/shared/helpers/logger.helper";
 import {
   assertWithinDownloads,
   getDownloadsRoot,
@@ -44,6 +45,7 @@ export class SubtitleService extends AuthenticatedService {
       ...(query.type && { type: query.type }),
     });
     const url = `${SUBDL_API_BASE}/subtitles?${params.toString()}`;
+    logger.debug("SUBTITLE", `SUBDL search tmdb=${query.tmdb_id} langs=${query.languages}`);
     const res = await fetch(url);
     if (!res.ok) {
       throw new ServiceUnavailableError(`SUBDL (${res.status})`);
@@ -118,6 +120,7 @@ export class SubtitleService extends AuthenticatedService {
     await fs.writeFile(destPath, content);
 
     const relativePath = path.relative(downloadsPath, destPath);
+    logger.info("SUBTITLE", `Saved ${language} subtitle to ${relativePath.replace(/\\/g, "/")}`);
     return { relativePath: relativePath.replace(/\\/g, "/") };
   }
 }

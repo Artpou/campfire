@@ -7,8 +7,8 @@ import { NotFoundError, UnauthorizedError } from "@/shared/errors/error";
 import { authRateLimiter } from "@/shared/middlewares/rate-limiter.middleware";
 
 import { SESSION_COOKIE_NAME, sessionCookieOptions } from "@/auth/auth.constants";
-import { hashPassword, verifyPassword } from "@/auth/password.util";
-import { createSession, deleteOtherSessions, deleteSession, resolveAuthenticatedSession } from "@/auth/session.util";
+import { hashPassword } from "@/auth/password.util";
+import { createSession, deleteOtherSessions, resolveAuthenticatedSession, revokeSession } from "@/auth/session.util";
 import { ActivityService, trackRoute } from "@/modules/activity/activity.service";
 import { moduleRepository } from "@/modules/module/module.repository";
 import { UserService } from "../user/user.service";
@@ -37,16 +37,11 @@ export const authRoutes = new Hono()
 
     const user = await trackRoute(c, { action: "USER_LOGIN", metadata: { username } }, async () => {
       const userService = new UserService();
-      const existingUser = await userService.getFullUser(username);
-      if (!existingUser) throw new UnauthorizedError("Invalid username or password");
-
-      const isValid = verifyPassword(password, existingUser.password);
-      if (!isValid) throw new UnauthorizedError("Invalid username or password");
-
-      const sessionToken = await createSession(existingUser.id);
-      await deleteOtherSessions(existingUser.id, sessionToken);
+      const userId = await userService.verifyLogin(username, password);
+      const sessionToken = await createSession(userId);
+      await deleteOtherSessions(userId, sessionToken);
       setCookie(c, SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions);
-      return userService.get(existingUser.id);
+      return userService.get(userId);
     });
     return c.json(user);
   })
@@ -54,9 +49,8 @@ export const authRoutes = new Hono()
     const sessionToken = getCookie(c, SESSION_COOKIE_NAME);
 
     if (typeof sessionToken === "string") {
-      const resolved = await resolveAuthenticatedSession(sessionToken);
-      await deleteSession(sessionToken);
-      if (resolved) await new ActivityService(resolved.user).log({ action: "USER_LOGOUT" });
+      const user = await revokeSession(sessionToken);
+      if (user) await new ActivityService(user).log({ action: "USER_LOGOUT" });
     }
 
     deleteCookie(c, SESSION_COOKIE_NAME);

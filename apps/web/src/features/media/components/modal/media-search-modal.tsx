@@ -93,7 +93,7 @@ export function MediaSearchModal({ open, onOpenChange, downloadId, mediaId, medi
         />
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => handleOpenChange(false)}>
+          <Button variant="secondary" onClick={() => handleOpenChange(false)}>
             <Trans>Cancel</Trans>
           </Button>
           <Button onClick={handleSave} disabled={!selectedMedia || reassign.isPending}>

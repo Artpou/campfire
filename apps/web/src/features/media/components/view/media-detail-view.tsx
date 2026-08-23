@@ -6,6 +6,7 @@ import { DownloadIcon, ServerIcon, TvIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { ResponsiveTabs } from "@/shared/components/responsive-tabs";
+import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Badge } from "@/shared/ui/badge";
 import { Card } from "@/shared/ui/card";
@@ -13,10 +14,10 @@ import { Container } from "@/shared/ui/container";
 
 import { MediaDetails } from "@/features/media/components/media-details";
 import { MediaDownload } from "@/features/media/components/media-download";
-import { MediaInfo } from "@/features/media/components/media-info";
 import { MediaPoster } from "@/features/media/components/media-poster";
 import { MediaServer } from "@/features/media/components/media-server";
 import { MediaSocialActions } from "@/features/media/components/media-social-actions";
+import { MediaSheetInfo } from "@/features/media/components/sheet/media-sheet-info";
 import { getBackdropUrl, getPosterUrl } from "@/features/media/helpers/media.helper";
 
 export type MediaDetailTab = "info" | "downloads" | "server";
@@ -42,6 +43,7 @@ export function MediaDetailView({
   children,
 }: MediaDetailViewProps) {
   const { theme } = useTheme();
+  const isMobile = useIsMobile();
 
   const media = data.media;
   const isMovie = "movie" in data;
@@ -105,25 +107,27 @@ export function MediaDetailView({
 
   return (
     <div>
-      <div className="relative w-full pb-8 pt-6">
-        <div
-          className="absolute inset-0 bg-cover w-full h-[50vh] bg-center -z-10 filter"
-          style={{
-            backgroundImage: `url(${getBackdropUrl(backdropPath) || getPosterUrl(posterPath)})`,
-          }}
-        >
+      <div className="relative w-full py-0 sm:py-6">
+        {!isMobile && (
           <div
-            className={cn(
-              "absolute inset-0 bg-linear-to-b from-background to-background",
-              theme === "dark" ? " via-background/85" : " via-background/70",
-            )}
-          />
-        </div>
+            className="absolute inset-0 bg-cover w-full h-[50vh] bg-center -z-10 filter"
+            style={{
+              backgroundImage: `url(${getBackdropUrl(backdropPath) || getPosterUrl(posterPath)})`,
+            }}
+          >
+            <div
+              className={cn(
+                "absolute inset-0 bg-linear-to-b from-background to-background",
+                theme === "dark" ? " via-background/85" : " via-background/70",
+              )}
+            />
+          </div>
+        )}
 
-        <Container className="relative flex flex-col gap-6">
-          <div className="lg:hidden">{tabsControl}</div>
+        <Container className="relative flex flex-col sm:gap-6">
+          {tabOptions.length > 1 && <div className="lg:hidden">{tabsControl}</div>}
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 xl:grid-cols-5 gap-8 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-8 items-start">
             <aside className="lg:col-span-1">
               <MediaPoster data={data} download={download ?? media?.download} />
             </aside>
@@ -131,7 +135,7 @@ export function MediaDetailView({
             <div className="lg:col-span-3 xl:col-span-4 flex">
               <div className="flex flex-col gap-3 min-w-0 w-full">
                 {tabsControl && <div className="hidden lg:block">{tabsControl}</div>}
-                {media && (
+                {media && !isMobile && (
                   <div className="flex xl:hidden ">
                     <MediaSocialActions media={media} />
                   </div>
@@ -139,7 +143,7 @@ export function MediaDetailView({
                 {(!showTabs || tab === "info") && (
                   <div className="flex flex-col gap-6">
                     <div className="flex">
-                      <MediaInfo data={data} />
+                      <MediaSheetInfo data={data}>{isMobile && <MediaSocialActions media={media} />}</MediaSheetInfo>
                       <aside className="hidden xl:flex flex-col gap-6 min-w-56 ml-6">
                         {media && <MediaSocialActions media={media} />}
                         <div>

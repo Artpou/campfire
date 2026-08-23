@@ -28,7 +28,7 @@ export function MediaSocialActions({ media, className, size = "xl" }: MediaSocia
     <div className={cn("flex flex-row gap-3", className)}>
       <Button
         size={iconSize}
-        variant={media.userScore != null ? "default" : "outline"}
+        variant={media.userScore != null ? "default" : "secondary"}
         rounded
         onClick={() => setOpen(true)}
         aria-label={t`Review`}
@@ -37,7 +37,7 @@ export function MediaSocialActions({ media, className, size = "xl" }: MediaSocia
       </Button>
       <Button
         size={iconSize}
-        variant={media.liked ? "default" : "outline"}
+        variant={media.liked ? "default" : "secondary"}
         rounded
         onClick={(e) => {
           e.preventDefault();
@@ -50,7 +50,7 @@ export function MediaSocialActions({ media, className, size = "xl" }: MediaSocia
       </Button>
       <Button
         size={iconSize}
-        variant={media.inWatchList ? "default" : "outline"}
+        variant={media.inWatchList ? "default" : "secondary"}
         rounded
         onClick={(e) => {
           e.preventDefault();

@@ -55,7 +55,13 @@ export function DownloadButtonSynchronize() {
 
   return (
     <>
-      <Button variant="secondary" size="lg" onClick={handleSync} loading={syncMutation.isPending} icon={RefreshCwIcon}>
+      <Button
+        variant="secondary"
+        size={isMobile ? "icon-lg" : "lg"}
+        onClick={handleSync}
+        loading={syncMutation.isPending}
+        icon={RefreshCwIcon}
+      >
         {!isMobile && <Trans>Synchronize</Trans>}
       </Button>
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>

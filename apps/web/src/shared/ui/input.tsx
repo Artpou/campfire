@@ -5,7 +5,7 @@ import { EyeIcon, EyeOffIcon, SearchIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/shared/ui/button";
-import { Label } from "@/shared/ui/label";
+import { LabelWrapper } from "@/shared/ui/label";
 
 interface InputProps extends React.ComponentProps<"input"> {
   label?: React.ReactNode;
@@ -25,14 +25,14 @@ function Input({ className, classNameWrapper, type, label, h, search, password, 
       type={inputType}
       data-slot="input"
       className={cn(
-        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground bg-input h-9 w-full min-w-0 rounded-md px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+        "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground bg-input h-9 w-full min-w-0 rounded-md px-3 py-5.5 sm:py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
         "hover:border-ring/30 hover:ring-ring/20 hover:ring-[3px]",
         "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
         "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
         !!label && "rounded-tl-none",
         search && "pl-12",
         password && "pr-10",
-        h === "lg" && "py-5.5",
+        h === "lg" && "py-5!",
         className,
       )}
       {...props}
@@ -56,25 +56,20 @@ function Input({ className, classNameWrapper, type, label, h, search, password, 
     input
   );
 
-  if (search) {
-    return (
-      <div className={cn("relative w-full", classNameWrapper)}>
-        <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-        {field}
-      </div>
-    );
-  }
+  const content = search ? (
+    <div className="relative w-full">
+      <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+      {field}
+    </div>
+  ) : (
+    field
+  );
 
-  if (label) {
-    return (
-      <div className={cn("space-y-1", classNameWrapper)}>
-        <Label htmlFor={props.id}>{label}</Label>
-        {field}
-      </div>
-    );
-  }
-
-  return field;
+  return (
+    <LabelWrapper label={label} htmlFor={props.id} className={cn(classNameWrapper, label && "gap-1")}>
+      {content}
+    </LabelWrapper>
+  );
 }
 
 export { Input };

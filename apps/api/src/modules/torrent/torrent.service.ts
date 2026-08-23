@@ -3,6 +3,7 @@ import { formatError } from "@seedarr/shared";
 import type WebTorrent from "webtorrent";
 
 import { BadRequestError, NotFoundError, ServiceUnavailableError } from "@/shared/errors/error";
+import { logger } from "@/shared/helpers/logger.helper";
 import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
 import { torrentClient } from "@/modules/download/webtorrent/webtorrent-manager";
@@ -28,10 +29,12 @@ export class TorrentService extends AuthenticatedService {
     if (manager.disabled) throw new BadRequestError("Indexer manager is disabled");
 
     const adapter = this.managerService.getAdapter(manager);
+    logger.debug("TORRENT", `Search media ${query.media.id} via ${manager.indexerType} (${query.moduleId})`);
     return await adapter.getTorrents(query);
   }
 
   async inspectTorrent(query: TorrentInspectQuery): Promise<TorrentInspectResult> {
+    logger.debug("TORRENT", "Inspect torrent metadata");
     const source = await resolveTorrentSource(query.magnet);
     const client = torrentClient.getClient();
 

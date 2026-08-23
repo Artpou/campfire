@@ -69,7 +69,7 @@ export function TorrentUnavailableDialog({
             {isStoringLocally && <Loader2Icon className="size-4 animate-spin" />}
             <Trans>Store locally</Trans>
           </Button>
-          <Button variant="outline" onClick={onCancel} disabled={isPending} className="w-full" icon={XIcon}>
+          <Button variant="secondary" onClick={onCancel} disabled={isPending} className="w-full" icon={XIcon}>
             <Trans>Cancel</Trans>
           </Button>
         </AlertDialogFooter>

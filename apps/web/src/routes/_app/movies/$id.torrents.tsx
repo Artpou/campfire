@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 import { redirectIfNotRole } from "@/shared/helpers/role.helper";
 
-import { MediaTorrentsView } from "@/features/media/components/media-torrents-view";
+import { MediaTorrentsView } from "@/features/media/components/view/media-torrents-view";
 import { movieQueries } from "@/features/movies/hooks/movie.queries";
 
 export const Route = createFileRoute("/_app/movies/$id/torrents")({

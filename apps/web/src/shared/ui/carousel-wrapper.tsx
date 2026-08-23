@@ -30,21 +30,29 @@ export function CarouselWrapper({ title, seeMoreTo, seeMoreSearch, children, ...
       plugins={[WheelGesturesPlugin()]}
     >
       <div className="flex items-end justify-between gap-4 mb-3">
-        <h2 className="text-lg font-medium">{title}</h2>
-        <div className="flex items-center gap-2">
-          {seeMoreTo && (
-            <Button variant="outline" size={!isMobile ? "sm" : "default"} asChild>
-              <Link to={seeMoreTo} search={seeMoreSearch}>
-                <Trans>See more</Trans>
-              </Link>
-            </Button>
-          )}
-          {!isMobile && <CarouselPrevious className="static translate-y-0 h-8 w-8" />}
-          {!isMobile && <CarouselNext className="static translate-y-0 h-8 w-8" />}
-        </div>
+        <h2 className="text-lg font-medium min-w-0 flex-1">{title}</h2>
+        {(seeMoreTo || !isMobile) && (
+          <div className="flex items-center gap-2">
+            {seeMoreTo && (
+              <Button variant="secondary" size={!isMobile ? "sm" : "default"} asChild>
+                <Link to={seeMoreTo} search={seeMoreSearch}>
+                  <Trans>See more</Trans>
+                </Link>
+              </Button>
+            )}
+            {!isMobile && <CarouselPrevious className="static translate-y-0 h-8 w-8" />}
+            {!isMobile && <CarouselNext className="static translate-y-0 h-8 w-8" />}
+          </div>
+        )}
       </div>
 
-      <CarouselContent>{children}</CarouselContent>
+      <div className="relative">
+        <CarouselContent>{children}</CarouselContent>
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-background to-transparent"
+          aria-hidden
+        />
+      </div>
     </Carousel>
   );
 }

@@ -3,9 +3,16 @@ import { useState } from "react";
 import { Trans } from "@lingui/react/macro";
 import type { Download } from "@seedarr/sdk";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRightLeftIcon, Trash2Icon } from "lucide-react";
+import { ArrowRightLeftIcon, ChevronDownIcon, Trash2Icon } from "lucide-react";
 
 import { Button } from "@/shared/ui/button";
+import {
+  DropDrawer,
+  DropDrawerContent,
+  DropDrawerGroup,
+  DropDrawerItem,
+  DropDrawerTrigger,
+} from "@/shared/ui/dropdrawer";
 
 import { DownloadFilesList } from "@/features/downloads/components/download-files-list";
 import { DownloadMetadata } from "@/features/downloads/components/download-metadata";
@@ -63,23 +70,31 @@ function ServerEntry({ download, mediaType }: { download: Download; mediaType?: 
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => setShowChangeMedia(true)}
-            aria-label="Change media"
-            icon={ArrowRightLeftIcon}
-          />
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => setShowDeleteConfirm(true)}
-            disabled={deleteDownload.isPending}
-            aria-label="Delete"
-            icon={Trash2Icon}
-          />
-        </div>
+        <DropDrawer>
+          <DropDrawerTrigger asChild>
+            <Button variant="secondary" icon={ChevronDownIcon}>
+              <Trans>Actions</Trans>
+            </Button>
+          </DropDrawerTrigger>
+          <DropDrawerContent className="min-w-48 w-auto">
+            <DropDrawerGroup>
+              <DropDrawerItem
+                icon={<ArrowRightLeftIcon className="size-4" />}
+                onSelect={() => setShowChangeMedia(true)}
+              >
+                <Trans>Change media</Trans>
+              </DropDrawerItem>
+              <DropDrawerItem
+                variant="destructive"
+                icon={<Trash2Icon className="size-4" />}
+                disabled={deleteDownload.isPending}
+                onSelect={() => setShowDeleteConfirm(true)}
+              >
+                <Trans>Delete</Trans>
+              </DropDrawerItem>
+            </DropDrawerGroup>
+          </DropDrawerContent>
+        </DropDrawer>
       </div>
 
       {isLoading ? (

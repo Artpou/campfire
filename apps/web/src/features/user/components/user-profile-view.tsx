@@ -5,12 +5,14 @@ import type { ListMediaQuery } from "@seedarr/contracts";
 import type { Media } from "@seedarr/sdk";
 import { useInfiniteQuery, useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import type { OnChangeFn, SortingState } from "@tanstack/react-table";
+import { useDebounce } from "@uidotdev/usehooks";
 import { BookmarkIcon, CalendarIcon, ClockIcon, HeartIcon, PencilIcon, SaveIcon } from "lucide-react";
 
 import { ResponsiveTabs } from "@/shared/components/responsive-tabs";
 import { SeedarrLoader } from "@/shared/components/seedarr-loader";
 import { SentinelStuck, StickyFilterBar } from "@/shared/components/sentinel/sentinel-stuck";
 import { flattenInfiniteResults, type InfiniteResultsQuery } from "@/shared/hooks/use-infinite-list";
+import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
@@ -18,18 +20,17 @@ import { Container } from "@/shared/ui/container";
 import { Input } from "@/shared/ui/input";
 
 import { useAuth } from "@/features/auth/auth-store";
-import { MediaButtonCategory } from "@/features/media/components/button/media-button-category";
-import { MediaCarouselCategory } from "@/features/media/components/carousel/media-carousel-category";
 import { MediaCalendar } from "@/features/media/components/media-calendar";
 import { MediaGrid } from "@/features/media/components/media-grid";
 import { MediaTable } from "@/features/media/components/media-table";
+import type { LibraryFiltersValue } from "@/features/media/components/sheet/media-sheet-filter-library";
+import { LibraryFiltersSheet } from "@/features/media/components/sheet/media-sheet-filter-library";
 import { MediaTabsViewMode } from "@/features/media/components/tabs/media-tabs-view-mode";
 import { listQueryToSorting, sortingToListQuery } from "@/features/media/helpers/media-sort.helper";
 import { mediaQueries } from "@/features/media/hooks/media.queries";
 import { RequestCarousel } from "@/features/request/components/request-carousel";
 import { requestQueries } from "@/features/request/hooks/request.queries";
 import { useEffectiveViewMode } from "@/features/settings/hooks/use-effective-view-mode";
-import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
 import { RoleBadge } from "@/features/user/components/role-badge";
 import { UserAvatar } from "@/features/user/components/user-avatar";
 import { UserButtonLetterboxd } from "@/features/user/components/user-button-letterboxd";
@@ -37,14 +38,6 @@ import { UserProfileStats } from "@/features/user/components/user-profile-stats"
 import { userQueries, useUpdateProfile } from "@/features/user/hooks/user.queries";
 
 type ProfileTab = "calendar" | "watchlist" | "liked" | "history";
-
-function filterMedia(items: Media[], search: string): Media[] {
-  const q = search.trim().toLowerCase();
-  if (!q) return items;
-  return items.filter(
-    (media) => media.title?.toLowerCase().includes(q) || media.original_title?.toLowerCase().includes(q),
-  );
-}
 
 function MediaCollectionView({
   items,
@@ -84,11 +77,12 @@ export function UserProfileView({ userId: id }: UserProfileViewProps) {
   const isOwnProfile = currentUser?.id === id;
   const updateProfile = useUpdateProfile();
   const viewMode = useEffectiveViewMode("profile");
-  const showCategories = useUserPreferences((s) => s.showCategories);
+  const _isMobile = useIsMobile();
   const [tab, setTab] = useState<ProfileTab>("calendar");
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
   const [isStuck, setIsStuck] = useState(false);
-  const [withGenres, setWithGenres] = useState<string | undefined>();
+  const [libraryFilters, setLibraryFilters] = useState<LibraryFiltersValue>({});
   const [sorting, setSorting] = useState<SortingState>([]);
   const sortQuery = sortingToListQuery(sorting);
 
@@ -116,9 +110,27 @@ export function UserProfileView({ userId: id }: UserProfileViewProps) {
     [requestsData],
   );
 
-  const listBase: Pick<ListMediaQuery, "userId" | "with_genres" | "sortBy" | "sortOrder"> = {
+  const listBase: Pick<
+    ListMediaQuery,
+    | "userId"
+    | "with_genres"
+    | "release_date_gte"
+    | "release_date_lte"
+    | "with_runtime_gte"
+    | "with_runtime_lte"
+    | "vote_average_gte"
+    | "q"
+    | "sortBy"
+    | "sortOrder"
+  > = {
     userId: id,
-    with_genres: withGenres,
+    with_genres: libraryFilters.with_genres,
+    release_date_gte: libraryFilters.release_date_gte,
+    release_date_lte: libraryFilters.release_date_lte,
+    with_runtime_gte: libraryFilters.with_runtime_gte,
+    with_runtime_lte: libraryFilters.with_runtime_lte,
+    vote_average_gte: libraryFilters.vote_average_gte,
+    q: debouncedSearch.trim() || undefined,
     ...sortQuery,
   };
 
@@ -146,22 +158,10 @@ export function UserProfileView({ userId: id }: UserProfileViewProps) {
     }
   }, [tab, calendarQuery.hasNextPage, calendarQuery.isFetchingNextPage, calendarQuery.fetchNextPage]);
 
-  const calendarItems = useMemo(
-    () => filterMedia(flattenInfiniteResults(calendarQuery), search),
-    [calendarQuery.data, search, calendarQuery],
-  );
-  const watchListItems = useMemo(
-    () => filterMedia(flattenInfiniteResults(watchListQuery), search),
-    [watchListQuery.data, search, watchListQuery],
-  );
-  const likesItems = useMemo(
-    () => filterMedia(flattenInfiniteResults(likesQuery), search),
-    [likesQuery.data, search, likesQuery],
-  );
-  const historyItems = useMemo(
-    () => filterMedia(flattenInfiniteResults(historyQuery), search),
-    [historyQuery.data, search, historyQuery],
-  );
+  const calendarItems = flattenInfiniteResults(calendarQuery);
+  const watchListItems = flattenInfiniteResults(watchListQuery);
+  const likesItems = flattenInfiniteResults(likesQuery);
+  const historyItems = flattenInfiniteResults(historyQuery);
   const displayName = profileUser.pseudo || profileUser.username;
 
   const handleSavePseudo = () => {
@@ -216,7 +216,7 @@ export function UserProfileView({ userId: id }: UserProfileViewProps) {
                 <h2 className=" font-bold truncate">{displayName}</h2>
                 {isOwnProfile && (
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="icon-sm"
                     icon={PencilIcon}
                     aria-label={t`Edit display name`}
@@ -258,58 +258,70 @@ export function UserProfileView({ userId: id }: UserProfileViewProps) {
       {availableTabs.length > 0 && (
         <div className="space-y-4">
           <SentinelStuck setIsStuck={setIsStuck} marginTop={-30} />
-          <StickyFilterBar isStuck={isStuck}>
-            <div className="flex flex-row items-center gap-2">
-              <MediaTabsViewMode scope="profile" />
-              <ResponsiveTabs
-                className="min-w-0 flex-1"
-                value={tab}
-                onValueChange={(v) => {
-                  setSorting([]);
-                  setTab(v as ProfileTab);
-                }}
-                options={availableTabs.map(({ value, label, icon }) => ({
-                  value,
-                  label,
-                  icon,
-                }))}
-              />
-              {isStuck && (
-                <Input
-                  type="search"
-                  search
-                  classNameWrapper="hidden lg:block w-full"
-                  h="lg"
-                  placeholder={t`Search in my profile...`}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              )}
-              {!isStuck && <MediaButtonCategory />}
-            </div>
-            {showCategories && !isStuck && (
-              <MediaCarouselCategory
-                type="movie"
-                valueMode="name"
-                value={withGenres}
-                onValueChange={(value) => {
-                  setSorting([]);
-                  setWithGenres(value);
-                }}
-              />
-            )}
-          </StickyFilterBar>
-
           {!isStuck && (
             <Input
-              type="text"
+              type="search"
               search
-              className="w-full"
+              classNameWrapper="w-full"
+              h="lg"
               placeholder={t`Search in my profile...`}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           )}
+
+          <StickyFilterBar isStuck={isStuck}>
+            {isStuck ? (
+              <div className="flex w-full items-center gap-2">
+                <Input
+                  type="search"
+                  search
+                  classNameWrapper="w-full min-w-0 flex-1"
+                  className="h-10"
+                  placeholder={t`Search in my profile...`}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                <LibraryFiltersSheet
+                  genreScope="both"
+                  type="movie"
+                  value={libraryFilters}
+                  onChange={(value) => {
+                    setSorting([]);
+                    setLibraryFilters(value);
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 flex-row items-center gap-2">
+                  <MediaTabsViewMode scope="profile" />
+                  <ResponsiveTabs
+                    className="min-w-0 flex-1"
+                    value={tab}
+                    onValueChange={(v) => {
+                      setSorting([]);
+                      setTab(v as ProfileTab);
+                    }}
+                    options={availableTabs.map(({ value, label, icon }) => ({
+                      value,
+                      label,
+                      icon,
+                    }))}
+                  />
+                </div>
+                <LibraryFiltersSheet
+                  genreScope="both"
+                  type="movie"
+                  value={libraryFilters}
+                  onChange={(value) => {
+                    setSorting([]);
+                    setLibraryFilters(value);
+                  }}
+                />
+              </div>
+            )}
+          </StickyFilterBar>
 
           {activeQuery.isLoading ? (
             <SeedarrLoader />

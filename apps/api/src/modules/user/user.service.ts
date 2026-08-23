@@ -14,6 +14,7 @@ import {
   NotFoundError,
   UnauthorizedError,
 } from "@/shared/errors/error";
+import { logger } from "@/shared/helpers/logger.helper";
 import { paginate, toPaginate } from "@/shared/helpers/pagination.helper";
 import type { Paginate } from "@/shared/helpers/pagination.types";
 import { getAvatarsRoot, resolveWithinAvatars } from "@/shared/helpers/path.helper";
@@ -104,13 +105,24 @@ export class UserService extends IdentifiableService<User> {
     }
 
     try {
-      return await userRepository.insertOwner(username, hashedPassword);
+      const user = await userRepository.insertOwner(username, hashedPassword);
+      logger.info("AUTH", `Registered owner user "${username}"`);
+      return user;
     } catch (error) {
       if (isUniqueConstraintError(error)) {
         throw new ForbiddenError("Registration is closed. Contact an administrator.");
       }
       throw error;
     }
+  }
+
+  async verifyLogin(username: string, password: string): Promise<string> {
+    const existingUser = await this.getFullUser(username);
+    if (!existingUser || !verifyPassword(password, existingUser.password)) {
+      throw new UnauthorizedError("Invalid username or password");
+    }
+    logger.info("AUTH", `Logged in "${username}"`);
+    return existingUser.id;
   }
 
   async create(caller: User, input: CreateUserInput): Promise<User> {
@@ -130,6 +142,7 @@ export class UserService extends IdentifiableService<User> {
 
     const created = await userRepository.findByUsername(input.username);
     if (!created) throw new ConflictError("Failed to create user");
+    logger.info("USER", `Created user "${created.username}" (${created.role})`);
     return created;
   }
 
@@ -153,7 +166,9 @@ export class UserService extends IdentifiableService<User> {
 
     await userRepository.update(id, data);
     if (input.role || input.password) invalidateSessionsForUser(id);
-    return this.get(id);
+    const updated = await this.get(id);
+    logger.info("USER", `Updated user "${updated.username}"`);
+    return updated;
   }
 
   async updateProfile(input: UpdateProfileInput): Promise<User> {
@@ -189,6 +204,7 @@ export class UserService extends IdentifiableService<User> {
 
     await userRepository.update(this.user.id, { password: hashPassword(input.newPassword) });
     invalidateSessionsForUser(this.user.id);
+    logger.info("USER", `Password changed for "${this.user.username}"`);
     return { success: true };
   }
 
@@ -254,6 +270,7 @@ export class UserService extends IdentifiableService<User> {
 
     await userRepository.delete(id);
     invalidateSessionsForUser(id);
+    logger.info("USER", `Deleted user "${target.username}"`);
     return { success: true };
   }
 
@@ -262,10 +279,12 @@ export class UserService extends IdentifiableService<User> {
   }
 
   async importLetterboxd(file: File) {
+    logger.info("LETTERBOXD", `ZIP import started for user ${this.user.username}`);
     return importLetterboxdZip(this.user.id, file);
   }
 
   async syncLetterboxd() {
+    logger.info("LETTERBOXD", `RSS sync started for user ${this.user.username}`);
     return syncLetterboxdDiary(this.user.id);
   }
 }

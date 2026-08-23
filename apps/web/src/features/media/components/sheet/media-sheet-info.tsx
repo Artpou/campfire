@@ -17,15 +17,16 @@ import { MediaDetails } from "@/features/media/components/media-details";
 import { MediaProviders } from "@/features/media/components/media-providers";
 import { MediaRatingImdb, MediaRatingTmdb, MediaRatingUser } from "@/features/media/components/rating/media-rating";
 
-interface MediaInfoProps {
+interface MediaSheetInfoProps {
   data: Movie | TV;
+  children?: React.ReactNode;
 }
 
 function isMovie(data: Movie | TV): data is Movie {
   return "movie" in data;
 }
 
-export function MediaInfo({ data }: MediaInfoProps) {
+export function MediaSheetInfo({ data, children }: MediaSheetInfoProps) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const media = data.media;
   const movie = isMovie(data) ? data.movie : null;
@@ -74,13 +75,13 @@ export function MediaInfo({ data }: MediaInfoProps) {
           <Flag lang={originalLanguage} />
           <p className="text-sm font-semibold text-muted-foreground">{originalTitle}</p>
         </div>
-        <div className="flex items-center gap-2.5 text-sm font-medium flex-wrap">
-          <MediaBadgeDate date={releaseDate} size="lg" />
-          <MediaBadgeRuntime minutes={runtime} size="lg" />
-          <MediaBadgeLabel show={!!episodeBadge} size="lg">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <MediaBadgeDate date={releaseDate} size="lg" variant="glass" />
+          <MediaBadgeRuntime minutes={runtime} size="lg" variant="glass" />
+          <MediaBadgeLabel variant="glass" show={!!episodeBadge} size="lg">
             {episodeBadge}
           </MediaBadgeLabel>
-          <MediaBadgeLabel show={!!nextEpisode?.air_date} variant="secondary" size="lg">
+          <MediaBadgeLabel show={!!nextEpisode?.air_date} variant="glass" size="lg">
             {nextEpisode?.air_date ? (
               <Trans>
                 Next episode: S{nextEpisode.season_number}E{nextEpisode.episode_number} -{" "}
@@ -88,7 +89,7 @@ export function MediaInfo({ data }: MediaInfoProps) {
               </Trans>
             ) : null}
           </MediaBadgeLabel>
-          <MediaBadgeLabel show={!nextEpisode && !!lastEpisode?.air_date} variant="secondary" size="lg">
+          <MediaBadgeLabel show={!nextEpisode && !!lastEpisode?.air_date} variant="glass" size="lg">
             {lastEpisode?.air_date ? (
               <Trans>
                 Last episode: S{lastEpisode.season_number}E{lastEpisode.episode_number} -{" "}
@@ -100,11 +101,22 @@ export function MediaInfo({ data }: MediaInfoProps) {
               </Trans>
             ) : null}
           </MediaBadgeLabel>
-          {genres.slice(0, 4).map((genre) => (
-            <MediaBadgeGenre key={typeof genre === "string" ? genre : genre.id} genre={genre} size="lg" />
-          ))}
         </div>
+        {genres.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {genres.slice(0, 4).map((genre) => (
+              <MediaBadgeGenre
+                key={typeof genre === "string" ? genre : genre.id}
+                genre={genre}
+                size="lg"
+                variant="secondary"
+              />
+            ))}
+          </div>
+        )}
       </div>
+
+      {children}
 
       {(tagline || overview) && (
         <div className="space-y-1">

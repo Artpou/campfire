@@ -10,9 +10,9 @@ import { useDebounce } from "@uidotdev/usehooks";
 import { DownloadIcon, LayoutGridIcon, type LucideIcon, MoreHorizontalIcon, PuzzleIcon, UserIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { DropSelect } from "@/shared/components/drop-select";
 import { EmptyState } from "@/shared/components/empty-state";
 import { ResponsiveTabs } from "@/shared/components/responsive-tabs";
+import { Select } from "@/shared/components/select/select";
 import { SentinelStuck, StickyFilterBar } from "@/shared/components/sentinel/sentinel-stuck";
 import { DataTable } from "@/shared/ui/data-table";
 import { DataTablePagination } from "@/shared/ui/data-table-pagination";
@@ -90,37 +90,35 @@ export function SettingsActivityView() {
       placeholder={t(msg`Search activity…`)}
       value={query}
       onChange={(e) => setQuery(e.target.value)}
-      classNameWrapper={cn("w-full", isStuck && "hidden xl:block")}
-      h={isStuck ? "lg" : undefined}
+      classNameWrapper="w-full"
+      h="lg"
     />
   );
 
   return (
     <div className="space-y-4">
       <SentinelStuck setIsStuck={setIsStuck} />
+      {!isStuck && searchInput}
       <StickyFilterBar isStuck={isStuck}>
-        <div className="flex items-center justify-between gap-2 w-full">
-          <ResponsiveTabs
-            className="w-full"
-            value={categoryFilter}
-            onValueChange={(v) => setCategoryFilter(v as ActivityCategoryFilter)}
-            options={CATEGORY_FILTERS.map((f) => ({ value: f.id, label: f.label, icon: f.icon }))}
-          />
-          {!isStuck && (
-            <DropSelect
+        {isStuck ? (
+          <div className="flex w-full items-center gap-2">{searchInput}</div>
+        ) : (
+          <div className="flex w-full items-center justify-between gap-2">
+            <ResponsiveTabs
+              className="w-full"
+              value={categoryFilter}
+              onValueChange={(v) => setCategoryFilter(v as ActivityCategoryFilter)}
+              options={CATEGORY_FILTERS.map((f) => ({ value: f.id, label: f.label, icon: f.icon }))}
+            />
+            <Select
               value={typeFilter}
               onValueChange={setTypeFilter}
               options={TYPE_FILTERS}
-              forceDrawer
               triggerClassName="shrink-0 min-w-36 w-fit"
-              label={<Trans>Type</Trans>}
             />
-          )}
-          {!!isStuck && searchInput}
-        </div>
+          </div>
+        )}
       </StickyFilterBar>
-
-      {!isStuck && searchInput}
 
       <DataTablePagination page={page} limit={PAGE_SIZE} total={total} onPageChange={setPage} />
 

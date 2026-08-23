@@ -11,6 +11,7 @@ import { getModuleCatalogEntry, STREMIO_PRESETS } from "@seedarr/shared";
 
 import { BadRequestError, ConflictError } from "@/shared/errors/error";
 import { decrypt, encrypt } from "@/shared/helpers/crypto.helper";
+import { logger } from "@/shared/helpers/logger.helper";
 import { assertPublicHttpUrl, assertSafeIndexerUrl } from "@/shared/helpers/url.helper";
 import { IdentifiableService } from "@/shared/services/authenticated.service";
 
@@ -48,6 +49,7 @@ async function fetchManifest(manifestUrl: string): Promise<StremioManifest> {
 
   for (let depth = 0; depth <= MAX_REDIRECT_DEPTH; depth++) {
     await assertPublicHttpUrl(currentUrl);
+    logger.debug("MODULE", `Fetching Stremio manifest: ${currentUrl}`);
     const response = await fetch(currentUrl, { redirect: "manual" });
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get("location");
@@ -144,10 +146,12 @@ export class ModuleService extends IdentifiableService<ModulePublic> {
   }
 
   async runStorageSync(): Promise<RemoteSyncResponse> {
+    logger.info("REMOTE_SYNC", "Manual storage sync started");
     return runRemoteSync(this.user.id);
   }
 
   async runStorageManualSync(input: ManualSyncInput): Promise<{ success: true }> {
+    logger.info("REMOTE_SYNC", `Manual sync for media ${input.mediaId}`);
     return runManualSync(this.user.id, input);
   }
 
@@ -157,6 +161,7 @@ export class ModuleService extends IdentifiableService<ModulePublic> {
     if (!row) return { ok: true };
     await this.update(row.id, { enabled: false });
     invalidateStorageConfigCache();
+    logger.info("MODULE", `Disconnected storage module (${row.id})`);
     return { ok: true };
   }
 
@@ -205,7 +210,9 @@ export class ModuleService extends IdentifiableService<ModulePublic> {
     });
 
     this.invalidateCaches(input.type);
-    return toPublicModule(row);
+    const created = toPublicModule(row);
+    logger.info("MODULE", `Installed ${created.type} module (${created.id})`);
+    return created;
   }
 
   async update(id: string, input: UpdateModuleInput): Promise<ModulePublic> {
@@ -244,14 +251,16 @@ export class ModuleService extends IdentifiableService<ModulePublic> {
       nextConfig = parseModuleConfig(row.type, merged);
     }
 
-    const updated = await moduleRepository.update(id, {
+    const updatedRow = await moduleRepository.update(id, {
       enabled: input.enabled ?? row.enabled,
       config: nextConfig,
       updatedAt: new Date(),
     });
 
     this.invalidateCaches(row.type);
-    return toPublicModule(updated);
+    const updated = toPublicModule(updatedRow);
+    logger.info("MODULE", `Updated ${updated.type} module (${updated.id})`);
+    return updated;
   }
 
   async delete(id: string): Promise<{ ok: true }> {
@@ -263,6 +272,7 @@ export class ModuleService extends IdentifiableService<ModulePublic> {
     }
     await moduleRepository.delete(id);
     this.invalidateCaches(row.type);
+    logger.info("MODULE", `Removed ${row.type} module (${row.id})`);
     return { ok: true };
   }
 

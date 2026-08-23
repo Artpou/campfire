@@ -80,7 +80,7 @@ export function ManualSyncWizard({ files, open, onOpenChange }: ManualSyncWizard
         />
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>
+          <Button variant="secondary" onClick={handleClose}>
             <Trans>Cancel</Trans>
           </Button>
           <Button variant="secondary" onClick={handleSkip}>

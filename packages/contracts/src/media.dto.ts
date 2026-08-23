@@ -40,6 +40,19 @@ export const listMediaDto = paginationDto.extend({
   userId: z.string().optional(),
   /** Pipe-separated genre names matched against media.categories (local library). */
   with_genres: z.string().optional(),
+  /** Title search (local library lists). */
+  q: z.string().optional(),
+  vote_average_gte: z.number().optional(),
+  release_date_gte: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  release_date_lte: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  with_runtime_gte: z.number().int().optional(),
+  with_runtime_lte: z.number().int().optional(),
   sortBy: z.enum(["title", "date", "score", "progress"]).optional(),
   sortOrder: z.enum(["asc", "desc"]).optional(),
 });

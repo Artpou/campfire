@@ -34,7 +34,7 @@ export function DataTablePagination({ page, limit, total, onPageChange, classNam
       <div className="flex items-center gap-2">
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           size="icon-sm"
           disabled={!canPrev}
           aria-label="Previous page"
@@ -44,7 +44,7 @@ export function DataTablePagination({ page, limit, total, onPageChange, classNam
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           size="icon-sm"
           disabled={!canNext}
           aria-label="Next page"

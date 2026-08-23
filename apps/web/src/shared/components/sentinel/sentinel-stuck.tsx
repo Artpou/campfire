@@ -25,7 +25,7 @@ export function SentinelStuck({ setIsStuck, marginTop = 0 }: SentinelStuckProps)
     return () => observer.disconnect();
   }, [setIsStuck, marginTop]);
 
-  return <div ref={sentinelRef} className="h-4" aria-hidden />;
+  return <div ref={sentinelRef} className="h-0" aria-hidden />;
 }
 
 interface StickyFilterBarProps {
@@ -38,12 +38,12 @@ export function StickyFilterBar({ isStuck, children, className }: StickyFilterBa
   return (
     <div
       className={cn(
-        "sticky top-14 z-20 flex flex-col bg-background/80 backdrop-blur-md py-2",
-        isStuck && "border-b border-border/60",
+        "sticky top-14 z-20 flex flex-col bg-background/80 backdrop-blur-md",
+        isStuck && "border-b border-border/60 fixed left-0 px-4 py-1 w-full",
         className,
       )}
     >
-      {children}
+      <div className={cn(isStuck && "mx-auto container sm:px-6 py-1")}>{children}</div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useNavigate } from "@tanstack/react-router";
 
+import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 
 import { MediaDiscover } from "@/features/media/components/media-discover";
@@ -22,6 +23,7 @@ export interface TvViewProps {
 export function TvView({ search }: TvViewProps) {
   const { t } = useLingui();
   const locale = useTmdbLocale();
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const isSearching = isDiscoverTextSearch(search.q);
   const isDownloaded = isDownloadedTab(search.selected);
@@ -49,7 +51,15 @@ export function TvView({ search }: TvViewProps) {
       queryOptions={queryOptions}
       onSearchChange={handleSearchChange}
       filtersSheet={
-        !isDownloaded ? <TvFiltersSheet value={pickTvFilters(search)} onChange={handleSearchChange} /> : null
+        !isDownloaded ? (
+          <TvFiltersSheet
+            value={pickTvFilters(search)}
+            onChange={handleSearchChange}
+            sortValue={search.selected ?? "new"}
+            onSortChange={(selected) => handleSearchChange({ selected })}
+            showSortInSheet={isMobile}
+          />
+        ) : null
       }
       emptyTitle={<Trans>No TV shows found</Trans>}
       emptySubtitle={<Trans>Try adjusting your filters or search criteria</Trans>}

@@ -3,20 +3,17 @@ import { useMemo, useState } from "react";
 import { Trans } from "@lingui/react/macro";
 import type { Download, Media, TMDBTvDetails } from "@seedarr/sdk";
 import { useQuery } from "@tanstack/react-query";
-import { CheckIcon, ChevronDownIcon, ClapperboardIcon } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { ClapperboardIcon, MagnetIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { Select } from "@/shared/components/select/select";
+import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
+import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { CarouselItem } from "@/shared/ui/carousel";
 import { CarouselWrapper } from "@/shared/ui/carousel-wrapper";
-import {
-  DropDrawer,
-  DropDrawerContent,
-  DropDrawerGroup,
-  DropDrawerItem,
-  DropDrawerTrigger,
-} from "@/shared/ui/dropdrawer";
 
 import { MediaBadgeDate } from "@/features/media/components/badge/media-badge-date";
 import { MediaBadgeRuntime } from "@/features/media/components/badge/media-badge-runtime";
@@ -36,8 +33,21 @@ interface TvCarouselProps {
   activeEpisode?: number;
 }
 
+function countSeasonDownloads(
+  seasonNumber: number,
+  episodeCount: number,
+  episodeDownloadMap: Map<string, Download>,
+): number {
+  let downloaded = 0;
+  for (let episode = 1; episode <= episodeCount; episode++) {
+    if (episodeDownloadMap.has(`${seasonNumber}-${episode}`)) downloaded++;
+  }
+  return downloaded;
+}
+
 export function TvCarousel({ tv, media, downloads, className, activeSeason, activeEpisode }: TvCarouselProps) {
   const locale = useTmdbLocale();
+  const isMobile = useIsMobile();
   const validSeasons = useMemo(() => (tv.seasons ?? []).filter((season) => season.season_number > 0), [tv.seasons]);
   const [selectedSeason, setSelectedSeason] = useState<number>(
     () => activeSeason ?? validSeasons[0]?.season_number ?? 1,
@@ -57,35 +67,50 @@ export function TvCarousel({ tv, media, downloads, className, activeSeason, acti
 
   if (validSeasons.length === 0) return null;
 
-  const selectedLabel = validSeasons.find((season) => season.season_number === selectedSeason);
+  const seasonOptions = validSeasons.map((season) => {
+    const episodeCount = season.episode_count ?? 0;
+    const downloaded = countSeasonDownloads(season.season_number, episodeCount, episodeDownloadMap);
+    const seasonLabel = season.name || `Season ${season.season_number}`;
+
+    return {
+      value: season.season_number.toString(),
+      label: (
+        <span className="flex w-full items-center justify-between gap-2">
+          <span className="truncate">{seasonLabel}</span>
+          {downloaded > 0 && (
+            <Badge variant="secondary" className="shrink-0 text-[10px] px-1.5 py-0">
+              {downloaded}/{episodeCount}
+            </Badge>
+          )}
+        </span>
+      ),
+    };
+  });
 
   return (
     <div className="space-y-3">
       <CarouselWrapper
         title={
-          <DropDrawer>
-            <DropDrawerTrigger asChild>
-              <Button variant="outline" className="w-fit justify-between gap-2">
-                <span className="truncate font-medium">
-                  {selectedLabel?.name || <Trans>Season {selectedSeason}</Trans>}
-                </span>
-                <ChevronDownIcon className="size-4 shrink-0 opacity-50" />
-              </Button>
-            </DropDrawerTrigger>
-            <DropDrawerContent>
-              <DropDrawerGroup>
-                {validSeasons.map((season) => (
-                  <DropDrawerItem
-                    key={season.season_number}
-                    onSelect={() => setSelectedSeason(season.season_number)}
-                    icon={season.season_number === selectedSeason ? <CheckIcon className="size-4" /> : undefined}
-                  >
-                    {season.name || <Trans>Season {season.season_number}</Trans>}
-                  </DropDrawerItem>
-                ))}
-              </DropDrawerGroup>
-            </DropDrawerContent>
-          </DropDrawer>
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <Select
+              value={selectedSeason.toString()}
+              onValueChange={(value) => setSelectedSeason(Number(value))}
+              options={seasonOptions}
+              triggerClassName="w-fit min-w-40"
+              panelLabel={<Trans>Season</Trans>}
+              placeholder={<Trans>Season</Trans>}
+            />
+            <Button
+              variant="secondary"
+              size={isMobile ? "icon-lg" : "default"}
+              asChild
+              icon={isMobile ? MagnetIcon : undefined}
+            >
+              <Link to="/tv/$id/torrents" params={{ id: tv.id.toString() }} search={{ season: selectedSeason }}>
+                {!isMobile && <Trans>Torrents</Trans>}
+              </Link>
+            </Button>
+          </div>
         }
       >
         {episodes.map((episode) => {

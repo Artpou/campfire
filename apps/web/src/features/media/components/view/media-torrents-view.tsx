@@ -5,10 +5,9 @@ import type { Media } from "@seedarr/sdk";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
-import { DropSelect } from "@/shared/components/drop-select";
+import { Select } from "@/shared/components/select/select";
 import { useTmdbLocale } from "@/shared/hooks/use-tmdb-locale";
 import { Container } from "@/shared/ui/container";
-import { Label } from "@/shared/ui/label";
 
 import { MediaCardHorizontal } from "@/features/media/components/card/media-card-horizontal";
 import { useIndexerModules } from "@/features/module/hooks/use-module";
@@ -82,11 +81,8 @@ function TvTorrentsView({ mediaId, season, episode }: { mediaId: string; season?
       episode={episode}
       episodeSelectors={
         <div className="flex flex-col sm:flex-row gap-3 sm:items-end mb-4">
-          <div className="flex flex-col gap-2 w-full sm:w-48">
-            <Label>
-              <Trans>Season</Trans>
-            </Label>
-            <DropSelect
+          <div className="w-full sm:w-48">
+            <Select
               value={selectedSeason?.toString() ?? ""}
               onValueChange={handleSeasonChange}
               triggerClassName="w-full"
@@ -98,11 +94,8 @@ function TvTorrentsView({ mediaId, season, episode }: { mediaId: string; season?
             />
           </div>
 
-          <div className="flex flex-col gap-2 w-full sm:w-64">
-            <Label>
-              <Trans>Episode</Trans>
-            </Label>
-            <DropSelect
+          <div className="w-full sm:w-64">
+            <Select
               value={episode?.toString() ?? ALL_EPISODES}
               onValueChange={handleEpisodeChange}
               triggerClassName="w-full"

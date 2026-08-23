@@ -1,7 +1,9 @@
 import type * as React from "react";
+import type { ReactNode } from "react";
 
 import * as LabelPrimitive from "@radix-ui/react-label";
 import { cva, type VariantProps } from "class-variance-authority";
+import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -34,4 +36,26 @@ function Label({ className, variant = "default", size = "default", ...props }: L
   );
 }
 
-export { Label };
+interface LabelWrapperProps {
+  label?: ReactNode;
+  icon?: LucideIcon;
+  htmlFor?: string;
+  className?: string;
+  children: ReactNode;
+}
+
+function LabelWrapper({ label, icon: Icon, htmlFor, className, children }: LabelWrapperProps) {
+  if (!label) return children;
+
+  return (
+    <div className={cn("flex w-full flex-col gap-2", className)}>
+      <Label htmlFor={htmlFor}>
+        {Icon && <Icon className="size-3.5 text-muted-foreground" />}
+        {label}
+      </Label>
+      {children}
+    </div>
+  );
+}
+
+export { Label, LabelWrapper };

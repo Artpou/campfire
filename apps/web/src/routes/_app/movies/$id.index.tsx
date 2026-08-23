@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { countryToTmdbLocale } from "@/shared/helpers/i18n.helper";
 
-import type { MediaDetailTab } from "@/features/media/components/media-detail-view";
+import type { MediaDetailTab } from "@/features/media/components/view/media-detail-view";
 import { MovieDetailView } from "@/features/movies/components/movie-detail-view";
 import { movieQueries } from "@/features/movies/hooks/movie.queries";
 

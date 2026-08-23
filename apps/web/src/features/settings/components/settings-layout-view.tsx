@@ -3,7 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { ActivityIcon, PuzzleIcon, SettingsIcon, UsersIcon } from "lucide-react";
 
 import { AppVersionCard } from "@/shared/components/app-version-card";
-import { DropSelect } from "@/shared/components/drop-select";
+import { Select } from "@/shared/components/select/select";
 import { Container } from "@/shared/ui/container";
 import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 
@@ -38,7 +38,7 @@ export function SettingsLayoutView() {
         {!isModuleDetail && (
           <aside className="md:w-56 shrink-0 md:sticky md:top-14 md:self-start md:overscroll-contain space-y-4">
             <div className="md:hidden">
-              <DropSelect
+              <Select
                 value={activeTab}
                 onValueChange={(value) => navigate({ to: `/settings/${value}` as `/settings/${SettingsTab}` })}
                 triggerClassName="w-full h-11"

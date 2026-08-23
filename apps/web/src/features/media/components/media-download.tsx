@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Trans, useLingui } from "@lingui/react/macro";
+import { Trans } from "@lingui/react/macro";
 import type { Download } from "@seedarr/sdk";
 import {
   AlertCircleIcon,
@@ -59,7 +59,6 @@ export function MediaDownload({ downloads, mediaType }: MediaDownloadProps) {
 }
 
 function DownloadEntry({ download, mediaType }: { download: Download; mediaType?: "movie" | "tv" }) {
-  const { t } = useLingui();
   const deleteTorrent = useDownloadDelete();
   const recheckTorrent = useDownloadRecheck();
   const reannounce = useDownloadReannounce();
@@ -97,60 +96,58 @@ function DownloadEntry({ download, mediaType }: { download: Download; mediaType?
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
-          <DropDrawer>
-            <DropDrawerTrigger asChild>
-              <Button variant="secondary" icon={ChevronDownIcon}>
-                <Trans>Actions</Trans>
-              </Button>
-            </DropDrawerTrigger>
-            <DropDrawerContent>
-              <DropDrawerGroup>
-                {hasActiveTorrentSession && !isCompleted && (
-                  <DropDrawerItem
-                    icon={<RefreshCwIcon className="size-4" />}
-                    disabled={recheckTorrent.isPending}
-                    onSelect={() => recheckTorrent.mutate(download.id)}
-                  >
-                    <Trans>Recheck</Trans>
-                  </DropDrawerItem>
-                )}
-                {hasActiveTorrentSession && !isPaused && (
-                  <DropDrawerItem
-                    icon={<MegaphoneIcon className="size-4" />}
-                    disabled={reannounce.isPending}
-                    onSelect={() => reannounce.mutate(download.id)}
-                  >
-                    <Trans>Reannounce</Trans>
-                  </DropDrawerItem>
-                )}
-                {canTransfer && (
-                  <DropDrawerItem
-                    icon={<ServerIcon className="size-4" />}
-                    disabled={transfer.isPending}
-                    onSelect={() => transfer.mutate(download.id)}
-                  >
-                    <Trans>Transfer</Trans>
-                  </DropDrawerItem>
-                )}
+        <DropDrawer>
+          <DropDrawerTrigger asChild>
+            <Button variant="secondary" icon={ChevronDownIcon}>
+              <Trans>Actions</Trans>
+            </Button>
+          </DropDrawerTrigger>
+          <DropDrawerContent className="min-w-48 w-auto">
+            <DropDrawerGroup>
+              {hasActiveTorrentSession && !isCompleted && (
                 <DropDrawerItem
-                  icon={<ArrowRightLeftIcon className="size-4" />}
-                  onSelect={() => setShowChangeMedia(true)}
+                  icon={<RefreshCwIcon className="size-4" />}
+                  disabled={recheckTorrent.isPending}
+                  onSelect={() => recheckTorrent.mutate(download.id)}
                 >
-                  <Trans>Change media</Trans>
+                  <Trans>Recheck</Trans>
                 </DropDrawerItem>
-              </DropDrawerGroup>
-            </DropDrawerContent>
-          </DropDrawer>
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => setShowDeleteConfirm(true)}
-            disabled={deleteTorrent.isPending}
-            aria-label={t`Delete`}
-            icon={Trash2Icon}
-          />
-        </div>
+              )}
+              {hasActiveTorrentSession && !isPaused && (
+                <DropDrawerItem
+                  icon={<MegaphoneIcon className="size-4" />}
+                  disabled={reannounce.isPending}
+                  onSelect={() => reannounce.mutate(download.id)}
+                >
+                  <Trans>Reannounce</Trans>
+                </DropDrawerItem>
+              )}
+              {canTransfer && (
+                <DropDrawerItem
+                  icon={<ServerIcon className="size-4" />}
+                  disabled={transfer.isPending}
+                  onSelect={() => transfer.mutate(download.id)}
+                >
+                  <Trans>Transfer</Trans>
+                </DropDrawerItem>
+              )}
+              <DropDrawerItem
+                icon={<ArrowRightLeftIcon className="size-4" />}
+                onSelect={() => setShowChangeMedia(true)}
+              >
+                <Trans>Change media</Trans>
+              </DropDrawerItem>
+              <DropDrawerItem
+                variant="destructive"
+                icon={<Trash2Icon className="size-4" />}
+                disabled={deleteTorrent.isPending}
+                onSelect={() => setShowDeleteConfirm(true)}
+              >
+                <Trans>Delete</Trans>
+              </DropDrawerItem>
+            </DropDrawerGroup>
+          </DropDrawerContent>
+        </DropDrawer>
       </div>
 
       {download.error && (

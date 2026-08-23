@@ -1,5 +1,5 @@
 import type { ListMediaQuery } from "@seedarr/contracts";
-import { parseString } from "@seedarr/shared";
+import { parseNumber, parseString } from "@seedarr/shared";
 
 import { getMediaType } from "@/features/media/helpers/media.helper";
 
@@ -20,6 +20,11 @@ export function validateDownloadsSearch(search: Record<string, unknown>): Partia
   return {
     type: getMediaType(search.type),
     with_genres: parseString(search.with_genres),
+    release_date_gte: parseString(search.release_date_gte),
+    release_date_lte: parseString(search.release_date_lte),
+    with_runtime_gte: parseNumber(search.with_runtime_gte),
+    with_runtime_lte: parseNumber(search.with_runtime_lte),
+    vote_average_gte: parseNumber(search.vote_average_gte),
     sortBy: parseSortBy(search.sortBy),
     sortOrder: parseSortOrder(search.sortOrder),
   };
