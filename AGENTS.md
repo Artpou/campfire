@@ -268,6 +268,19 @@ Seedarr is designed for a **trusted household / self-hosted instance**:
 
 - **Lucide React** with `Icon` suffix: `HomeIcon`, `SettingsIcon`
 
+## Agent Skills (Cursor + Claude)
+
+Project skills live in `.cursor/skills/` (canonical).
+
+| Skill | Use when |
+| --- | --- |
+| `seedarr-ui` | Any UI work — preserve lime + dark cinema + Montserrat + shadcn |
+| `web-design-guidelines` | A11y / UX / forms audit (Vercel Web Interface Guidelines) |
+| `redesign-existing-projects` | Targeted visual upgrades on existing screens (audit-first) |
+| `playwright-screenshots` | Visual QA via Playwright MCP on `http://localhost:3000` |
+
+Playwright MCP is configured in `.cursor/mcp.json` (Cursor). After adding/changing MCP config, reload MCP / restart the agent session.
+
 ## AI Agent Constraints
 
 - Run `pnpm check` to validate changes (lint, typecheck, tests)
