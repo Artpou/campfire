@@ -10,3 +10,8 @@ const client = createClient({
 });
 
 export const db = drizzle(client, { schema });
+
+/** Must run once at startup — SQLite disables FK enforcement by default. */
+export async function ensureDbPragmas(): Promise<void> {
+  await client.execute("PRAGMA foreign_keys = ON");
+}

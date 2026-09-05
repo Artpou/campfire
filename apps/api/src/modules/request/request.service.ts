@@ -2,12 +2,13 @@ import type { ListRequestsQuery, MediaInput } from "@seedarr/contracts";
 
 import { BadRequestError, ConflictError, ForbiddenError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
-import { toPaginate } from "@/shared/helpers/pagination.helper";
+import { listPage } from "@/shared/helpers/pagination.helper";
 import type { Paginate } from "@/shared/helpers/pagination.types";
 import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import { mediaRepository } from "@/modules/media/media.repository";
+import { validatePendingRequestsForMedia } from "@/modules/request/request.helper";
 import { type RequestEnriched, requestRepository } from "@/modules/request/request.repository";
 
 export type RequestWithUser = RequestEnriched;
@@ -33,9 +34,11 @@ export class RequestService extends AuthenticatedService {
   }
 
   async list(query: ListRequestsQuery): Promise<Paginate<RequestWithUser>> {
-    const { page = 1, limit = 20 } = query;
-    const rows = await requestRepository.list(query);
-    return toPaginate(rows, { page, limit });
+    return listPage(
+      query,
+      (opts) => requestRepository.listPage({ ...query, ...opts }),
+      () => requestRepository.count(query),
+    );
   }
 
   async listByUser(userId: string): Promise<RequestWithUser[]> {
@@ -56,8 +59,7 @@ export class RequestService extends AuthenticatedService {
   }
 
   async validateByMedia(mediaId: number): Promise<void> {
-    await requestRepository.validatePendingByMediaId(mediaId);
-    logger.info("REQUEST", `Auto-validated pending requests for media ${mediaId}`);
+    await validatePendingRequestsForMedia(mediaId);
   }
 
   async reopen(requestId: string): Promise<void> {

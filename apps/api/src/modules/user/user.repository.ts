@@ -1,5 +1,5 @@
 import type { UserStats } from "@seedarr/contracts";
-import { and, asc, count, eq, like, or } from "drizzle-orm";
+import { and, asc, count, eq, inArray, like, or } from "drizzle-orm";
 
 import { NotFoundError } from "@/shared/errors/error";
 
@@ -44,6 +44,14 @@ export const userRepository = {
 
   findFullById: async (id: string) => {
     return (await db.query.user.findFirst({ where: eq(user.id, id) })) ?? undefined;
+  },
+
+  findByIds: async (ids: string[]): Promise<UserPublic[]> => {
+    if (ids.length === 0) return [];
+    return db.query.user.findMany({
+      columns: userPublicColumns,
+      where: inArray(user.id, ids),
+    });
   },
 
   list: async (): Promise<UserPublic[]> => {

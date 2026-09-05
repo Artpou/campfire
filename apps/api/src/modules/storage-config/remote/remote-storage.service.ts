@@ -1,5 +1,3 @@
-import { createCache } from "@/shared/helpers/cache.helper";
-
 import { moduleRepository } from "@/modules/module/module.repository";
 import path from "node:path";
 import { decrypt } from "../../../shared/helpers/crypto.helper";
@@ -44,22 +42,10 @@ interface StorageConfigFull {
   diskQuotaGb: number | null;
 }
 
-const CONFIG_CACHE_KEY = "config";
-
-const configCache = createCache<StorageConfigFull>({
-  max: 1,
-  ttl: 60_000,
-  name: "storage-config",
-});
-
-export function invalidateStorageConfigCache(): void {
-  configCache.clear();
-}
+/** Kept for ModuleService / tests — config is always loaded fresh (no TTL cache). */
+export function invalidateStorageConfigCache(): void {}
 
 async function loadConfig(): Promise<StorageConfigFull> {
-  const cached = configCache.get(CONFIG_CACHE_KEY);
-  if (cached) return cached;
-
   const storageModule = await moduleRepository.findFirstByCategory("storage");
 
   if (storageModule) {
@@ -69,6 +55,7 @@ async function loadConfig(): Promise<StorageConfigFull> {
       username?: string;
       password?: string;
       secure?: boolean;
+      allowSelfSigned?: boolean;
       moviePath?: string;
       tvPath?: string;
       autoTransfer?: boolean;
@@ -76,7 +63,7 @@ async function loadConfig(): Promise<StorageConfigFull> {
       diskQuotaGb?: number;
     };
     const protocol = storageModule.type === "webdav" ? "webdav" : "ftp";
-    const result: StorageConfigFull = {
+    return {
       connectionOptions: cfg.host
         ? {
             protocol,
@@ -93,6 +80,7 @@ async function loadConfig(): Promise<StorageConfigFull> {
                 })()
               : null,
             secure: cfg.secure ?? false,
+            rejectUnauthorized: cfg.allowSelfSigned === false,
           }
         : null,
       enabled: storageModule.enabled === true,
@@ -102,11 +90,9 @@ async function loadConfig(): Promise<StorageConfigFull> {
       deleteLocalAfterTransfer: cfg.deleteLocalAfterTransfer === true,
       diskQuotaGb: cfg.diskQuotaGb ?? null,
     };
-    configCache.set(CONFIG_CACHE_KEY, result);
-    return result;
   }
 
-  const empty: StorageConfigFull = {
+  return {
     connectionOptions: null,
     enabled: false,
     autoTransfer: false,
@@ -115,8 +101,6 @@ async function loadConfig(): Promise<StorageConfigFull> {
     deleteLocalAfterTransfer: false,
     diskQuotaGb: null,
   };
-  configCache.set(CONFIG_CACHE_KEY, empty);
-  return empty;
 }
 
 class RemoteStorageService {

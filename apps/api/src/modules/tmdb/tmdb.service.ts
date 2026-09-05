@@ -5,7 +5,7 @@ import ms from "ms";
 import { NotFoundError, ServiceUnavailableError } from "@/shared/errors/error";
 import { createCache } from "@/shared/helpers/cache.helper";
 import { logger } from "@/shared/helpers/logger.helper";
-import { type Identifiable, IdentifiableService } from "@/shared/services/authenticated.service";
+import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
 import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
 import { mergeMediaEnrichment } from "@/modules/media/media.helper";
@@ -101,7 +101,7 @@ export async function tmdbRequest<T>(url: string, locale: string, options?: Fetc
   return data;
 }
 
-export abstract class TMDBService<S extends Identifiable> extends IdentifiableService<S> {
+export abstract class TMDBService extends AuthenticatedService {
   protected locale: string;
   protected readonly type: "movie" | "tv";
 
@@ -111,7 +111,7 @@ export abstract class TMDBService<S extends Identifiable> extends IdentifiableSe
     this.type = type;
   }
 
-  static createTMDBRouter<E extends Identifiable, S extends TMDBService<E>>(
+  static createTMDBRouter<S extends TMDBService>(
     this: new (
       user: User,
       locale: string,

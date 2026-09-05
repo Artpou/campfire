@@ -483,6 +483,10 @@ importers:
         version: 7.0.2
 
   packages/shared:
+    dependencies:
+      '@seedarr/contracts':
+        specifier: workspace:*
+        version: link:../contracts
     devDependencies:
       '@seedarr/typescript-config':
         specifier: workspace:*

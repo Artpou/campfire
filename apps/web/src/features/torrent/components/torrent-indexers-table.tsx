@@ -11,7 +11,7 @@ import { Button } from "@/shared/ui/button";
 import { Spinner } from "@/shared/ui/spinner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/ui/table";
 
-import { indexersManagerImages } from "@/features/indexers-manager/helpers/indexers-manager.helper";
+import { indexerModuleImages } from "@/features/torrent/helpers/indexer-images";
 import type { TorrentSource } from "@/features/torrent/hooks/torrent.queries";
 
 interface IndexerQueryStat {
@@ -101,7 +101,7 @@ export function TorrentIndexersTable({ sources, indexerStats, onVisibilityChange
               sources.map((source, index) => {
                 const stat = indexerStats[index];
                 const isVisible = visibleSources.has(source.id);
-                const managerType = source.indexerManagerType;
+                const indexerType = source.indexerType;
 
                 return (
                   <TableRow key={source.id} className={!isVisible ? "opacity-50" : ""}>
@@ -117,8 +117,8 @@ export function TorrentIndexersTable({ sources, indexerStats, onVisibilityChange
                           <Spinner />
                         ) : (
                           <img
-                            src={indexersManagerImages[managerType]}
-                            alt={managerType}
+                            src={indexerModuleImages[indexerType]}
+                            alt={indexerType}
                             className={cn("size-4 object-contain", !isVisible && "grayscale opacity-50")}
                           />
                         )}

@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { createSelectSchema } from "drizzle-zod";
 import type { z } from "zod";
 
@@ -26,7 +26,11 @@ export const mediaRequest = sqliteTable(
       .notNull()
       .$defaultFn(() => new Date()),
   },
-  (table) => [uniqueIndex("mediaRequest_user_media_unique").on(table.userId, table.mediaId)],
+  (table) => [
+    uniqueIndex("mediaRequest_user_media_unique").on(table.userId, table.mediaId),
+    index("mediaRequest_status_idx").on(table.status),
+    index("mediaRequest_userId_idx").on(table.userId),
+  ],
 );
 
 export const mediaRequestRelations = relations(mediaRequest, ({ one }) => ({

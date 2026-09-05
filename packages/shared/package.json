@@ -10,6 +10,9 @@
     "check-types": "tsc --noEmit",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@seedarr/contracts": "workspace:*"
+  },
   "devDependencies": {
     "@seedarr/typescript-config": "workspace:*",
     "typescript": "catalog:",

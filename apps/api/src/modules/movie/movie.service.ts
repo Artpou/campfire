@@ -1,5 +1,3 @@
-import { BadRequestError } from "@/shared/errors/error";
-
 import { fetchImdbRating } from "@/modules/media/cinemeta/cinemeta.service";
 import { mergeMediaEnrichment } from "@/modules/media/media.helper";
 import { listEnrichedMedia } from "@/modules/media/media-list.repository";
@@ -9,14 +7,9 @@ import type { TMDBItem, TMDBMovieDetails } from "@/modules/tmdb/tmdb.types";
 import type { User } from "@/modules/user/user.schema";
 import type { Movie } from "./movie.types";
 
-export class MovieService extends TMDBService<Movie> {
+export class MovieService extends TMDBService {
   constructor(user: User, locale: string) {
     super(user, locale, "movie");
-  }
-
-  /** @deprecated use get instead */
-  getMany(): Promise<Movie[]> {
-    throw new BadRequestError("Not implemented");
   }
 
   async get(id: string): Promise<Movie> {

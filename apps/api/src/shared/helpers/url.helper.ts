@@ -73,13 +73,28 @@ async function resolveIp(hostname: string): Promise<string> {
   }
 }
 
+/** Block DNS rebinding: public hostnames must not resolve to private/metadata IPs. */
+async function assertNoDnsRebind(parsed: URL): Promise<void> {
+  const hostnameIsPrivate = isPrivateHost(parsed.hostname);
+  const ip = await resolveIp(parsed.hostname);
+
+  if (isMetadataEndpoint(ip) || ip === "169.254.169.254") {
+    throw new BadRequestError(`URL resolves to cloud metadata endpoint (${parsed.hostname} -> ${ip})`);
+  }
+
+  if (!hostnameIsPrivate && isPrivateHost(ip)) {
+    throw new BadRequestError(`URL resolves to a private network address (${parsed.hostname} -> ${ip})`);
+  }
+}
+
 // --- FONCTIONS PRINCIPALES (ASSERTIONS) ---
 
-export function assertSafeIndexerUrl(url: string): void {
+export async function assertSafeIndexerUrl(url: string): Promise<void> {
   const parsed = parseAndValidateUrl(url);
   if (isMetadataEndpoint(parsed.hostname)) {
     throw new BadRequestError("Indexer URL cannot point to cloud metadata endpoints");
   }
+  await assertNoDnsRebind(parsed);
 }
 
 export async function assertPublicHttpUrl(url: string): Promise<void> {
@@ -90,25 +105,44 @@ export async function assertPublicHttpUrl(url: string): Promise<void> {
     throw new BadRequestError(`URL cannot point to private networks: ${parsed.hostname}`);
   }
 
-  const ip = await resolveIp(parsed.hostname);
-  if (isPrivateHost(ip)) {
-    throw new BadRequestError(`URL resolves to a private network address (${parsed.hostname} -> ${ip})`);
-  }
+  await assertNoDnsRebind(parsed);
 }
 
 export async function assertSafeTorrentFetchUrl(url: string): Promise<void> {
   const parsed = parseAndValidateUrl(url, "TORRENT");
 
   // Self-hosted: LAN / localhost magnet & .torrent URLs are allowed (Jackett on NAS, etc.).
-  // Only cloud metadata endpoints are blocked (hostname + resolved IP / DNS rebinding).
   if (isMetadataEndpoint(parsed.hostname)) {
     logger.warn("TORRENT", `Blocked torrent fetch URL: ${redactUrl(url)}`);
     throw new BadRequestError(`URL cannot point to cloud metadata endpoints: ${parsed.hostname}`);
   }
 
-  const ip = await resolveIp(parsed.hostname);
-  if (isMetadataEndpoint(ip) || ip === "169.254.169.254") {
-    logger.warn("TORRENT", `Blocked torrent fetch URL: ${redactUrl(url)}`);
-    throw new BadRequestError(`URL resolves to cloud metadata endpoint (${parsed.hostname} -> ${ip})`);
+  await assertNoDnsRebind(parsed);
+}
+
+/**
+ * Fetch while re-validating every redirect hop (SSRF-safe).
+ * Callers must pass the same assert used for the initial URL (e.g. assertPublicHttpUrl).
+ */
+export async function fetchFollowingRedirects(
+  url: string,
+  assertUrl: (nextUrl: string) => Promise<void>,
+  init?: RequestInit & { maxRedirects?: number },
+): Promise<Response> {
+  const maxRedirects = init?.maxRedirects ?? 5;
+  const { maxRedirects: _ignored, ...fetchInit } = init ?? {};
+  let currentUrl = url;
+
+  for (let depth = 0; depth <= maxRedirects; depth++) {
+    await assertUrl(currentUrl);
+    const response = await fetch(currentUrl, { ...fetchInit, redirect: "manual" });
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get("location");
+      if (!location) throw new BadRequestError("Redirect without Location header");
+      currentUrl = new URL(location, currentUrl).toString();
+      continue;
+    }
+    return response;
   }
+  throw new BadRequestError("Too many redirects");
 }

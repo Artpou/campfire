@@ -1,9 +1,10 @@
 import type { DownloadTorrentInput, PaginationQuery } from "@seedarr/contracts";
 
-import { BadRequestError, ForbiddenError, NotFoundError } from "@/shared/errors/error";
+import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from "@/shared/errors/error";
 import { signToken } from "@/shared/helpers/crypto.helper";
 import { logger } from "@/shared/helpers/logger.helper";
-import { paginate } from "@/shared/helpers/pagination.helper";
+import { listPage } from "@/shared/helpers/pagination.helper";
+import type { Paginate } from "@/shared/helpers/pagination.types";
 import { IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
@@ -12,7 +13,7 @@ import type { Download, DownloadStats } from "@/modules/download/download.schema
 import { type DownloadableFile, getDownloadableFile } from "@/modules/download/local/local-file.helper";
 import { mediaRepository } from "@/modules/media/media.repository";
 import { remoteStorageService } from "@/modules/storage-config/remote/remote-storage.service";
-import { invalidateStreamSource } from "@/modules/streaming/streaming.service";
+import { invalidateStreamSource } from "@/modules/streaming/streaming-cache.helper";
 import { resolveTorrentSource } from "@/modules/torrent/torrent-source.helper";
 import { getLocalDiskSpace } from "./local/local-disk.helper";
 import { isTransferInProgress, markTransferStarting, runRemoteTransfer } from "./remote/remote-transfer.helper";
@@ -35,20 +36,25 @@ const METADATA_TIMEOUT_MAGNET_MS = 10_000;
 const METADATA_TIMEOUT_FILE_MS = 5_000;
 
 export class DownloadService extends IdentifiableService<Download> {
-  async getMany(params?: PaginationQuery): Promise<Download[]> {
-    const paginationOpts = !params?.ids && params?.page && params?.limit ? paginate(params) : {};
-    return downloadRepository.findManyVisible({
-      ids: params?.ids,
-      ...paginationOpts,
-    });
+  async getMany(args?: { ids?: string[] }): Promise<Download[]> {
+    return downloadRepository.findManyVisible({ ids: args?.ids });
+  }
+
+  async list(query: PaginationQuery): Promise<Paginate<Download>> {
+    if (query.ids?.length) {
+      const results = await this.getMany({ ids: query.ids });
+      return { results, page: 1, hasMore: false, total: results.length };
+    }
+
+    return listPage(
+      query,
+      (opts) => downloadRepository.findManyVisible(opts),
+      () => downloadRepository.countVisible(),
+    );
   }
 
   async getByMediaId(mediaId: number): Promise<Download[]> {
     return downloadRepository.findByMediaIdVisible(mediaId);
-  }
-
-  async findMany(params?: PaginationQuery): Promise<Download[]> {
-    return this.getMany(params);
   }
 
   private async requireDownload(id: string): Promise<Download> {
@@ -165,6 +171,19 @@ export class DownloadService extends IdentifiableService<Download> {
       const metadataTimeout = typeof torrentSource === "string" ? METADATA_TIMEOUT_MAGNET_MS : METADATA_TIMEOUT_FILE_MS;
       await waitForTorrentMetadata(torrent, metadataTimeout);
 
+      const duplicate = torrent.infoHash ? await downloadRepository.findByInfoHash(torrent.infoHash) : undefined;
+      if (duplicate) {
+        // Do not destroy a torrent already bound to the existing download row.
+        if (torrentClient.getActiveTorrent(duplicate.id) !== torrent) {
+          try {
+            torrent.destroy();
+          } catch {
+            logger.error("DOWNLOAD", `Error destroying duplicate torrent: ${torrent.infoHash}`);
+          }
+        }
+        throw new ConflictError("A download with this torrent already exists");
+      }
+
       const newMedia = await mediaRepository.upsert(input.media);
 
       const liveData = extractTorrentLiveData(torrent);
@@ -185,10 +204,12 @@ export class DownloadService extends IdentifiableService<Download> {
 
       return newDownload;
     } catch (error) {
-      try {
-        torrent.destroy();
-      } catch {
-        logger.error("DOWNLOAD", `Error destroying torrent: ${error}`);
+      if (!(error instanceof ConflictError)) {
+        try {
+          torrent.destroy();
+        } catch {
+          logger.error("DOWNLOAD", `Error destroying torrent: ${error}`);
+        }
       }
       throw error;
     }

@@ -15,13 +15,13 @@ import {
   UnauthorizedError,
 } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
-import { paginate, toPaginate } from "@/shared/helpers/pagination.helper";
+import { listPage } from "@/shared/helpers/pagination.helper";
 import type { Paginate } from "@/shared/helpers/pagination.types";
 import { getAvatarsRoot, resolveWithinAvatars } from "@/shared/helpers/path.helper";
 import { IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { hashPassword, verifyPassword } from "@/auth/password.util";
-import { invalidateSessionsForUser } from "@/auth/session.util";
+import { invalidateSessionsForUser, revokeAllSessionsForUser } from "@/auth/session.util";
 import { importLetterboxdZip } from "@/modules/media/letterboxd/letterboxd-import.service";
 import { syncLetterboxdDiary } from "@/modules/media/letterboxd/letterboxd-sync.service";
 import { userRepository } from "@/modules/user/user.repository";
@@ -51,8 +51,9 @@ export class UserService extends IdentifiableService<User> {
     super(user as User);
   }
 
-  async getMany(_args?: { ids?: string[] }): Promise<User[]> {
-    return userRepository.list();
+  async getMany(args?: { ids?: string[] }): Promise<User[]> {
+    const rows = args?.ids?.length ? await userRepository.findByIds(args.ids) : await userRepository.list();
+    return rows as User[];
   }
 
   async search(q?: string): Promise<User[]> {
@@ -61,15 +62,12 @@ export class UserService extends IdentifiableService<User> {
     return userRepository.search(term);
   }
 
-  async searchPaginated(query: ListUsersQuery): Promise<Paginate<User>> {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    const paginationOpts = paginate({ page, limit });
-    const [rows, total] = await Promise.all([
-      userRepository.searchPage({ q: query.q, ...paginationOpts }),
-      userRepository.searchCount(query.q),
-    ]);
-    return toPaginate(rows, { page, limit }, total);
+  async list(query: ListUsersQuery): Promise<Paginate<User>> {
+    return listPage(
+      query,
+      (opts) => userRepository.searchPage({ q: query.q, ...opts }),
+      () => userRepository.searchCount(query.q),
+    );
   }
 
   async get(id: string): Promise<User> {
@@ -165,7 +163,7 @@ export class UserService extends IdentifiableService<User> {
     if (input.role) data.role = input.role;
 
     await userRepository.update(id, data);
-    if (input.role || input.password) invalidateSessionsForUser(id);
+    if (input.role || input.password) await revokeAllSessionsForUser(id);
     const updated = await this.get(id);
     logger.info("USER", `Updated user "${updated.username}"`);
     return updated;
@@ -203,7 +201,7 @@ export class UserService extends IdentifiableService<User> {
     }
 
     await userRepository.update(this.user.id, { password: hashPassword(input.newPassword) });
-    invalidateSessionsForUser(this.user.id);
+    await revokeAllSessionsForUser(this.user.id);
     logger.info("USER", `Password changed for "${this.user.username}"`);
     return { success: true };
   }

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import type { IndexerType } from "@seedarr/contracts";
-import type { IndexerManager, Media, Torrent } from "@seedarr/sdk";
+import type { Media, ModuleIndexer, Torrent } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
 import { queryOptions, useQueries } from "@tanstack/react-query";
 
@@ -31,30 +31,30 @@ export type TorrentSource = {
   id: string;
   label: string;
   moduleId: string;
-  indexerManagerType: IndexerType;
+  indexerType: IndexerType;
   indexerId?: string;
 };
 
-function buildTorrentSources(managers: IndexerManager[]): TorrentSource[] {
-  return managers.flatMap((manager) => {
-    if (manager.disabled) return [];
+function buildTorrentSources(indexers: ModuleIndexer[]): TorrentSource[] {
+  return indexers.flatMap((indexer) => {
+    if (indexer.disabled) return [];
 
-    if (manager.indexers.length > 0) {
-      return manager.indexers.map((indexer) => ({
-        id: indexer.id,
-        label: indexer.label ?? indexer.name,
-        moduleId: manager.id,
-        indexerManagerType: manager.indexerType,
-        indexerId: indexer.id,
+    if (indexer.indexers.length > 0) {
+      return indexer.indexers.map((entry) => ({
+        id: entry.id,
+        label: entry.label ?? entry.name,
+        moduleId: indexer.id,
+        indexerType: indexer.indexerType,
+        indexerId: entry.id,
       }));
     }
 
     return [
       {
-        id: manager.id,
-        label: manager.indexerType === "stremio" ? "Torrentio" : (manager.indexerUrl ?? manager.indexerType),
-        moduleId: manager.id,
-        indexerManagerType: manager.indexerType,
+        id: indexer.id,
+        label: indexer.indexerType === "stremio" ? "Torrentio" : (indexer.indexerUrl ?? indexer.indexerType),
+        moduleId: indexer.id,
+        indexerType: indexer.indexerType,
       },
     ];
   });
@@ -65,8 +65,8 @@ interface UseTorrentsOptions {
   episode?: number;
 }
 
-export function useTorrents(media: Media, managers: IndexerManager[], { season, episode }: UseTorrentsOptions = {}) {
-  const sources = useMemo(() => buildTorrentSources(managers), [managers]);
+export function useTorrents(media: Media, indexers: ModuleIndexer[], { season, episode }: UseTorrentsOptions = {}) {
+  const sources = useMemo(() => buildTorrentSources(indexers), [indexers]);
 
   return useQueries({
     queries: sources.map(({ moduleId, indexerId }) => ({
@@ -111,7 +111,7 @@ export function useTorrents(media: Media, managers: IndexerManager[], { season, 
           return query.data.map((torrent: Torrent) => ({
             ...torrent,
             indexerId: source.id,
-            indexerManagerType: source.indexerManagerType,
+            indexerType: source.indexerType,
             moduleId: source.moduleId,
           }));
         })

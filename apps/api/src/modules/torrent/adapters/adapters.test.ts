@@ -42,7 +42,10 @@ describe("JackettAdapter", () => {
     const adapter = new JackettAdapter(manager({ indexerType: "jackett" }));
     const indexers = await adapter.getIndexers();
     expect(indexers).toEqual([expect.objectContaining({ id: "rarbg", label: "RARBG", privacy: "public", lang: "en" })]);
-    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("apikey=secret-key"), undefined);
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("apikey=secret-key"),
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
   });
 
   it("maps torrent search results and dedupes by Guid", async () => {
@@ -222,7 +225,10 @@ describe("StremioAdapter", () => {
       indexerType: "stremio",
       magnetUrl: "magnet:?xt=urn:btih:ABCDEF",
     });
-    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("stream/movie/tt1160419.json"), undefined);
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("stream/movie/tt1160419.json"),
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
   });
 
   it("uses season/episode for TV streams", async () => {
@@ -242,6 +248,9 @@ describe("StremioAdapter", () => {
       episode: 5,
     });
 
-    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("stream/series/tt999:2:5.json"), undefined);
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("stream/series/tt999:2:5.json"),
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
   });
 });

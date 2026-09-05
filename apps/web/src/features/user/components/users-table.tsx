@@ -2,8 +2,6 @@ import { useCallback, useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { User } from "@seedarr/sdk";
-import { api, unwrap } from "@seedarr/sdk";
-import { useMutation } from "@tanstack/react-query";
 import { type SortingState, useTable } from "@tanstack/react-table";
 
 import { DialogDelete } from "@/shared/components/dialog/dialog-delete";
@@ -11,6 +9,7 @@ import { DataTable } from "@/shared/ui/data-table";
 
 import { useRole } from "@/features/auth/hooks/use-role";
 import { usersTableFeatures, useUsersColumns } from "@/features/user/hooks/use-users-columns";
+import { useDeleteUser } from "@/features/user/hooks/user.queries";
 
 interface UsersTableProps {
   users: User[];
@@ -25,12 +24,9 @@ export function UsersTable({ users, isLoading, onEditUser, onRefetch, empty }: U
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  const deleteMutation = useMutation({
-    mutationFn: (userId: string) => unwrap(api.users[":id"].$delete({ param: { id: userId } })),
-    onSuccess: () => {
-      setUserToDelete(null);
-      onRefetch();
-    },
+  const deleteMutation = useDeleteUser(() => {
+    setUserToDelete(null);
+    onRefetch();
   });
 
   const canEditUser = useCallback(

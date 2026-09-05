@@ -4,10 +4,11 @@ import { msg } from "@lingui/core/macro";
 import { Trans } from "@lingui/react";
 import { useLingui } from "@lingui/react/macro";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { FilmIcon, MonitorIcon, MoonIcon, SearchIcon, SettingsIcon, SunIcon, TvIcon, UserIcon } from "lucide-react";
+import { MoonIcon, SearchIcon, SettingsIcon, SunIcon, UserIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { SelectI18nLang } from "@/shared/components/select/select-i18n-lang";
+import { APP_NAV_ITEMS } from "@/shared/config/nav";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Button } from "@/shared/ui/button";
 
@@ -16,12 +17,6 @@ import { useAuth } from "@/features/auth/auth-store";
 interface AppTopbarProps {
   isAuthenticated?: boolean;
 }
-
-const NAV_LINKS = [
-  { title: msg({ id: "nav.movies", message: "Movies" }), url: "/movies", icon: FilmIcon },
-  { title: msg({ id: "nav.tv-shows", message: "TV Shows" }), url: "/tv", icon: TvIcon },
-  { title: msg({ id: "nav.library", message: "Library" }), url: "/downloads", icon: MonitorIcon },
-] as const;
 
 const PROFILE_LINK = msg({ id: "nav.profile", message: "Profile" });
 
@@ -67,7 +62,7 @@ export function AppTopbar({ isAuthenticated = true }: AppTopbarProps) {
               </Link>
 
               <nav className="hidden lg:flex items-center gap-1">
-                {NAV_LINKS.map((item) => {
+                {APP_NAV_ITEMS.map((item) => {
                   const isActive = location.pathname.startsWith(item.url);
                   return (
                     <Button

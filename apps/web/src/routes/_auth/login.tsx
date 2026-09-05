@@ -4,8 +4,6 @@ import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { LoginInput } from "@seedarr/contracts";
 import { api, unwrap } from "@seedarr/sdk";
-import { formatError } from "@seedarr/shared";
-import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 
@@ -14,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { Input } from "@/shared/ui/input";
 
 import { useAuth } from "@/features/auth/auth-store";
+import { useLogin } from "@/features/auth/hooks/auth.queries";
 
 export const Route = createFileRoute("/_auth/login")({
   component: Login,
@@ -39,15 +38,10 @@ function Login() {
     formState: { errors },
   } = useForm<LoginInput>();
 
-  const { mutate: login, isPending } = useMutation({
-    mutationFn: (data: LoginInput) => unwrap(api.auth.login.$post({ json: data })),
-    onSuccess: () => {
-      navigate({ to: "/" });
-    },
-    onError: (err: unknown) => {
-      setError(formatError(err) || t(msg`An error occurred`));
-    },
-  });
+  const { mutate: login, isPending } = useLogin(
+    () => navigate({ to: "/" }),
+    (message) => setError(message || t(msg`An error occurred`)),
+  );
 
   const onSubmit = (data: LoginInput) => {
     setError(undefined);

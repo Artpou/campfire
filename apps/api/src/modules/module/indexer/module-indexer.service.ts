@@ -4,11 +4,8 @@ import { IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import type { IndexerAdapter } from "@/modules/torrent/adapters/indexer.adapter";
-import { JackettAdapter } from "@/modules/torrent/adapters/jackett.adapter";
-import { ProwlarrAdapter } from "@/modules/torrent/adapters/prowlarr.adapter";
-import { StremioAdapter } from "@/modules/torrent/adapters/stremio.adapter";
 import { moduleRepository } from "../module.repository";
-import { ModuleService } from "../module.service";
+import { createIndexerAdapter } from "./module-indexer.adapter";
 import { moduleToIndexer } from "./module-indexer.bridge";
 import type { Indexer, IndexerModule, IndexerModuleWithIndexers } from "./module-indexer.types";
 
@@ -20,16 +17,7 @@ export class ModuleIndexerService extends IdentifiableService<IndexerModule> {
   getAdapter(indexer: IndexerModule): IndexerAdapter {
     const cached = this.adapterCache.get(indexer.id);
     if (cached) return cached;
-
-    let adapter: IndexerAdapter;
-    if (indexer.indexerType === "prowlarr") {
-      adapter = new ProwlarrAdapter(indexer);
-    } else if (indexer.indexerType === "jackett") {
-      adapter = new JackettAdapter(indexer);
-    } else {
-      adapter = new StremioAdapter(indexer);
-    }
-
+    const adapter = createIndexerAdapter(indexer);
     this.adapterCache.set(indexer.id, adapter);
     return adapter;
   }
@@ -39,7 +27,6 @@ export class ModuleIndexerService extends IdentifiableService<IndexerModule> {
     if (indexer.disabled) return { ...indexer, indexers };
 
     const adapter = this.getAdapter(indexer);
-
     try {
       indexers = await adapter.getIndexers();
     } catch (error) {
@@ -67,6 +54,7 @@ export class ModuleIndexerService extends IdentifiableService<IndexerModule> {
     return await Promise.all(indexers.map((indexer) => this.addIndexers(indexer)));
   }
 
+  /** Settings UI — includes live indexer probe. */
   async get(id: string): Promise<IndexerModuleWithIndexers> {
     const indexers = await this.getMany({ ids: [id], withIndexers: true });
     if (!indexers[0]) throw new NotFoundError("Indexer module not found");
@@ -74,15 +62,6 @@ export class ModuleIndexerService extends IdentifiableService<IndexerModule> {
   }
 
   async count(): Promise<number> {
-    const indexers = await this.loadIndexers();
-    return indexers.length;
-  }
-
-  async remove(id: string): Promise<{ success: true }> {
-    const existing = await this.loadIndexers([id]);
-    if (!existing[0]) throw new NotFoundError("Indexer module not found");
-    await new ModuleService(this.user).delete(id);
-    this.adapterCache.delete(id);
-    return { success: true };
+    return (await this.loadIndexers()).length;
   }
 }

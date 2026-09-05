@@ -46,16 +46,30 @@ function ModuleConfigFields({ mod }: { mod: Module }) {
 export function ModuleConfig({ moduleId }: ModuleConfigProps) {
   const { t } = useLingui();
   const navigate = useNavigate();
-  const { data: mod, isLoading } = useQuery(moduleQueries.get(moduleId));
+  const { data: mod, isLoading, isError, error, refetch } = useQuery(moduleQueries.get(moduleId));
   const updateMutation = useUpdateModule();
   const deleteMutation = useDeleteModule();
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  if (isLoading || !mod) {
+  if (isLoading) {
     return (
       <p className="text-muted-foreground">
         <Trans>Loading…</Trans>
       </p>
+    );
+  }
+
+  if (isError || !mod) {
+    return (
+      <div className="space-y-3">
+        <p className="text-destructive">
+          <Trans>Could not load module</Trans>
+        </p>
+        <p className="text-sm text-muted-foreground">{formatError(error)}</p>
+        <button type="button" className="text-sm underline" onClick={() => refetch()}>
+          <Trans>Retry</Trans>
+        </button>
+      </div>
     );
   }
 

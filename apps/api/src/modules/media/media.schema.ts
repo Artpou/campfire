@@ -1,6 +1,6 @@
 import { mediaTypeEnum } from "@seedarr/contracts";
 import { relations } from "drizzle-orm";
-import { integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { type AnySQLiteColumn, index, integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import type { z } from "zod";
 
@@ -91,7 +91,8 @@ export const watchProgress = sqliteTable(
     mediaId: integer("mediaId")
       .notNull()
       .references(() => media.id, { onDelete: "cascade" }),
-    downloadId: text("downloadId"),
+    /** Lazy `() => download.id` breaks the circular import with download.schema. */
+    downloadId: text("downloadId").references((): AnySQLiteColumn => download.id, { onDelete: "set null" }),
     position: integer("position").notNull().default(0),
     duration: integer("duration").notNull().default(0),
     completed: integer("completed", { mode: "boolean" }).notNull().default(false),
@@ -99,18 +100,13 @@ export const watchProgress = sqliteTable(
       .notNull()
       .$defaultFn(() => new Date()),
   },
-  (table) => [primaryKey({ columns: [table.userId, table.mediaId] })],
+  (table) => [
+    primaryKey({ columns: [table.userId, table.mediaId] }),
+    index("watchProgress_downloadId_idx").on(table.downloadId),
+  ],
 );
 
 // --- Relations ---
-
-export const mediaRelations = relations(media, ({ many }) => ({
-  likes: many(userLikes),
-  watchList: many(userWatchList),
-  reviews: many(userReviews),
-  downloads: many(download),
-  progress: many(watchProgress),
-}));
 
 export const userLikesRelations = relations(userLikes, ({ one }) => ({
   media: one(media, { fields: [userLikes.mediaId], references: [media.id] }),
@@ -126,10 +122,6 @@ export const userReviewsRelations = relations(userReviews, ({ one }) => ({
 
 export const watchProgressRelations = relations(watchProgress, ({ one }) => ({
   media: one(media, { fields: [watchProgress.mediaId], references: [media.id] }),
-}));
-
-export const torrentDownloadRelations = relations(download, ({ one }) => ({
-  media: one(media, { fields: [download.mediaId], references: [media.id] }),
 }));
 
 // --- Drizzle-Zod derived schemas ---

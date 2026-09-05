@@ -124,8 +124,8 @@ export function SettingsModulesView({ filter, search, onFilterChange, onSearchCh
           header: () => <Trans>Module</Trans>,
           cell: ({ row }) => {
             const item = row.original;
-            const title = moduleDisplayTitle(item);
-            const description = moduleDisplayDescription(item);
+            const title = moduleDisplayTitle(item, t);
+            const description = moduleDisplayDescription(item, t);
             return (
               <div className="flex items-start gap-3 min-w-0 py-1">
                 <Img

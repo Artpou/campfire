@@ -1,17 +1,18 @@
 import { useEffect, useRef } from "react";
 
 import { msg } from "@lingui/core/macro";
-import { Trans } from "@lingui/react";
 import { useLingui } from "@lingui/react/macro";
 import { api, unwrap } from "@seedarr/sdk";
 import { createFileRoute, isRedirect, Link, Outlet, redirect, useLocation, useRouter } from "@tanstack/react-router";
-import { FilmIcon, LibraryIcon, TvIcon, UserIcon } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { UserIcon } from "lucide-react";
 import ms from "ms";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { AppTopbar } from "@/shared/components/app-topbar";
 import { ErrorView } from "@/shared/components/view/error-view";
+import { APP_NAV_ITEMS } from "@/shared/config/nav";
 
 import { useAuth } from "@/features/auth/auth-store";
 import { useRole } from "@/features/auth/hooks/use-role";
@@ -54,16 +55,16 @@ export const Route = createFileRoute("/_app")({
 interface MobileNavItem {
   title: ReturnType<typeof msg>;
   url: string;
-  icon: typeof FilmIcon;
+  icon: LucideIcon;
   minRole?: "member" | "admin" | "owner";
   matchPrefix?: string;
 }
 
-const MOBILE_NAV_STATIC: MobileNavItem[] = [
-  { title: msg({ id: "nav.movies", message: "Movies" }), url: "/movies", icon: FilmIcon },
-  { title: msg({ id: "nav.tv-shows", message: "TV Shows" }), url: "/tv", icon: TvIcon },
-  { title: msg({ id: "nav.library", message: "Library" }), url: "/downloads", icon: LibraryIcon },
-];
+const MOBILE_NAV_STATIC = APP_NAV_ITEMS.map((item) => ({
+  title: item.title,
+  url: item.url,
+  icon: item.mobileIcon ?? item.icon,
+}));
 
 function AuthenticatedLayout() {
   const user = useAuth((s) => s.user);
@@ -123,9 +124,7 @@ function AuthenticatedLayout() {
                 )}
               >
                 <item.icon className="size-5" />
-                <span className="text-xs font-medium">
-                  <Trans id={item.title.id} />
-                </span>
+                <span className="text-xs font-medium">{t(item.title)}</span>
               </Link>
             );
           })}

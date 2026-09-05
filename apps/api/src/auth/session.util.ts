@@ -38,11 +38,17 @@ function invalidateSessionCache(rawToken: string): void {
   sessionCache.delete(hashToken(rawToken));
 }
 
-/** Drop all cached sessions for a user (role change, delete, password change). */
+/** Drop in-memory session cache entries for a user (e.g. refresh onboarded/role after DB update). */
 export function invalidateSessionsForUser(userId: string): void {
   for (const [tokenHash, cached] of sessionCache) {
     if (cached.user.id === userId) sessionCache.delete(tokenHash);
   }
+}
+
+/** Clear cache and delete all DB sessions — forces re-login (password / role change). */
+export async function revokeAllSessionsForUser(userId: string): Promise<void> {
+  invalidateSessionsForUser(userId);
+  await db.delete(session).where(eq(session.userId, userId));
 }
 
 function cacheSession(rawToken: string, resolved: User, sessionExpiresAt: Date, createdAt: Date): void {

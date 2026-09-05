@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import type { CreateModuleInput, UpdateModuleInput } from "@seedarr/contracts";
 import { api, unwrap } from "@seedarr/sdk";
 import { formatError } from "@seedarr/shared";
@@ -37,10 +38,10 @@ export function useCreateModule() {
     mutationFn: (json: CreateModuleInput) => unwrap(api.modules.$post({ json })),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: moduleQueries.key });
-      toast.info("Module installed", { description: data.label });
+      toast.info(t`Module installed`, { description: data.label });
     },
     onError: (error) => {
-      toast.error("Could not install module", { description: formatError(error) });
+      toast.error(t`Could not install module`, { description: formatError(error) });
     },
   });
 }
@@ -63,10 +64,10 @@ export function useDeleteModule() {
     mutationFn: (id: string) => unwrap(api.modules[":id"].$delete({ param: { id } })),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: moduleQueries.key });
-      toast.info("Module uninstalled");
+      toast.info(t`Module uninstalled`);
     },
     onError: (error) => {
-      toast.error("Could not uninstall module", { description: formatError(error) });
+      toast.error(t`Could not uninstall module`, { description: formatError(error) });
     },
   });
 }

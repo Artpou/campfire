@@ -1,33 +1,21 @@
 import { zValidator } from "@hono/zod-validator";
 import { downloadFilePathParamDto, stringIdParamDto } from "@seedarr/contracts";
-import { Hono } from "hono";
 import { stream } from "hono/streaming";
 
-import { trackRoute } from "@/modules/activity/activity.service";
-import { authGuard } from "@/modules/auth/auth.guard";
-import type { HonoVariables } from "@/types/hono";
-import { StreamingService } from "./streaming.service";
-import { StreamingSubtitleService } from "./subtitle/streaming-subtitle.service";
+import { streamingRateLimiter } from "@/shared/middlewares/rate-limiter.middleware";
 
-const streamingService = new StreamingService();
-const subtitleService = new StreamingSubtitleService();
+import { StreamingService } from "./streaming.service";
 
 /** Any authenticated user (session cookie) can stream any playable download. */
-export const streamingRoutes = new Hono<{ Variables: HonoVariables }>()
-  .use("*", authGuard)
+export const streamingRoutes = StreamingService.createRouter()
+  .use("*", streamingRateLimiter)
   .get("/:id/info", zValidator("param", stringIdParamDto), async (c) => {
-    const download = await streamingService.getDownload(c.req.valid("param").id);
-    return c.json(
-      await trackRoute(
-        c,
-        { action: "MEDIA_WATCH", mediaId: download.mediaId, metadata: { downloadId: download.id } },
-        () => streamingService.getPlaybackInfo(download),
-      ),
-    );
+    const download = await c.var.service.getDownload(c.req.valid("param").id);
+    return c.json(await c.var.service.getPlaybackInfo(download));
   })
   .get("/:id/direct", zValidator("param", stringIdParamDto), async (c) => {
-    const download = await streamingService.getDownload(c.req.valid("param").id);
-    const { status, headers, pipe } = await streamingService.prepareDirectStream(download, c.req.header("range"));
+    const download = await c.var.service.getDownload(c.req.valid("param").id);
+    const { status, headers, pipe } = await c.var.service.prepareDirectStream(download, c.req.header("range"));
 
     c.status(status);
     for (const [key, value] of Object.entries(headers)) c.header(key, value);
@@ -35,25 +23,25 @@ export const streamingRoutes = new Hono<{ Variables: HonoVariables }>()
     return stream(c, pipe);
   })
   .get("/:id/live", zValidator("param", stringIdParamDto), async (c) => {
-    const download = await streamingService.getDownload(c.req.valid("param").id);
-    const { headers, pipe } = await streamingService.prepareLiveStream(download);
+    const download = await c.var.service.getDownload(c.req.valid("param").id);
+    const { headers, pipe } = await c.var.service.prepareLiveStream(download);
 
     for (const [key, value] of Object.entries(headers)) c.header(key, value);
     return stream(c, pipe);
   })
   .get("/:id/subtitles", zValidator("param", stringIdParamDto), async (c) => {
-    const download = await streamingService.getDownload(c.req.valid("param").id);
-    return c.json(await subtitleService.listExternalSubtitles(download));
+    const download = await c.var.service.getDownload(c.req.valid("param").id);
+    return c.json(await c.var.service.listExternalSubtitles(download));
   })
   .get("/:id/subtitles/:filePath", zValidator("param", downloadFilePathParamDto), async (c) => {
     const { id, filePath } = c.req.valid("param");
-    const download = await streamingService.getDownload(id);
-    const { content, contentType } = await subtitleService.getSubtitleFile(download, filePath);
+    const download = await c.var.service.getDownload(id);
+    const { content, contentType } = await c.var.service.getSubtitleFile(download, filePath);
 
     c.header("Content-Type", contentType);
     c.header("Access-Control-Allow-Origin", process.env.WEB_URL || "");
     c.header("Access-Control-Allow-Methods", "GET");
     c.header("Cache-Control", "private, no-cache");
 
-    return c.text(content);
+    return c.body(content);
   });

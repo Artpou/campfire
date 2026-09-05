@@ -1,5 +1,5 @@
 import { t } from "@lingui/core/macro";
-import type { ChangePasswordInput, UpdateProfileInput } from "@seedarr/contracts";
+import type { ChangePasswordInput, CreateUserInput, UpdateProfileInput, UpdateUserInput } from "@seedarr/contracts";
 import { api, unwrap, unwrapForm } from "@seedarr/sdk";
 import { formatError } from "@seedarr/shared";
 import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -138,6 +138,40 @@ export function useImportLetterboxd() {
     },
     onError: (error) => {
       toast.error(t`Letterboxd import failed`, { description: formatError(error) });
+    },
+  });
+}
+
+export function useCreateUser(onSuccess?: () => void) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateUserInput) => unwrap(api.users.$post({ json: data })),
+    onSuccess: () => {
+      invalidateUserQueries(queryClient);
+      onSuccess?.();
+    },
+  });
+}
+
+export function useUpdateUser(onSuccess?: () => void) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: UpdateUserInput & { id: string }) =>
+      unwrap(api.users[":id"].$put({ param: { id }, json: data })),
+    onSuccess: () => {
+      invalidateUserQueries(queryClient);
+      onSuccess?.();
+    },
+  });
+}
+
+export function useDeleteUser(onSuccess?: () => void) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => unwrap(api.users[":id"].$delete({ param: { id: userId } })),
+    onSuccess: () => {
+      invalidateUserQueries(queryClient);
+      onSuccess?.();
     },
   });
 }

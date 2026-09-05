@@ -1,4 +1,5 @@
-import { hasMinRole, type RequestStatus } from "@seedarr/contracts";
+import type { RequestStatus } from "@seedarr/contracts";
+import { hasMinRole } from "@seedarr/shared";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import { RequestsView } from "@/features/request/components/requests-view";

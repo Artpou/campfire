@@ -1,20 +1,15 @@
-import { formatError, VIDEO_EXTENSIONS } from "@seedarr/shared";
+import { formatError } from "@seedarr/shared";
 import type WebTorrent from "webtorrent";
 
 import { logger } from "@/shared/helpers/logger.helper";
 import { resolveWithinDownloads } from "@/shared/helpers/path.helper";
-import { probeVideoDuration } from "@/shared/helpers/video.helper";
-import { findLargestVideoInDirectory } from "@/shared/helpers/video-file.helper";
 
-import { activityFor } from "@/modules/activity/activity.service";
 import { downloadRepository } from "@/modules/download/download.repository";
 import type { TorrentLiveData } from "@/modules/download/download.schema";
-import { requestRepository } from "@/modules/request/request.repository";
-import { remoteStorageService } from "@/modules/storage-config/remote/remote-storage.service";
-import { invalidateStreamSource } from "@/modules/streaming/streaming.service";
+import { invalidateStreamSource } from "@/modules/streaming/streaming-cache.helper";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { markTransferStarting, runRemoteTransfer } from "../remote/remote-transfer.helper";
+import { handleDownloadComplete } from "../download-complete.helper";
 import { extractTorrentLiveData } from "./webtorrent.helper";
 import { torrentClient } from "./webtorrent-manager";
 
@@ -35,7 +30,7 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
   if (handlersAttached.has(downloadId)) return;
   handlersAttached.add(downloadId);
 
-  const syncDb = async (force: boolean, extraFields?: Record<string, unknown>) => {
+  const syncDb = async (force: boolean, extraFields?: Partial<TorrentLiveData>) => {
     if (torrentClient.isDestroying(downloadId)) return;
 
     if (!force) {
@@ -45,22 +40,14 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
 
     lastSyncTimestamps.set(downloadId, Date.now());
 
-    const current = await downloadRepository.find(downloadId);
-    const liveData = extractTorrentLiveData(torrent);
-    if (current?.torrent?.paused && extraFields?.paused !== false) {
-      liveData.paused = true;
-      liveData.downloadSpeed = 0;
-      liveData.uploadSpeed = 0;
-    }
-
-    // Preserve DB-only fields (durationSeconds, skipAutoTransfer, transferring…),
-    // then refresh live WebTorrent metrics, then apply explicit overrides.
-    await downloadRepository.update(downloadId, {
-      torrent: {
-        ...current?.torrent,
-        ...liveData,
-        ...extraFields,
-      },
+    await downloadRepository.updateTorrent(downloadId, (current) => {
+      const liveData = extractTorrentLiveData(torrent);
+      if (current?.torrent?.paused && extraFields?.paused !== false) {
+        liveData.paused = true;
+        liveData.downloadSpeed = 0;
+        liveData.uploadSpeed = 0;
+      }
+      return { ...liveData, ...extraFields };
     });
   };
 
@@ -88,40 +75,10 @@ export function setupTorrentHandlers(torrent: WebTorrent.Torrent, downloadId: st
         if (wrapped) dl = await downloadRepository.find(downloadId);
       }
 
-      await activityFor(dl?.userId).log({
-        action: "DOWNLOAD_COMPLETE",
-        mediaId: dl?.mediaId,
-        metadata: { downloadId, name: torrent.name },
+      await handleDownloadComplete(downloadId, {
+        torrentName: torrent.name,
+        scheduleUnload,
       });
-
-      if (dl?.mediaId) {
-        await requestRepository.validatePendingByMediaId(dl.mediaId);
-      }
-
-      if (dl?.torrent && !dl.torrent.durationSeconds && torrent.name) {
-        const torrentName = dl.torrent.name;
-        const durationSeconds = await probeLargestVideoDuration(torrentName);
-        if (durationSeconds != null) {
-          await downloadRepository.update(downloadId, {
-            torrent: { ...dl.torrent, done: true, durationSeconds },
-          });
-        }
-      }
-
-      if (dl?.torrent?.skipAutoTransfer) {
-        scheduleUnload(downloadId);
-        return;
-      }
-
-      const autoTransfer = await remoteStorageService.isAutoTransferEnabled();
-      if (autoTransfer && torrent.name) {
-        await markTransferStarting(downloadId);
-        runRemoteTransfer(downloadId, { isAutoTransfer: true }).catch((err) => {
-          logger.error("WEBTORRENT", `Remote transfer failed for "${torrent.name}": ${err}`);
-        });
-      }
-
-      scheduleUnload(downloadId);
     } catch (err) {
       logger.error("WEBTORRENT", `Error in done handler for "${torrent.name}": ${err}`);
     }
@@ -180,8 +137,10 @@ async function wrapSingleFileInFolder(
       ...f,
       path: path.join(folderName, f.name),
     }));
-    await downloadRepository.update(downloadId, {
-      torrent: { ...torrentData, name: folderName, path: resolveWithinDownloads(), files: updatedFiles },
+    await downloadRepository.updateTorrent(downloadId, {
+      name: folderName,
+      path: resolveWithinDownloads(),
+      files: updatedFiles,
     });
   }
 
@@ -253,7 +212,6 @@ export async function restoreActiveTorrents(): Promise<void> {
 function reannounce(torrent: WebTorrent.Torrent): void {
   try {
     if (torrent.done) return;
-    // WebTorrent's discovery re-announce via all trackers
     const discovery = (torrent as unknown as { discovery?: { tracker?: { update(): void } } }).discovery;
     discovery?.tracker?.update();
   } catch {
@@ -304,20 +262,4 @@ export function stopHealthCheck(): void {
 export function clearHandlersForDownload(downloadId: string): void {
   handlersAttached.delete(downloadId);
   lastSyncTimestamps.delete(downloadId);
-}
-
-async function probeLargestVideoDuration(torrentName: string): Promise<number | undefined> {
-  const root = resolveWithinDownloads(torrentName);
-  try {
-    const stats = await fs.stat(root);
-    if (stats.isFile()) {
-      return VIDEO_EXTENSIONS.test(path.basename(root)) ? probeVideoDuration({ filePath: root }) : undefined;
-    }
-
-    const largest = await findLargestVideoInDirectory(root);
-    if (!largest) return undefined;
-    return probeVideoDuration({ filePath: largest.filePath });
-  } catch {
-    return undefined;
-  }
 }

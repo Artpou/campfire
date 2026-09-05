@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
@@ -9,6 +9,7 @@ import { UserPlusIcon } from "lucide-react";
 
 import { EmptyState } from "@/shared/components/empty-state";
 import { SentinelStuck, StickyFilterBar } from "@/shared/components/sentinel/sentinel-stuck";
+import { usePagedState } from "@/shared/hooks/use-paged-state";
 import { Button } from "@/shared/ui/button";
 import { DataTablePagination } from "@/shared/ui/data-table-pagination";
 import { Input } from "@/shared/ui/input";
@@ -25,18 +26,13 @@ export function SettingsUsersView() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [query, setQuery] = useState("");
-  const [page, setPage] = useState(1);
   const [isStuck, setIsStuck] = useState(false);
   const debouncedQuery = useDebounce(query, 300);
   const { isAdmin } = useRole();
+  const filters = { q: debouncedQuery.trim() || undefined };
+  const { page, setPage } = usePagedState(filters);
 
-  useEffect(() => {
-    setPage(1);
-  }, []);
-
-  const { data, isLoading, refetch } = useQuery(
-    userQueries.list({ q: debouncedQuery.trim() || undefined, page, limit: PAGE_SIZE }),
-  );
+  const { data, isLoading, isError, refetch } = useQuery(userQueries.list({ q: filters.q, page, limit: PAGE_SIZE }));
 
   const users = data?.results ?? [];
   const total = data?.total ?? users.length;
@@ -95,10 +91,22 @@ export function SettingsUsersView() {
         onEditUser={handleEditUser}
         onRefetch={refetch}
         empty={
-          <EmptyState
-            title={<Trans>No users found</Trans>}
-            subtitle={<Trans>Try a different search or create a new user.</Trans>}
-          />
+          isError ? (
+            <EmptyState
+              title={<Trans>Could not load users</Trans>}
+              subtitle={<Trans>Check your connection and try again.</Trans>}
+              action={
+                <Button variant="secondary" onClick={() => refetch()}>
+                  <Trans>Retry</Trans>
+                </Button>
+              }
+            />
+          ) : (
+            <EmptyState
+              title={<Trans>No users found</Trans>}
+              subtitle={<Trans>Try a different search or create a new user.</Trans>}
+            />
+          )
         }
       />
 

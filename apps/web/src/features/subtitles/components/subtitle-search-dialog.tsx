@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
-import { Trans } from "@lingui/react/macro";
+import { msg } from "@lingui/core/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import type { SubdlSubtitle } from "@seedarr/sdk";
 import { useQuery } from "@tanstack/react-query";
 import { DownloadIcon, StarIcon, SubtitlesIcon } from "lucide-react";
@@ -22,19 +23,21 @@ import {
 } from "../helpers/subtitle.helper";
 import { subtitleQueries, useDownloadSubtitle } from "../hooks/subtitle.queries";
 
-const SUBDL_LANGUAGES = [
-  { code: "EN", label: "English" },
-  { code: "FR", label: "French" },
-  { code: "ES", label: "Spanish" },
-  { code: "DE", label: "German" },
-  { code: "IT", label: "Italian" },
-  { code: "PT", label: "Portuguese" },
-  { code: "NL", label: "Dutch" },
-  { code: "PL", label: "Polish" },
-  { code: "RU", label: "Russian" },
-  { code: "JA", label: "Japanese" },
-  { code: "KO", label: "Korean" },
-] as const;
+const SUBDL_LANGUAGE_CODES = ["EN", "FR", "ES", "DE", "IT", "PT", "NL", "PL", "RU", "JA", "KO"] as const;
+
+const SUBDL_LANGUAGE_LABELS: Record<(typeof SUBDL_LANGUAGE_CODES)[number], ReturnType<typeof msg>> = {
+  EN: msg`English`,
+  FR: msg`French`,
+  ES: msg`Spanish`,
+  DE: msg`German`,
+  IT: msg`Italian`,
+  PT: msg`Portuguese`,
+  NL: msg`Dutch`,
+  PL: msg`Polish`,
+  RU: msg`Russian`,
+  JA: msg`Japanese`,
+  KO: msg`Korean`,
+};
 
 export interface SubtitleSearchDialogProps {
   open: boolean;
@@ -51,6 +54,7 @@ export function SubtitleSearchDialog({
   downloadId,
   mediaTitle,
 }: SubtitleSearchDialogProps) {
+  const { t } = useLingui();
   const [language, setLanguage] = useState("EN");
   const { data, isLoading, error } = useQuery({
     ...subtitleQueries.search(tmdbId, language),
@@ -97,11 +101,11 @@ export function SubtitleSearchDialog({
             value={language}
             onValueChange={setLanguage}
             label={<Trans>Language</Trans>}
-            options={SUBDL_LANGUAGES.map(({ code, label }) => ({
+            options={SUBDL_LANGUAGE_CODES.map((code) => ({
               value: code,
               label: (
                 <span className="flex w-full items-center justify-between gap-2">
-                  <span>{label}</span>
+                  <span>{t(SUBDL_LANGUAGE_LABELS[code])}</span>
                   {addedLanguages.has(code) && (
                     <Badge variant="secondary" className="text-[10px]">
                       <Trans>Already added</Trans>

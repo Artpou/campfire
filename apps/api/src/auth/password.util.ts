@@ -1,12 +1,15 @@
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
+const SCRYPT_PARAMS = { N: 16384, r: 8, p: 1 } as const;
+const SCRYPT_KEYLEN = 64;
+
 /**
  * Hash a password with scrypt and a random salt
  * Returns format: "salt:hash"
  */
 export function hashPassword(password: string): string {
   const salt = randomBytes(16).toString("hex");
-  const hash = scryptSync(password, salt, 64).toString("hex");
+  const hash = scryptSync(password, salt, SCRYPT_KEYLEN, SCRYPT_PARAMS).toString("hex");
   return `${salt}:${hash}`;
 }
 
@@ -19,7 +22,7 @@ export function verifyPassword(password: string, storedHash: string): boolean {
   if (!salt || !hash) return false;
 
   const hashBuffer = Buffer.from(hash, "hex");
-  const suppliedHashBuffer = scryptSync(password, salt, 64);
+  const suppliedHashBuffer = scryptSync(password, salt, SCRYPT_KEYLEN, SCRYPT_PARAMS);
 
   return timingSafeEqual(hashBuffer, suppliedHashBuffer);
 }

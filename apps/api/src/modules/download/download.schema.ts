@@ -1,63 +1,64 @@
 import { torrentStatusEnum } from "@seedarr/contracts";
+import { relations } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { createSelectSchema } from "drizzle-zod";
-import type { z } from "zod";
+import { z } from "zod";
 
+import { media } from "@/modules/media/media.schema";
 import { module } from "@/modules/module/module.schema";
 import { user } from "@/modules/user/user.schema";
 
 export type { TorrentStatus } from "@seedarr/contracts";
 export { torrentStatusEnum };
 
-export interface TorrentLiveData {
-  infoHash: string;
-  magnetURI: string;
-  torrentFileBlobURL?: string;
-  announce: string[];
-  "announce-list"?: string[][];
-  timeRemaining: number;
-  received: number;
-  downloaded: number;
-  uploaded: number;
-  downloadSpeed: number;
-  uploadSpeed: number;
-  progress: number;
-  ratio: number;
-  length: number;
-  pieceLength: number;
-  lastPieceLength: number;
-  numPeers: number;
-  path: string;
-  ready: boolean;
-  paused: boolean;
-  done: boolean;
-  name: string;
-  created?: Date | string;
-  createdBy?: string;
-  comment?: string;
-  maxWebConns: number;
-  /** Ephemeral — transfer in progress (UI progress bar). */
-  transferring?: boolean;
-  transferProgress?: number;
-  /** Bytes/sec during remote transfer (computed from progress deltas). */
-  transferSpeed?: number;
-  /** Skip auto-transfer when user chose local-only at start. */
-  skipAutoTransfer?: boolean;
-  /** Cached ffprobe duration (seconds) — survives local delete after remote transfer. */
-  durationSeconds?: number;
-  /** Cached ffprobe codecs — avoid re-probing on every playback-info request. */
-  videoCodec?: string;
-  audioCodec?: string;
-  /** Cached MP4 faststart check (moov before mdat). */
-  moovAtStart?: boolean;
-  files: {
-    name: string;
-    path: string;
-    length: number;
-    downloaded: number;
-    progress: number;
-  }[];
-}
+const torrentFileSchema = z.object({
+  name: z.string(),
+  path: z.string(),
+  length: z.number(),
+  downloaded: z.number(),
+  progress: z.number(),
+});
+
+/** Runtime shape for download.torrent JSON — used on write to catch corrupt merges. */
+export const torrentLiveDataSchema = z.object({
+  infoHash: z.string(),
+  magnetURI: z.string(),
+  torrentFileBlobURL: z.string().optional(),
+  announce: z.array(z.string()),
+  "announce-list": z.array(z.array(z.string())).optional(),
+  timeRemaining: z.number(),
+  received: z.number(),
+  downloaded: z.number(),
+  uploaded: z.number(),
+  downloadSpeed: z.number(),
+  uploadSpeed: z.number(),
+  progress: z.number(),
+  ratio: z.number(),
+  length: z.number(),
+  pieceLength: z.number(),
+  lastPieceLength: z.number(),
+  numPeers: z.number(),
+  path: z.string(),
+  ready: z.boolean(),
+  paused: z.boolean(),
+  done: z.boolean(),
+  name: z.string(),
+  created: z.union([z.string(), z.date()]).optional(),
+  createdBy: z.string().optional(),
+  comment: z.string().optional(),
+  maxWebConns: z.number(),
+  transferring: z.boolean().optional(),
+  transferProgress: z.number().optional(),
+  transferSpeed: z.number().optional(),
+  skipAutoTransfer: z.boolean().optional(),
+  durationSeconds: z.number().optional(),
+  videoCodec: z.string().optional(),
+  audioCodec: z.string().optional(),
+  moovAtStart: z.boolean().optional(),
+  files: z.array(torrentFileSchema),
+});
+
+export type TorrentLiveData = z.infer<typeof torrentLiveDataSchema>;
 
 export const download = sqliteTable(
   "download",
@@ -68,7 +69,7 @@ export const download = sqliteTable(
     userId: text("userId")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    mediaId: integer("mediaId"),
+    mediaId: integer("mediaId").references(() => media.id, { onDelete: "set null" }),
 
     origin: text("origin"),
     quality: text("quality"),
@@ -90,8 +91,16 @@ export const download = sqliteTable(
 
     error: text("error"),
   },
-  (table) => [index("download_userId_idx").on(table.userId), index("download_mediaId_idx").on(table.mediaId)],
+  (table) => [
+    index("download_userId_idx").on(table.userId),
+    index("download_mediaId_idx").on(table.mediaId),
+    index("download_module_storage_id_idx").on(table.moduleStorageId),
+  ],
 );
+
+export const downloadRelations = relations(download, ({ one }) => ({
+  media: one(media, { fields: [download.mediaId], references: [media.id] }),
+}));
 
 // --- Drizzle-Zod derived schema ---
 

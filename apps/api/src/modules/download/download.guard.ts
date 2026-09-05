@@ -1,4 +1,4 @@
-import { ROLE_LEVELS } from "@seedarr/contracts";
+import { ROLE_LEVELS } from "@seedarr/shared";
 import type { Context, Next } from "hono";
 
 import { BadRequestError, ForbiddenError, NotFoundError } from "@/shared/errors/error";

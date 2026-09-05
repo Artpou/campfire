@@ -6,7 +6,7 @@ import { HTTPException } from "hono/http-exception";
 
 import { ForbiddenError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
-import { paginate, toPaginate } from "@/shared/helpers/pagination.helper";
+import { listPage } from "@/shared/helpers/pagination.helper";
 import type { Paginate } from "@/shared/helpers/pagination.types";
 import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
@@ -93,16 +93,12 @@ export class ActivityService extends AuthenticatedService {
     if (q) conditions.push(activityRepository.buildSearchFilter(likePattern(q)));
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    const paginationOpts = paginate({ page, limit });
 
-    const [items, total] = await Promise.all([
-      activityRepository.list({ where, ...paginationOpts }),
-      activityRepository.count({ where }),
-    ]);
-
-    return toPaginate(items, { page, limit }, total);
+    return listPage(
+      query,
+      (opts) => activityRepository.list({ where, ...opts }),
+      () => activityRepository.count({ where }),
+    );
   }
 }
 

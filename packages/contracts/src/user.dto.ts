@@ -22,16 +22,17 @@ export const updateUserDto = z.object({
 });
 export type UpdateUserInput = z.infer<typeof updateUserDto>;
 
+/** Letterboxd profile username (alphanumeric + underscore). */
+export const letterboxdUsernameSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(64)
+  .regex(/^[a-zA-Z0-9_]+$/, "Invalid Letterboxd username");
+
 export const updateProfileDto = z.object({
   pseudo: z.string().trim().min(1).max(64).nullable().optional(),
-  letterboxdUsername: z
-    .string()
-    .trim()
-    .min(1)
-    .max(64)
-    .regex(/^[a-zA-Z0-9_]+$/, "Invalid Letterboxd username")
-    .nullable()
-    .optional(),
+  letterboxdUsername: letterboxdUsernameSchema.nullable().optional(),
 });
 export type UpdateProfileInput = z.infer<typeof updateProfileDto>;
 

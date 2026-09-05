@@ -1,11 +1,27 @@
-import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
+import { and, count, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
-import { NotFoundError } from "@/shared/errors/error";
+import { BadRequestError, NotFoundError } from "@/shared/errors/error";
+import { logger } from "@/shared/helpers/logger.helper";
 
 import { db } from "@/db/db";
-import { type Download, download, type TorrentLiveData } from "@/modules/download/download.schema";
+import {
+  type Download,
+  download,
+  type TorrentLiveData,
+  torrentLiveDataSchema,
+} from "@/modules/download/download.schema";
 import { visibleDownloadSql } from "@/modules/download/download.sql";
 import { watchProgress } from "@/modules/media/media.schema";
+
+/** Per-download serialization for torrent JSON merges (avoids lost updates). */
+const torrentUpdateChains = new Map<string, Promise<void>>();
+
+function parseTorrentLiveData(value: unknown, context: string): TorrentLiveData | null {
+  const parsed = torrentLiveDataSchema.safeParse(value);
+  if (parsed.success) return parsed.data;
+  logger.error("DOWNLOAD", `Invalid torrent JSON (${context}): ${parsed.error.message}`);
+  return null;
+}
 
 export const downloadRepository = {
   find: async (id: string): Promise<Download | undefined> => {
@@ -38,6 +54,12 @@ export const downloadRepository = {
     });
   },
 
+  countVisible: async (): Promise<number> => {
+    const visibility = await visibleDownloadSql();
+    const [row] = await db.select({ count: count() }).from(download).where(visibility);
+    return row?.count ?? 0;
+  },
+
   findByMediaIdVisible: async (mediaId: number): Promise<Download[]> => {
     const visibility = await visibleDownloadSql();
     return db.query.download.findMany({
@@ -50,6 +72,16 @@ export const downloadRepository = {
     return db.query.download.findMany({
       where: eq(download.mediaId, mediaId),
     });
+  },
+
+  findByInfoHash: async (infoHash: string): Promise<Download | undefined> => {
+    if (!infoHash) return undefined;
+    const normalized = infoHash.toLowerCase();
+    return (
+      (await db.query.download.findFirst({
+        where: sql`lower(json_extract(${download.torrent}, '$.infoHash')) = ${normalized}`,
+      })) ?? undefined
+    );
   },
 
   findManyWithMedia: async () => {
@@ -94,26 +126,56 @@ export const downloadRepository = {
   },
 
   insert: async (values: typeof download.$inferInsert): Promise<Download> => {
+    if (values.torrent != null) {
+      const torrent = parseTorrentLiveData(values.torrent, "insert");
+      if (!torrent) throw new BadRequestError("Invalid torrent metadata");
+      values = { ...values, torrent };
+    }
     const [row] = await db.insert(download).values(values).returning();
     if (!row) throw new NotFoundError("Download");
     return row;
   },
 
   update: async (id: string, set: Partial<typeof download.$inferInsert>): Promise<void> => {
+    if (set.torrent != null) {
+      const torrent = parseTorrentLiveData(set.torrent, `update:${id}`);
+      if (!torrent) return;
+      set = { ...set, torrent };
+    }
     await db.update(download).set(set).where(eq(download.id, id));
   },
 
-  /** Merge patch into existing torrent JSON (and optional top-level columns). */
+  /**
+   * Merge patch into torrent JSON (and optional top-level columns).
+   * Serialized per downloadId so concurrent writers cannot last-write-wins.
+   */
   updateTorrent: async (
     id: string,
-    torrentPatch: Partial<TorrentLiveData>,
-    extra?: Partial<typeof download.$inferInsert>,
+    torrentPatch: Partial<TorrentLiveData> | ((current: Download | undefined) => Partial<TorrentLiveData>),
+    extra?:
+      | Partial<typeof download.$inferInsert>
+      | ((current: Download | undefined) => Partial<typeof download.$inferInsert>),
   ): Promise<void> => {
-    const current = await downloadRepository.find(id);
-    await downloadRepository.update(id, {
-      ...extra,
-      torrent: { ...current?.torrent, ...torrentPatch } as TorrentLiveData,
-    });
+    const run = async (): Promise<void> => {
+      const current = await downloadRepository.find(id);
+      const patch = typeof torrentPatch === "function" ? torrentPatch(current) : torrentPatch;
+      const extraSet = typeof extra === "function" ? extra(current) : extra;
+      const torrent = parseTorrentLiveData({ ...current?.torrent, ...patch }, `updateTorrent:${id}`);
+      if (!torrent) return;
+      await downloadRepository.update(id, {
+        ...extraSet,
+        torrent,
+      });
+    };
+
+    const prev = torrentUpdateChains.get(id) ?? Promise.resolve();
+    const next = prev.then(run, run);
+    torrentUpdateChains.set(id, next);
+    try {
+      await next;
+    } finally {
+      if (torrentUpdateChains.get(id) === next) torrentUpdateChains.delete(id);
+    }
   },
 
   deleteByIds: async (ids: string[]): Promise<void> => {

@@ -6,23 +6,22 @@ import { timeout } from "hono/timeout";
 import { addonActionFromPatch } from "@/modules/activity/activity.helper";
 import { trackRoute } from "@/modules/activity/activity.service";
 import { requireRole } from "@/modules/auth/role.guard";
-import { ModuleIndexerService } from "./indexer/module-indexer.service";
 import { ModuleService } from "./module.service";
 
 export const moduleRoutes = ModuleService.createRouter()
   .use("*", requireRole("member"))
   .get("/catalog", async (c) => c.json(MODULE_CATALOG))
   .get("/", async (c) => c.json(await c.var.service.listAll()))
-  .get("/indexers", async (c) => c.json(await new ModuleIndexerService(c.var.user).getMany({ withIndexers: true })))
-  .get("/indexers/count", async (c) => c.json(await new ModuleIndexerService(c.var.user).count()))
+  .get("/indexers", async (c) => c.json(await c.var.service.listIndexers()))
+  .get("/indexers/count", async (c) => c.json(await c.var.service.countIndexers()))
   .get("/storage/enabled", async (c) => c.json({ enabled: await c.var.service.isStorageEnabled() }))
-  .get("/:id/health", zValidator("param", moduleIdParamDto), async (c) =>
-    c.json(await c.var.service.health(c.req.valid("param").id)),
-  )
   .get("/:id", zValidator("param", moduleIdParamDto), async (c) =>
     c.json(await c.var.service.get(c.req.valid("param").id)),
   )
   .use("*", requireRole("admin"))
+  .get("/:id/health", zValidator("param", moduleIdParamDto), async (c) =>
+    c.json(await c.var.service.health(c.req.valid("param").id)),
+  )
   .post("/", zValidator("json", createModuleDto), async (c) =>
     c.json(
       await trackRoute(

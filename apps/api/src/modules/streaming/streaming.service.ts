@@ -2,20 +2,15 @@ import { VIDEO_EXTENSIONS } from "@seedarr/shared";
 import type { StreamingApi } from "hono/utils/stream";
 
 import { BadRequestError, NotFoundError } from "@/shared/errors/error";
-import { createCache } from "@/shared/helpers/cache.helper";
 import { logger } from "@/shared/helpers/logger.helper";
 import { getDownloadFolderName, resolveWithinDownloads } from "@/shared/helpers/path.helper";
 import { pipeNodeStream } from "@/shared/helpers/stream.helper";
-import {
-  convertToFragmentedMp4Stream,
-  getVideoInputFormat,
-  probeVideoStreams,
-  type RemuxInput,
-} from "@/shared/helpers/video.helper";
+import { convertToFragmentedMp4Stream, getVideoInputFormat, type RemuxInput } from "@/shared/helpers/video.helper";
 import { findLargestVideoInDirectory } from "@/shared/helpers/video-file.helper";
+import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
 import { downloadRepository } from "@/modules/download/download.repository";
-import type { Download, TorrentLiveData } from "@/modules/download/download.schema";
+import type { Download } from "@/modules/download/download.schema";
 import { findLargestVideoFile } from "@/modules/download/webtorrent/webtorrent.helper";
 import { torrentClient } from "@/modules/download/webtorrent/webtorrent-manager";
 import { remoteStorageService } from "@/modules/storage-config/remote/remote-storage.service";
@@ -30,16 +25,10 @@ import {
   parseRangeHeader,
   resolveRemoteVideoInfo,
 } from "./streaming.helper";
+import { getCachedStreamSource, type StreamSourceInfo, setCachedStreamSource } from "./streaming-cache.helper";
+import { StreamingSubtitleService } from "./subtitle/streaming-subtitle.service";
 
-/** Resolved source metadata — cacheable (no open streams/handles). */
-export interface StreamSourceInfo {
-  size: number;
-  fileName: string;
-  filePath?: string;
-  remotePath?: string;
-  isRemote?: boolean;
-  hasTorrentFile?: boolean;
-}
+export type { StreamSourceInfo } from "./streaming-cache.helper";
 
 type PlaybackMode = "direct" | "live";
 
@@ -61,27 +50,19 @@ export interface LiveStreamResult {
   pipe: (honoStream: StreamingApi) => Promise<void>;
 }
 
-const sourceCache = createCache<StreamSourceInfo>({
-  max: 100,
-  ttl: 5 * 60_000,
-  name: "stream-source",
-});
+export class StreamingService extends AuthenticatedService {
+  private readonly subtitles = new StreamingSubtitleService();
 
-export function invalidateStreamSource(downloadId: string): void {
-  sourceCache.delete(downloadId);
-}
-
-export class StreamingService {
   async getDownload(id: string): Promise<Download> {
     return downloadRepository.get(id);
   }
 
   async resolveSourceInfo(download: Download): Promise<StreamSourceInfo | undefined> {
-    const cached = sourceCache.get(download.id);
+    const cached = getCachedStreamSource(download.id);
     if (cached) return cached;
 
     const info = await this.computeSourceInfo(download);
-    if (info) sourceCache.set(download.id, info);
+    if (info) setCachedStreamSource(download.id, info);
     return info;
   }
 
@@ -92,7 +73,7 @@ export class StreamingService {
     const origin: PlaybackInfo["origin"] = source.isRemote ? "remote" : source.filePath ? "local" : "torrent";
     const canDirect = Boolean(source.filePath || source.remotePath || source.hasTorrentFile);
     const mode: PlaybackMode = canDirect ? "direct" : "live";
-    const duration = await this.resolveDuration(download, source);
+    const duration = this.resolveDuration(download);
 
     logger.info("STREAM", `playback info ${download.id}: mode=${mode} origin=${origin} file=${source.fileName}`);
 
@@ -287,28 +268,19 @@ export class StreamingService {
     throw new Error("No local stream source available");
   }
 
-  // --- Private: duration ---
+  // --- Private: duration (read-only — probed on download complete, not on GET /info) ---
 
-  private async resolveDuration(download: Download, source: StreamSourceInfo): Promise<number | null> {
+  private resolveDuration(download: Download): number | null {
     const cached = download.torrent?.durationSeconds;
     if (cached != null && cached > 0) return cached;
-
-    if (!source.filePath) return null;
-
-    const probe = await probeVideoStreams({ filePath: source.filePath });
-    if (probe?.duration) {
-      await this.cacheDuration(download.id, download.torrent, probe.duration);
-      return probe.duration;
-    }
     return null;
   }
 
-  private async cacheDuration(
-    downloadId: string,
-    torrent: TorrentLiveData | null | undefined,
-    durationSeconds: number,
-  ): Promise<void> {
-    if (!torrent) return;
-    await downloadRepository.update(downloadId, { torrent: { ...torrent, durationSeconds } });
+  listExternalSubtitles(download: Download): Promise<{ paths: string[] }> {
+    return this.subtitles.listExternalSubtitles(download);
+  }
+
+  getSubtitleFile(download: Download, rawFilePath: string): Promise<{ content: string; contentType: string }> {
+    return this.subtitles.getSubtitleFile(download, rawFilePath);
   }
 }

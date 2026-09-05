@@ -1,6 +1,8 @@
 import type { ListMediaQuery, UpdateProgressQuery, UpsertReviewInput } from "@seedarr/contracts";
 
 import { logger } from "@/shared/helpers/logger.helper";
+import { toPaginate } from "@/shared/helpers/pagination.helper";
+import type { Paginate } from "@/shared/helpers/pagination.types";
 import { IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { assertMediaId } from "@/modules/media/media.helper";
@@ -14,6 +16,10 @@ export class MediaService extends IdentifiableService<MediaEnriched> {
   async getMany(query: ListMediaQuery = {}): Promise<MediaEnriched[]> {
     const userId = query.userId ?? this.user.id;
     return mediaListRepository.listEnriched(userId, query);
+  }
+
+  async list(query: ListMediaQuery): Promise<Paginate<MediaEnriched>> {
+    return toPaginate(await this.getMany(query), query);
   }
 
   async upsert(data: MediaInsert): Promise<MediaEnriched> {

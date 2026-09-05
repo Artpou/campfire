@@ -16,7 +16,11 @@ export const session = sqliteTable(
       .notNull()
       .$defaultFn(() => new Date()),
   },
-  (table) => [index("session_userId_idx").on(table.userId), index("session_expiresAt_idx").on(table.expiresAt)],
+  (table) => [
+    index("session_userId_idx").on(table.userId),
+    index("session_expiresAt_idx").on(table.expiresAt),
+    index("session_previous_token_idx").on(table.previousToken),
+  ],
 );
 
 export const sessionRelations = relations(session, ({ one }) => ({

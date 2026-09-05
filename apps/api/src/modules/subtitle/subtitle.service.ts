@@ -1,5 +1,5 @@
 import type { SubtitlesSearchQuery } from "@seedarr/contracts";
-import { sanitizeFileName } from "@seedarr/shared";
+import { MAX_ZIP_BYTES, sanitizeFileName } from "@seedarr/shared";
 
 import { BadRequestError, ForbiddenError, NotFoundError, ServiceUnavailableError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
@@ -20,6 +20,18 @@ import type { SubdlSearchResponse } from "./subtitle.types";
 const SUBDL_API_BASE = "https://api.subdl.com/api/v1";
 const SUBDL_DL_BASE = "https://dl.subdl.com";
 const ALLOWED_SUBTITLE_DOMAINS = new Set(["dl.subdl.com", "api.subdl.com"]);
+
+async function readCappedArrayBuffer(res: Response, maxBytes: number): Promise<Buffer> {
+  const contentLength = Number(res.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+    throw new BadRequestError(`Subtitle archive is too large (max ${Math.round(maxBytes / (1024 * 1024))}MB)`);
+  }
+  const buffer = Buffer.from(await res.arrayBuffer());
+  if (buffer.length > maxBytes) {
+    throw new BadRequestError(`Subtitle archive is too large (max ${Math.round(maxBytes / (1024 * 1024))}MB)`);
+  }
+  return buffer;
+}
 
 async function getSubdlApiKey(): Promise<string> {
   const row = await moduleRepository.findByType("subdl");
@@ -94,8 +106,7 @@ export class SubtitleService extends AuthenticatedService {
     if (!res.ok) {
       throw new ServiceUnavailableError(`SUBDL download (${res.status})`);
     }
-    const arrayBuffer = await res.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const buffer = await readCappedArrayBuffer(res, MAX_ZIP_BYTES);
 
     const unzipper = await import("unzipper");
     const dir = await unzipper.Open.buffer(buffer);

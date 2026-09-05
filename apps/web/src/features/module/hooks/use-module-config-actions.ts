@@ -1,10 +1,9 @@
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import type { ModuleType } from "@seedarr/contracts";
-import { buildModulePatchConfig } from "@seedarr/contracts";
 import type { Module } from "@seedarr/sdk";
 import { api, unwrap } from "@seedarr/sdk";
-import { formatError } from "@seedarr/shared";
+import { buildModulePatchConfig, formatError } from "@seedarr/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 

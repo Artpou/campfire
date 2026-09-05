@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { download } from "@/modules/download/download.schema";
+import { module } from "@/modules/module/module.schema";
 import { bodyOf, createAuthGuardMock, createTestDb, json, seedTestUser, testDbRef } from "@/tests/test.helper";
 
 const { fakeUser } = vi.hoisted(() => {
@@ -39,6 +40,16 @@ describe("Subtitle Routes", () => {
   beforeEach(() => {
     testDbRef.current = createTestDb();
     seedTestUser(testDbRef.current, fakeUser);
+    testDbRef.current
+      .insert(module)
+      .values({
+        id: "subdl-default",
+        type: "subdl",
+        category: "system",
+        enabled: true,
+        config: {},
+      })
+      .run();
   });
 
   describe("GET /search", () => {

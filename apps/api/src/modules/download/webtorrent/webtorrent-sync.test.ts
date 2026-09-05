@@ -27,7 +27,7 @@ vi.mock("../remote/remote-transfer.helper", () => ({
   runRemoteTransfer,
 }));
 
-vi.mock("@/modules/streaming/streaming.service", () => ({
+vi.mock("@/modules/streaming/streaming-cache.helper", () => ({
   invalidateStreamSource,
 }));
 

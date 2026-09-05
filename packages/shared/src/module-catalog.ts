@@ -1,20 +1,6 @@
-export type ModuleCategory = "system" | "indexer" | "social" | "storage" | "notification";
+import type { ModuleCategory, ModuleType } from "@seedarr/contracts";
 
-export type ModuleType =
-  | "tmdb"
-  | "subdl"
-  | "jackett"
-  | "prowlarr"
-  | "stremio"
-  | "letterboxd"
-  | "trakt"
-  | "webdav"
-  | "ftp"
-  | "smb"
-  | "discord"
-  | "telegram"
-  | "email";
-
+export type { ModuleCategory, ModuleType };
 export type ModuleCatalogEntry = {
   type: ModuleType;
   category: ModuleCategory;

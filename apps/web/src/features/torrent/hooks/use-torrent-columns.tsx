@@ -2,9 +2,8 @@ import { useMemo } from "react";
 
 import { plural } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
-import type { IndexerType } from "@seedarr/contracts";
 import type { Media, Torrent } from "@seedarr/sdk";
-import { getVideoContainer } from "@seedarr/shared";
+import { getVideoContainer, safeHttpUrl } from "@seedarr/shared";
 import {
   createColumnHelper,
   createSortedRowModel,
@@ -20,13 +19,12 @@ import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { DataTableColumnHeader } from "@/shared/ui/data-table-column-header";
 
-import { indexersManagerImages } from "@/features/indexers-manager/helpers/indexers-manager.helper";
+import { indexerModuleImages } from "@/features/torrent/helpers/indexer-images";
 
-export interface TorrentWithMeta extends Torrent {
+export type TorrentWithMeta = Torrent & {
   indexerId?: string;
-  indexerManagerType?: IndexerType;
   moduleId?: string;
-}
+};
 
 export const torrentTableFeatures = tableFeatures({
   rowSortingFeature,
@@ -61,30 +59,31 @@ export function useTorrentColumns({ media, count, onInspect, onDownload }: UseTo
           cell: ({ row }) => {
             const torrent = row.original;
             const container = getVideoContainer(torrent.title);
+            const detailsHref = safeHttpUrl(torrent.detailsUrl);
 
             return (
               <div className="flex flex-col gap-2 max-w-full">
-                <a
-                  href={torrent.detailsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block w-full font-medium truncate text-popover-foreground"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {torrent.title}
-                </a>
+                {detailsHref ? (
+                  <a
+                    href={detailsHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full font-medium truncate text-popover-foreground"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {torrent.title}
+                  </a>
+                ) : (
+                  <span className="block w-full font-medium truncate text-popover-foreground">{torrent.title}</span>
+                )}
 
                 <div className="flex flex-wrap items-center gap-2">
                   <Flag lang={torrent.mediaInfos?.languages?.[0] || media.original_language || ""} />
                   {torrent.mediaInfos?.resolution && <Badge variant="secondary">{torrent.mediaInfos.resolution}</Badge>}
                   {container && <Badge variant="secondary">{container}</Badge>}
                   <Badge variant="outline">{torrent.tracker}</Badge>
-                  {torrent.indexerManagerType && (
-                    <img
-                      src={indexersManagerImages[torrent.indexerManagerType]}
-                      alt={torrent.indexerManagerType}
-                      className="size-4"
-                    />
+                  {torrent.indexerType && (
+                    <img src={indexerModuleImages[torrent.indexerType]} alt={torrent.indexerType} className="size-4" />
                   )}
                 </div>
               </div>
@@ -117,7 +116,7 @@ export function useTorrentColumns({ media, count, onInspect, onDownload }: UseTo
                   <ArrowUpIcon className="size-3" />
                   <span className="text-xs">{torrent.seeders}</span>
                 </div>
-                {torrent.indexerManagerType !== "stremio" && (
+                {torrent.indexerType !== "stremio" && (
                   <div className="flex items-center gap-1 font-bold text-destructive">
                     <ArrowDownIcon className="size-3" />
                     <span className="text-xs">{torrent.peers}</span>

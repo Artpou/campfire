@@ -4,7 +4,7 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import type { DownloadTorrentInput, Resolution } from "@seedarr/contracts";
 import type { Media, Torrent } from "@seedarr/sdk";
 import { ApiError } from "@seedarr/sdk";
-import { formatError, getVideoContainer } from "@seedarr/shared";
+import { formatError, getVideoContainer, safeHttpUrl } from "@seedarr/shared";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { type SortingState, useTable } from "@tanstack/react-table";
 import { ArrowDownIcon, ArrowUpIcon, DownloadIcon, InfoIcon } from "lucide-react";
@@ -22,8 +22,8 @@ import { Card } from "@/shared/ui/card";
 import { DataTable } from "@/shared/ui/data-table";
 
 import { useStartDownload } from "@/features/downloads/hooks/download.queries";
-import { indexersManagerImages } from "@/features/indexers-manager/helpers/indexers-manager.helper";
 import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
+import { indexerModuleImages } from "@/features/torrent/helpers/indexer-images";
 import {
   type TorrentWithMeta,
   torrentTableFeatures,
@@ -83,29 +83,30 @@ function TorrentMobileCard({
   onDownload: (torrent: TorrentWithMeta) => void;
 }) {
   const container = getVideoContainer(torrent.title);
+  const detailsHref = safeHttpUrl(torrent.detailsUrl);
 
   return (
     <Card className="gap-3 p-3 py-3">
-      <a
-        href={torrent.detailsUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block w-full font-medium text-popover-foreground break-words"
-      >
-        {torrent.title}
-      </a>
+      {detailsHref ? (
+        <a
+          href={detailsHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block w-full font-medium text-popover-foreground break-words"
+        >
+          {torrent.title}
+        </a>
+      ) : (
+        <span className="block w-full font-medium text-popover-foreground break-words">{torrent.title}</span>
+      )}
 
       <div className="flex flex-wrap items-center gap-2">
         <Flag lang={torrent.mediaInfos?.languages?.[0] || media.original_language || ""} />
         {torrent.mediaInfos?.resolution && <Badge variant="secondary">{torrent.mediaInfos.resolution}</Badge>}
         {container && <Badge variant="secondary">{container}</Badge>}
         <Badge variant="outline">{torrent.tracker}</Badge>
-        {torrent.indexerManagerType && (
-          <img
-            src={indexersManagerImages[torrent.indexerManagerType]}
-            alt={torrent.indexerManagerType}
-            className="size-4"
-          />
+        {torrent.indexerType && (
+          <img src={indexerModuleImages[torrent.indexerType]} alt={torrent.indexerType} className="size-4" />
         )}
         <span className="text-xs text-muted-foreground">{(torrent.size / 1e9).toFixed(2)} GB</span>
         <div className="flex items-center gap-2 ml-auto">
@@ -113,7 +114,7 @@ function TorrentMobileCard({
             <ArrowUpIcon className="size-3" />
             <span className="text-xs">{torrent.seeders}</span>
           </div>
-          {torrent.indexerManagerType !== "stremio" && (
+          {torrent.indexerType !== "stremio" && (
             <div className="flex items-center gap-1 font-bold text-destructive">
               <ArrowDownIcon className="size-3" />
               <span className="text-xs">{torrent.peers}</span>

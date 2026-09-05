@@ -3,7 +3,13 @@ import { z } from "zod";
 import { mediaInputSchema } from "./media.dto";
 
 export const downloadTorrentDto = z.object({
-  magnetUri: z.string().max(8192),
+  magnetUri: z
+    .string()
+    .min(1)
+    .max(8192)
+    .refine((v) => v.startsWith("magnet:") || /^https?:\/\//i.test(v), {
+      message: "Must be a magnet link or HTTP(S) URL",
+    }),
   name: z.string().max(512),
   media: mediaInputSchema,
   origin: z.string().max(256).optional(),

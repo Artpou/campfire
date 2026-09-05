@@ -6,11 +6,7 @@ import { TMDBService } from "@/modules/tmdb/tmdb.service";
 import type { TMDBSeasonDetails, TMDBTvDetails } from "@/modules/tmdb/tmdb.types";
 import type { TV } from "@/modules/tv/tv.types";
 
-export class TVService extends TMDBService<TV> {
-  getMany(): Promise<TV[]> {
-    return Promise.resolve([]);
-  }
-
+export class TVService extends TMDBService {
   async get(id: string): Promise<TV> {
     const tvData = await this.request<TMDBTvDetails>(`/${this.type}/${id}`, {
       appendToResponse: "watch/providers,videos,credits,recommendations,external_ids",

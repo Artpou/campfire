@@ -4,8 +4,6 @@ import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { CreateUserInput, UpdateUserInput } from "@seedarr/contracts";
 import type { User } from "@seedarr/sdk";
-import { api, unwrap } from "@seedarr/sdk";
-import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 
 import { cn } from "@/lib/utils";
@@ -17,6 +15,7 @@ import { Label } from "@/shared/ui/label";
 
 import { useRole } from "@/features/auth/hooks/use-role";
 import { ROLE_LABELS, roleConfig } from "@/features/user/components/role-badge";
+import { useCreateUser, useUpdateUser } from "@/features/user/hooks/user.queries";
 
 type UserFormData = CreateUserInput & { confirmPassword: string };
 
@@ -52,22 +51,8 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
   const selectedRole = watch("role");
   const password = watch("password");
 
-  const createMutation = useMutation({
-    mutationFn: (data: CreateUserInput) => unwrap(api.users.$post({ json: data })),
-    onSuccess: () => {
-      onClose();
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: (data: UpdateUserInput) => {
-      if (!user) return Promise.resolve(null);
-      return unwrap(api.users[":id"].$put({ param: { id: user.id }, json: data }));
-    },
-    onSuccess: () => {
-      onClose();
-    },
-  });
+  const createMutation = useCreateUser(onClose);
+  const updateMutation = useUpdateUser(onClose);
 
   const onSubmit = async (data: UserFormData) => {
     if (isEditing) {
@@ -77,7 +62,7 @@ export function UserFormModal({ open, onClose, user }: UserFormModalProps) {
       if (data.role !== user?.role) updateData.role = data.role;
 
       if (Object.keys(updateData).length > 0) {
-        updateMutation.mutate(updateData);
+        updateMutation.mutate({ id: user.id, ...updateData });
       } else {
         onClose();
       }

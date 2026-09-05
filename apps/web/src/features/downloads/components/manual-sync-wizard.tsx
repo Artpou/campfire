@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { Trans } from "@lingui/react/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import type { Media } from "@seedarr/sdk";
 import { toast } from "sonner";
 
@@ -23,6 +23,7 @@ interface ManualSyncWizardProps {
 }
 
 export function ManualSyncWizard({ files, open, onOpenChange }: ManualSyncWizardProps) {
+  const { t } = useLingui();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedMedia, setSelectedMedia] = useState<Media | null>(null);
   const manualSync = useManualSync();
@@ -41,7 +42,7 @@ export function ManualSyncWizard({ files, open, onOpenChange }: ManualSyncWizard
     setSelectedMedia(null);
     if (isLast) {
       handleClose();
-      toast.success(`Manual sync complete`);
+      toast.success(t`Manual sync complete`);
     } else {
       setCurrentIndex((prev) => prev + 1);
     }

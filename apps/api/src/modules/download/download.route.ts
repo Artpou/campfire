@@ -10,7 +10,7 @@ import {
 } from "@seedarr/contracts";
 
 import { NotFoundError } from "@/shared/errors/error";
-import { downloadStartRateLimiter } from "@/shared/middlewares/rate-limiter.middleware";
+import { downloadStartRateLimiter, fileTokenRateLimiter } from "@/shared/middlewares/rate-limiter.middleware";
 
 import { trackRoute } from "@/modules/activity/activity.service";
 import { requireRole } from "@/modules/auth/role.guard";
@@ -40,9 +40,15 @@ export const downloadRoutes = DownloadService.createRouter()
     const { id } = c.req.valid("param");
     return c.json(await c.var.service.getDownloadableFile(id));
   })
-  .post("/:id/fileToken", zValidator("param", stringIdParamDto), requireDownloadExists, async (c) => {
-    return c.json(c.var.service.createFileToken(getDownloadId(c)));
-  })
+  .post(
+    "/:id/fileToken",
+    fileTokenRateLimiter,
+    zValidator("param", stringIdParamDto),
+    requireDownloadExists,
+    async (c) => {
+      return c.json(c.var.service.createFileToken(getDownloadId(c)));
+    },
+  )
   .get("/:id", zValidator("param", stringIdParamDto), async (c) => {
     const { id } = c.req.valid("param");
     const download = await c.var.service.get(id);

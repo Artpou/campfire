@@ -1,8 +1,6 @@
 import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
-import { api, unwrap } from "@seedarr/sdk";
-import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { FileIcon, GlobeIcon, KeyIcon, LogOutIcon, PaletteIcon } from "lucide-react";
 
@@ -12,30 +10,22 @@ import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 
-import { useAuth } from "@/features/auth/auth-store";
+import { useLogout } from "@/features/auth/hooks/auth.queries";
 import { useUserPreferences } from "@/features/settings/stores/user-preference-store";
 import { PasswordChangeModal } from "@/features/user/components/password-change-modal";
 
 export function SettingsGeneralView() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const logout = useAuth((s) => s.logout);
+  const logoutMutation = useLogout(() => {
+    navigate({ to: "/login" });
+  });
   const quality = useUserPreferences((s) => s.quality);
   const maxSize = useUserPreferences((s) => s.maxSize);
   const setQuality = useUserPreferences((s) => s.setQuality);
   const setMaxSize = useUserPreferences((s) => s.setMaxSize);
   const [passwordOpen, setPasswordOpen] = useState(false);
 
-  const handleSignOut = async () => {
-    try {
-      await unwrap(api.auth.logout.$post());
-    } catch {
-      // continue even if server logout fails
-    }
-    logout();
-    queryClient.clear();
-    navigate({ to: "/login" });
-  };
+  const handleSignOut = () => logoutMutation.mutate();
 
   return (
     <section className="space-y-6">

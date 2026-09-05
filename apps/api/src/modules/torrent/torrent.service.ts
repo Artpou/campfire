@@ -7,96 +7,97 @@ import { logger } from "@/shared/helpers/logger.helper";
 import { AuthenticatedService } from "@/shared/services/authenticated.service";
 
 import { torrentClient } from "@/modules/download/webtorrent/webtorrent-manager";
-import { ModuleIndexerService } from "@/modules/module/indexer/module-indexer.service";
-import type { User } from "@/modules/user/user.schema";
+import { createIndexerAdapter, loadIndexerModule } from "@/modules/module/indexer/module-indexer.adapter";
 import type { Torrent, TorrentInspectResult } from "./torrent.types";
 import { probeTorrentPeers } from "./torrent-peer.helper";
 import { resolveTorrentSource } from "./torrent-source.helper";
 
 const METADATA_TIMEOUT_MS = 30_000;
+const MAX_CONCURRENT_INSPECT = 3;
+let inspectInFlight = 0;
 
 export class TorrentService extends AuthenticatedService {
-  private readonly managerService: ModuleIndexerService;
-
-  constructor(user: User, managerService = new ModuleIndexerService(user)) {
-    super(user);
-    this.managerService = managerService;
-  }
-
   async list(query: TorrentListQuery): Promise<Torrent[]> {
-    const manager = await this.managerService.get(query.moduleId);
-    if (!manager) throw new NotFoundError("Indexer manager not found");
+    const manager = await loadIndexerModule(query.moduleId);
     if (manager.disabled) throw new BadRequestError("Indexer manager is disabled");
 
-    const adapter = this.managerService.getAdapter(manager);
+    const adapter = createIndexerAdapter(manager);
     logger.debug("TORRENT", `Search media ${query.media.id} via ${manager.indexerType} (${query.moduleId})`);
     return await adapter.getTorrents(query);
   }
 
   async inspectTorrent(query: TorrentInspectQuery): Promise<TorrentInspectResult> {
+    if (inspectInFlight >= MAX_CONCURRENT_INSPECT) {
+      throw new ServiceUnavailableError("Too many torrent inspections in progress");
+    }
+    inspectInFlight += 1;
     logger.debug("TORRENT", "Inspect torrent metadata");
-    const source = await resolveTorrentSource(query.magnet);
-    const client = torrentClient.getClient();
 
-    return new Promise((resolve, reject) => {
-      let torrent: WebTorrent.Torrent | null = null;
-      let settled = false;
+    try {
+      const source = await resolveTorrentSource(query.magnet);
+      const client = torrentClient.getClient();
 
-      const timeoutId = setTimeout(() => {
-        if (torrent) torrent.destroy();
-        reject(new ServiceUnavailableError("Torrent metadata fetch"));
-      }, METADATA_TIMEOUT_MS);
+      return await new Promise((resolve, reject) => {
+        let torrent: WebTorrent.Torrent | null = null;
+        let settled = false;
 
-      const finish = async (activeTorrent: WebTorrent.Torrent) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timeoutId);
+        const timeoutId = setTimeout(() => {
+          if (torrent) torrent.destroy();
+          reject(new ServiceUnavailableError("Torrent metadata fetch"));
+        }, METADATA_TIMEOUT_MS);
 
-        for (const file of activeTorrent.files) file.deselect();
+        const finish = async (activeTorrent: WebTorrent.Torrent) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeoutId);
 
-        const peersFound = await probeTorrentPeers(activeTorrent);
+          for (const file of activeTorrent.files) file.deselect();
 
-        const result: TorrentInspectResult = {
-          name: activeTorrent.name,
-          infoHash: activeTorrent.infoHash,
-          files: activeTorrent.files.map((file) => ({
-            name: file.name,
-            path: file.path,
-            length: file.length,
-          })),
-          totalSize: activeTorrent.length,
-          trackers: activeTorrent.announce ?? [],
-          peersFound,
-          indexerSeeders: query.indexerSeeders,
+          const peersFound = await probeTorrentPeers(activeTorrent);
+
+          const result: TorrentInspectResult = {
+            name: activeTorrent.name,
+            infoHash: activeTorrent.infoHash,
+            files: activeTorrent.files.map((file) => ({
+              name: file.name,
+              path: file.path,
+              length: file.length,
+            })),
+            totalSize: activeTorrent.length,
+            trackers: activeTorrent.announce ?? [],
+            peersFound,
+            indexerSeeders: query.indexerSeeders,
+          };
+
+          activeTorrent.destroy();
+          resolve(result);
         };
 
-        activeTorrent.destroy();
-        resolve(result);
-      };
-
-      torrent = client.add(source, { path: "/tmp" });
-
-      torrent.on("metadata", () => {
-        if (!torrent) return;
-        finish(torrent).catch((err) => {
-          torrent?.destroy();
-          reject(err);
-        });
+        try {
+          torrent = client.add(source, { path: "/tmp" });
+          if (torrent.ready) {
+            void finish(torrent);
+          } else {
+            torrent.once("ready", () => {
+              void finish(torrent as WebTorrent.Torrent);
+            });
+            torrent.once("error", (err) => {
+              if (settled) return;
+              settled = true;
+              clearTimeout(timeoutId);
+              reject(err instanceof Error ? err : new Error(formatError(err)));
+            });
+          }
+        } catch (err) {
+          clearTimeout(timeoutId);
+          reject(err instanceof Error ? err : new Error(formatError(err)));
+        }
       });
-
-      torrent.on("error", (err) => {
-        clearTimeout(timeoutId);
-        if (torrent) torrent.destroy();
-        const message = formatError(err);
-        reject(new ServiceUnavailableError(`Torrent error: ${message}`));
-      });
-
-      if (torrent.ready) {
-        finish(torrent).catch((err) => {
-          torrent?.destroy();
-          reject(err);
-        });
-      }
-    });
+    } catch (error) {
+      if (error instanceof NotFoundError || error instanceof ServiceUnavailableError) throw error;
+      throw new BadRequestError(`Failed to inspect torrent: ${formatError(error)}`);
+    } finally {
+      inspectInFlight -= 1;
+    }
   }
 }

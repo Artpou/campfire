@@ -32,6 +32,8 @@ export const activityLog = sqliteTable(
     index("activityLog_mediaId_idx").on(table.mediaId),
     index("activityLog_moduleId_idx").on(table.moduleId),
     index("activityLog_createdAt_idx").on(table.createdAt),
+    index("activityLog_action_idx").on(table.action),
+    index("activityLog_type_idx").on(table.type),
   ],
 );
 

@@ -41,7 +41,7 @@ vi.mock("@/modules/streaming/streaming-lease", () => ({
   waitUntilNoStreams: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("@/modules/streaming/streaming.service", () => ({
+vi.mock("@/modules/streaming/streaming-cache.helper", () => ({
   invalidateStreamSource: vi.fn(),
 }));
 

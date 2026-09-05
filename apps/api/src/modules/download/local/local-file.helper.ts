@@ -93,3 +93,17 @@ export async function getDownloadableFile(id: string): Promise<DownloadableFile>
 
   throw new NotFoundError("Downloadable file");
 }
+
+/** Open a readable stream for a resolved downloadable file (local or remote). */
+export async function openDownloadableReadStream(
+  file: DownloadableFile,
+): Promise<{ stream: NodeJS.ReadableStream; cleanup?: () => void }> {
+  if (file.filePath) {
+    const fsSync = await import("node:fs");
+    return { stream: fsSync.createReadStream(file.filePath) };
+  }
+  if (!file.remotePath) throw new NotFoundError("Downloadable file");
+  const remote = await remoteStorageService.createReadStream(file.remotePath);
+  if (!remote) throw new NotFoundError("Downloadable file");
+  return { stream: remote.stream as NodeJS.ReadableStream, cleanup: remote.cleanup };
+}

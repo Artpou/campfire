@@ -6,17 +6,17 @@ import type {
   ModuleType,
   UpdateModuleInput,
 } from "@seedarr/contracts";
-import { parseModuleConfig } from "@seedarr/contracts";
-import { getModuleCatalogEntry, STREMIO_PRESETS } from "@seedarr/shared";
+import { getModuleCatalogEntry, parseModuleConfig, STREMIO_PRESETS } from "@seedarr/shared";
 
 import { BadRequestError, ConflictError } from "@/shared/errors/error";
 import { decrypt, encrypt } from "@/shared/helpers/crypto.helper";
 import { logger } from "@/shared/helpers/logger.helper";
-import { assertPublicHttpUrl, assertSafeIndexerUrl } from "@/shared/helpers/url.helper";
+import { assertPublicHttpUrl, assertSafeIndexerUrl, fetchFollowingRedirects } from "@/shared/helpers/url.helper";
 import { IdentifiableService } from "@/shared/services/authenticated.service";
 
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
 import { downloadRepository } from "@/modules/download/download.repository";
+import { ModuleIndexerService } from "@/modules/module/indexer/module-indexer.service";
 import { moduleRepository } from "@/modules/module/module.repository";
 import {
   invalidateStorageConfigCache,
@@ -44,23 +44,12 @@ type StremioManifest = {
 const SECRET_KEYS = ["apiKey", "password"] as const;
 
 async function fetchManifest(manifestUrl: string): Promise<StremioManifest> {
-  const MAX_REDIRECT_DEPTH = 5;
-  let currentUrl = manifestUrl;
-
-  for (let depth = 0; depth <= MAX_REDIRECT_DEPTH; depth++) {
-    await assertPublicHttpUrl(currentUrl);
-    logger.debug("MODULE", `Fetching Stremio manifest: ${currentUrl}`);
-    const response = await fetch(currentUrl, { redirect: "manual" });
-    if (response.status >= 300 && response.status < 400) {
-      const location = response.headers.get("location");
-      if (!location) throw new BadRequestError("Manifest redirect without Location header");
-      currentUrl = new URL(location, currentUrl).toString();
-      continue;
-    }
-    if (!response.ok) throw new BadRequestError(`Failed to fetch manifest (${response.status})`);
-    return (await response.json()) as StremioManifest;
-  }
-  throw new BadRequestError("Too many redirects while fetching manifest");
+  logger.debug("MODULE", `Fetching Stremio manifest: ${manifestUrl}`);
+  const response = await fetchFollowingRedirects(manifestUrl, assertPublicHttpUrl, {
+    maxRedirects: 5,
+  });
+  if (!response.ok) throw new BadRequestError(`Failed to fetch manifest (${response.status})`);
+  return (await response.json()) as StremioManifest;
 }
 
 function deriveBaseUrl(manifestUrl: string): string {
@@ -141,6 +130,15 @@ export class ModuleService extends IdentifiableService<ModulePublic> {
     return moduleRepository.listByCategory(category);
   }
 
+  /** Settings / torrent UI — includes live indexer probe. */
+  async listIndexers() {
+    return new ModuleIndexerService(this.user).getMany({ withIndexers: true });
+  }
+
+  async countIndexers(): Promise<number> {
+    return (await moduleRepository.listByCategory("indexer")).length;
+  }
+
   async isStorageEnabled(): Promise<boolean> {
     return remoteStorageService.isEnabled();
   }
@@ -183,7 +181,7 @@ export class ModuleService extends IdentifiableService<ModulePublic> {
         preset: "preset" in input.config ? input.config.preset : undefined,
       });
     } else if (input.type === "jackett" || input.type === "prowlarr") {
-      assertSafeIndexerUrl(input.config.url);
+      await assertSafeIndexerUrl(input.config.url);
       config = parseModuleConfig(input.type, input.config);
     } else if (input.type === "webdav" || input.type === "ftp") {
       const password = input.config.password ? encrypt(input.config.password) : undefined;
@@ -239,7 +237,7 @@ export class ModuleService extends IdentifiableService<ModulePublic> {
         });
       }
       if ((row.type === "jackett" || row.type === "prowlarr") && typeof input.config.url === "string") {
-        assertSafeIndexerUrl(input.config.url);
+        await assertSafeIndexerUrl(input.config.url);
       }
       if (
         typeof input.config.password === "string" &&
@@ -317,7 +315,7 @@ export class ModuleService extends IdentifiableService<ModulePublic> {
           const url = String(config.url || "").replace(/\/$/, "");
           const apiKey = String(config.apiKey || "");
           if (!url || !apiKey || apiKey === "changeme") return { ok: false, message: "Configuration incomplete" };
-          assertSafeIndexerUrl(url);
+          await assertSafeIndexerUrl(url);
           const probe =
             type === "jackett"
               ? `${url}/api/v2.0/indexers/all/results/torznab/api?apikey=${encodeURIComponent(apiKey)}&t=caps`
@@ -330,8 +328,10 @@ export class ModuleService extends IdentifiableService<ModulePublic> {
         case "stremio": {
           const manifestUrl = String(config.manifestUrl || "");
           if (!manifestUrl) return { ok: false, message: "Manifest URL missing" };
-          await assertPublicHttpUrl(manifestUrl);
-          const res = await fetch(manifestUrl, { signal: AbortSignal.timeout(8000) });
+          const res = await fetchFollowingRedirects(manifestUrl, assertPublicHttpUrl, {
+            signal: AbortSignal.timeout(8000),
+            maxRedirects: 5,
+          });
           return res.ok ? { ok: true } : { ok: false, message: `HTTP ${res.status}` };
         }
         case "webdav":
@@ -345,6 +345,8 @@ export class ModuleService extends IdentifiableService<ModulePublic> {
             username: typeof config.username === "string" ? config.username : null,
             password: resolveSecret(config.password),
             secure: Boolean(config.secure),
+            // Default allowSelfSigned=true (NAS self-signed certs); set false to verify TLS.
+            rejectUnauthorized: config.allowSelfSigned === false,
           });
           return result.success ? { ok: true } : { ok: false, message: result.error || "Connection failed" };
         }

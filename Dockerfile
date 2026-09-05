@@ -42,11 +42,16 @@ LABEL org.opencontainers.image.source=https://github.com/Artpou/seedarr
 COPY --from=mwader/static-ffmpeg:8.1.1 /ffmpeg /usr/local/bin/
 COPY --from=mwader/static-ffmpeg:8.1.1 /ffprobe /usr/local/bin/
 
-COPY --from=builder /app/isolated ./
-COPY --from=builder /app/apps/api/dist-server ./dist-server
-COPY --from=builder /app/apps/api/src/db/drizzle ./src/db/drizzle
-COPY --from=builder /app/apps/web/dist ./web/dist
-COPY --from=builder /app/apps/api/docker-migrate.mjs ./docker-migrate.mjs
+# Runtime dirs for DB + downloads (named volumes); app files owned by non-root `node`
+RUN mkdir -p /data /downloads && chown -R node:node /app /data /downloads
+
+COPY --from=builder --chown=node:node /app/isolated ./
+COPY --from=builder --chown=node:node /app/apps/api/dist-server ./dist-server
+COPY --from=builder --chown=node:node /app/apps/api/src/db/drizzle ./src/db/drizzle
+COPY --from=builder --chown=node:node /app/apps/web/dist ./web/dist
+COPY --from=builder --chown=node:node /app/apps/api/docker-migrate.mjs ./docker-migrate.mjs
+
+USER node
 
 EXPOSE 3002
 

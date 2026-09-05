@@ -4,7 +4,7 @@ import type { ApiClient } from "./client";
 
 type ActivityListResponse = InferResponseType<ApiClient["activity"]["$get"], 200>;
 type TorrentListResponse = InferResponseType<ApiClient["torrents"]["list"]["$post"], 200>;
-type IndexerManagerListResponse = InferResponseType<ApiClient["modules"]["indexers"]["$get"], 200>;
+type IndexerModuleListResponse = InferResponseType<ApiClient["modules"]["indexers"]["$get"], 200>;
 
 export type Media = InferResponseType<ApiClient["media"][":id"]["$get"], 200>;
 export type Movie = InferResponseType<ApiClient["movies"][":id"]["$get"], 200>;
@@ -18,8 +18,7 @@ export type Activity = ActivityListResponse["results"][number];
 export type Torrent = TorrentListResponse[number];
 export type TorrentInspectResult = InferResponseType<ApiClient["torrents"]["inspect"]["$get"], 200>;
 export type SubdlSearchResponse = InferResponseType<ApiClient["subtitles"]["search"]["$get"], 200>;
-export type IndexerManager = IndexerManagerListResponse[number];
-export type IndexerManagerDetail = IndexerManagerListResponse[number];
+export type ModuleIndexer = IndexerModuleListResponse[number];
 export type RemoteSyncResult = InferResponseType<ApiClient["modules"]["storage"]["sync"]["$post"], 200>;
 export type DownloadableFile = InferResponseType<ApiClient["downloads"][":id"]["video-file"]["$get"], 200>;
 export type Module = InferResponseType<ApiClient["modules"]["$get"], 200>[number];
@@ -33,7 +32,7 @@ export type PaginatedMedia = InferResponseType<ApiClient["media"]["$get"], 200>;
 
 export type TorrentInspectFile = TorrentInspectResult["files"][number];
 export type SubdlSubtitle = SubdlSearchResponse["subtitles"][number];
-export type StremioManifest = NonNullable<IndexerManager["manifest"]>;
+export type StremioManifest = NonNullable<ModuleIndexer["manifest"]>;
 export type TMDBWatchProvider = NonNullable<
   NonNullable<NonNullable<TMDBMovieDetails["watch/providers"]>["results"]>[string]["flatrate"]
 >[number];

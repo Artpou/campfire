@@ -1,4 +1,4 @@
-import { hasMinRole, type UserRole } from "@seedarr/contracts";
+import { hasMinRole, type UserRole } from "@seedarr/shared";
 
 import { useAuth } from "../auth-store";
 

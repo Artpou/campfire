@@ -1,6 +1,9 @@
+import type { MessageDescriptor } from "@lingui/core";
 import type { CreateModuleInput, ModuleCategory } from "@seedarr/contracts";
 import type { Module } from "@seedarr/sdk";
 import { getCatalogEntryForPreset, MODULE_CATALOG, type ModuleCatalogEntry } from "@seedarr/shared";
+
+import { catalogDescriptionMessage, catalogLabelMessage } from "@/features/module/helpers/module-catalog-i18n";
 
 export type ModuleListFilter = "all" | ModuleCategory;
 
@@ -126,7 +129,14 @@ export function buildCreatePayload(catalog: ModuleCatalogEntry): CreateModuleInp
     case "ftp":
       return {
         type: "ftp",
-        config: { host: "", port: 21, secure: false, autoTransfer: false, deleteLocalAfterTransfer: false },
+        config: {
+          host: "",
+          port: 21,
+          secure: false,
+          allowSelfSigned: true,
+          autoTransfer: false,
+          deleteLocalAfterTransfer: false,
+        },
       };
     case "stremio":
       return null;
@@ -141,12 +151,18 @@ export function moduleDisplayLogo(item: ModuleListItem): string {
   return "/modules/stremio.svg";
 }
 
-export function moduleDisplayTitle(item: ModuleListItem): string {
-  return item.installed?.label ?? item.catalog.label;
+export function moduleDisplayTitle(item: ModuleListItem, t?: (descriptor: MessageDescriptor) => string): string {
+  if (item.installed?.label) return item.installed.label;
+  const message = catalogLabelMessage(item.catalog);
+  if (message && t) return t(message);
+  return item.catalog.label;
 }
 
-export function moduleDisplayDescription(item: ModuleListItem): string {
-  return item.installed?.description ?? item.catalog.description;
+export function moduleDisplayDescription(item: ModuleListItem, t?: (descriptor: MessageDescriptor) => string): string {
+  if (item.installed?.description) return item.installed.description;
+  const message = catalogDescriptionMessage(item.catalog);
+  if (message && t) return t(message);
+  return item.catalog.description;
 }
 
 export function moduleDisplayTags(item: ModuleListItem): string[] {

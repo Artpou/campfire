@@ -1,8 +1,7 @@
 import type { ListRequestsQuery, RequestStatus } from "@seedarr/contracts";
-import { and, asc, desc, eq, exists, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, exists, type SQL, sql } from "drizzle-orm";
 
 import { NotFoundError } from "@/shared/errors/error";
-import { paginate } from "@/shared/helpers/pagination.helper";
 
 import { db } from "@/db/db";
 import { media } from "@/modules/media/media.schema";
@@ -32,6 +31,25 @@ export type RequestEnriched = {
     release_date: string | null;
   };
 };
+
+function listFilters(query: Pick<ListRequestsQuery, "type" | "status">): SQL | undefined {
+  const { type, status } = query;
+  const conditions: SQL[] = [];
+
+  if (status) conditions.push(eq(mediaRequest.status, status));
+  if (type) {
+    conditions.push(
+      exists(
+        db
+          .select({ _: sql`1` })
+          .from(media)
+          .where(and(eq(media.id, mediaRequest.mediaId), eq(media.type, type))),
+      ),
+    );
+  }
+
+  return conditions.length > 0 ? and(...conditions) : undefined;
+}
 
 export const requestRepository = {
   find: async (id: string) => {
@@ -71,30 +89,23 @@ export const requestRepository = {
     return requestRepository.findEnriched(id);
   },
 
-  list: async (query: ListRequestsQuery): Promise<RequestEnriched[]> => {
-    const { type, status, page = 1, limit = 20 } = query;
-    const conditions = [];
-
-    if (status) conditions.push(eq(mediaRequest.status, status));
-    if (type) {
-      conditions.push(
-        exists(
-          db
-            .select({ _: sql`1` })
-            .from(media)
-            .where(and(eq(media.id, mediaRequest.mediaId), eq(media.type, type))),
-        ),
-      );
-    }
-
-    const { offset, limit: fetchLimit } = paginate({ page, limit });
+  listPage: async (
+    query: Pick<ListRequestsQuery, "type" | "status"> & { limit: number; offset: number },
+  ): Promise<RequestEnriched[]> => {
+    const where = listFilters(query);
     return db.query.mediaRequest.findMany({
-      where: conditions.length > 0 ? and(...conditions) : undefined,
+      where,
       with: requestRelations,
       orderBy: [asc(mediaRequest.status), desc(mediaRequest.createdAt)],
-      limit: fetchLimit,
-      offset,
+      limit: query.limit,
+      offset: query.offset,
     }) as Promise<RequestEnriched[]>;
+  },
+
+  count: async (query: Pick<ListRequestsQuery, "type" | "status">): Promise<number> => {
+    const where = listFilters(query);
+    const [row] = await db.select({ count: count() }).from(mediaRequest).where(where);
+    return row?.count ?? 0;
   },
 
   listByUser: async (userId: string): Promise<RequestEnriched[]> => {

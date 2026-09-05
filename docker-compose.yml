@@ -14,6 +14,7 @@ services:
       - DOWNLOADS_PATH=/downloads
       - API_PORT=3002
       - WEB_URL=http://localhost:5551
+      # This api_keys are public and can be used by anyone, we don't need to keep them secret
       - TMDB_API_KEY=${TMDB_API_KEY:-29f788393063cd24bfb885d7d6ee9ae4}
       - SUBDL_API_KEY=${SUBDL_API_KEY:-Ae8t-PLGROMrTitTPJGfOye7Z17RWaVN}
       # Encrypts FTP/WebDAV passwords at rest. Change once and keep stable —

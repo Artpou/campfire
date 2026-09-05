@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { download } from "@/modules/download/download.schema";
+import { media } from "@/modules/media/media.schema";
 import {
   bodyOf,
   createAuthGuardMock,
@@ -124,6 +125,7 @@ describe("Download Routes", () => {
         results: [],
         page: 1,
         hasMore: false,
+        total: 0,
       });
     });
 
@@ -143,6 +145,7 @@ describe("Download Routes", () => {
       expect(body.results[0].torrent.name).toBe("Test");
       expect(body.page).toBe(1);
       expect(body.hasMore).toBe(false);
+      expect(body.total).toBe(1);
     });
 
     it("returns downloads from all users for members", async () => {
@@ -209,23 +212,30 @@ describe("Download Routes", () => {
       });
     });
 
-    it("creates a new download even if magnet already exists", async () => {
+    it("rejects a download when the infoHash already exists", async () => {
+      testDbRef.current.insert(media).values(testMedia).run();
       testDbRef.current
         .insert(download)
         .values({
           id: "existing",
           userId: fakeUser.id,
           mediaId: testMedia.id,
-          torrent: sampleTorrent({ infoHash: "dup", magnetURI: "magnet:?xt=urn:btih:dup", name: "Dup", done: true }),
+          // Matches the default mocked safeAdd infoHash ("fakehash")
+          torrent: sampleTorrent({
+            infoHash: "fakehash",
+            magnetURI: "magnet:?xt=urn:btih:fakehash",
+            name: "Dup",
+            done: true,
+          }),
           createdAt: new Date(),
         })
         .run();
 
-      const body = await bodyOf(
-        await downloadRoutes.request("/", json("POST", startDownloadPayload("magnet:?xt=urn:btih:dup", "Dup"))),
+      const res = await downloadRoutes.request(
+        "/",
+        json("POST", startDownloadPayload("magnet:?xt=urn:btih:other", "Dup")),
       );
-      expect(body.id).not.toBe("existing");
-      expect(body.torrent.name).toBe("FakeTorrent");
+      expect(res.status).toBe(409);
     });
   });
 

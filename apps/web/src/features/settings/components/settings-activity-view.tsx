@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
@@ -14,6 +14,7 @@ import { EmptyState } from "@/shared/components/empty-state";
 import { ResponsiveTabs } from "@/shared/components/responsive-tabs";
 import { Select } from "@/shared/components/select/select";
 import { SentinelStuck, StickyFilterBar } from "@/shared/components/sentinel/sentinel-stuck";
+import { usePagedState } from "@/shared/hooks/use-paged-state";
 import { DataTable } from "@/shared/ui/data-table";
 import { DataTablePagination } from "@/shared/ui/data-table-pagination";
 import { Input } from "@/shared/ui/input";
@@ -52,21 +53,26 @@ export function SettingsActivityView() {
   const [categoryFilter, setCategoryFilter] = useState<ActivityCategoryFilter>("all");
   const [typeFilter, setTypeFilter] = useState<ActivityTypeFilter>("all");
   const [query, setQuery] = useState("");
-  const [page, setPage] = useState(1);
   const [isStuck, setIsStuck] = useState(false);
   const debouncedQuery = useDebounce(query, 300);
+  const filters = {
+    q: debouncedQuery.trim() || undefined,
+    category: categoryFilter,
+    type: typeFilter,
+  };
+  const { page, setPage } = usePagedState(filters);
 
-  useEffect(() => {
-    setPage(1);
-  }, []);
-
-  const { data: logs } = useQuery(
+  const {
+    data: logs,
+    isError,
+    refetch,
+  } = useQuery(
     activityQueries.list({
       page,
       limit: PAGE_SIZE,
       type: typeFilter === "all" ? undefined : typeFilter,
       category: categoryFilter === "all" ? undefined : categoryFilter,
-      q: debouncedQuery.trim() || undefined,
+      q: filters.q,
     }),
   );
 
@@ -125,10 +131,22 @@ export function SettingsActivityView() {
       <DataTable
         table={table}
         empty={
-          <EmptyState
-            title={<Trans>No activity yet</Trans>}
-            subtitle={<Trans>Actions from the household will show up here.</Trans>}
-          />
+          isError ? (
+            <EmptyState
+              title={<Trans>Could not load activity</Trans>}
+              subtitle={<Trans>Check your connection and try again.</Trans>}
+              action={
+                <button type="button" className="text-sm underline" onClick={() => refetch()}>
+                  <Trans>Retry</Trans>
+                </button>
+              }
+            />
+          ) : (
+            <EmptyState
+              title={<Trans>No activity yet</Trans>}
+              subtitle={<Trans>Actions from the household will show up here.</Trans>}
+            />
+          )
         }
       />
 

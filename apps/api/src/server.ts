@@ -7,6 +7,7 @@ import * as fsPromises from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app } from "./app";
+import { ensureDbPragmas } from "./db/db";
 import { torrentClient } from "./modules/download/webtorrent/webtorrent-manager";
 import { restoreActiveTorrents, stopHealthCheck } from "./modules/download/webtorrent/webtorrent-sync";
 import { logger, startupLogger } from "./shared/helpers/logger.helper";
@@ -67,6 +68,8 @@ function createProductionApp(): Hono {
 const serverApp = process.env.NODE_ENV === "production" ? createProductionApp() : app;
 
 const start = async () => {
+  await ensureDbPragmas();
+
   if (process.env.NODE_ENV === "production") {
     const indexPath = path.join(WEB_DIST_PATH, "index.html");
     if (fs.existsSync(indexPath)) {

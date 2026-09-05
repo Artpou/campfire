@@ -24,8 +24,8 @@ import { getBackdropUrl } from "@/features/media/helpers/media.helper";
 import { type EpisodeDeleteLabel, TvEpisodeDeleteDialog } from "@/features/tv/components/tv-episode-delete-dialog";
 import { TvEpisodeDownloadControls } from "@/features/tv/components/tv-episode-download-controls";
 import { TvEpisodeDownloadPanel } from "@/features/tv/components/tv-episode-download-panel";
-import { getEpisodesCoveredByDownload } from "@/features/tv/helpers/episode-downloads.helper";
 import { formatSeasonEpisode } from "@/features/tv/helpers/episode.helper";
+import { getEpisodesCoveredByDownload } from "@/features/tv/helpers/episode-downloads.helper";
 import { tvQueries } from "@/features/tv/hooks/tv.queries";
 import { useEpisodeDownloadMap } from "@/features/tv/hooks/use-episode-download-map";
 

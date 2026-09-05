@@ -39,7 +39,11 @@ export function SearchView({ q, type }: SearchViewProps) {
     });
   }, [debouncedQuery, navigate, type]);
 
-  const { data: searchResults = [], isLoading } = useQuery({
+  const {
+    data: searchResults = [],
+    isLoading,
+    isError,
+  } = useQuery({
     ...mediaQueries.search(q || "", locale),
     enabled: q.trim().length >= 2,
   });
@@ -102,6 +106,15 @@ export function SearchView({ q, type }: SearchViewProps) {
         ) : isLoading ? (
           <div className="flex items-center justify-center py-20">
             <SeedarrLoader />
+          </div>
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
+            <h2 className="text-2xl font-bold mb-2">
+              <Trans>Search failed</Trans>
+            </h2>
+            <p className="text-muted-foreground">
+              <Trans>Could not reach the server. Try again in a moment.</Trans>
+            </p>
           </div>
         ) : filteredResults.length > 0 ? (
           <MediaGrid items={filteredResults} showType />

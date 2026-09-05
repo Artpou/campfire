@@ -73,6 +73,20 @@ export function useCancelRequest() {
   });
 }
 
+export function useValidateRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (requestId: string) => unwrap(api.requests[":id"].validate.$patch({ param: { id: requestId } })),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: requestQueries.key });
+      toast.info(t`Request validated`);
+    },
+    onError: (error) => {
+      toast.error(t`Could not validate request`, { description: formatError(error) });
+    },
+  });
+}
+
 export function useReopenRequest() {
   const queryClient = useQueryClient();
   return useMutation({

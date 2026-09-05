@@ -4,14 +4,14 @@ import { msg } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import type { RegisterInput } from "@seedarr/contracts";
 import type { AuthUser } from "@seedarr/sdk";
-import { api, unwrap } from "@seedarr/sdk";
 import { formatError } from "@seedarr/shared";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 
 import { Input } from "@/shared/ui/input";
 
 import { useAuth } from "@/features/auth/auth-store";
+import { useRegister } from "@/features/auth/hooks/auth.queries";
 import { OnboardingLanguage } from "@/features/onboarding/components/onboarding-language";
 import { OnboardingNav } from "@/features/onboarding/components/onboarding-nav";
 
@@ -36,17 +36,11 @@ export function OnboardingAccount({ onContinue }: OnboardingAccountProps) {
 
   const password = watch("password");
 
-  const { mutate: signup, isPending } = useMutation({
-    mutationFn: (data: RegisterInput) => unwrap(api.auth.register.$post({ json: data })),
-    onSuccess: (created) => {
-      const authUser: AuthUser = { ...created, countIndexerManagers: 0 };
-      useAuth.getState().setUser(authUser);
-      queryClient.setQueryData(["auth", "me"], authUser);
-      onContinue();
-    },
-    onError: (err: unknown) => {
-      setError(formatError(err) || t(msg`An error occurred`));
-    },
+  const { mutate: signup, isPending } = useRegister((created) => {
+    const authUser: AuthUser = { ...created, countIndexerManagers: 0 };
+    useAuth.getState().setUser(authUser);
+    queryClient.setQueryData(["auth", "me"], authUser);
+    onContinue();
   });
 
   if (user) {
@@ -70,7 +64,14 @@ export function OnboardingAccount({ onContinue }: OnboardingAccountProps) {
 
   const onSubmit = (data: SignupForm) => {
     setError(null);
-    signup({ username: data.username, password: data.password });
+    signup(
+      { username: data.username, password: data.password },
+      {
+        onError: (err: unknown) => {
+          setError(formatError(err) || t(msg`An error occurred`));
+        },
+      },
+    );
   };
 
   return (

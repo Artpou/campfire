@@ -1,5 +1,4 @@
 import type { ParsedFilename, ParsedShow } from "@ctrl/video-filename-parser";
-import type { IndexerType } from "@seedarr/contracts";
 import { z } from "zod";
 
 export type MediaInfos = ParsedFilename | ParsedShow;
@@ -14,7 +13,7 @@ const torrentSchema = z.object({
   link: z.string(),
   guid: z.string(),
   detailsUrl: z.string().optional(),
-  indexerType: z.enum(["prowlarr", "jackett", "stremio"] as unknown as [IndexerType, ...IndexerType[]]),
+  indexerType: z.enum(["prowlarr", "jackett", "stremio"]),
   downloadUrl: z.string().optional(),
   magnetUrl: z.string().optional(),
   mediaInfos: z.custom<MediaInfos>(),

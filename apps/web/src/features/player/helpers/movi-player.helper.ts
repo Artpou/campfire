@@ -12,7 +12,23 @@ export interface MoviPlayerHandle extends HTMLElement {
   }) => void;
 }
 
-type CcExtrasOpts = { onAddSubtitles?: () => void; enableDelay?: boolean };
+type CcExtrasOpts = {
+  onAddSubtitles?: () => void;
+  enableDelay?: boolean;
+  labels?: {
+    delay: string;
+    addSubtitles: string;
+    off: string;
+    noTracks: string;
+  };
+};
+
+const DEFAULT_CC_LABELS = {
+  delay: "Delay",
+  addSubtitles: "Add subtitles",
+  off: "Off",
+  noTracks: "No subtitle tracks available",
+} as const;
 
 let moviPlayerImport: Promise<void> | null = null;
 
@@ -73,6 +89,7 @@ export function errorDetail(event: Event): unknown {
 
 /** Inject Add / Delay controls into movi-player's CC menu (native delay UI is file-source only). */
 function injectCcExtras(player: MoviPlayerHandle, opts: CcExtrasOpts): void {
+  const labels = { ...DEFAULT_CC_LABELS, ...opts.labels };
   const menu = player.shadowRoot?.querySelector(".movi-subtitle-track-menu");
   if (!menu || menu.querySelector("[data-seedarr-cc-extras]")) return;
 
@@ -86,7 +103,7 @@ function injectCcExtras(player: MoviPlayerHandle, opts: CcExtrasOpts): void {
     row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:0.35rem;";
 
     const label = document.createElement("span");
-    label.textContent = "Delay";
+    label.textContent = labels.delay;
     label.style.cssText = "font-size:0.75rem;opacity:0.8;";
 
     const controls = document.createElement("div");
@@ -122,7 +139,7 @@ function injectCcExtras(player: MoviPlayerHandle, opts: CcExtrasOpts): void {
   if (opts.onAddSubtitles) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.textContent = "Add subtitles";
+    btn.textContent = labels.addSubtitles;
     btn.style.cssText =
       "display:flex;width:100%;align-items:center;justify-content:center;padding:0.45rem 0.5rem;border:0;border-radius:0.35rem;background:rgba(255,255,255,0.08);color:inherit;font:inherit;font-size:0.8rem;cursor:pointer;";
     btn.addEventListener("click", (e) => {
@@ -140,6 +157,7 @@ function injectCcExtras(player: MoviPlayerHandle, opts: CcExtrasOpts): void {
  * Keep the CC button visible so users can still open the menu and add subtitles.
  */
 export function ensureCcMenuAvailable(player: MoviPlayerHandle, opts: CcExtrasOpts): void {
+  const labels = { ...DEFAULT_CC_LABELS, ...opts.labels };
   const showCcControls = (): void => {
     const root = player.shadowRoot;
     if (!root) return;
@@ -154,12 +172,15 @@ export function ensureCcMenuAvailable(player: MoviPlayerHandle, opts: CcExtrasOp
 
     // When no tracks exist, updateSubtitleTrackMenu returns early without seeding the list.
     if (list && list.childElementCount === 0) {
-      list.innerHTML = `
-          <div class="movi-subtitle-track-item movi-subtitle-track-active" data-track-id="null">
-            <span class="movi-subtitle-track-label">Off</span>
-          </div>
-        `;
-      if (footer) footer.textContent = "No subtitle tracks available";
+      const offItem = document.createElement("div");
+      offItem.className = "movi-subtitle-track-item movi-subtitle-track-active";
+      offItem.dataset.trackId = "null";
+      const offLabel = document.createElement("span");
+      offLabel.className = "movi-subtitle-track-label";
+      offLabel.textContent = labels.off;
+      offItem.appendChild(offLabel);
+      list.replaceChildren(offItem);
+      if (footer) footer.textContent = labels.noTracks;
     }
 
     injectCcExtras(player, opts);

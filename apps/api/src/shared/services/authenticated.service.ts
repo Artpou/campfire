@@ -1,9 +1,6 @@
-import type { PaginationQuery } from "@seedarr/contracts";
 import { Hono } from "hono";
 
 import { NotFoundError } from "@/shared/errors/error";
-import { toPaginate } from "@/shared/helpers/pagination.helper";
-import type { Paginate } from "@/shared/helpers/pagination.types";
 
 import { authGuard, type HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";
 import { ROLE_LEVELS } from "@/modules/auth/role.guard";
@@ -34,17 +31,14 @@ export class AuthenticatedService {
 export interface Identifiable {
   id: number | string;
 }
+
 export abstract class IdentifiableService<T extends Identifiable> extends AuthenticatedService {
-  abstract getMany({ ids }: { ids?: string[] }): Promise<T[]>;
+  abstract getMany(args?: { ids?: string[] }): Promise<T[]>;
 
   async get(id: string): Promise<T> {
     const result = (await this.getMany({ ids: [id] }))?.[0];
     if (!result) throw new NotFoundError("Item not found");
 
     return result;
-  }
-
-  async list(query: PaginationQuery): Promise<Paginate<T>> {
-    return toPaginate(await this.getMany(query), query);
   }
 }

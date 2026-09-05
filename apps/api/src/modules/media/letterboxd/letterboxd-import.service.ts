@@ -1,4 +1,5 @@
-import type { LetterboxdSyncResponse } from "@seedarr/contracts";
+import { type LetterboxdSyncResponse, letterboxdUsernameSchema } from "@seedarr/contracts";
+import { MAX_ZIP_BYTES } from "@seedarr/shared";
 
 import { BadRequestError } from "@/shared/errors/error";
 import { parseCsv, parseIsoDate } from "@/shared/helpers/csv.helper";
@@ -12,7 +13,6 @@ import { userRepository } from "@/modules/user/user.repository";
 
 const BATCH_SIZE = 10;
 const BATCH_DELAY_MS = 1000;
-const MAX_ZIP_BYTES = 50 * 1024 * 1024;
 
 interface AggregatedFilm {
   name: string;
@@ -182,8 +182,12 @@ export async function importLetterboxdZip(userId: string, file: File): Promise<L
   if (!username) {
     throw new BadRequestError("Invalid Letterboxd export: missing profile.csv Username");
   }
+  const parsedUsername = letterboxdUsernameSchema.safeParse(username);
+  if (!parsedUsername.success) {
+    throw new BadRequestError("Invalid Letterboxd username in profile.csv");
+  }
 
-  await userRepository.setLetterboxdUsername(userId, username);
+  await userRepository.setLetterboxdUsername(userId, parsedUsername.data);
 
   const films = aggregateFilms({
     ratings: await readCsvFile(files, "ratings.csv"),
@@ -195,7 +199,7 @@ export async function importLetterboxdZip(userId: string, file: File): Promise<L
   });
 
   const list = [...films.values()];
-  logger.info("LETTERBOXD", `ZIP import for ${username}: ${list.length} unique films`);
+  logger.info("LETTERBOXD", `ZIP import for ${parsedUsername.data}: ${list.length} unique films`);
 
   let synced = 0;
   let skipped = 0;

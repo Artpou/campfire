@@ -134,6 +134,20 @@
       "when": 1787093118581,
       "tag": "0018_funny_captain_cross",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1787523716071,
+      "tag": "0019_slippery_ravenous",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1788604984267,
+      "tag": "0020_loud_zuras",
+      "breakpoints": true
     }
   ]
 }

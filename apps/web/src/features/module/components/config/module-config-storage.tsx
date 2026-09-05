@@ -1,6 +1,6 @@
 import { Trans } from "@lingui/react/macro";
 import type { Module } from "@seedarr/sdk";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
@@ -16,6 +16,8 @@ type StorageForm = {
   password: string;
   moviePath: string;
   tvPath: string;
+  secure: boolean;
+  allowSelfSigned: boolean;
   autoTransfer: boolean;
   deleteLocalAfterTransfer: boolean;
   diskQuotaGb: number | "";
@@ -34,11 +36,15 @@ export function ModuleConfigStorage({ mod }: { mod: Module }) {
       password: "",
       moviePath: typeof config.moviePath === "string" ? config.moviePath : "",
       tvPath: typeof config.tvPath === "string" ? config.tvPath : "",
+      secure: config.secure === true,
+      allowSelfSigned: config.allowSelfSigned !== false,
       autoTransfer: config.autoTransfer === true,
       deleteLocalAfterTransfer: config.deleteLocalAfterTransfer === true,
       diskQuotaGb: typeof config.diskQuotaGb === "number" ? config.diskQuotaGb : "",
     },
   });
+
+  const secure = useWatch({ control, name: "secure" });
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit((values) => actions.save(values))}>
@@ -76,6 +82,44 @@ export function ModuleConfigStorage({ mod }: { mod: Module }) {
               return Number.isFinite(n) && n > 0 ? n : "";
             },
           })}
+        />
+      )}
+      <Controller
+        control={control}
+        name="secure"
+        render={({ field }) => (
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-1">
+              <Label>{mod.type === "ftp" ? <Trans>FTPS (TLS)</Trans> : <Trans>HTTPS</Trans>}</Label>
+              <p className="text-sm text-muted-foreground">
+                {mod.type === "ftp" ? (
+                  <Trans>Encrypt the FTP connection (FTPS).</Trans>
+                ) : (
+                  <Trans>Use HTTPS for the WebDAV server.</Trans>
+                )}
+              </p>
+            </div>
+            <Switch checked={field.value} onCheckedChange={field.onChange} />
+          </div>
+        )}
+      />
+      {mod.type === "ftp" && secure && (
+        <Controller
+          control={control}
+          name="allowSelfSigned"
+          render={({ field }) => (
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-1">
+                <Label>
+                  <Trans>Allow self-signed certificates</Trans>
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  <Trans>Needed for many NAS devices. Disable to enforce certificate verification.</Trans>
+                </p>
+              </div>
+              <Switch checked={field.value} onCheckedChange={field.onChange} />
+            </div>
+          )}
         />
       )}
       <Controller

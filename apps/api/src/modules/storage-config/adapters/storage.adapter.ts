@@ -9,6 +9,8 @@ export interface StorageConnectionOptions {
   username?: string | null;
   password?: string | null;
   secure?: boolean;
+  /** When false, verify TLS certificates on FTPS. Default: allow self-signed (NAS). */
+  rejectUnauthorized?: boolean;
 }
 
 export interface RemoteFileEntry {

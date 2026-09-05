@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { Trans } from "@lingui/react/macro";
 import type { User } from "@seedarr/sdk";
+import { MAX_ZIP_BYTES } from "@seedarr/shared";
 import { ExternalLinkIcon, FolderArchiveIcon, RefreshCwIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -12,8 +13,6 @@ import { FileDropzone } from "@/shared/ui/file-dropzone";
 
 import { useModule } from "@/features/module/hooks/use-module";
 import { useImportLetterboxd, useSyncLetterboxd } from "@/features/user/hooks/user.queries";
-
-const MAX_ZIP_BYTES = 50 * 1024 * 1024;
 
 interface UserButtonLetterboxdProps {
   user: User;

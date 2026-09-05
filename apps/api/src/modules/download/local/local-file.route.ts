@@ -3,43 +3,36 @@ import { downloadFileQueryDto, stringIdParamDto } from "@seedarr/contracts";
 import { type Context, Hono } from "hono";
 import { stream } from "hono/streaming";
 
-import { NotFoundError } from "@/shared/errors/error";
 import { pipeNodeStream } from "@/shared/helpers/stream.helper";
 
-import { remoteStorageService } from "@/modules/storage-config/remote/remote-storage.service";
-import { assertDownloadFileToken, getDownloadableFile } from "./local-file.helper";
+import { assertDownloadFileToken, getDownloadableFile, openDownloadableReadStream } from "./local-file.helper";
 
 async function streamDownloadFile(c: Context, id: string): Promise<Response> {
-  const { fileName, size, filePath, remotePath } = await getDownloadableFile(id);
+  const file = await getDownloadableFile(id);
 
-  const encodedName = encodeURIComponent(fileName).replace(/['()]/g, encodeURIComponent);
+  const encodedName = encodeURIComponent(file.fileName).replace(/['()]/g, encodeURIComponent);
   c.header("Content-Type", "application/octet-stream");
-  c.header("Content-Disposition", `attachment; filename="${fileName}"; filename*=UTF-8''${encodedName}`);
-  c.header("Content-Length", String(size));
+  c.header("Content-Disposition", `attachment; filename="${file.fileName}"; filename*=UTF-8''${encodedName}`);
+  c.header("Content-Length", String(file.size));
   c.header("X-Content-Type-Options", "nosniff");
+  // Short-lived HMAC token in query is required for native browser downloads; limit Referer leakage.
+  c.header("Referrer-Policy", "no-referrer");
 
-  if (filePath) {
-    const fsSync = await import("node:fs");
-    const localStream = fsSync.createReadStream(filePath);
-    return stream(c, async (honoStream) => {
-      await pipeNodeStream(honoStream, localStream);
-    });
-  }
-
-  if (!remotePath) throw new NotFoundError("Downloadable file");
-  const remote = await remoteStorageService.createReadStream(remotePath);
-  if (!remote) throw new NotFoundError("Downloadable file");
-  if (remote.cleanup) c.req.raw.signal.addEventListener("abort", remote.cleanup);
+  const opened = await openDownloadableReadStream(file);
+  if (opened.cleanup) c.req.raw.signal.addEventListener("abort", opened.cleanup);
   return stream(c, async (honoStream) => {
     try {
-      await pipeNodeStream(honoStream, remote.stream as NodeJS.ReadableStream);
+      await pipeNodeStream(honoStream, opened.stream);
     } finally {
-      remote.cleanup?.();
+      opened.cleanup?.();
     }
   });
 }
 
-/** Token-only file download (no session) so the browser can use its native download UI. */
+/**
+ * Token-only file download (no session) so the browser can use its native download UI.
+ * Cannot use AuthenticatedService.createRouter — auth is HMAC token, not cookie session.
+ */
 export const localFileRoutes = new Hono().get(
   "/:id",
   zValidator("param", stringIdParamDto),

@@ -9,7 +9,7 @@ import { mediaRepository } from "@/modules/media/media.repository";
 import { moduleRepository } from "@/modules/module/module.repository";
 import { remoteStorageService } from "@/modules/storage-config/remote/remote-storage.service";
 import { waitUntilNoStreams } from "@/modules/streaming/lease/streaming-lease";
-import { invalidateStreamSource } from "@/modules/streaming/streaming.service";
+import { invalidateStreamSource } from "@/modules/streaming/streaming-cache.helper";
 import fs from "node:fs/promises";
 import { torrentClient, UNMARK_DESTROYING_DELAY_MS } from "../webtorrent/webtorrent-manager";
 
@@ -68,14 +68,7 @@ export async function markTransferStarting(downloadId: string): Promise<void> {
   const dl = await downloadRepository.find(downloadId);
   if (!dl?.torrent) return;
 
-  await downloadRepository.update(downloadId, {
-    torrent: {
-      ...dl.torrent,
-      transferring: true,
-      transferProgress: 0,
-    },
-    error: null,
-  });
+  await downloadRepository.updateTorrent(downloadId, { transferring: true, transferProgress: 0 }, { error: null });
 }
 
 export async function runRemoteTransfer(
@@ -115,9 +108,6 @@ export async function runRemoteTransfer(
     let lastProgressBytes = 0;
 
     await remoteStorageService.transferDirectory(localPath, remotePath, async (progress) => {
-      const current = await downloadRepository.find(downloadId);
-      if (!current?.torrent) return;
-
       const now = Date.now();
       const elapsed = (now - lastProgressAt) / 1000;
       const currentBytes = progress * totalSize;
@@ -125,29 +115,18 @@ export async function runRemoteTransfer(
       lastProgressAt = now;
       lastProgressBytes = currentBytes;
 
-      await downloadRepository.update(downloadId, {
-        torrent: {
-          ...current.torrent,
-          transferring: true,
-          transferProgress: progress,
-          transferSpeed: Math.max(0, Math.round(speed)),
-        },
+      await downloadRepository.updateTorrent(downloadId, {
+        transferring: true,
+        transferProgress: progress,
+        transferSpeed: Math.max(0, Math.round(speed)),
       });
     });
 
-    const after = await downloadRepository.find(downloadId);
-    if (after?.torrent) {
-      await downloadRepository.update(downloadId, {
-        torrent: {
-          ...after.torrent,
-          transferring: false,
-          transferProgress: 1,
-        },
-        remoteLocation: remotePath,
-        moduleStorageId: storageModuleId,
-        error: null,
-      });
-    }
+    await downloadRepository.updateTorrent(
+      downloadId,
+      { transferring: false, transferProgress: 1 },
+      { remoteLocation: remotePath, moduleStorageId: storageModuleId, error: null },
+    );
 
     invalidateStreamSource(downloadId);
     logger.info("TRANSFER", `Transfer complete: ${torrentName} -> ${remotePath}`);
@@ -155,11 +134,9 @@ export async function runRemoteTransfer(
     const shouldDeleteLocal =
       options?.isAutoTransfer === true && (await remoteStorageService.shouldDeleteLocalAfterTransfer());
     if (shouldDeleteLocal) {
-      // Wait until playback finishes so we don't delete under an open stream.
       await waitUntilNoStreams(downloadId);
       unloadTorrentSession(downloadId);
       await fs.rm(localPath, { recursive: true, force: true });
-      // Drop torrent metadata — local source is gone; remoteLocation is the source of truth.
       await downloadRepository.update(downloadId, { torrent: null });
       logger.info("TRANSFER", `Deleted local files and cleared torrent data: ${torrentName}`);
     } else {
@@ -169,7 +146,7 @@ export async function runRemoteTransfer(
     await activityFor(userId).log({
       action: "DOWNLOAD_TRANSFERRED",
       mediaId: dl.mediaId,
-      moduleId: dl.moduleStorageId,
+      moduleId: storageModuleId,
       metadata: { downloadId, remotePath, name: torrentName },
     });
   } catch (error) {
@@ -178,14 +155,11 @@ export async function runRemoteTransfer(
 
     const dl = await downloadRepository.find(downloadId);
     if (dl?.torrent) {
-      await downloadRepository.update(downloadId, {
-        torrent: {
-          ...dl.torrent,
-          transferring: false,
-          transferProgress: undefined,
-        },
-        error: `Remote transfer failed: ${message}`,
-      });
+      await downloadRepository.updateTorrent(
+        downloadId,
+        { transferring: false, transferProgress: undefined },
+        { error: `Remote transfer failed: ${message}` },
+      );
     }
 
     await activityFor(dl?.userId).log({

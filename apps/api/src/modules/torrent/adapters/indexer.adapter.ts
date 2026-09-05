@@ -2,6 +2,7 @@ import type { TorrentListQuery } from "@seedarr/contracts";
 
 import { BadRequestError, ServiceUnavailableError } from "@/shared/errors/error";
 import { logger } from "@/shared/helpers/logger.helper";
+import { redactUrl } from "@/shared/helpers/url.helper";
 
 import type { Indexer, IndexerModule } from "@/modules/module/indexer/module-indexer.types";
 import type { Torrent } from "@/modules/torrent/torrent.types";
@@ -20,9 +21,13 @@ export abstract class IndexerAdapter {
     if (!this.indexerManager.indexerUrl) throw new BadRequestError("Indexer URL is required");
 
     const baseUrl = this.indexerManager.indexerUrl.replace(/\/+$/, "");
-    const response = await fetch(`${baseUrl}/${url}`, init);
+    const fullUrl = `${baseUrl}/${url}`;
+    const response = await fetch(fullUrl, {
+      ...init,
+      signal: init?.signal ?? AbortSignal.timeout(15_000),
+    });
 
-    logger.debug(this.indexerManager.indexerType, `GET ${`${baseUrl}/${url}`}`);
+    logger.debug(this.indexerManager.indexerType, `GET ${redactUrl(fullUrl)}`);
 
     if (!response.ok) {
       if (response.status === 404) return [];

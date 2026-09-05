@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { Trans } from "@lingui/react/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 
 import { Spinner } from "@/shared/ui/spinner";
 
@@ -45,6 +45,7 @@ export function Player({
   enableSubtitleDelay = false,
   className,
 }: PlayerProps) {
+  const { t } = useLingui();
   const hostRef = useRef<HTMLDivElement>(null);
   const onPlayerRef = useRef(onPlayer);
   const onLoadedRef = useRef(onLoadedMetadata);
@@ -191,6 +192,12 @@ export function Player({
           ensureCcMenuAvailable(player, {
             onAddSubtitles: onAddSubtitlesRef.current ? () => onAddSubtitlesRef.current?.() : undefined,
             enableDelay: enableSubtitleDelay,
+            labels: {
+              delay: t`Delay`,
+              addSubtitles: t`Add subtitles`,
+              off: t`Off`,
+              noTracks: t`No subtitle tracks available`,
+            },
           });
         }
       })();
@@ -208,7 +215,7 @@ export function Player({
       onPlayerRef.current(null);
       host.replaceChildren();
     };
-  }, [src, tracksKey, enableSubtitleDelay, resumeAt]);
+  }, [src, tracksKey, enableSubtitleDelay, resumeAt, t]);
 
   return (
     <>

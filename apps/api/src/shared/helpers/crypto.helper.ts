@@ -4,15 +4,23 @@ const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
 const TAG_LENGTH = 16;
 
+/** Predictable fallback for local/test only — never accept as a configured production secret. */
+const DEV_INSECURE_STORAGE_ENCRYPTION_KEY = "dev-only-insecure-storage-encryption-key";
+
 function requireEncryptionSecret(): string {
-  const secret = process.env.STORAGE_ENCRYPTION_KEY;
+  const secret = process.env.STORAGE_ENCRYPTION_KEY?.trim();
+
+  if (secret === DEV_INSECURE_STORAGE_ENCRYPTION_KEY) {
+    throw new Error("STORAGE_ENCRYPTION_KEY must not use the built-in insecure default. Generate a random secret.");
+  }
+
   if (secret) return secret;
 
-  // Predictable default is fine for local/test; never ship production without a real key.
   if (process.env.NODE_ENV === "production") {
     throw new Error("STORAGE_ENCRYPTION_KEY environment variable is required in production");
   }
-  return "dev-only-insecure-storage-encryption-key";
+
+  return DEV_INSECURE_STORAGE_ENCRYPTION_KEY;
 }
 
 function deriveKey(): Buffer {

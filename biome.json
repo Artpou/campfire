@@ -58,9 +58,6 @@
       "a11y": {
         "recommended": true
       },
-      "security": {
-        "noGlobalEval": "off"
-      },
       "complexity": {
         "noThisInStatic": "off"
       }

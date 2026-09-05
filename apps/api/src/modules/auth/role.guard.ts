@@ -1,4 +1,4 @@
-import { ROLE_LEVELS } from "@seedarr/contracts";
+import { ROLE_LEVELS } from "@seedarr/shared";
 import type { Context, MiddlewareHandler, Next } from "hono";
 
 import type { HonoAuthenticatedVariables } from "@/modules/auth/auth.guard";

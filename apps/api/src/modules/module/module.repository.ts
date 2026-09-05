@@ -5,7 +5,6 @@ import { NotFoundError } from "@/shared/errors/error";
 
 import { db } from "@/db/db";
 import { type ModuleRow, module } from "@/modules/module/module.schema";
-import { ensureSystemModules } from "@/modules/module/module.seed";
 
 export const moduleRepository = {
   find: async (id: string): Promise<ModuleRow | undefined> => {
@@ -19,23 +18,19 @@ export const moduleRepository = {
   },
 
   findByType: async (type: ModuleType): Promise<ModuleRow | undefined> => {
-    await ensureSystemModules();
     return (await db.query.module.findFirst({ where: eq(module.type, type) })) ?? undefined;
   },
 
   findFirstByTypes: async (types: ModuleType[]): Promise<ModuleRow | undefined> => {
-    await ensureSystemModules();
     if (types.length === 1) return moduleRepository.findByType(types[0]);
     return (await db.query.module.findFirst({ where: inArray(module.type, types) })) ?? undefined;
   },
 
   findFirstByCategory: async (category: ModuleRow["category"]): Promise<ModuleRow | undefined> => {
-    await ensureSystemModules();
     return (await db.query.module.findFirst({ where: eq(module.category, category) })) ?? undefined;
   },
 
   findEnabledByCategory: async (category: ModuleRow["category"]): Promise<ModuleRow | undefined> => {
-    await ensureSystemModules();
     return (
       (await db.query.module.findFirst({
         where: and(eq(module.category, category), eq(module.enabled, true)),
@@ -44,17 +39,14 @@ export const moduleRepository = {
   },
 
   listAll: async (): Promise<ModuleRow[]> => {
-    await ensureSystemModules();
     return db.select().from(module);
   },
 
   listByCategory: async (category: ModuleRow["category"]): Promise<ModuleRow[]> => {
-    await ensureSystemModules();
     return db.query.module.findMany({ where: eq(module.category, category) });
   },
 
   existsByType: async (type: ModuleType, excludeId?: string): Promise<boolean> => {
-    await ensureSystemModules();
     const rows = await db
       .select({ id: module.id })
       .from(module)
@@ -69,7 +61,6 @@ export const moduleRepository = {
   },
 
   listDisabledStorageModuleIds: async (): Promise<string[]> => {
-    await ensureSystemModules();
     const rows = await db
       .select({ id: module.id })
       .from(module)

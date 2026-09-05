@@ -16,8 +16,9 @@ import { toast } from "sonner";
 import { toPaginationQuery } from "@/shared/helpers/pagination.helper";
 
 import { hasActiveDownload, isActiveDownload } from "@/features/media/helpers/media.helper";
-import { movieQueries } from "@/features/movies/hooks/movie.queries";
-import { tvQueries } from "@/features/tv/hooks/tv.queries";
+
+const MOVIE_QUERY_KEY = ["movie"] as const;
+const TV_QUERY_KEY = ["tv"] as const;
 
 export const mediaQueries = {
   key: ["media"] as const,
@@ -126,9 +127,9 @@ export function useToggleLike() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
       if (data.type === "movie") {
-        queryClient.invalidateQueries({ queryKey: [...movieQueries.key] });
+        queryClient.invalidateQueries({ queryKey: MOVIE_QUERY_KEY });
       } else {
-        queryClient.invalidateQueries({ queryKey: [...tvQueries.key] });
+        queryClient.invalidateQueries({ queryKey: TV_QUERY_KEY });
       }
       toast.info(data.liked ? t`Added to your likes` : t`Removed from your likes`, {
         description: data.title,
@@ -149,9 +150,9 @@ export function useToggleWatchList() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: mediaQueries.key });
       if (data.type === "movie") {
-        queryClient.invalidateQueries({ queryKey: [...movieQueries.key] });
+        queryClient.invalidateQueries({ queryKey: MOVIE_QUERY_KEY });
       } else {
-        queryClient.invalidateQueries({ queryKey: [...tvQueries.key] });
+        queryClient.invalidateQueries({ queryKey: TV_QUERY_KEY });
       }
       toast.info(data.inWatchList ? t`Added to watch list` : t`Removed from watch list`, {
         description: data.title,
@@ -167,8 +168,8 @@ export function useToggleWatchList() {
 
 function invalidateMediaCaches(queryClient: ReturnType<typeof useQueryClient>, type?: Media["type"]) {
   queryClient.invalidateQueries({ queryKey: mediaQueries.key });
-  if (type === "movie") queryClient.invalidateQueries({ queryKey: [...movieQueries.key] });
-  if (type === "tv") queryClient.invalidateQueries({ queryKey: [...tvQueries.key] });
+  if (type === "movie") queryClient.invalidateQueries({ queryKey: MOVIE_QUERY_KEY });
+  if (type === "tv") queryClient.invalidateQueries({ queryKey: TV_QUERY_KEY });
 }
 
 export function useUpsertReview() {

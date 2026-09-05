@@ -50,13 +50,19 @@ vi.mock("@/shared/helpers/video.helper", () => ({
   getVideoInputFormat: (name: string) => (name.endsWith(".mkv") ? "matroska" : undefined),
 }));
 
-const { StreamingService, invalidateStreamSource } = await import("./streaming.service");
+const { StreamingService } = await import("./streaming.service");
+const { invalidateStreamSource } = await import("./streaming-cache.helper");
 
 describe("StreamingService", () => {
   let tmpRoot: string;
   let previousDownloadsPath: string | undefined;
-  const service = new StreamingService();
-  const user = { id: "user-1", username: "u", role: "member" as const, createdAt: new Date() };
+  const user = {
+    id: "user-1",
+    username: "u",
+    role: "member" as const,
+    createdAt: new Date(),
+  } as import("@/modules/user/user.schema").User;
+  const service = new StreamingService(user);
 
   beforeEach(async () => {
     tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), "seedarr-stream-"));
@@ -205,7 +211,7 @@ describe("StreamingService", () => {
     expect(Buffer.concat(chunks).toString()).toBe("mp4");
   });
 
-  it("probes and caches duration when missing", async () => {
+  it("returns cached duration from torrent without probing", async () => {
     const folder = path.join(tmpRoot, "Movie");
     await fs.mkdir(folder);
     await fs.writeFile(path.join(folder, "Movie.mkv"), Buffer.alloc(512));
@@ -216,20 +222,35 @@ describe("StreamingService", () => {
       .values({
         id: "dl-probe",
         userId: user.id,
-        torrent: sampleTorrent({ name: "Movie", done: true, length: 512 }),
+        torrent: sampleTorrent({ name: "Movie", done: true, length: 512, durationSeconds: 55 }),
         createdAt: new Date(),
       })
       .run();
 
-    probeVideoStreams.mockResolvedValue({ duration: 55, videoCodec: "h264", audioCodec: "aac" });
-
     const info = await service.getPlaybackInfo(
       dl({
         id: "dl-probe",
-        torrent: { name: "Movie", done: true, length: 512 } as Download["torrent"],
+        torrent: { name: "Movie", done: true, length: 512, durationSeconds: 55 } as Download["torrent"],
       }),
     );
     expect(info.duration).toBe(55);
+    expect(probeVideoStreams).not.toHaveBeenCalled();
+  });
+
+  it("returns null duration when not stored on torrent", async () => {
+    const folder = path.join(tmpRoot, "Movie2");
+    await fs.mkdir(folder);
+    await fs.writeFile(path.join(folder, "Movie2.mkv"), Buffer.alloc(512));
+    invalidateStreamSource("dl-no-dur");
+
+    const info = await service.getPlaybackInfo(
+      dl({
+        id: "dl-no-dur",
+        torrent: { name: "Movie2", done: true, length: 512 } as Download["torrent"],
+      }),
+    );
+    expect(info.duration).toBeNull();
+    expect(probeVideoStreams).not.toHaveBeenCalled();
   });
 
   it("throws NotFound when no source exists", async () => {
